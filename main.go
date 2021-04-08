@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/go-co-op/gocron"
@@ -16,6 +18,7 @@ import (
 var (
 	listenPort = flag.Int("l", 9000, "Listen port of status page.")
 	storePath  = flag.String("o", "./ayd.log", "Path to log file.")
+	oneshot    = flag.Bool("1", false, "Check status only once and exit. Exit with 0 if all check passed, otherwise exit with code 1.")
 )
 
 func Usage() {
@@ -105,24 +108,34 @@ func ParseArgs(args []string) ([]Task, []error) {
 	return result, errors
 }
 
-func main() {
-	flag.Usage = Usage
-	flag.Parse()
-
-	scheduler := gocron.NewScheduler(time.UTC)
+func RunOneshot(tasks []Task) {
+	var failed atomic.Value
 	store := store.New(*storePath)
 
-	tasks, errors := ParseArgs(flag.Args())
-	if errors != nil {
-		for _, err := range errors {
-			fmt.Fprintln(os.Stderr, err)
-		}
+	wg := &sync.WaitGroup{}
+	for _, t := range tasks {
+		wg.Add(1)
+
+		f := t.Probe.Check
+		go func() {
+			r := f()
+			store.Append(r)
+			if r.Status == probe.STATUS_FAIL {
+				failed.Store(true)
+			}
+			wg.Done()
+		}()
+	}
+	wg.Wait()
+
+	if failed.Load() != nil {
 		os.Exit(1)
 	}
-	if len(tasks) == 0 {
-		Usage()
-		os.Exit(0)
-	}
+}
+
+func RunServer(tasks []Task) {
+	scheduler := gocron.NewScheduler(time.UTC)
+	store := store.New(*storePath)
 
 	for _, t := range tasks {
 		f := t.Probe.Check
@@ -134,7 +147,7 @@ func main() {
 	fmt.Printf("restore check history from %s...\n", *storePath)
 	if err := store.Restore(); err != nil {
 		fmt.Fprintf(os.Stderr, "failed to create or open log file: %s\n", err)
-		os.Exit(2)
+		os.Exit(1)
 	}
 
 	fmt.Printf("start status checking to %d targets...\n", scheduler.Len())
@@ -143,4 +156,27 @@ func main() {
 	listen := fmt.Sprintf("0.0.0.0:%d", *listenPort)
 	fmt.Printf("start status page on http://%s...\n", listen)
 	http.ListenAndServe(listen, exporter.New(store))
+}
+
+func main() {
+	flag.Usage = Usage
+	flag.Parse()
+
+	tasks, errors := ParseArgs(flag.Args())
+	if errors != nil {
+		for _, err := range errors {
+			fmt.Fprintln(os.Stderr, err)
+		}
+		os.Exit(2)
+	}
+	if len(tasks) == 0 {
+		Usage()
+		os.Exit(0)
+	}
+
+	if *oneshot {
+		RunOneshot(tasks)
+	} else {
+		RunServer(tasks)
+	}
 }
