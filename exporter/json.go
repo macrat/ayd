@@ -2,8 +2,8 @@ package exporter
 
 import (
 	"encoding/json"
-	"time"
 	"net/http"
+	"time"
 
 	"github.com/macrat/ayd/probe"
 	"github.com/macrat/ayd/store"
@@ -32,8 +32,8 @@ func NewJSONTargetStatus(h *store.ProbeHistory) JSONTargetStatus {
 	last := h.Results[len(h.Results)-1]
 
 	return JSONTargetStatus{
-		Target: h.Target.String(),
-		Status: last.Status.String(),
+		Target:  h.Target.String(),
+		Status:  last.Status.String(),
 		History: hs,
 		Updated: last.CheckedAt.Format(time.RFC3339),
 	}
@@ -73,8 +73,8 @@ func JSONExporter(s *store.Store) http.HandlerFunc {
 
 		status := JSONStatus{
 			CurrentIncidents: []JSONIncident{},
-			IncidentHistory: []JSONIncident{},
-			ReportedAt: time.Now().Format(time.RFC3339),
+			IncidentHistory:  []JSONIncident{},
+			ReportedAt:       time.Now().Format(time.RFC3339),
 		}
 
 		for _, r := range s.ProbeHistory.AsSortedArray() {

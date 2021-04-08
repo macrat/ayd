@@ -9,20 +9,48 @@ import (
 	"time"
 )
 
-func ExecuteProbe(u *url.URL) Result {
+type ExecuteProbe struct {
+	target *url.URL
+	env    []string
+}
+
+func NewExecuteProbe(u *url.URL) ExecuteProbe {
+	p := ExecuteProbe{}
+
+	path := u.Opaque
+	if u.Opaque == "" {
+		path = u.Path
+	}
+	p.target = &url.URL{
+		Scheme:   "exec",
+		Path:     path,
+		RawQuery: u.RawQuery,
+		Fragment: u.Fragment,
+	}
+
+	for k, v := range u.Query() {
+		p.env = append(p.env, fmt.Sprintf("%s=%s", k, strings.Join(v, ",")))
+	}
+
+	return p
+}
+
+func (p ExecuteProbe) Target() *url.URL {
+	return p.target
+}
+
+func (p ExecuteProbe) Check() Result {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
 
 	var cmd *exec.Cmd
-	if u.Fragment != "" {
-		cmd = exec.CommandContext(ctx, u.Path, u.Fragment)
+	if p.target.Fragment != "" {
+		cmd = exec.CommandContext(ctx, p.target.Path, p.target.Fragment)
 	} else {
-		cmd = exec.CommandContext(ctx, u.Path)
+		cmd = exec.CommandContext(ctx, p.target.Path)
 	}
 
-	for k, v := range u.Query() {
-		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", k, strings.Join(v, ",")))
-	}
+	cmd.Env = p.env
 
 	st := time.Now()
 	stdout, err := cmd.CombinedOutput()
@@ -40,7 +68,7 @@ func ExecuteProbe(u *url.URL) Result {
 
 	return Result{
 		CheckedAt: st,
-		Target:    u,
+		Target:    p.target,
 		Status:    status,
 		Message:   message,
 		Latency:   d,

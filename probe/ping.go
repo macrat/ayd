@@ -8,12 +8,28 @@ import (
 	"github.com/go-ping/ping"
 )
 
-func PingProbe(u *url.URL) Result {
-	pinger, err := ping.NewPinger(u.Opaque)
+type PingProbe struct {
+	target *url.URL
+}
+
+func NewPingProbe(u *url.URL) PingProbe {
+	if u.Opaque != "" {
+		return PingProbe{&url.URL{Scheme: "ping", Opaque: u.Opaque}}
+	} else {
+		return PingProbe{&url.URL{Scheme: "ping", Opaque: u.Hostname()}}
+	}
+}
+
+func (p PingProbe) Target() *url.URL {
+	return p.target
+}
+
+func (p PingProbe) Check() Result {
+	pinger, err := ping.NewPinger(p.target.Opaque)
 	if err != nil {
 		return Result{
 			CheckedAt: time.Now(),
-			Target:    u,
+			Target:    p.target,
 			Status:    STATUS_FAIL,
 			Message:   err.Error(),
 		}
@@ -40,7 +56,7 @@ func PingProbe(u *url.URL) Result {
 
 	return Result{
 		CheckedAt: startTime,
-		Target:    u,
+		Target:    p.target,
 		Status:    status,
 		Message: fmt.Sprintf(
 			"rtt(min/avg/max)=%.2f/%.2f/%.2f send/rcv=%d/%d",

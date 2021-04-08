@@ -7,9 +7,25 @@ import (
 	"time"
 )
 
-func TCPProbe(u *url.URL) Result {
+type TCPProbe struct {
+	target *url.URL
+}
+
+func NewTCPProbe(u *url.URL) TCPProbe {
+	if u.Opaque != "" {
+		return TCPProbe{&url.URL{Scheme: "tcp", Opaque: u.Opaque}}
+	} else {
+		return TCPProbe{&url.URL{Scheme: "tcp", Opaque: u.Host}}
+	}
+}
+
+func (p TCPProbe) Target() *url.URL {
+	return p.target
+}
+
+func (p TCPProbe) Check() Result {
 	st := time.Now()
-	conn, err := net.DialTimeout("tcp", u.Opaque, 10*time.Second)
+	conn, err := net.DialTimeout("tcp", p.target.Opaque, 10*time.Second)
 	d := time.Now().Sub(st)
 
 	var status Status
@@ -25,7 +41,7 @@ func TCPProbe(u *url.URL) Result {
 
 	return Result{
 		CheckedAt: st,
-		Target:    u,
+		Target:    p.target,
 		Status:    status,
 		Message:   message,
 		Latency:   d,

@@ -10,24 +10,38 @@ const (
 	USER_AGENT = "ayd/0.1.0 health check"
 )
 
-func HTTPProbe(u *url.URL) Result {
-	client := &http.Client{
-		Transport: &http.Transport{
-			DisableKeepAlives:     true,
-			ResponseHeaderTimeout: 10 * time.Minute,
+type HTTPProbe struct {
+	target *url.URL
+	client *http.Client
+}
+
+func NewHTTPProbe(u *url.URL) HTTPProbe {
+	return HTTPProbe{
+		target: u,
+		client: &http.Client{
+			Transport: &http.Transport{
+				DisableKeepAlives:     true,
+				ResponseHeaderTimeout: 10 * time.Minute,
+			},
 		},
 	}
+}
 
+func (p HTTPProbe) Target() *url.URL {
+	return p.target
+}
+
+func (p HTTPProbe) Check() Result {
 	req := &http.Request{
 		Method: "HEAD",
-		URL:    u,
+		URL:    p.target,
 		Header: http.Header{
 			"User-Agent": {USER_AGENT},
 		},
 	}
 
 	st := time.Now()
-	resp, err := client.Do(req)
+	resp, err := p.client.Do(req)
 	d := time.Now().Sub(st)
 
 	status := STATUS_FAIL
@@ -44,7 +58,7 @@ func HTTPProbe(u *url.URL) Result {
 
 	return Result{
 		CheckedAt: st,
-		Target:    u,
+		Target:    p.target,
 		Status:    status,
 		Message:   message,
 		Latency:   d,

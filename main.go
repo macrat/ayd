@@ -88,22 +88,15 @@ func main() {
 			continue
 		}
 
-		t, err := probe.ParseTarget(x)
+		p, err := probe.Get(x)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			errored = true
 			continue
 		}
 
-		f := probe.Get(t)
-		if f == nil {
-			fmt.Fprintf(os.Stderr, "unsupported scheme: %s\n", x)
-			errored = true
-			continue
-		}
-
 		scheduler.Every(interval).Do(func() {
-			store.Append(f(t))
+			store.Append(p.Check())
 		})
 	}
 

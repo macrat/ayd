@@ -7,7 +7,7 @@ import (
 	"github.com/macrat/ayd/probe"
 )
 
-func TestParseTarget(t *testing.T) {
+func TestTargetURLNormalize(t *testing.T) {
 	tests := []struct {
 		Input string
 		Want  url.URL
@@ -35,11 +35,13 @@ func TestParseTarget(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		u, err := probe.ParseTarget(tt.Input)
+		p, err := probe.Get(tt.Input)
 		if err != nil {
 			t.Errorf("%#v: failed to parse: %#s", tt.Input, err)
 			continue
 		}
+
+		u := p.Target()
 
 		if u.Scheme != tt.Want.Scheme {
 			t.Errorf("%#v expected scheme %#v but go %#v", tt.Input, tt.Want.Scheme, u.Scheme)

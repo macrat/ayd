@@ -1,24 +1,49 @@
 package probe
 
 import (
+	"fmt"
 	"net/url"
 )
 
-type Func func(u *url.URL) Result
+type Probe interface {
+	Target() *url.URL
+	Check() Result
+}
 
-func Get(u *url.URL) Func {
+func GetByURL(u *url.URL) Probe {
 	switch u.Scheme {
 	case "http", "https":
-		return HTTPProbe
+		return NewHTTPProbe(u)
 	case "ping":
-		return PingProbe
+		return NewPingProbe(u)
 	case "tcp":
-		return TCPProbe
+		return NewTCPProbe(u)
 	case "dns":
-		return DNSProbe
+		return NewDNSProbe(u)
 	case "exec":
-		return ExecuteProbe
+		return NewExecuteProbe(u)
 	default:
 		return nil
 	}
+}
+
+func Get(rawURL string) (Probe, error) {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return nil, fmt.Errorf("invalid target: %s", rawURL)
+	}
+
+	if u.Scheme == "" {
+		u, err = url.Parse("ping:" + rawURL)
+		if err != nil {
+			return nil, fmt.Errorf("invalid target: %s", rawURL)
+		}
+	}
+
+	p := GetByURL(u)
+	if p == nil {
+		return nil, fmt.Errorf("unsupported scheme: %#v", u.Scheme)
+	}
+
+	return p, nil
 }
