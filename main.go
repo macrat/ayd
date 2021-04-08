@@ -73,6 +73,38 @@ func Usage() {
 	fmt.Fprintf(out, "  $ %s -l 8080 1m tcp:example.com:3306\n", os.Args[0])
 }
 
+type Task struct {
+	Interval time.Duration
+	Probe    probe.Probe
+}
+
+func ParseArgs(args []string) ([]Task, []error) {
+	var result []Task
+	var errors []error
+
+	interval := 5 * time.Minute
+
+	for _, a := range args {
+		if d, err := time.ParseDuration(a); err == nil {
+			interval = d
+			continue
+		}
+
+		p, err := probe.Get(a)
+		if err != nil {
+			errors = append(errors, err)
+			continue
+		}
+
+		result = append(result, Task{
+			Interval: interval,
+			Probe:    p,
+		})
+	}
+
+	return result, errors
+}
+
 func main() {
 	flag.Usage = Usage
 	flag.Parse()
@@ -80,32 +112,23 @@ func main() {
 	scheduler := gocron.NewScheduler(time.UTC)
 	store := store.New(*storePath)
 
-	interval := 5 * time.Minute
-	errored := false
-	for _, x := range flag.Args() {
-		if d, err := time.ParseDuration(x); err == nil {
-			interval = d
-			continue
-		}
-
-		p, err := probe.Get(x)
-		if err != nil {
+	tasks, errors := ParseArgs(flag.Args())
+	if errors != nil {
+		for _, err := range errors {
 			fmt.Fprintln(os.Stderr, err)
-			errored = true
-			continue
 		}
-
-		scheduler.Every(interval).Do(func() {
-			store.Append(p.Check())
-		})
-	}
-
-	if errored {
 		os.Exit(1)
 	}
-	if scheduler.Len() == 0 {
+	if len(tasks) == 0 {
 		Usage()
 		os.Exit(0)
+	}
+
+	for _, t := range tasks {
+		f := t.Probe.Check
+		scheduler.Every(t.Interval).Do(func() {
+			store.Append(f())
+		})
 	}
 
 	fmt.Printf("restore check history from %s...\n", *storePath)
