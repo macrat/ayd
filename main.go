@@ -28,7 +28,8 @@ func Usage() {
 	flag.PrintDefaults()
 	fmt.Fprintf(out, "\n")
 	fmt.Fprintf(out, "INTERVALS:\n")
-	fmt.Fprintf(out, "  Specify execution interval like \"10m\", \"3h\".\n")
+	fmt.Fprintf(out, "  Specify execution schedule in interval (e.g. \"2m\" means \"every 2 minutes\")\n")
+	fmt.Fprintf(out, "  or cron expression (e.g. \"*/5 8-19 * * *\" means \"every 5 minutes from 8 p.m. to 7 a.m.\").\n")
 	fmt.Fprintf(out, "  Default interval is \"5m\" in if don't pass any interval.\n")
 	fmt.Fprintf(out, "\n")
 	fmt.Fprintf(out, "TARGETS:\n")
@@ -84,10 +85,10 @@ func ParseArgs(args []string) ([]Task, []error) {
 	var result []Task
 	var errors []error
 
-	schedule := DEFAULT_SCHEDULE
+	var schedule Schedule = DEFAULT_SCHEDULE
 
 	for _, a := range args {
-		if s, err := ParseSimpleSchedule(a); err == nil {
+		if s, err := ParseSchedule(a); err == nil {
 			schedule = s
 			continue
 		}
@@ -136,12 +137,16 @@ func RunServer(tasks []Task) {
 	scheduler := cron.New()
 	store := store.New(*storePath)
 
+	fmt.Println("tasks:")
 	for _, t := range tasks {
+		fmt.Printf("%s\t%s\n", t.Schedule, t.Probe.Target())
+
 		f := t.Probe.Check
 		scheduler.Schedule(t.Schedule, cron.FuncJob(func() {
 			store.Append(f())
 		}))
 	}
+	fmt.Println()
 
 	fmt.Printf("restore check history from %s...\n", *storePath)
 	if err := store.Restore(); err != nil {
