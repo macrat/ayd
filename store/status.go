@@ -1,8 +1,9 @@
-package probe
+package store
 
-import (
-	"net/url"
-	"time"
+const (
+	STATUS_UNKNOWN Status = iota
+	STATUS_OK
+	STATUS_FAIL
 )
 
 type Status int8
@@ -27,18 +28,4 @@ func (s Status) String() string {
 	default:
 		return "????"
 	}
-}
-
-const (
-	STATUS_UNKNOWN Status = iota
-	STATUS_OK
-	STATUS_FAIL
-)
-
-type Result struct {
-	CheckedAt time.Time
-	Target    *url.URL
-	Status    Status
-	Message   string
-	Latency   time.Duration
 }

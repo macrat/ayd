@@ -8,8 +8,6 @@ import (
 	"sort"
 	"sync"
 	"time"
-
-	"github.com/macrat/ayd/probe"
 )
 
 const (
@@ -19,12 +17,12 @@ const (
 
 type ProbeHistory struct {
 	Target  *url.URL
-	Results []*probe.Result
+	Results []*Record
 }
 
 type ProbeHistoryMap map[string]*ProbeHistory
 
-func (hs ProbeHistoryMap) append(r *probe.Result) {
+func (hs ProbeHistoryMap) append(r *Record) {
 	target := r.Target.String()
 
 	if h, ok := hs[target]; ok {
@@ -36,7 +34,7 @@ func (hs ProbeHistoryMap) append(r *probe.Result) {
 	} else {
 		hs[target] = &ProbeHistory{
 			Target:  r.Target,
-			Results: []*probe.Result{r},
+			Results: []*Record{r},
 		}
 	}
 }
@@ -73,7 +71,7 @@ func New(path string) *Store {
 	}
 }
 
-func (s *Store) setIncidentIfNeed(r probe.Result) {
+func (s *Store) setIncidentIfNeed(r Record) {
 	for i := 0; i < len(s.CurrentIncidents); i++ {
 		x := s.CurrentIncidents[i]
 		if x.SameTarget(r) {
@@ -91,12 +89,12 @@ func (s *Store) setIncidentIfNeed(r probe.Result) {
 		}
 	}
 
-	if r.Status != probe.STATUS_OK {
+	if r.Status != STATUS_OK {
 		s.CurrentIncidents = append(s.CurrentIncidents, NewIncident(r))
 	}
 }
 
-func (s *Store) Append(r probe.Result) {
+func (s *Store) Append(r Record) {
 	s.Lock()
 	defer s.Unlock()
 
@@ -107,8 +105,9 @@ func (s *Store) Append(r probe.Result) {
 	}
 	defer f.Close()
 
-	fmt.Println(result2str(r, true))
-	fmt.Fprintln(f, result2str(r, false))
+	str := r.String()
+	fmt.Println(str)
+	fmt.Fprintln(f, str)
 
 	s.ProbeHistory.append(&r)
 
@@ -131,7 +130,7 @@ func (s *Store) Restore() error {
 
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
-		r, err := str2result(scanner.Text())
+		r, err := ParseRecord(scanner.Text())
 		if err != nil {
 			continue
 		}

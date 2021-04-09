@@ -6,14 +6,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/macrat/ayd/probe"
 	"github.com/macrat/ayd/store"
 )
 
 func TextExporter(s *store.Store) http.HandlerFunc {
 	showIncidentBox := func(w http.ResponseWriter, i *store.Incident, bold bool) {
 		banner := "━UNKNOWN━"
-		if i.Status == probe.STATUS_FAIL {
+		if i.Status == store.STATUS_FAIL {
 			banner = "☠FAILURE☠"
 		}
 
@@ -57,9 +56,9 @@ func TextExporter(s *store.Store) http.HandlerFunc {
 
 			for _, r := range history.Results {
 				switch r.Status {
-				case probe.STATUS_OK:
+				case store.STATUS_OK:
 					fmt.Fprintf(w, "✓")
-				case probe.STATUS_FAIL:
+				case store.STATUS_FAIL:
 					fmt.Fprintf(w, "☠")
 				default:
 					fmt.Fprintf(w, "━")

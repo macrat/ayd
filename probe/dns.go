@@ -5,6 +5,8 @@ import (
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/macrat/ayd/store"
 )
 
 type DNSProbe struct {
@@ -23,26 +25,24 @@ func (p DNSProbe) Target() *url.URL {
 	return p.target
 }
 
-func (p DNSProbe) Check() Result {
+func (p DNSProbe) Check() store.Record {
 	st := time.Now()
 	addrs, err := net.LookupHost(p.target.Opaque)
 	d := time.Now().Sub(st)
 
-	var status Status
-	var message string
-	if err != nil {
-		status = STATUS_FAIL
-		message = err.Error()
-	} else {
-		status = STATUS_OK
-		message = strings.Join(addrs, ", ")
-	}
-
-	return Result{
+	r := store.Record{
 		CheckedAt: st,
 		Target:    p.target,
-		Status:    status,
-		Message:   message,
 		Latency:   d,
 	}
+
+	if err != nil {
+		r.Status = store.STATUS_FAIL
+		r.Message = err.Error()
+	} else {
+		r.Status = store.STATUS_OK
+		r.Message = strings.Join(addrs, ", ")
+	}
+
+	return r
 }

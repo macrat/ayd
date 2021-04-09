@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/go-ping/ping"
+	"github.com/macrat/ayd/store"
 )
 
 type PingProbe struct {
@@ -24,13 +25,13 @@ func (p PingProbe) Target() *url.URL {
 	return p.target
 }
 
-func (p PingProbe) Check() Result {
+func (p PingProbe) Check() store.Record {
 	pinger, err := ping.NewPinger(p.target.Opaque)
 	if err != nil {
-		return Result{
+		return store.Record{
 			CheckedAt: time.Now(),
 			Target:    p.target,
-			Status:    STATUS_FAIL,
+			Status:    store.STATUS_FAIL,
 			Message:   err.Error(),
 		}
 	}
@@ -49,12 +50,12 @@ func (p PingProbe) Check() Result {
 
 	stat := pinger.Statistics()
 
-	status := STATUS_FAIL
+	status := store.STATUS_FAIL
 	if stat.PacketLoss == 0 {
-		status = STATUS_OK
+		status = store.STATUS_OK
 	}
 
-	return Result{
+	return store.Record{
 		CheckedAt: startTime,
 		Target:    p.target,
 		Status:    status,

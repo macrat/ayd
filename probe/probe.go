@@ -3,11 +3,13 @@ package probe
 import (
 	"fmt"
 	"net/url"
+
+	"github.com/macrat/ayd/store"
 )
 
 type Probe interface {
 	Target() *url.URL
-	Check() Result
+	Check() store.Record
 }
 
 func GetByURL(u *url.URL) Probe {

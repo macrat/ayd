@@ -7,6 +7,8 @@ import (
 	"os/exec"
 	"strings"
 	"time"
+
+	"github.com/macrat/ayd/store"
 )
 
 type ExecuteProbe struct {
@@ -39,7 +41,7 @@ func (p ExecuteProbe) Target() *url.URL {
 	return p.target
 }
 
-func (p ExecuteProbe) Check() Result {
+func (p ExecuteProbe) Check() store.Record {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
 
@@ -56,17 +58,17 @@ func (p ExecuteProbe) Check() Result {
 	stdout, err := cmd.CombinedOutput()
 	d := time.Now().Sub(st)
 
-	status := STATUS_OK
+	status := store.STATUS_OK
 	message := string(stdout)
 
 	if err != nil {
-		status = STATUS_FAIL
+		status = store.STATUS_FAIL
 		if message == "" {
 			message = err.Error()
 		}
 	}
 
-	return Result{
+	return store.Record{
 		CheckedAt: st,
 		Target:    p.target,
 		Status:    status,

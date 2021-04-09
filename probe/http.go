@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"net/url"
 	"time"
+
+	"github.com/macrat/ayd/store"
 )
 
 const (
@@ -31,7 +33,7 @@ func (p HTTPProbe) Target() *url.URL {
 	return p.target
 }
 
-func (p HTTPProbe) Check() Result {
+func (p HTTPProbe) Check() store.Record {
 	req := &http.Request{
 		Method: "HEAD",
 		URL:    p.target,
@@ -44,19 +46,19 @@ func (p HTTPProbe) Check() Result {
 	resp, err := p.client.Do(req)
 	d := time.Now().Sub(st)
 
-	status := STATUS_FAIL
+	status := store.STATUS_FAIL
 	message := ""
 	if err != nil {
 		message = err.Error()
-		status = STATUS_UNKNOWN
+		status = store.STATUS_UNKNOWN
 	} else {
 		message = resp.Status
 		if 200 <= resp.StatusCode && resp.StatusCode <= 299 {
-			status = STATUS_OK
+			status = store.STATUS_OK
 		}
 	}
 
-	return Result{
+	return store.Record{
 		CheckedAt: st,
 		Target:    p.target,
 		Status:    status,

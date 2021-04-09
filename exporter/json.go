@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/macrat/ayd/probe"
 	"github.com/macrat/ayd/store"
 )
 
@@ -20,9 +19,9 @@ func NewJSONTargetStatus(h *store.ProbeHistory) JSONTargetStatus {
 	hs := ""
 	for _, x := range h.Results {
 		switch x.Status {
-		case probe.STATUS_OK:
+		case store.STATUS_OK:
 			hs += "O"
-		case probe.STATUS_FAIL:
+		case store.STATUS_FAIL:
 			hs += "F"
 		default:
 			hs += "?"

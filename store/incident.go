@@ -3,19 +3,17 @@ package store
 import (
 	"net/url"
 	"time"
-
-	"github.com/macrat/ayd/probe"
 )
 
 type Incident struct {
 	Target     *url.URL
-	Status     probe.Status
+	Status     Status
 	Message    string
 	CausedAt   time.Time
 	ResolvedAt time.Time
 }
 
-func NewIncident(r probe.Result) *Incident {
+func NewIncident(r Record) *Incident {
 	return &Incident{
 		Target:   r.Target,
 		Status:   r.Status,
@@ -24,10 +22,10 @@ func NewIncident(r probe.Result) *Incident {
 	}
 }
 
-func (i *Incident) SameTarget(r probe.Result) bool {
+func (i *Incident) SameTarget(r Record) bool {
 	return i.Target.String() == r.Target.String()
 }
 
-func (i *Incident) IsContinued(r probe.Result) bool {
+func (i *Incident) IsContinued(r Record) bool {
 	return i.ResolvedAt.IsZero() && i.Status == r.Status && i.Message == r.Message
 }

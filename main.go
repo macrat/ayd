@@ -110,7 +110,7 @@ func ParseArgs(args []string) ([]Task, []error) {
 
 func RunOneshot(tasks []Task) {
 	var failed atomic.Value
-	store := store.New(*storePath)
+	s := store.New(*storePath)
 
 	wg := &sync.WaitGroup{}
 	for _, t := range tasks {
@@ -119,8 +119,8 @@ func RunOneshot(tasks []Task) {
 		f := t.Probe.Check
 		go func() {
 			r := f()
-			store.Append(r)
-			if r.Status == probe.STATUS_FAIL {
+			s.Append(r)
+			if r.Status == store.STATUS_FAIL {
 				failed.Store(true)
 			}
 			wg.Done()

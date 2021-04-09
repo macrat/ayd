@@ -5,6 +5,8 @@ import (
 	"net"
 	"net/url"
 	"time"
+
+	"github.com/macrat/ayd/store"
 )
 
 type TCPProbe struct {
@@ -23,27 +25,25 @@ func (p TCPProbe) Target() *url.URL {
 	return p.target
 }
 
-func (p TCPProbe) Check() Result {
+func (p TCPProbe) Check() store.Record {
 	st := time.Now()
 	conn, err := net.DialTimeout("tcp", p.target.Opaque, 10*time.Second)
 	d := time.Now().Sub(st)
 
-	var status Status
-	var message string
+	r := store.Record{
+		CheckedAt: st,
+		Target:    p.target,
+		Latency:   d,
+	}
+
 	if err != nil {
-		status = STATUS_FAIL
-		message = err.Error()
+		r.Status = store.STATUS_FAIL
+		r.Message = err.Error()
 	} else {
-		status = STATUS_OK
-		message = fmt.Sprintf("%s -> %s", conn.LocalAddr(), conn.RemoteAddr())
+		r.Status = store.STATUS_OK
+		r.Message = fmt.Sprintf("%s -> %s", conn.LocalAddr(), conn.RemoteAddr())
 		conn.Close()
 	}
 
-	return Result{
-		CheckedAt: st,
-		Target:    p.target,
-		Status:    status,
-		Message:   message,
-		Latency:   d,
-	}
+	return r
 }
