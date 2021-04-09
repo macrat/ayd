@@ -7,12 +7,11 @@ import (
 	"os"
 	"sync"
 	"sync/atomic"
-	"time"
 
-	"github.com/go-co-op/gocron"
 	"github.com/macrat/ayd/exporter"
 	"github.com/macrat/ayd/probe"
 	"github.com/macrat/ayd/store"
+	"github.com/robfig/cron"
 )
 
 var (
@@ -77,7 +76,7 @@ func Usage() {
 }
 
 type Task struct {
-	Interval time.Duration
+	Schedule Schedule
 	Probe    probe.Probe
 }
 
@@ -85,11 +84,11 @@ func ParseArgs(args []string) ([]Task, []error) {
 	var result []Task
 	var errors []error
 
-	interval := 5 * time.Minute
+	schedule := DEFAULT_SCHEDULE
 
 	for _, a := range args {
-		if d, err := time.ParseDuration(a); err == nil {
-			interval = d
+		if s, err := ParseSimpleSchedule(a); err == nil {
+			schedule = s
 			continue
 		}
 
@@ -100,7 +99,7 @@ func ParseArgs(args []string) ([]Task, []error) {
 		}
 
 		result = append(result, Task{
-			Interval: interval,
+			Schedule: schedule,
 			Probe:    p,
 		})
 	}
@@ -134,14 +133,14 @@ func RunOneshot(tasks []Task) {
 }
 
 func RunServer(tasks []Task) {
-	scheduler := gocron.NewScheduler(time.UTC)
+	scheduler := cron.New()
 	store := store.New(*storePath)
 
 	for _, t := range tasks {
 		f := t.Probe.Check
-		scheduler.Every(t.Interval).Do(func() {
+		scheduler.Schedule(t.Schedule, cron.FuncJob(func() {
 			store.Append(f())
-		})
+		}))
 	}
 
 	fmt.Printf("restore check history from %s...\n", *storePath)
@@ -150,8 +149,9 @@ func RunServer(tasks []Task) {
 		os.Exit(1)
 	}
 
-	fmt.Printf("start status checking to %d targets...\n", scheduler.Len())
-	scheduler.StartAsync()
+	fmt.Printf("start status checking to %d targets...\n", len(tasks))
+	scheduler.Start()
+	defer scheduler.Stop()
 
 	listen := fmt.Sprintf("0.0.0.0:%d", *listenPort)
 	fmt.Printf("start status page on http://%s...\n", listen)
