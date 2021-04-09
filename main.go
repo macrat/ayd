@@ -15,7 +15,7 @@ import (
 )
 
 var (
-	listenPort = flag.Int("l", 9000, "Listen port of status page.")
+	listenPort = flag.Int("p", 9000, "Listen port of status page.")
 	storePath  = flag.String("o", "./ayd.log", "Path to log file.")
 	oneshot    = flag.Bool("1", false, "Check status only once and exit. Exit with 0 if all check passed, otherwise exit with code 1.")
 )
