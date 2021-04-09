@@ -24,7 +24,7 @@ func ParseRecord(s string) (Record, error) {
 
 	ss := strings.SplitN(s, "\t", 5)
 	if len(ss) != 5 {
-		return Record{}, fmt.Errorf("unexpected value count")
+		return Record{}, fmt.Errorf("unexpected column count")
 	}
 
 	timestamp = ss[0]
