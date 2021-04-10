@@ -8,38 +8,46 @@ import (
 )
 
 var (
-	DEFAULT_SCHEDULE = SimpleSchedule(cron.Every(5 * time.Minute))
+	DEFAULT_SCHEDULE = Schedule(IntervalSchedule{5 * time.Minute})
 )
 
 type Schedule interface {
 	cron.Schedule
 	fmt.Stringer
+
+	NeedKickWhenStart() bool
 }
 
 func ParseSchedule(spec string) (Schedule, error) {
-	if s, err := ParseSimpleSchedule(spec); err == nil {
+	if s, err := ParseIntervalSchedule(spec); err == nil {
 		return s, nil
 	}
 
 	return ParseCronSchedule(spec)
 }
 
-type SimpleSchedule cron.ConstantDelaySchedule
+type IntervalSchedule struct {
+	Interval time.Duration
+}
 
-func ParseSimpleSchedule(spec string) (SimpleSchedule, error) {
+func ParseIntervalSchedule(spec string) (IntervalSchedule, error) {
 	if d, err := time.ParseDuration(spec); err != nil {
-		return SimpleSchedule{}, err
+		return IntervalSchedule{}, err
 	} else {
-		return SimpleSchedule(cron.Every(d)), nil
+		return IntervalSchedule{d}, nil
 	}
 }
 
-func (s SimpleSchedule) Next(t time.Time) time.Time {
-	return cron.ConstantDelaySchedule(s).Next(t)
+func (s IntervalSchedule) Next(t time.Time) time.Time {
+	return t.Add(s.Interval)
 }
 
-func (s SimpleSchedule) String() string {
-	return s.Delay.String()
+func (s IntervalSchedule) String() string {
+	return s.Interval.String()
+}
+
+func (s IntervalSchedule) NeedKickWhenStart() bool {
+	return true
 }
 
 type CronSchedule struct {
@@ -64,4 +72,8 @@ func (s CronSchedule) Next(t time.Time) time.Time {
 
 func (s CronSchedule) String() string {
 	return s.spec
+}
+
+func (s CronSchedule) NeedKickWhenStart() bool {
+	return false
 }

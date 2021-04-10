@@ -85,7 +85,7 @@ func ParseArgs(args []string) ([]Task, []error) {
 	var result []Task
 	var errors []error
 
-	var schedule Schedule = DEFAULT_SCHEDULE
+	schedule := DEFAULT_SCHEDULE
 
 	for _, a := range args {
 		if s, err := ParseSchedule(a); err == nil {
@@ -134,32 +134,36 @@ func RunOneshot(tasks []Task) {
 }
 
 func RunServer(tasks []Task) {
+	listen := fmt.Sprintf("0.0.0.0:%d", *listenPort)
+	fmt.Printf("starts Ayd on http://%s\n", listen)
+
 	scheduler := cron.New()
 	store := store.New(*storePath)
 
-	fmt.Println("tasks:")
 	for _, t := range tasks {
 		fmt.Printf("%s\t%s\n", t.Schedule, t.Probe.Target())
 
 		f := t.Probe.Check
-		scheduler.Schedule(t.Schedule, cron.FuncJob(func() {
+		job := func() {
 			store.Append(f())
-		}))
+		}
+
+		if t.Schedule.NeedKickWhenStart() {
+			go job()
+		}
+
+		scheduler.Schedule(t.Schedule, cron.FuncJob(job))
 	}
 	fmt.Println()
 
-	fmt.Printf("restore check history from %s...\n", *storePath)
 	if err := store.Restore(); err != nil {
 		fmt.Fprintf(os.Stderr, "failed to create or open log file: %s\n", err)
 		os.Exit(1)
 	}
 
-	fmt.Printf("start status checking to %d targets...\n", len(tasks))
 	scheduler.Start()
 	defer scheduler.Stop()
 
-	listen := fmt.Sprintf("0.0.0.0:%d", *listenPort)
-	fmt.Printf("start status page on http://%s...\n", listen)
 	http.ListenAndServe(listen, exporter.New(store))
 }
 
