@@ -48,6 +48,11 @@ func ParseRecord(s string) (Record, error) {
 		return Record{}, err
 	}
 
+	if r.Target.Scheme == "exec" && r.Target.Opaque == "" {
+		r.Target.Opaque = r.Target.Path
+		r.Target.Path = ""
+	}
+
 	return r, nil
 }
 

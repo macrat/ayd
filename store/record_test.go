@@ -27,6 +27,16 @@ func TestRecord(t *testing.T) {
 			},
 		},
 		{
+			String: "2021-01-02T15:04:05+09:00\tOK\t123.456\texec:/path/to/file.sh\thello world",
+			Record: store.Record{
+				CheckedAt: time.Date(2021, 1, 2, 15, 4, 5, 0, tokyo),
+				Target:    &url.URL{Scheme: "exec", Opaque: "/path/to/file.sh"},
+				Status:    store.STATUS_OK,
+				Message:   "hello world",
+				Latency:   123456 * time.Microsecond,
+			},
+		},
+		{
 			String: "2021-01-02T15:04:05+09:00\tOK\t123.456",
 			Error:  "unexpected column count",
 		},
