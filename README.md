@@ -1,5 +1,4 @@
-Ayd?
-====
+<img src="./assets/logo.svg" style="display: block; margin: auto" />
 
 Easiest status page to check something service is dead:skull: or alive:heavy_check_mark:.
 
