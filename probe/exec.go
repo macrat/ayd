@@ -25,7 +25,7 @@ func NewExecuteProbe(u *url.URL) ExecuteProbe {
 	}
 	p.target = &url.URL{
 		Scheme:   "exec",
-		Path:     path,
+		Opaque:   path,
 		RawQuery: u.RawQuery,
 		Fragment: u.Fragment,
 	}
@@ -47,9 +47,9 @@ func (p ExecuteProbe) Check() store.Record {
 
 	var cmd *exec.Cmd
 	if p.target.Fragment != "" {
-		cmd = exec.CommandContext(ctx, p.target.Path, p.target.Fragment)
+		cmd = exec.CommandContext(ctx, p.target.Opaque, p.target.Fragment)
 	} else {
-		cmd = exec.CommandContext(ctx, p.target.Path)
+		cmd = exec.CommandContext(ctx, p.target.Opaque)
 	}
 
 	cmd.Env = p.env
