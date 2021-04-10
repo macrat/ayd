@@ -24,6 +24,7 @@ func New(s *store.Store) http.Handler {
 	})
 
 	m.HandleFunc("/status.txt", TextExporter(s))
+	m.HandleFunc("/status.html", HTMLExporter(s))
 	m.HandleFunc("/status.json", JSONExporter(s))
 
 	m.Handle("/", http.RedirectHandler("/status.txt", http.StatusFound))

@@ -1,6 +1,7 @@
 package exporter
 
 import (
+	"strings"
 	"time"
 
 	"github.com/macrat/ayd/store"
@@ -14,7 +15,7 @@ type frozenProbeHistory struct {
 }
 
 func freezeProbeHistory(h *store.ProbeHistory) frozenProbeHistory {
-	hs := ""
+	hs := strings.Repeat("-", store.PROBE_HISTORY_LEN-len(h.Results))
 	for _, x := range h.Results {
 		switch x.Status {
 		case store.STATUS_OK:
