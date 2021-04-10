@@ -24,12 +24,12 @@ func TestTargetURLNormalize(t *testing.T) {
 		{"dns:example.com", url.URL{Scheme: "dns", Opaque: "example.com"}},
 		{"dns://example.com:80/foo/bar?hoge=fuga#piyo", url.URL{Scheme: "dns", Opaque: "example.com"}},
 
-		{"exec:foo.sh", url.URL{Scheme: "exec", Path: "foo.sh"}},
-		{"exec:./foo.sh", url.URL{Scheme: "exec", Path: "./foo.sh"}},
-		{"exec:/foo/bar.sh", url.URL{Scheme: "exec", Path: "/foo/bar.sh"}},
-		{"exec:///foo/bar.sh", url.URL{Scheme: "exec", Path: "/foo/bar.sh"}},
-		{"exec:foo.sh?hoge=fuga#piyo", url.URL{Scheme: "exec", Path: "foo.sh", RawQuery: "hoge=fuga", Fragment: "piyo"}},
-		{"exec:/foo/bar.sh?hoge=fuga#piyo", url.URL{Scheme: "exec", Path: "/foo/bar.sh", RawQuery: "hoge=fuga", Fragment: "piyo"}},
+		{"exec:foo.sh", url.URL{Scheme: "exec", Opaque: "foo.sh"}},
+		{"exec:./foo.sh", url.URL{Scheme: "exec", Opaque: "./foo.sh"}},
+		{"exec:/foo/bar.sh", url.URL{Scheme: "exec", Opaque: "/foo/bar.sh"}},
+		{"exec:///foo/bar.sh", url.URL{Scheme: "exec", Opaque: "/foo/bar.sh"}},
+		{"exec:foo.sh?hoge=fuga#piyo", url.URL{Scheme: "exec", Opaque: "foo.sh", RawQuery: "hoge=fuga", Fragment: "piyo"}},
+		{"exec:/foo/bar.sh?hoge=fuga#piyo", url.URL{Scheme: "exec", Opaque: "/foo/bar.sh", RawQuery: "hoge=fuga", Fragment: "piyo"}},
 	}
 
 	for _, tt := range tests {
