@@ -98,6 +98,8 @@ func (s *Store) Append(r Record) {
 	s.Lock()
 	defer s.Unlock()
 
+	r = r.Sanitize()
+
 	f, err := os.OpenFile(s.Path, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to open log file: %s", err)

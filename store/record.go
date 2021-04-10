@@ -51,12 +51,22 @@ func ParseRecord(s string) (Record, error) {
 	return r, nil
 }
 
+func (r Record) Sanitize() Record {
+	return Record{
+		CheckedAt: r.CheckedAt,
+		Target:    r.Target,
+		Status:    r.Status,
+		Message:   strings.ReplaceAll(strings.ReplaceAll(r.Message, "\t", "    "), "\n", " "),
+		Latency:   r.Latency,
+	}
+}
+
 func (r Record) String() string {
 	return strings.Join([]string{
 		r.CheckedAt.Format(time.RFC3339),
 		r.Status.String(),
 		fmt.Sprintf("%.3f", float64(r.Latency.Microseconds())/1000),
 		r.Target.String(),
-		strings.ReplaceAll(strings.ReplaceAll(r.Message, "\t", "    "), "\n", " "),
+		r.Message,
 	}, "\t")
 }

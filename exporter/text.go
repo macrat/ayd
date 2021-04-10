@@ -35,7 +35,13 @@ func TextExporter(s *store.Store) http.HandlerFunc {
 
 		fmt.Fprint(w, vert, strings.Repeat(" ", 78), vert, "\n")
 
-		fmt.Fprintf(w, "%s%-78s%s\n", vert, i.Message, vert)
+		for offset := 0; offset < len(i.Message); offset += 78 {
+			end := offset + 78
+			if end >= len(i.Message) {
+				end = len(i.Message) - 1
+			}
+			fmt.Fprintf(w, "%s%-78s%s\n", vert, i.Message[offset:end], vert)
+		}
 
 		if bold {
 			fmt.Fprintln(w, "┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┻")
