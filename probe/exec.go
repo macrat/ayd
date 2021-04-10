@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"os"
 	"os/exec"
-	"strings"
 	"time"
 
 	"github.com/macrat/ayd/store"
@@ -30,8 +30,9 @@ func NewExecuteProbe(u *url.URL) ExecuteProbe {
 		Fragment: u.Fragment,
 	}
 
+	p.env = os.Environ()
 	for k, v := range u.Query() {
-		p.env = append(p.env, fmt.Sprintf("%s=%s", k, strings.Join(v, ",")))
+		p.env = append(p.env, fmt.Sprintf("%s=%s", k, v[len(v)-1]))
 	}
 
 	return p
