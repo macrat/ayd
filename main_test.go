@@ -17,14 +17,14 @@ func TestParseArgs(t *testing.T) {
 		Want []WantTask
 	}{
 		{
-			Args: []string{"hoge", "2m", "http://example.com"},
+			Args: []string{"ping:hoge", "2m", "http://example.com"},
 			Want: []WantTask{
 				{"5m0s", "ping:hoge"},
 				{"2m0s", "http://example.com"},
 			},
 		},
 		{
-			Args: []string{"hoge", "fuga", "2m", "1h", "http://example.com"},
+			Args: []string{"ping:hoge", "ping://fuga", "2m", "1h", "http://example.com"},
 			Want: []WantTask{
 				{"5m0s", "ping:hoge"},
 				{"5m0s", "ping:fuga"},

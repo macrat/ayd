@@ -60,17 +60,17 @@ func Usage() {
 	fmt.Fprintf(out, "\n")
 	fmt.Fprintf(out, "EXAMPLES:\n")
 	fmt.Fprintf(out, " Send ping to example.com in default interval(5m):\n")
-	fmt.Fprintf(out, "  $ %s example.com\n", os.Args[0])
+	fmt.Fprintf(out, "  $ %s ping:example.com\n", os.Args[0])
 	fmt.Fprintf(out, "\n")
 	fmt.Fprintf(out, " Send ping to example.com every minutes:\n")
-	fmt.Fprintf(out, "  $ %s 1m example.com\n", os.Args[0])
+	fmt.Fprintf(out, "  $ %s 1m ping:example.com\n", os.Args[0])
 	fmt.Fprintf(out, "\n")
 	fmt.Fprintf(out, " Access to http://example.com every half hours:\n")
 	fmt.Fprintf(out, "  $ %s 30m http://example.com\n", os.Args[0])
 	fmt.Fprintf(out, "\n")
 	fmt.Fprintf(out, " Check a.local(ping) and b.local(http) every minutes,\n")
-	fmt.Fprintf(out, " and check c.local every 15 minutes:\n")
-	fmt.Fprintf(out, "  $ %s 1m a.local http://b.local 15m ping:c.local\n", os.Args[0])
+	fmt.Fprintf(out, " and execute ./check.sh command every 15 minutes:\n")
+	fmt.Fprintf(out, "  $ %s 1m ping:a.local http://b.local 15m exec:./check.sh\n", os.Args[0])
 	fmt.Fprintf(out, "\n")
 	fmt.Fprintf(out, " Listen on http://0.0.0.0:8080 (and connect to example.com:3306 for check):\n")
 	fmt.Fprintf(out, "  $ %s -l 8080 1m tcp:example.com:3306\n", os.Args[0])
@@ -95,6 +95,14 @@ func ParseArgs(args []string) ([]Task, []error) {
 
 		p, err := probe.Get(a)
 		if err != nil {
+			switch err {
+			case probe.UnsupportedSchemeError:
+				err = fmt.Errorf("%s: This scheme is not supported.", a)
+			case probe.MissingSchemeError:
+				err = fmt.Errorf("%s: Not valid as schedule or target URI. Please specify scheme if this is target. (e.g. ping:%s or http://%s)", a, a, a)
+			default:
+				err = fmt.Errorf("%s: Not valid as schedule or target URI.", a)
+			}
 			errors = append(errors, err)
 			continue
 		}
@@ -173,9 +181,11 @@ func main() {
 
 	tasks, errors := ParseArgs(flag.Args())
 	if errors != nil {
+		fmt.Fprintln(os.Stderr, "Invalid argument:")
 		for _, err := range errors {
-			fmt.Fprintln(os.Stderr, err)
+			fmt.Fprintln(os.Stderr, "", err)
 		}
+		fmt.Fprintf(os.Stderr, "\nPlease see `%s -h` for more information.\n", os.Args[0])
 		os.Exit(2)
 	}
 	if len(tasks) == 0 {

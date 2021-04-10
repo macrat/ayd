@@ -12,8 +12,6 @@ func TestTargetURLNormalize(t *testing.T) {
 		Input string
 		Want  url.URL
 	}{
-		{"example.com", url.URL{Scheme: "ping", Opaque: "example.com"}},
-
 		{"ping:example.com", url.URL{Scheme: "ping", Opaque: "example.com"}},
 		{"ping://example.com:123/foo/bar?hoge=fuga#piyo", url.URL{Scheme: "ping", Opaque: "example.com"}},
 
