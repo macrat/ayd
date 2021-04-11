@@ -13,7 +13,7 @@ func TextExporter(s *store.Store) http.HandlerFunc {
 	showIncidentBox := func(w http.ResponseWriter, i *store.Incident, bold bool) {
 		banner := "━UNKNOWN━"
 		if i.Status == store.STATUS_FAIL {
-			banner = "☠FAILURE☠"
+			banner = "!FAILURE!"
 		}
 
 		vert := ""
@@ -65,7 +65,7 @@ func TextExporter(s *store.Store) http.HandlerFunc {
 				case store.STATUS_OK:
 					fmt.Fprintf(w, "✓")
 				case store.STATUS_FAIL:
-					fmt.Fprintf(w, "☠")
+					fmt.Fprintf(w, "!")
 				default:
 					fmt.Fprintf(w, "━")
 				}
