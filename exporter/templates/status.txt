@@ -1,0 +1,44 @@
+───────────────────────────────┤ Current Status ├───────────────────────────────
+{{ range .CurrentStatus }}
+┌─ {{ .Target }}
+└{{ range .History | each_runes }}{{
+    if eq . "-" }}─{{ end }}{{
+    if eq . "?" }}━{{ end }}{{
+    if eq . "F" }}!{{ end }}{{
+    if eq . "O" }}✓{{ end }}{{ end }}┤  updated: {{ .Updated }}
+{{ end }}
+
+──────────────────────────────┤ Current Incident ├──────────────────────────────
+{{ range .CurrentIncidents | invert_incidents }}
+┳━ {{
+    if eq .Status "FAIL"
+ }}!FAILURE!{{
+    else
+ }}━UNKNOWN━{{
+    end
+          }} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳
+┃{{ printf "%-78s" .Target                                                   }}┃
+┃ {{ printf "%-77s" (printf "%s - continue" .CausedAt)                       }}┃
+┃                                                                              ┃{{ range (break_text .Message 78) }}
+┃{{ printf "%-78s" .                                                         }}┃{{ end }}
+┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┻
+{{ end }}
+
+──────────────────────────────┤ Incident History ├──────────────────────────────
+{{ range .IncidentHistory | invert_incidents }}
+┌─ {{
+    if eq .Status "FAIL"
+ }}!FAILURE!{{
+    else
+ }}━UNKNOWN━{{
+    end
+          }} ──────────────────────────────────────────────────────────────────┐
+│{{ printf "%-78s" .Target                                                   }}│
+│ {{ printf "%-77s" (printf "%s - %s" .CausedAt .ResolvedAt)                 }}│
+│                                                                              │{{ range (break_text .Message 78) }}
+│{{ printf "%-78s" .                                                         }}│{{ end }}
+└──────────────────────────────────────────────────────────────────────────────┘
+{{ end }}
+
+                         ──────────────────────────────
+{{ align_center (printf "Reported by Ayd? (%s)" .ReportedAt) 80 }}
