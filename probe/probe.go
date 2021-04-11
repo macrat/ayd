@@ -20,7 +20,12 @@ type Probe interface {
 
 func GetByURL(u *url.URL) Probe {
 	switch u.Scheme {
-	case "http", "https":
+	case
+		"http", "https",
+		"http-get", "https-get",
+		"http-head", "https-head",
+		"http-post", "https-post",
+		"http-options", "https-options":
 		return NewHTTPProbe(u)
 	case "ping":
 		return NewPingProbe(u)
