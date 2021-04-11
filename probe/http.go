@@ -2,6 +2,7 @@ package probe
 
 import (
 	"errors"
+	"fmt"
 	"net"
 	"net/http"
 	"net/url"
@@ -17,7 +18,7 @@ const (
 )
 
 var (
-	RedirectLoopDetected = errors.New("redirect loop detected")
+	ErrRedirectLoopDetected = errors.New("redirect loop detected")
 )
 
 type HTTPProbe struct {
@@ -27,19 +28,23 @@ type HTTPProbe struct {
 	client *http.Client
 }
 
-func NewHTTPProbe(u *url.URL) HTTPProbe {
+func NewHTTPProbe(u *url.URL) (HTTPProbe, error) {
 	ucopy := *u
 	requrl := &ucopy
 
 	scheme := strings.Split(requrl.Scheme, "-")
 	requrl.Scheme = scheme[0]
 
-	method := "GET"
+	var method string
 	if len(scheme) > 1 {
 		m := strings.ToUpper(scheme[1])
 		switch m {
-		case "HEAD", "POST", "OPTIONS":
+		case "":
+			method = "GET"
+		case "GET", "HEAD", "POST", "OPTIONS":
 			method = m
+		default:
+			return HTTPProbe{}, fmt.Errorf("HTTP \"%s\" method is not supported. Please use GET, HEAD, POST, or OPTIONS.", m)
 		}
 	}
 
@@ -54,12 +59,12 @@ func NewHTTPProbe(u *url.URL) HTTPProbe {
 			},
 			CheckRedirect: func(req *http.Request, via []*http.Request) error {
 				if len(via) > HTTP_REDIRECT_MAX {
-					return RedirectLoopDetected
+					return ErrRedirectLoopDetected
 				}
 				return nil
 			},
 		},
-	}
+	}, nil
 }
 
 func (p HTTPProbe) Target() *url.URL {

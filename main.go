@@ -100,12 +100,14 @@ func ParseArgs(args []string) ([]Task, []error) {
 		p, err := probe.Get(a)
 		if err != nil {
 			switch err {
-			case probe.UnsupportedSchemeError:
+			case probe.ErrUnsupportedScheme:
 				err = fmt.Errorf("%s: This scheme is not supported.", a)
-			case probe.MissingSchemeError:
-				err = fmt.Errorf("%s: Not valid as schedule or target URI. Please specify scheme if this is target. (e.g. ping:%s or http://%s)", a, a, a)
-			default:
+			case probe.ErrMissingScheme:
+				err = fmt.Errorf("%s: Not valid as schedule or target URI. Please specify scheme if this is target. (e.g. ping:example.local or http://example.com)", a)
+			case probe.ErrInvalidURI:
 				err = fmt.Errorf("%s: Not valid as schedule or target URI.", a)
+			default:
+				err = fmt.Errorf("%s: %s", a, err)
 			}
 			errors = append(errors, err)
 			continue

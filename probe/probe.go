@@ -3,14 +3,15 @@ package probe
 import (
 	"errors"
 	"net/url"
+	"strings"
 
 	"github.com/macrat/ayd/store"
 )
 
 var (
-	InvalidURIError        = errors.New("invalid URI")
-	MissingSchemeError     = errors.New("missing scheme")
-	UnsupportedSchemeError = errors.New("unsupported scheme")
+	ErrInvalidURI        = errors.New("invalid URI")
+	ErrMissingScheme     = errors.New("missing scheme in URI")
+	ErrUnsupportedScheme = errors.New("unsupported scheme")
 )
 
 type Probe interface {
@@ -18,14 +19,13 @@ type Probe interface {
 	Check() store.Record
 }
 
-func GetByURL(u *url.URL) Probe {
+func GetByURL(u *url.URL) (Probe, error) {
+	if strings.HasPrefix(u.Scheme, "http-") || strings.HasPrefix(u.Scheme, "https-") {
+		return NewHTTPProbe(u)
+	}
+
 	switch u.Scheme {
-	case
-		"http", "https",
-		"http-get", "https-get",
-		"http-head", "https-head",
-		"http-post", "https-post",
-		"http-options", "https-options":
+	case "http", "https":
 		return NewHTTPProbe(u)
 	case "ping":
 		return NewPingProbe(u)
@@ -36,24 +36,19 @@ func GetByURL(u *url.URL) Probe {
 	case "exec":
 		return NewExecuteProbe(u)
 	default:
-		return nil
+		return nil, ErrUnsupportedScheme
 	}
 }
 
 func Get(rawURL string) (Probe, error) {
 	u, err := url.Parse(rawURL)
 	if err != nil {
-		return nil, InvalidURIError
+		return nil, ErrInvalidURI
 	}
 
 	if u.Scheme == "" {
-		return nil, MissingSchemeError
+		return nil, ErrMissingScheme
 	}
 
-	p := GetByURL(u)
-	if p == nil {
-		return nil, UnsupportedSchemeError
-	}
-
-	return p, nil
+	return GetByURL(u)
 }

@@ -17,7 +17,7 @@ type ExecuteProbe struct {
 	env    []string
 }
 
-func NewExecuteProbe(u *url.URL) ExecuteProbe {
+func NewExecuteProbe(u *url.URL) (ExecuteProbe, error) {
 	p := ExecuteProbe{}
 
 	path := u.Opaque
@@ -36,7 +36,7 @@ func NewExecuteProbe(u *url.URL) ExecuteProbe {
 		p.env = append(p.env, fmt.Sprintf("%s=%s", k, v[len(v)-1]))
 	}
 
-	return p
+	return p, nil
 }
 
 func (p ExecuteProbe) Target() *url.URL {

@@ -14,11 +14,11 @@ type PingProbe struct {
 	target *url.URL
 }
 
-func NewPingProbe(u *url.URL) PingProbe {
+func NewPingProbe(u *url.URL) (PingProbe, error) {
 	if u.Opaque != "" {
-		return PingProbe{&url.URL{Scheme: "ping", Opaque: u.Opaque}}
+		return PingProbe{&url.URL{Scheme: "ping", Opaque: u.Opaque}}, nil
 	} else {
-		return PingProbe{&url.URL{Scheme: "ping", Opaque: u.Hostname()}}
+		return PingProbe{&url.URL{Scheme: "ping", Opaque: u.Hostname()}}, nil
 	}
 }
 

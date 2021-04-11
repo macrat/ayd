@@ -14,12 +14,15 @@ type TCPProbe struct {
 	target *url.URL
 }
 
-func NewTCPProbe(u *url.URL) TCPProbe {
-	if u.Opaque != "" {
-		return TCPProbe{&url.URL{Scheme: "tcp", Opaque: u.Opaque}}
-	} else {
-		return TCPProbe{&url.URL{Scheme: "tcp", Opaque: u.Host}}
+func NewTCPProbe(u *url.URL) (TCPProbe, error) {
+	p := TCPProbe{&url.URL{Scheme: "tcp", Opaque: u.Opaque}}
+	if u.Opaque == "" {
+		p.target.Opaque = u.Host
 	}
+	if _, _, err := net.SplitHostPort(p.target.Opaque); err != nil {
+		return TCPProbe{}, err
+	}
+	return p, nil
 }
 
 func (p TCPProbe) Target() *url.URL {

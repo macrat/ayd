@@ -13,11 +13,11 @@ type DNSProbe struct {
 	target *url.URL
 }
 
-func NewDNSProbe(u *url.URL) DNSProbe {
+func NewDNSProbe(u *url.URL) (DNSProbe, error) {
 	if u.Opaque != "" {
-		return DNSProbe{&url.URL{Scheme: "dns", Opaque: u.Opaque}}
+		return DNSProbe{&url.URL{Scheme: "dns", Opaque: u.Opaque}}, nil
 	} else {
-		return DNSProbe{&url.URL{Scheme: "dns", Opaque: u.Hostname()}}
+		return DNSProbe{&url.URL{Scheme: "dns", Opaque: u.Hostname()}}, nil
 	}
 }
 
