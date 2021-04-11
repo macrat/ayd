@@ -38,6 +38,7 @@ func Usage() {
 	fmt.Fprintf(out, "\n")
 	fmt.Fprintf(out, "  http, https:\n")
 	fmt.Fprintf(out, "   Send HTTP request, and check status code is 2xx or not.\n")
+	fmt.Fprintf(out, "   It will follow redirect up to %d times.\n", probe.HTTP_REDIRECT_MAX)
 	fmt.Fprintf(out, "   e.g. https://example.com/path/to\n")
 	fmt.Fprintf(out, "\n")
 	fmt.Fprintf(out, "   You can specify HTTP method in scheme like \"http-head\" or \"https-post\".\n")

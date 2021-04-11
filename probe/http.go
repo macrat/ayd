@@ -1,6 +1,7 @@
 package probe
 
 import (
+	"errors"
 	"net/http"
 	"net/url"
 	"strings"
@@ -10,7 +11,12 @@ import (
 )
 
 const (
-	USER_AGENT = "ayd/0.1.0 health check"
+	USER_AGENT        = "ayd/0.1.0 health check"
+	HTTP_REDIRECT_MAX = 10
+)
+
+var (
+	RedirectLoopDetected = errors.New("redirect loop detected")
 )
 
 type HTTPProbe struct {
@@ -44,6 +50,12 @@ func NewHTTPProbe(u *url.URL) HTTPProbe {
 			Transport: &http.Transport{
 				DisableKeepAlives:     true,
 				ResponseHeaderTimeout: 10 * time.Minute,
+			},
+			CheckRedirect: func(req *http.Request, via []*http.Request) error {
+				if len(via) > HTTP_REDIRECT_MAX {
+					return RedirectLoopDetected
+				}
+				return nil
 			},
 		},
 	}
