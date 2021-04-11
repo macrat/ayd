@@ -7,12 +7,12 @@ import (
 	"os"
 	"sort"
 	"sync"
-	"time"
 )
 
 const (
 	PROBE_HISTORY_LEN    = 40
 	INCIDENT_HISTORY_LEN = 10
+	LOG_RESTORE_BYTES    = 1024 * 1024
 )
 
 type ProbeHistory struct {
@@ -125,19 +125,14 @@ func (s *Store) Restore() error {
 		return err
 	}
 	defer f.Close()
+	f.Seek(-LOG_RESTORE_BYTES, os.SEEK_END)
 
 	s.ProbeHistory = make(ProbeHistoryMap)
-
-	threshold := time.Now().Add(-24 * time.Hour)
 
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
 		r, err := ParseRecord(scanner.Text())
 		if err != nil {
-			continue
-		}
-
-		if threshold.After(r.CheckedAt) {
 			continue
 		}
 
