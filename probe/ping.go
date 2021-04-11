@@ -2,6 +2,7 @@ package probe
 
 import (
 	"fmt"
+	"net"
 	"net/url"
 	"time"
 
@@ -28,10 +29,16 @@ func (p PingProbe) Target() *url.URL {
 func (p PingProbe) Check() store.Record {
 	pinger, err := ping.NewPinger(p.target.Opaque)
 	if err != nil {
+		status := store.STATUS_FAIL
+
+		if e, ok := err.(*net.DNSError); ok && e.IsNotFound {
+			status = store.STATUS_UNKNOWN
+		}
+
 		return store.Record{
 			CheckedAt: time.Now(),
 			Target:    p.target,
-			Status:    store.STATUS_FAIL,
+			Status:    status,
 			Message:   err.Error(),
 		}
 	}
@@ -43,10 +50,7 @@ func (p PingProbe) Check() store.Record {
 
 	startTime := time.Now()
 
-	err = pinger.Run()
-	if err != nil {
-		fmt.Println(err)
-	}
+	pinger.Run()
 
 	stat := pinger.Statistics()
 

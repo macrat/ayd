@@ -1,6 +1,7 @@
 package probe
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"net/url"
@@ -39,6 +40,12 @@ func (p TCPProbe) Check() store.Record {
 	if err != nil {
 		r.Status = store.STATUS_FAIL
 		r.Message = err.Error()
+		if _, ok := errors.Unwrap(err).(*net.AddrError); ok {
+			r.Status = store.STATUS_UNKNOWN
+		}
+		if e, ok := errors.Unwrap(err).(*net.DNSError); ok && e.IsNotFound {
+			r.Status = store.STATUS_UNKNOWN
+		}
 	} else {
 		r.Status = store.STATUS_OK
 		r.Message = fmt.Sprintf("%s -> %s", conn.LocalAddr(), conn.RemoteAddr())

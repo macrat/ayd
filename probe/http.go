@@ -2,6 +2,7 @@ package probe
 
 import (
 	"errors"
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
@@ -82,7 +83,9 @@ func (p HTTPProbe) Check() store.Record {
 	message := ""
 	if err != nil {
 		message = err.Error()
-		status = store.STATUS_UNKNOWN
+		if e, ok := errors.Unwrap(errors.Unwrap(err)).(*net.DNSError); ok && e.IsNotFound {
+			status = store.STATUS_UNKNOWN
+		}
 	} else {
 		message = resp.Status
 		if 200 <= resp.StatusCode && resp.StatusCode <= 299 {

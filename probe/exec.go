@@ -2,6 +2,7 @@ package probe
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/url"
 	"os"
@@ -64,6 +65,10 @@ func (p ExecuteProbe) Check() store.Record {
 
 	if err != nil {
 		status = store.STATUS_FAIL
+		if e := errors.Unwrap(err); e != nil && e.Error() == "no such file or directory" || e.Error() == "executable file not found in $PATH" {
+			status = store.STATUS_UNKNOWN
+		}
+
 		if message == "" {
 			message = err.Error()
 		}
