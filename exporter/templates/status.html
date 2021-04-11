@@ -65,11 +65,12 @@ h2 {
     margin: 0 -1px;
 }
 .status-bit.no-data { background-color: rgba(var(--fg), .1) }
-.status-bit.unknown { background-color: rgb(var(--fg)) }
-.status-bit.fail    { background-color: rgb(var(--fail)) }
-.status-bit.ok      { background-color: rgb(var(--ok)) }
+.status-bit.unknown { background-color: rgba(var(--fg), .8) }
+.status-bit.fail    { background-color: rgba(var(--fail), .9) }
+.status-bit.ok      { background-color: rgba(var(--ok), .9) }
 .status-bit svg         { fill: rgba(var(--light), .8) }
 .status-bit.no-data svg { fill: rgba(var(--fg), .2) }
+.status-bit.unknown svg { fill: rgba(var(--bg), .8) }
 
 .updated {
     display: block;
@@ -77,25 +78,38 @@ h2 {
 }
 
 .incident {
-    background-color: rgb(var(--dark));
-    color: rgb(var(--light));
     border: 2px solid rgb(var(--fg));
     padding: .5rem 1rem 1rem;
     margin: 0 0 1rem;
+    position: relative;
 }
 .target {
     display: inline-block;
-    background-color: rgb(var(--light));
-    color: rgb(var(--dark));
+    background-color: rgb(var(--fg));
+    color: rgb(var(--bg));
     font-size: 1.2rem;
     padding: .1rem .3rem;
 }
 .message {
     font-size: inherit;
     font-family: monospace;
-    border-left: 8px solid rgb(var(--light));
+    border-left: 8px solid rgb(var(--fg));
     padding: 4px 0 4px 8px;
     white-space: pre-wrap;
+}
+
+.marker {
+    border-style: solid;
+    border-width: 0 24px 24px 0;
+    border-color: transparent rgb(var(--fg)) transparent transparent;
+    width: 0;
+    height: 0;
+    position: absolute;
+    top: 6px;
+    right: 6px;
+}
+.marker.fail {
+    border-right-color: rgb(var(--fail));
 }
 
 .placeholder {
@@ -167,6 +181,8 @@ footer span {
                 <h1>Current Incident</h1>{{ range .CurrentIncidents | invert_incidents }}
 
                 <section class="incident continue">
+                    <span class="marker {{ if eq .Status "FAIL" }}fail{{ else }}unknown{{ end }}"></span>
+
                     <h2>{{ if eq .Status "FAIL" }}FAILURE{{ else }}UNKNOWN{{ end }}</h2>
                     <div class="target">{{ .Target }}</div>
                     <div class="period"><time>{{ .CausedAt }}</time> - <time>continue</time></div>
@@ -182,6 +198,8 @@ footer span {
                 <h1>Incident History</h1>{{ range .IncidentHistory | invert_incidents }}
 
                 <section class="incident resolved">
+                    <span class="marker {{ if eq .Status "FAIL" }}fail{{ else }}unknown{{ end }}"></span>
+
                     <h2>{{ if eq .Status "FAIL" }}FAILURE{{ else }}UNKNOWN{{ end }}</h2>
                     <div class="target">{{ .Target }}</div>
                     <div class="period"><time>{{ .CausedAt }}</time> - <time>{{ .ResolvedAt }}</time></div>
