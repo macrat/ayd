@@ -77,7 +77,7 @@ func Usage() {
 	fmt.Fprintf(out, "  $ %s 1m ping:a.local http://b.local 15m exec:./check.sh\n", os.Args[0])
 	fmt.Fprintf(out, "\n")
 	fmt.Fprintf(out, " Listen on http://0.0.0.0:8080 (and connect to example.com:3306 for check):\n")
-	fmt.Fprintf(out, "  $ %s -l 8080 1m tcp:example.com:3306\n", os.Args[0])
+	fmt.Fprintf(out, "  $ %s -p 8080 1m tcp:example.com:3306\n", os.Args[0])
 }
 
 type Task struct {
