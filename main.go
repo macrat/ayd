@@ -22,7 +22,9 @@ var (
 
 func Usage() {
 	out := flag.CommandLine.Output()
-	fmt.Fprintf(out, "Usage: %s [OPTIONS]... INTERVALS|TARGETS...\n", os.Args[0])
+	fmt.Fprintf(out, "Usage:\n")
+	fmt.Fprintf(out, "  %s [-p NUMBER | -o FILE]... INTERVALS|TARGETS...\n", os.Args[0])
+	fmt.Fprintf(out, "  %s -1 [-o FILE] INTERVALS|TARGETS...\n", os.Args[0])
 	fmt.Fprintf(out, "\n")
 	fmt.Fprintf(out, "OPTIONS:\n")
 	flag.PrintDefaults()
