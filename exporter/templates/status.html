@@ -173,7 +173,7 @@ footer span {
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#ok-icon" /></svg>
                         </span>
                     {{ end }}{{ end }}</div>
-                    <span class="updated">updated: <time>{{ .Updated }}</time></span>
+                    <span class="updated">updated: <time>{{ if .Updated }}{{ .Updated }}{{ else }}(not yet){{ end }}</time></span>
                 </section>{{ end }}
             </article>
 

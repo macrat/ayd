@@ -143,3 +143,14 @@ func (s *Store) Restore() error {
 
 	return nil
 }
+
+func (s *Store) AddTarget(target *url.URL) {
+	s.Lock()
+	defer s.Unlock()
+
+	if _, ok := s.ProbeHistory[target.String()]; !ok {
+		s.ProbeHistory[target.String()] = &ProbeHistory{
+			Target: target,
+		}
+	}
+}

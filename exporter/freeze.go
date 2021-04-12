@@ -17,7 +17,7 @@ type frozenProbeHistory struct {
 	Target  string         `json:"target"`
 	Status  string         `json:"status"`
 	History []frozenRecord `json:"history"`
-	Updated string         `json:"updated"`
+	Updated string         `json:"updated,omitempty"`
 }
 
 func freezeProbeHistory(h *store.ProbeHistory) frozenProbeHistory {
@@ -36,13 +36,19 @@ func freezeProbeHistory(h *store.ProbeHistory) frozenProbeHistory {
 		})
 	}
 
-	last := h.Results[len(h.Results)-1]
+	status := "NA"
+	updated := ""
+	if len(h.Results) > 0 {
+		last := h.Results[len(h.Results)-1]
+		status = last.Status.String()
+		updated = last.CheckedAt.Format(time.RFC3339)
+	}
 
 	return frozenProbeHistory{
 		Target:  h.Target.String(),
-		Status:  last.Status.String(),
+		Status:  status,
 		History: hs,
-		Updated: last.CheckedAt.Format(time.RFC3339),
+		Updated: updated,
 	}
 }
 

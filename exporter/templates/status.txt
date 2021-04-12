@@ -5,7 +5,7 @@
     if eq .Status "NA"   }}─{{ end }}{{
     if eq .Status "????" }}━{{ end }}{{
     if eq .Status "FAIL" }}!{{ end }}{{
-    if eq .Status "OK"   }}✓{{ end }}{{ end }}┤  updated: {{ .Updated }}
+    if eq .Status "OK"   }}✓{{ end }}{{ end }}┤  updated: {{ if .Updated }}{{ .Updated }}{{ else }}(not yet){{ end }}
 {{ end }}
 
 ──────────────────────────────┤ Current Incident ├──────────────────────────────

@@ -156,8 +156,15 @@ func RunServer(tasks []Task) {
 	scheduler := cron.New()
 	store := store.New(*storePath)
 
+	if err := store.Restore(); err != nil {
+		fmt.Fprintf(os.Stderr, "failed to create or open log file: %s\n", err)
+		os.Exit(1)
+	}
+
 	for _, t := range tasks {
 		fmt.Printf("%s\t%s\n", t.Schedule, t.Probe.Target())
+
+		store.AddTarget(t.Probe.Target())
 
 		f := t.Probe.Check
 		job := func() {
@@ -171,11 +178,6 @@ func RunServer(tasks []Task) {
 		scheduler.Schedule(t.Schedule, cron.FuncJob(job))
 	}
 	fmt.Println()
-
-	if err := store.Restore(); err != nil {
-		fmt.Fprintf(os.Stderr, "failed to create or open log file: %s\n", err)
-		os.Exit(1)
-	}
 
 	scheduler.Start()
 	defer scheduler.Stop()
