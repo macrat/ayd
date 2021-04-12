@@ -204,7 +204,11 @@ footer span {
                     <div class="target">{{ .Target }}</div>
                     <div class="period"><time>{{ .CausedAt }}</time> - <time>{{ .ResolvedAt }}</time></div>
                     <pre class="message">{{ .Message }}</pre>
-                </section>{{ end }}
+                </section>{{ end }}{{ if not .IncidentHistory }}
+                <div class="placeholder">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#ok-icon" /></svg>
+                    <span>there is no incident record</span>
+                </div>{{ end }}
             </article>
 
             <footer>
