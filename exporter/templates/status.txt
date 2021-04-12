@@ -1,11 +1,11 @@
 ───────────────────────────────┤ Current Status ├───────────────────────────────
 {{ range .CurrentStatus }}
 ┌─ {{ .Target }}
-└{{ range .History | each_runes }}{{
-    if eq . "-" }}─{{ end }}{{
-    if eq . "?" }}━{{ end }}{{
-    if eq . "F" }}!{{ end }}{{
-    if eq . "O" }}✓{{ end }}{{ end }}┤  updated: {{ .Updated }}
+└{{ range .History }}{{
+    if eq .Status "NA"   }}─{{ end }}{{
+    if eq .Status "????" }}━{{ end }}{{
+    if eq .Status "FAIL" }}!{{ end }}{{
+    if eq .Status "OK"   }}✓{{ end }}{{ end }}┤  updated: {{ .Updated }}
 {{ end }}
 
 ──────────────────────────────┤ Current Incident ├──────────────────────────────

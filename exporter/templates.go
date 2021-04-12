@@ -6,13 +6,6 @@ import (
 
 var (
 	templateFuncs = map[string]interface{}{
-		"each_runes": func(s string) []string {
-			r := make([]string, len(s))
-			for i, c := range []rune(s) {
-				r[i] = string(c)
-			}
-			return r
-		},
 		"invert_incidents": func(xs []frozenIncident) []frozenIncident {
 			rs := make([]frozenIncident, len(xs))
 			for i, x := range xs {

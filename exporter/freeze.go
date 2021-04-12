@@ -1,30 +1,39 @@
 package exporter
 
 import (
-	"strings"
 	"time"
 
 	"github.com/macrat/ayd/store"
 )
 
+type frozenRecord struct {
+	CheckedAt string  `json:"checked_at,omitempty"`
+	Status    string  `json:"status"`
+	Message   string  `json:"message,omitempty"`
+	Latency   float64 `json:"latency,omitempty"`
+}
+
 type frozenProbeHistory struct {
-	Target  string `json:"target"`
-	Status  string `json:"status"`
-	History string `json:"history"`
-	Updated string `json:"updated"`
+	Target  string         `json:"target"`
+	Status  string         `json:"status"`
+	History []frozenRecord `json:"history"`
+	Updated string         `json:"updated"`
 }
 
 func freezeProbeHistory(h *store.ProbeHistory) frozenProbeHistory {
-	hs := strings.Repeat("-", store.PROBE_HISTORY_LEN-len(h.Results))
+	hs := []frozenRecord{}
+	for i := 0; i < store.PROBE_HISTORY_LEN-len(h.Results); i++ {
+		hs = append(hs, frozenRecord{
+			Status: "NA",
+		})
+	}
 	for _, x := range h.Results {
-		switch x.Status {
-		case store.STATUS_OK:
-			hs += "O"
-		case store.STATUS_FAIL:
-			hs += "F"
-		default:
-			hs += "?"
-		}
+		hs = append(hs, frozenRecord{
+			CheckedAt: x.CheckedAt.Format(time.RFC3339),
+			Status:    x.Status.String(),
+			Message:   x.Message,
+			Latency:   float64(x.Latency.Microseconds()) / 1000,
+		})
 	}
 
 	last := h.Results[len(h.Results)-1]

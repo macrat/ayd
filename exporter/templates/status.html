@@ -159,17 +159,17 @@ footer span {
 
                 <section>
                     <h2>{{ .Target }}</h2>
-                    <div class="status-bar">{{ range .History | each_runes }}
-                        {{ if eq . "-" }}<span class="status-bit no-data" title="no data">
+                    <div class="status-bar">{{ range .History }}
+                        {{ if eq .Status "NA" }}<span class="status-bit no-data" title="no data">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
                         </span>
-                        {{ end }}{{ if eq . "?" }}<span class="status-bit unknown" title="unknown">
+                        {{ end }}{{ if eq .Status "????" }}<span class="status-bit unknown" title="{{ printf "unknown\n%s\n%s" .CheckedAt .Message }}">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#unknown-icon" /></svg>
                         </span>
-                        {{ end }}{{ if eq . "F" }}<span class="status-bit fail" title="failure">
+                        {{ end }}{{ if eq .Status "FAIL" }}<span class="status-bit fail" title="{{ printf "failure\n%s\n%s" .CheckedAt .Message }}">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#fail-icon" /></svg>
                         </span>
-                        {{ end }}{{ if eq . "O" }}<span class="status-bit ok" title="ok">
+                        {{ end }}{{ if eq .Status "OK" }}<span class="status-bit ok" title="{{ printf "ok\n%s\n%s" .CheckedAt .Message }}">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#ok-icon" /></svg>
                         </span>
                     {{ end }}{{ end }}</div>
