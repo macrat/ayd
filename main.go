@@ -64,6 +64,11 @@ func Usage() {
 	fmt.Fprintf(out, "   and you can set environment variable with query.\n")
 	fmt.Fprintf(out, "   e.g. exec:/path/to/script?something_variable=awesome-value#argument-for-script\n")
 	fmt.Fprintf(out, "\n")
+	fmt.Fprintf(out, "  source:\n")
+	fmt.Fprintf(out, "   Load a file, and test target URIs of each lines.\n")
+	fmt.Fprintf(out, "   Lines in the file that starts with \"#\" will ignore as comments.\n")
+	fmt.Fprintf(out, "   e.g. source:/path/to/list.txt\n")
+	fmt.Fprintf(out, "\n")
 	fmt.Fprintf(out, "EXAMPLES:\n")
 	fmt.Fprintf(out, " Send ping to example.com in default interval(5m):\n")
 	fmt.Fprintf(out, "  $ %s ping:example.com\n", os.Args[0])
@@ -77,6 +82,11 @@ func Usage() {
 	fmt.Fprintf(out, " Check a.local(ping) and b.local(http) every minutes,\n")
 	fmt.Fprintf(out, " and execute ./check.sh command every 15 minutes:\n")
 	fmt.Fprintf(out, "  $ %s 1m ping:a.local http://b.local 15m exec:./check.sh\n", os.Args[0])
+	fmt.Fprintf(out, "\n")
+	fmt.Fprintf(out, " Check targets that listed in file named \"./list.txt\":\n")
+	fmt.Fprintf(out, "  $ echo ping:a.local >> list.txt\n")
+	fmt.Fprintf(out, "  $ echo ping:b.local >> list.txt\n")
+	fmt.Fprintf(out, "  $ %s source:./list.txt\n", os.Args[0])
 	fmt.Fprintf(out, "\n")
 	fmt.Fprintf(out, " Listen on http://0.0.0.0:8080 (and connect to example.com:3306 for check):\n")
 	fmt.Fprintf(out, "  $ %s -p 8080 1m tcp:example.com:3306\n", os.Args[0])
@@ -140,10 +150,12 @@ func RunOneshot(tasks []Task) {
 
 		f := t.Probe.Check
 		go func() {
-			r := f()
-			s.Append(r)
-			if r.Status == store.STATUS_FAILURE {
-				failed.Store(true)
+			rs := f()
+			s.Append(rs...)
+			for _, r := range rs {
+				if r.Status == store.STATUS_FAILURE {
+					failed.Store(true)
+				}
 			}
 			wg.Done()
 		}()
@@ -179,7 +191,7 @@ func RunServer(tasks []Task) {
 
 		f := t.Probe.Check
 		job := func() {
-			s.Append(f())
+			s.Append(f()...)
 		}
 
 		if t.Schedule.NeedKickWhenStart() {

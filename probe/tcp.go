@@ -29,7 +29,7 @@ func (p TCPProbe) Target() *url.URL {
 	return p.target
 }
 
-func (p TCPProbe) Check() store.Record {
+func (p TCPProbe) Check() []store.Record {
 	st := time.Now()
 	conn, err := net.DialTimeout("tcp", p.target.Opaque, 10*time.Second)
 	d := time.Now().Sub(st)
@@ -55,5 +55,5 @@ func (p TCPProbe) Check() store.Record {
 		conn.Close()
 	}
 
-	return r
+	return []store.Record{r}
 }

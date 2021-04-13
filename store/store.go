@@ -22,7 +22,7 @@ type ProbeHistory struct {
 
 type ProbeHistoryMap map[string]*ProbeHistory
 
-func (hs ProbeHistoryMap) append(r *Record) {
+func (hs ProbeHistoryMap) append(r Record) {
 	target := r.Target.String()
 
 	if h, ok := hs[target]; ok {
@@ -30,11 +30,11 @@ func (hs ProbeHistoryMap) append(r *Record) {
 			h.Results = h.Results[1:]
 		}
 
-		h.Results = append(h.Results, r)
+		h.Results = append(h.Results, &r)
 	} else {
 		hs[target] = &ProbeHistory{
 			Target:  r.Target,
-			Results: []*Record{r},
+			Results: []*Record{&r},
 		}
 	}
 }
@@ -109,24 +109,26 @@ func (s *Store) setIncidentIfNeed(r Record) {
 	}
 }
 
-func (s *Store) Append(r Record) {
+func (s *Store) Append(rs ...Record) {
 	s.Lock()
 	defer s.Unlock()
-
-	r = r.Sanitize()
 
 	if s.file == nil {
 		fmt.Fprintf(os.Stderr, "log file isn't opened. may be bug.")
 		return
 	}
 
-	str := r.String()
-	fmt.Println(str)
-	_, s.lastError = fmt.Fprintln(s.file, str)
+	for _, r := range rs {
+		r = r.Sanitize()
 
-	s.ProbeHistory.append(&r)
+		str := r.String()
+		fmt.Println(str)
+		_, s.lastError = fmt.Fprintln(s.file, str)
 
-	s.setIncidentIfNeed(r)
+		s.ProbeHistory.append(r)
+
+		s.setIncidentIfNeed(r)
+	}
 }
 
 func (s *Store) Restore() error {
@@ -149,7 +151,7 @@ func (s *Store) Restore() error {
 			continue
 		}
 
-		s.ProbeHistory.append(&r)
+		s.ProbeHistory.append(r)
 
 		s.setIncidentIfNeed(r)
 	}

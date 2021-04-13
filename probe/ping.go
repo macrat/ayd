@@ -26,7 +26,7 @@ func (p PingProbe) Target() *url.URL {
 	return p.target
 }
 
-func (p PingProbe) Check() store.Record {
+func (p PingProbe) Check() []store.Record {
 	pinger, err := ping.NewPinger(p.target.Opaque)
 	if err != nil {
 		status := store.STATUS_FAILURE
@@ -35,12 +35,12 @@ func (p PingProbe) Check() store.Record {
 			status = store.STATUS_UNKNOWN
 		}
 
-		return store.Record{
+		return []store.Record{{
 			CheckedAt: time.Now(),
 			Target:    p.target,
 			Status:    status,
 			Message:   err.Error(),
-		}
+		}}
 	}
 
 	pinger.Interval = 500 * time.Millisecond
@@ -59,7 +59,7 @@ func (p PingProbe) Check() store.Record {
 		status = store.STATUS_HEALTHY
 	}
 
-	return store.Record{
+	return []store.Record{{
 		CheckedAt: startTime,
 		Target:    p.target,
 		Status:    status,
@@ -72,5 +72,5 @@ func (p PingProbe) Check() store.Record {
 			pinger.PacketsRecv,
 		),
 		Latency: stat.AvgRtt,
-	}
+	}}
 }

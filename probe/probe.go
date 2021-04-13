@@ -16,7 +16,7 @@ var (
 
 type Probe interface {
 	Target() *url.URL
-	Check() store.Record
+	Check() []store.Record
 }
 
 func GetByURL(u *url.URL) (Probe, error) {
@@ -35,6 +35,8 @@ func GetByURL(u *url.URL) (Probe, error) {
 		return NewDNSProbe(u)
 	case "exec":
 		return NewExecuteProbe(u)
+	case "source":
+		return NewSourceProbe(u)
 	default:
 		return nil, ErrUnsupportedScheme
 	}

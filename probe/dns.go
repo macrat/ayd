@@ -25,7 +25,7 @@ func (p DNSProbe) Target() *url.URL {
 	return p.target
 }
 
-func (p DNSProbe) Check() store.Record {
+func (p DNSProbe) Check() []store.Record {
 	st := time.Now()
 	addrs, err := net.LookupHost(p.target.Opaque)
 	d := time.Now().Sub(st)
@@ -44,5 +44,5 @@ func (p DNSProbe) Check() store.Record {
 		r.Message = strings.Join(addrs, ", ")
 	}
 
-	return r
+	return []store.Record{r}
 }

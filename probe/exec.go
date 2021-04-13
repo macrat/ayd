@@ -43,7 +43,7 @@ func (p ExecuteProbe) Target() *url.URL {
 	return p.target
 }
 
-func (p ExecuteProbe) Check() store.Record {
+func (p ExecuteProbe) Check() []store.Record {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
 
@@ -74,11 +74,11 @@ func (p ExecuteProbe) Check() store.Record {
 		}
 	}
 
-	return store.Record{
+	return []store.Record{{
 		CheckedAt: st,
 		Target:    p.target,
 		Status:    status,
 		Message:   message,
 		Latency:   d,
-	}
+	}}
 }

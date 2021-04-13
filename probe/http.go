@@ -71,7 +71,7 @@ func (p HTTPProbe) Target() *url.URL {
 	return p.target
 }
 
-func (p HTTPProbe) Check() store.Record {
+func (p HTTPProbe) Check() []store.Record {
 	req := &http.Request{
 		Method: p.method,
 		URL:    p.requrl,
@@ -98,11 +98,11 @@ func (p HTTPProbe) Check() store.Record {
 		}
 	}
 
-	return store.Record{
+	return []store.Record{{
 		CheckedAt: st,
 		Target:    p.target,
 		Status:    status,
 		Message:   message,
 		Latency:   d,
-	}
+	}}
 }
