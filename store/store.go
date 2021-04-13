@@ -62,13 +62,27 @@ type Store struct {
 	ProbeHistory     ProbeHistoryMap
 	CurrentIncidents []*Incident
 	IncidentHistory  []*Incident
+
+	file *os.File
 }
 
-func New(path string) *Store {
-	return &Store{
+func New(path string) (*Store, error) {
+	store := &Store{
 		Path:         path,
 		ProbeHistory: make(ProbeHistoryMap),
 	}
+
+	var err error
+	store.file, err = os.OpenFile(store.Path, os.O_WRONLY|os.O_APPEND|os.O_CREATE|os.O_SYNC, 0644)
+	if err != nil {
+		return nil, err
+	}
+
+	return store, nil
+}
+
+func (s *Store) Close() error {
+	return s.file.Close()
 }
 
 func (s *Store) setIncidentIfNeed(r Record) {
@@ -100,16 +114,14 @@ func (s *Store) Append(r Record) {
 
 	r = r.Sanitize()
 
-	f, err := os.OpenFile(s.Path, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to open log file: %s", err)
+	if s.file == nil {
+		fmt.Fprintf(os.Stderr, "log file isn't opened. may be bug.")
 		return
 	}
-	defer f.Close()
 
 	str := r.String()
 	fmt.Println(str)
-	fmt.Fprintln(f, str)
+	fmt.Fprintln(s.file, str)
 
 	s.ProbeHistory.append(&r)
 

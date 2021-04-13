@@ -126,7 +126,13 @@ func ParseArgs(args []string) ([]Task, []error) {
 
 func RunOneshot(tasks []Task) {
 	var failed atomic.Value
-	s := store.New(*storePath)
+
+	s, err := store.New(*storePath)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to open log file: %s\n", err)
+		os.Exit(1)
+	}
+	defer s.Close()
 
 	wg := &sync.WaitGroup{}
 	for _, t := range tasks {
@@ -154,21 +160,26 @@ func RunServer(tasks []Task) {
 	fmt.Printf("starts Ayd on http://%s\n", listen)
 
 	scheduler := cron.New()
-	store := store.New(*storePath)
+	s, err := store.New(*storePath)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to open log file: %s\n", err)
+		os.Exit(1)
+	}
+	defer s.Close()
 
-	if err := store.Restore(); err != nil {
-		fmt.Fprintf(os.Stderr, "failed to create or open log file: %s\n", err)
+	if err = s.Restore(); err != nil {
+		fmt.Fprintf(os.Stderr, "failed to read log file: %s\n", err)
 		os.Exit(1)
 	}
 
 	for _, t := range tasks {
 		fmt.Printf("%s\t%s\n", t.Schedule, t.Probe.Target())
 
-		store.AddTarget(t.Probe.Target())
+		s.AddTarget(t.Probe.Target())
 
 		f := t.Probe.Check
 		job := func() {
-			store.Append(f())
+			s.Append(f())
 		}
 
 		if t.Schedule.NeedKickWhenStart() {
@@ -182,7 +193,8 @@ func RunServer(tasks []Task) {
 	scheduler.Start()
 	defer scheduler.Stop()
 
-	http.ListenAndServe(listen, exporter.New(store))
+	fmt.Fprintln(os.Stderr, http.ListenAndServe(listen, exporter.New(s)))
+	os.Exit(1)
 }
 
 func main() {
