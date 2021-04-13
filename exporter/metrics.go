@@ -15,7 +15,7 @@ func MetricsExporter(s *store.Store) http.HandlerFunc {
 				last := hs.Results[len(hs.Results)-1]
 
 				up := 0
-				if last.Status == store.STATUS_OK {
+				if last.Status == store.STATUS_HEALTHY {
 					up = 1
 				}
 				latency := last.Latency.Seconds()

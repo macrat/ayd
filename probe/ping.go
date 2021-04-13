@@ -29,7 +29,7 @@ func (p PingProbe) Target() *url.URL {
 func (p PingProbe) Check() store.Record {
 	pinger, err := ping.NewPinger(p.target.Opaque)
 	if err != nil {
-		status := store.STATUS_FAIL
+		status := store.STATUS_FAILURE
 
 		if e, ok := err.(*net.DNSError); ok && e.IsNotFound {
 			status = store.STATUS_UNKNOWN
@@ -54,9 +54,9 @@ func (p PingProbe) Check() store.Record {
 
 	stat := pinger.Statistics()
 
-	status := store.STATUS_FAIL
+	status := store.STATUS_FAILURE
 	if stat.PacketLoss == 0 {
-		status = store.STATUS_OK
+		status = store.STATUS_HEALTHY
 	}
 
 	return store.Record{

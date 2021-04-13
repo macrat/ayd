@@ -2,16 +2,16 @@
 {{ range .CurrentStatus }}
 ┌─ {{ .Target }}
 └{{ range .History }}{{
-    if eq .Status "NA"   }}─{{ end }}{{
-    if eq .Status "????" }}━{{ end }}{{
-    if eq .Status "FAIL" }}!{{ end }}{{
-    if eq .Status "OK"   }}✓{{ end }}{{ end }}┤  updated: {{ if .Updated }}{{ .Updated }}{{ else }}(not yet){{ end }}
+    if eq .Status "NO_DATA" }}─{{ end }}{{
+    if eq .Status "UNKNOWN" }}━{{ end }}{{
+    if eq .Status "FAILURE" }}!{{ end }}{{
+    if eq .Status "HEALTHY" }}✓{{ end }}{{ end }}┤  updated: {{ if .Updated }}{{ .Updated }}{{ else }}(not yet){{ end }}
 {{ end }}
 
 ──────────────────────────────┤ Current Incident ├──────────────────────────────
 {{ range .CurrentIncidents | invert_incidents }}
 ┳━ {{
-    if eq .Status "FAIL"
+    if eq .Status "FAILURE"
  }}!FAILURE!{{
     else
  }}━UNKNOWN━{{
@@ -27,7 +27,7 @@
 ──────────────────────────────┤ Incident History ├──────────────────────────────
 {{ range .IncidentHistory | invert_incidents }}
 ┌─ {{
-    if eq .Status "FAIL"
+    if eq .Status "FAILURE"
  }}!FAILURE!{{
     else
  }}━UNKNOWN━{{

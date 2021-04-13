@@ -60,11 +60,11 @@ func (p ExecuteProbe) Check() store.Record {
 	stdout, err := cmd.CombinedOutput()
 	d := time.Now().Sub(st)
 
-	status := store.STATUS_OK
+	status := store.STATUS_HEALTHY
 	message := string(stdout)
 
 	if err != nil {
-		status = store.STATUS_FAIL
+		status = store.STATUS_FAILURE
 		if e := errors.Unwrap(err); e != nil && (e.Error() == "no such file or directory" || e.Error() == "executable file not found in $PATH") {
 			status = store.STATUS_UNKNOWN
 		}

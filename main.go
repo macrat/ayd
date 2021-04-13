@@ -142,7 +142,7 @@ func RunOneshot(tasks []Task) {
 		go func() {
 			r := f()
 			s.Append(r)
-			if r.Status == store.STATUS_FAIL {
+			if r.Status == store.STATUS_FAILURE {
 				failed.Store(true)
 			}
 			wg.Done()

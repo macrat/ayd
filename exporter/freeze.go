@@ -24,7 +24,7 @@ func freezeProbeHistory(h *store.ProbeHistory) frozenProbeHistory {
 	hs := []frozenRecord{}
 	for i := 0; i < store.PROBE_HISTORY_LEN-len(h.Results); i++ {
 		hs = append(hs, frozenRecord{
-			Status: "NA",
+			Status: "NO_DATA",
 		})
 	}
 	for _, x := range h.Results {
@@ -36,7 +36,7 @@ func freezeProbeHistory(h *store.ProbeHistory) frozenProbeHistory {
 		})
 	}
 
-	status := "NA"
+	status := "NO_DATA"
 	updated := ""
 	if len(h.Results) > 0 {
 		last := h.Results[len(h.Results)-1]

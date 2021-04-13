@@ -37,10 +37,10 @@ func (p DNSProbe) Check() store.Record {
 	}
 
 	if err != nil {
-		r.Status = store.STATUS_FAIL
+		r.Status = store.STATUS_FAILURE
 		r.Message = err.Error()
 	} else {
-		r.Status = store.STATUS_OK
+		r.Status = store.STATUS_HEALTHY
 		r.Message = strings.Join(addrs, ", ")
 	}
 

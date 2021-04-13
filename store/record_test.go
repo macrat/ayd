@@ -17,39 +17,39 @@ func TestRecord(t *testing.T) {
 		Error  string
 	}{
 		{
-			String: "2021-01-02T15:04:05+09:00\tOK\t123.456\tping:example.com\thello world",
+			String: "2021-01-02T15:04:05+09:00\tHEALTHY\t123.456\tping:example.com\thello world",
 			Record: store.Record{
 				CheckedAt: time.Date(2021, 1, 2, 15, 4, 5, 0, tokyo),
 				Target:    &url.URL{Scheme: "ping", Opaque: "example.com"},
-				Status:    store.STATUS_OK,
+				Status:    store.STATUS_HEALTHY,
 				Message:   "hello world",
 				Latency:   123456 * time.Microsecond,
 			},
 		},
 		{
-			String: "2021-01-02T15:04:05+09:00\tOK\t123.456\texec:/path/to/file.sh\thello world",
+			String: "2021-01-02T15:04:05+09:00\tHEALTHY\t123.456\texec:/path/to/file.sh\thello world",
 			Record: store.Record{
 				CheckedAt: time.Date(2021, 1, 2, 15, 4, 5, 0, tokyo),
 				Target:    &url.URL{Scheme: "exec", Opaque: "/path/to/file.sh"},
-				Status:    store.STATUS_OK,
+				Status:    store.STATUS_HEALTHY,
 				Message:   "hello world",
 				Latency:   123456 * time.Microsecond,
 			},
 		},
 		{
-			String: "2021-01-02T15:04:05+09:00\tOK\t123.456",
+			String: "2021-01-02T15:04:05+09:00\tHEALTHY\t123.456",
 			Error:  "unexpected column count",
 		},
 		{
-			String: "2021-01-02T15:04:05+09:00\tOK\t123abc\tping:example.com\thello world",
+			String: "2021-01-02T15:04:05+09:00\tHEALTHY\t123abc\tping:example.com\thello world",
 			Error:  `strconv.ParseFloat: parsing "123abc": invalid syntax`,
 		},
 		{
-			String: "2021/01/02 15:04:05\tOK\t123.456\tping:example.com\thello world",
+			String: "2021/01/02 15:04:05\tHEALTHY\t123.456\tping:example.com\thello world",
 			Error:  `parsing time "2021/01/02 15:04:05" as "2006-01-02T15:04:05Z07:00": cannot parse "/01/02 15:04:05" as "-"`,
 		},
 		{
-			String: "2021-01-02T15:04:05+09:00\tOK\t123.456\t::invalid target::\thello world",
+			String: "2021-01-02T15:04:05+09:00\tHEALTHY\t123.456\t::invalid target::\thello world",
 			Error:  `parse "::invalid target::": missing protocol scheme`,
 		},
 	}

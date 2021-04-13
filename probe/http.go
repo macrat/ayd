@@ -84,7 +84,7 @@ func (p HTTPProbe) Check() store.Record {
 	resp, err := p.client.Do(req)
 	d := time.Now().Sub(st)
 
-	status := store.STATUS_FAIL
+	status := store.STATUS_FAILURE
 	message := ""
 	if err != nil {
 		message = err.Error()
@@ -94,7 +94,7 @@ func (p HTTPProbe) Check() store.Record {
 	} else {
 		message = resp.Status
 		if 200 <= resp.StatusCode && resp.StatusCode <= 299 {
-			status = store.STATUS_OK
+			status = store.STATUS_HEALTHY
 		}
 	}
 

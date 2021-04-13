@@ -41,7 +41,7 @@ func (p TCPProbe) Check() store.Record {
 	}
 
 	if err != nil {
-		r.Status = store.STATUS_FAIL
+		r.Status = store.STATUS_FAILURE
 		r.Message = err.Error()
 		if _, ok := errors.Unwrap(err).(*net.AddrError); ok {
 			r.Status = store.STATUS_UNKNOWN
@@ -50,7 +50,7 @@ func (p TCPProbe) Check() store.Record {
 			r.Status = store.STATUS_UNKNOWN
 		}
 	} else {
-		r.Status = store.STATUS_OK
+		r.Status = store.STATUS_HEALTHY
 		r.Message = fmt.Sprintf("%s -> %s", conn.LocalAddr(), conn.RemoteAddr())
 		conn.Close()
 	}

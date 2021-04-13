@@ -2,18 +2,18 @@ package store
 
 const (
 	STATUS_UNKNOWN Status = iota
-	STATUS_OK
-	STATUS_FAIL
+	STATUS_HEALTHY
+	STATUS_FAILURE
 )
 
 type Status int8
 
 func ParseStatus(s string) Status {
 	switch s {
-	case "OK":
-		return STATUS_OK
-	case "FAIL":
-		return STATUS_FAIL
+	case "HEALTHY":
+		return STATUS_HEALTHY
+	case "FAILURE":
+		return STATUS_FAILURE
 	default:
 		return STATUS_UNKNOWN
 	}
@@ -21,11 +21,11 @@ func ParseStatus(s string) Status {
 
 func (s Status) String() string {
 	switch s {
-	case STATUS_OK:
-		return "OK"
-	case STATUS_FAIL:
-		return "FAIL"
+	case STATUS_HEALTHY:
+		return "HEALTHY"
+	case STATUS_FAILURE:
+		return "FAILURE"
 	default:
-		return "????"
+		return "UNKNOWN"
 	}
 }

@@ -104,7 +104,7 @@ func (s *Store) setIncidentIfNeed(r Record) {
 		}
 	}
 
-	if r.Status != STATUS_OK {
+	if r.Status != STATUS_HEALTHY {
 		s.CurrentIncidents = append(s.CurrentIncidents, NewIncident(r))
 	}
 }
