@@ -30,6 +30,9 @@ func New(s *store.Store) http.Handler {
 	m.HandleFunc("/status.html", HTMLExporter(s))
 	m.HandleFunc("/status.json", JSONExporter(s))
 
+	m.HandleFunc("/metrics", MetricsExporter(s))
+	m.HandleFunc("/healthz", HealthzExporter(s))
+
 	m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/" {
 			http.Redirect(w, r, "/status.html", http.StatusFound)

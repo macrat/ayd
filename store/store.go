@@ -63,7 +63,8 @@ type Store struct {
 	CurrentIncidents []*Incident
 	IncidentHistory  []*Incident
 
-	file *os.File
+	file      *os.File
+	lastError error
 }
 
 func New(path string) (*Store, error) {
@@ -121,7 +122,7 @@ func (s *Store) Append(r Record) {
 
 	str := r.String()
 	fmt.Println(str)
-	fmt.Fprintln(s.file, str)
+	_, s.lastError = fmt.Fprintln(s.file, str)
 
 	s.ProbeHistory.append(&r)
 
@@ -165,4 +166,8 @@ func (s *Store) AddTarget(target *url.URL) {
 			Target: target,
 		}
 	}
+}
+
+func (s *Store) Err() error {
+	return s.lastError
 }
