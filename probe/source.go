@@ -22,18 +22,34 @@ func (es invalidURIs) Error() string {
 	return "Invalid URI: " + strings.Join(ss, ", ")
 }
 
+type ignoreSet []string
+
+func (is ignoreSet) Has(s string) bool {
+	for _, i := range is {
+		if i == s {
+			return true
+		}
+	}
+	return false
+}
+
+func normalizeSourceURL(u *url.URL) *url.URL {
+	if u.Opaque == "" {
+		return &url.URL{Scheme: "source", Opaque: u.Path}
+	} else {
+		return &url.URL{Scheme: "source", Opaque: u.Opaque}
+	}
+}
+
 type SourceProbe struct {
 	target *url.URL
 }
 
 func NewSourceProbe(u *url.URL) (SourceProbe, error) {
-	s := SourceProbe{}
-	if u.Opaque == "" {
-		s.target = &url.URL{Scheme: "source", Opaque: u.Path}
-	} else {
-		s.target = &url.URL{Scheme: "source", Opaque: u.Opaque}
+	s := SourceProbe{
+		target: normalizeSourceURL(u),
 	}
-	_, err := s.load()
+	_, err := s.load(s.target.Opaque, nil)
 	return s, err
 }
 
@@ -41,8 +57,8 @@ func (p SourceProbe) Target() *url.URL {
 	return p.target
 }
 
-func (p SourceProbe) load() ([]Probe, error) {
-	f, err := os.Open(p.target.Opaque)
+func (p SourceProbe) load(path string, ignores ignoreSet) ([]Probe, error) {
+	f, err := os.Open(path)
 	if err != nil {
 		return nil, err
 	}
@@ -55,6 +71,25 @@ func (p SourceProbe) load() ([]Probe, error) {
 		target := strings.TrimSpace(scanner.Text())
 
 		if target == "" || strings.HasPrefix(target, "#") {
+			continue
+		}
+
+		if strings.HasPrefix(target, "source:") {
+			u, err := url.Parse(target)
+			if err != nil {
+				invalids = append(invalids, target)
+				continue
+			}
+			u = normalizeSourceURL(u)
+			if ignores.Has(u.Opaque) {
+				continue
+			}
+			ps, err := p.load(u.Opaque, append(ignores, path))
+			if err == nil {
+				probes = append(probes, ps...)
+			} else if es, ok := err.(invalidURIs); ok {
+				invalids = append(invalids, es...)
+			}
 			continue
 		}
 
@@ -76,7 +111,7 @@ func (p SourceProbe) load() ([]Probe, error) {
 func (p SourceProbe) Check() []store.Record {
 	stime := time.Now()
 
-	probes, err := p.load()
+	probes, err := p.load(p.target.Opaque, nil)
 	if err != nil {
 		d := time.Now().Sub(stime)
 		return []store.Record{{
