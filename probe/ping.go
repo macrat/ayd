@@ -6,7 +6,6 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/go-ping/ping"
 	"github.com/macrat/ayd/store"
 )
 
@@ -27,7 +26,7 @@ func (p PingProbe) Target() *url.URL {
 }
 
 func (p PingProbe) Check() []store.Record {
-	pinger, err := ping.NewPinger(p.target.Opaque)
+	pinger, err := getPinger(p.target.Opaque)
 	if err != nil {
 		status := store.STATUS_FAILURE
 
@@ -50,7 +49,16 @@ func (p PingProbe) Check() []store.Record {
 
 	startTime := time.Now()
 
-	pinger.Run()
+	err = pinger.Run()
+	if err != nil {
+		return []store.Record{{
+			CheckedAt: time.Now(),
+			Target:    p.target,
+			Status:    store.STATUS_UNKNOWN,
+			Message:   err.Error(),
+			Latency:   time.Now().Sub(time.Now()),
+		}}
+	}
 
 	stat := pinger.Statistics()
 
