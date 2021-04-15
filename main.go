@@ -97,8 +97,21 @@ type Task struct {
 	Probe    probe.Probe
 }
 
+func (t Task) SameAs(another Task) bool {
+	return t.Schedule.String() == another.Schedule.String() && t.Probe.Target().String() == another.Probe.Target().String()
+}
+
+func (t Task) In(list []Task) bool {
+	for _, x := range list {
+		if t.SameAs(x) {
+			return true
+		}
+	}
+	return false
+}
+
 func ParseArgs(args []string) ([]Task, []error) {
-	var result []Task
+	var tasks []Task
 	var errors []error
 
 	schedule := DEFAULT_SCHEDULE
@@ -125,10 +138,18 @@ func ParseArgs(args []string) ([]Task, []error) {
 			continue
 		}
 
-		result = append(result, Task{
+		tasks = append(tasks, Task{
 			Schedule: schedule,
 			Probe:    p,
 		})
+	}
+
+	var result []Task
+	for _, t := range tasks {
+		if t.In(result) {
+			continue
+		}
+		result = append(result, t)
 	}
 
 	return result, errors

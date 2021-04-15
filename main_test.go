@@ -31,6 +31,13 @@ func TestParseArgs(t *testing.T) {
 				{"1h0m0s", "http://example.com"},
 			},
 		},
+		{
+			Args: []string{"ping:hoge", "2m", "ping:hoge", "5m", "ping:hoge?abc", "2m", "ping://hoge"},
+			Want: []WantTask{
+				{"5m0s", "ping:hoge"},
+				{"2m0s", "ping:hoge"},
+			},
+		},
 	}
 
 	for _, tt := range tests {
