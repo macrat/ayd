@@ -18,6 +18,7 @@ var (
 	listenPort = flag.Int("p", 9000, "Listen port of status page.")
 	storePath  = flag.String("o", "./ayd.log", "Path to log file. Log file is also use for restore status history.")
 	oneshot    = flag.Bool("1", false, "Check status only once and exit. Exit with 0 if all check passed, otherwise exit with code 1.")
+	alertURI   = flag.String("a", "", "The alert URI that the same format as target URI.")
 )
 
 func Usage() {
@@ -155,7 +156,7 @@ func ParseArgs(args []string) ([]Task, []error) {
 	return result, errors
 }
 
-func RunOneshot(tasks []Task) {
+func RunOneshot(tasks []Task, alert *Alert) {
 	var failed atomic.Value
 
 	s, err := store.New(*storePath)
@@ -173,6 +174,7 @@ func RunOneshot(tasks []Task) {
 		go func() {
 			rs := f()
 			s.Append(rs...)
+			s.Append(alert.TriggerIfNeed(rs)...)
 			for _, r := range rs {
 				if r.Status == store.STATUS_FAILURE {
 					failed.Store(true)
@@ -188,7 +190,7 @@ func RunOneshot(tasks []Task) {
 	}
 }
 
-func RunServer(tasks []Task) {
+func RunServer(tasks []Task, alert *Alert) {
 	listen := fmt.Sprintf("0.0.0.0:%d", *listenPort)
 	fmt.Printf("starts Ayd on http://%s\n", listen)
 
@@ -212,7 +214,9 @@ func RunServer(tasks []Task) {
 
 		f := t.Probe.Check
 		job := func() {
-			s.Append(f()...)
+			rs := f()
+			s.Append(rs...)
+			s.Append(alert.TriggerIfNeed(rs)...)
 		}
 
 		if t.Schedule.NeedKickWhenStart() {
@@ -234,6 +238,16 @@ func main() {
 	flag.Usage = Usage
 	flag.Parse()
 
+	var alert *Alert
+	if *alertURI != "" {
+		var err error
+		alert, err = NewAlert(*alertURI)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "Invalid alert target:", err)
+			os.Exit(2)
+		}
+	}
+
 	tasks, errors := ParseArgs(flag.Args())
 	if errors != nil {
 		fmt.Fprintln(os.Stderr, "Invalid argument:")
@@ -249,8 +263,8 @@ func main() {
 	}
 
 	if *oneshot {
-		RunOneshot(tasks)
+		RunOneshot(tasks, alert)
 	} else {
-		RunServer(tasks)
+		RunServer(tasks, alert)
 	}
 }

@@ -125,9 +125,10 @@ func (s *Store) Append(rs ...Record) {
 		fmt.Println(str)
 		_, s.lastError = fmt.Fprintln(s.file, str)
 
-		s.ProbeHistory.append(r)
-
-		s.setIncidentIfNeed(r)
+		if r.Target.Scheme != "alert" {
+			s.ProbeHistory.append(r)
+			s.setIncidentIfNeed(r)
+		}
 	}
 }
 
@@ -151,9 +152,10 @@ func (s *Store) Restore() error {
 			continue
 		}
 
-		s.ProbeHistory.append(r)
-
-		s.setIncidentIfNeed(r)
+		if r.Target.Scheme != "alert" {
+			s.ProbeHistory.append(r)
+			s.setIncidentIfNeed(r)
+		}
 	}
 
 	return nil

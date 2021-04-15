@@ -5,7 +5,7 @@ Easiest status page to check something service is dead:skull: or alive:heavy_che
 
 ## Features
 
-- status checking with
+- status checking with:
   * HTTP/HTTPS
   * ICMP echo (ping)
   * TCP connect
@@ -13,6 +13,7 @@ Easiest status page to check something service is dead:skull: or alive:heavy_che
   * execute external command (or script file)
 - view status page in browser.
 - view status page via cURL.
+- kick alert if target failure.
 
 ### Good at
 - Make status page for temprary usage. (You can start it via one command! And, stop via just Ctrl-C!)
@@ -21,4 +22,3 @@ Easiest status page to check something service is dead:skull: or alive:heavy_che
 ### Not good at
 - Complex customize, extension. (There is nothing options for customize.)
 - Investigate more detail. (This is just for check dead or alive.)
-- Alert sending. (This is just status page.)
