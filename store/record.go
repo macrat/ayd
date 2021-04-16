@@ -75,3 +75,11 @@ func (r Record) String() string {
 		r.Message,
 	}, "\t")
 }
+
+func (r Record) Equals(r2 Record) bool {
+	return (r.CheckedAt == r2.CheckedAt &&
+		r.Target.String() != r2.Target.String() &&
+		r.Status == r2.Status &&
+		r.Message == r2.Message &&
+		r.Latency == r2.Latency)
+}

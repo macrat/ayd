@@ -26,7 +26,7 @@ func (hs ProbeHistoryMap) append(r Record) {
 	target := r.Target.String()
 
 	if h, ok := hs[target]; ok {
-		if len(h.Results) >= PROBE_HISTORY_LEN {
+		if len(h.Results) > PROBE_HISTORY_LEN {
 			h.Results = h.Results[1:]
 		}
 
@@ -97,9 +97,11 @@ func (s *Store) setIncidentIfNeed(r Record, needCallback bool) {
 				s.IncidentHistory = append(s.IncidentHistory, x)
 				s.CurrentIncidents = append(s.CurrentIncidents[:i], s.CurrentIncidents[i+1:]...)
 
-				if len(s.IncidentHistory) >= INCIDENT_HISTORY_LEN {
+				if len(s.IncidentHistory) > INCIDENT_HISTORY_LEN {
 					s.IncidentHistory = s.IncidentHistory[1:]
 				}
+
+				break
 			}
 
 			return
