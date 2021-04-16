@@ -11,8 +11,8 @@ import (
 func MetricsExporter(s *store.Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		for _, hs := range s.ProbeHistory {
-			if len(hs.Results) > 0 {
-				last := hs.Results[len(hs.Results)-1]
+			if len(hs.Records) > 0 {
+				last := hs.Records[len(hs.Records)-1]
 
 				up := 0
 				if last.Status == store.STATUS_HEALTHY {

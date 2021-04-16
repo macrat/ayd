@@ -79,13 +79,13 @@ func TestStore_restore(t *testing.T) {
 			continue
 		}
 
-		if len(ph1.Results) != len(ph2.Results) {
-			t.Errorf("%s: unmatch restored records number: %d != %d", key, len(ph1.Results), len(ph2.Results))
+		if len(ph1.Records) != len(ph2.Records) {
+			t.Errorf("%s: unmatch restored records number: %d != %d", key, len(ph1.Records), len(ph2.Records))
 			continue
 		}
 
-		for i := range ph1.Results {
-			if ph1.Results[i].Equals(*ph2.Results[i]) {
+		for i := range ph1.Records {
+			if ph1.Records[i].Equals(*ph2.Records[i]) {
 				t.Errorf("%s %d: unexpected record", key, i)
 			}
 		}
@@ -132,15 +132,15 @@ func TestStore_AddTarget(t *testing.T) {
 	if hs[0].Target.String() != "dummy:add-target-1" {
 		t.Errorf("unexpected 1st target: %s", hs[0].Target)
 	}
-	if len(hs[0].Results) != 1 || hs[0].Results[0].Message != "already exists history" {
-		t.Errorf("1st target's record may override: %#v", hs[0].Results)
+	if len(hs[0].Records) != 1 || hs[0].Records[0].Message != "already exists history" {
+		t.Errorf("1st target's record may override: %#v", hs[0].Records)
 	}
 
 	if hs[1].Target.String() != "dummy:add-target-2" {
 		t.Errorf("unexpected 2nd target: %s", hs[1].Target)
 	}
-	if len(hs[1].Results) != 0 {
-		t.Errorf("2nd target has unexpected record: %#v", hs[1].Results)
+	if len(hs[1].Records) != 0 {
+		t.Errorf("2nd target has unexpected record: %#v", hs[1].Records)
 	}
 }
 

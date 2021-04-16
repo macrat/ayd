@@ -22,12 +22,12 @@ type frozenProbeHistory struct {
 
 func freezeProbeHistory(h *store.ProbeHistory) frozenProbeHistory {
 	hs := []frozenRecord{}
-	for i := 0; i < store.PROBE_HISTORY_LEN-len(h.Results); i++ {
+	for i := 0; i < store.PROBE_HISTORY_LEN-len(h.Records); i++ {
 		hs = append(hs, frozenRecord{
 			Status: "NO_DATA",
 		})
 	}
-	for _, x := range h.Results {
+	for _, x := range h.Records {
 		hs = append(hs, frozenRecord{
 			CheckedAt: x.CheckedAt.Format(time.RFC3339),
 			Status:    x.Status.String(),
@@ -38,8 +38,8 @@ func freezeProbeHistory(h *store.ProbeHistory) frozenProbeHistory {
 
 	status := "NO_DATA"
 	updated := ""
-	if len(h.Results) > 0 {
-		last := h.Results[len(h.Results)-1]
+	if len(h.Records) > 0 {
+		last := h.Records[len(h.Records)-1]
 		status = last.Status.String()
 		updated = last.CheckedAt.Format(time.RFC3339)
 	}

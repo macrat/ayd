@@ -17,7 +17,7 @@ const (
 
 type ProbeHistory struct {
 	Target  *url.URL
-	Results []*Record
+	Records []*Record
 }
 
 type ProbeHistoryMap map[string]*ProbeHistory
@@ -26,15 +26,15 @@ func (hs ProbeHistoryMap) append(r Record) {
 	target := r.Target.String()
 
 	if h, ok := hs[target]; ok {
-		if len(h.Results) > PROBE_HISTORY_LEN {
-			h.Results = h.Results[1:]
+		if len(h.Records) > PROBE_HISTORY_LEN {
+			h.Records = h.Records[1:]
 		}
 
-		h.Results = append(h.Results, &r)
+		h.Records = append(h.Records, &r)
 	} else {
 		hs[target] = &ProbeHistory{
 			Target:  r.Target,
-			Results: []*Record{&r},
+			Records: []*Record{&r},
 		}
 	}
 }
