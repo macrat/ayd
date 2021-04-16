@@ -28,11 +28,11 @@ func (a *Alert) Target() *url.URL {
 	}
 }
 
-func (a *Alert) Trigger(r store.Record) []store.Record {
+func (a *Alert) Trigger(incident *store.Incident) []store.Record {
 	qs := a.target.Query()
-	qs.Set("ayd_target", r.Target.String())
-	qs.Set("ayd_checked_at", r.CheckedAt.Format(time.RFC3339))
-	qs.Set("ayd_status", r.Status.String())
+	qs.Set("ayd_target", incident.Target.String())
+	qs.Set("ayd_checked_at", incident.CausedAt.Format(time.RFC3339))
+	qs.Set("ayd_status", incident.Status.String())
 
 	u := *a.target
 	u.RawQuery = qs.Encode()
@@ -49,22 +49,11 @@ func (a *Alert) Trigger(r store.Record) []store.Record {
 
 	result := p.Check()
 	for i := range result {
-		result[i].Target = a.Target()
-	}
-
-	return result
-}
-
-func (a *Alert) TriggerIfNeed(rs []store.Record) []store.Record {
-	if a == nil {
-		return nil
-	}
-
-	var result []store.Record
-	for _, r := range rs {
-		if r.Status != store.STATUS_HEALTHY {
-			result = append(result, a.Trigger(r)...)
+		result[i].Target = &url.URL{
+			Scheme: "alert",
+			Opaque: result[i].Target.String(),
 		}
 	}
+
 	return result
 }

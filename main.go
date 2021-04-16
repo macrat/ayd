@@ -156,15 +156,8 @@ func ParseArgs(args []string) ([]Task, []error) {
 	return result, errors
 }
 
-func RunOneshot(tasks []Task, alert *Alert) {
+func RunOneshot(s *store.Store, tasks []Task) {
 	var failed atomic.Value
-
-	s, err := store.New(*storePath)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to open log file: %s\n", err)
-		os.Exit(1)
-	}
-	defer s.Close()
 
 	wg := &sync.WaitGroup{}
 	for _, t := range tasks {
@@ -174,7 +167,6 @@ func RunOneshot(tasks []Task, alert *Alert) {
 		go func() {
 			rs := f()
 			s.Append(rs...)
-			s.Append(alert.TriggerIfNeed(rs)...)
 			for _, r := range rs {
 				if r.Status == store.STATUS_FAILURE {
 					failed.Store(true)
@@ -190,19 +182,13 @@ func RunOneshot(tasks []Task, alert *Alert) {
 	}
 }
 
-func RunServer(tasks []Task, alert *Alert) {
+func RunServer(s *store.Store, tasks []Task) {
 	listen := fmt.Sprintf("0.0.0.0:%d", *listenPort)
 	fmt.Printf("starts Ayd on http://%s\n", listen)
 
 	scheduler := cron.New()
-	s, err := store.New(*storePath)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to open log file: %s\n", err)
-		os.Exit(1)
-	}
-	defer s.Close()
 
-	if err = s.Restore(); err != nil {
+	if err := s.Restore(); err != nil {
 		fmt.Fprintf(os.Stderr, "failed to read log file: %s\n", err)
 		os.Exit(1)
 	}
@@ -214,9 +200,7 @@ func RunServer(tasks []Task, alert *Alert) {
 
 		f := t.Probe.Check
 		job := func() {
-			rs := f()
-			s.Append(rs...)
-			s.Append(alert.TriggerIfNeed(rs)...)
+			s.Append(f()...)
 		}
 
 		if t.Schedule.NeedKickWhenStart() {
@@ -238,14 +222,20 @@ func main() {
 	flag.Usage = Usage
 	flag.Parse()
 
-	var alert *Alert
+	s, err := store.New(*storePath)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to open log file: %s\n", err)
+		os.Exit(1)
+	}
+	defer s.Close()
+
 	if *alertURI != "" {
-		var err error
-		alert, err = NewAlert(*alertURI)
+		alert, err := NewAlert(*alertURI)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "Invalid alert target:", err)
 			os.Exit(2)
 		}
+		s.OnIncident = alert.Trigger
 	}
 
 	tasks, errors := ParseArgs(flag.Args())
@@ -263,8 +253,8 @@ func main() {
 	}
 
 	if *oneshot {
-		RunOneshot(tasks, alert)
+		RunOneshot(s, tasks)
 	} else {
-		RunServer(tasks, alert)
+		RunServer(s, tasks)
 	}
 }

@@ -63,6 +63,8 @@ type Store struct {
 	CurrentIncidents []*Incident
 	IncidentHistory  []*Incident
 
+	OnIncident func(*Incident) []Record
+
 	file      *os.File
 	lastError error
 }
@@ -86,7 +88,7 @@ func (s *Store) Close() error {
 	return s.file.Close()
 }
 
-func (s *Store) setIncidentIfNeed(r Record) {
+func (s *Store) setIncidentIfNeed(r Record, needCallback bool) {
 	for i := 0; i < len(s.CurrentIncidents); i++ {
 		x := s.CurrentIncidents[i]
 		if x.SameTarget(r) {
@@ -105,14 +107,16 @@ func (s *Store) setIncidentIfNeed(r Record) {
 	}
 
 	if r.Status != STATUS_HEALTHY {
-		s.CurrentIncidents = append(s.CurrentIncidents, NewIncident(r))
+		incident := NewIncident(r)
+		s.CurrentIncidents = append(s.CurrentIncidents, incident)
+
+		if s.OnIncident != nil && needCallback {
+			s.appendWithoutLock(s.OnIncident(incident))
+		}
 	}
 }
 
-func (s *Store) Append(rs ...Record) {
-	s.Lock()
-	defer s.Unlock()
-
+func (s *Store) appendWithoutLock(rs []Record) {
 	if s.file == nil {
 		fmt.Fprintf(os.Stderr, "log file isn't opened. may be bug.")
 		return
@@ -127,9 +131,16 @@ func (s *Store) Append(rs ...Record) {
 
 		if r.Target.Scheme != "alert" {
 			s.ProbeHistory.append(r)
-			s.setIncidentIfNeed(r)
+			s.setIncidentIfNeed(r, true)
 		}
 	}
+}
+
+func (s *Store) Append(rs ...Record) {
+	s.Lock()
+	defer s.Unlock()
+
+	s.appendWithoutLock(rs)
 }
 
 func (s *Store) Restore() error {
@@ -154,7 +165,7 @@ func (s *Store) Restore() error {
 
 		if r.Target.Scheme != "alert" {
 			s.ProbeHistory.append(r)
-			s.setIncidentIfNeed(r)
+			s.setIncidentIfNeed(r, false)
 		}
 	}
 
