@@ -48,13 +48,14 @@ $ ayd https://your-service.example.com ping:another-host.example.com
 
 Ayd has these pages/endpoints.
 
-|path                                             |description                                                          |
-|-------------------------------------------------|---------------------------------------------------------------------|
-|[/status.html](http://localhost:9000/status.html)|Human friendly status page in HTML.                                  |
-|[/status.txt](http://localhost:9000/status.txt)  |Human friendly status page in plain text.                            |
-|[/status.json](http://localhost:9000/status.json)|Machine readable status page in JSON format.                         |
-|[/metrics](http://localhost:9000/metrics)        |Minimal status page for use by [Prometheus.](https://prometheus.io/).|
-|[/healthz](http://localhost:9000/healthz)        |Health status page for checking status of Ayd itself.                |
+|path                                             |description                                                         |
+|-------------------------------------------------|--------------------------------------------------------------------|
+|[/status.html](http://localhost:9000/status.html)|Human friendly status page in HTML.                                 |
+|[/status.txt](http://localhost:9000/status.txt)  |Human friendly status page in plain text.                           |
+|[/status.json](http://localhost:9000/status.json)|Machine readable status page in JSON format.                        |
+|[/metrics](http://localhost:9000/metrics)        |Minimal status page for use by [Prometheus](https://prometheus.io/).|
+|[/healthz](http://localhost:9000/healthz)        |Health status page for checking status of Ayd itself.               |
+
 
 ### Specify target
 
@@ -119,7 +120,6 @@ Above target URI works the same as the below command in the shell.
 $ /path/to/command this-is-argument
 ```
 
-
 And, you can specify environment arguments as the query of URI like below.
 
 ```
@@ -143,14 +143,14 @@ examples:
 This is a special scheme for load targets from a file.
 Load each line in the file as a target URI and check all targets.
 
-The line that starts with '#' will ignore as a comment.
+The line that starts with `#` will ignore as a comment.
 
 examples:
 - `source:./targets.txt`
 - `source:/path/to/targets.txt`
 
 
-### Specify check timing
+### Specify check interval/schedule
 
 In default, Ayd will check targets every 5 minutes.
 
@@ -191,13 +191,15 @@ Ayd can kick a URI when a target status checks failure.
 You may want to use exec or HTTP for alerting.
 (Even you can use ping, DNS, etc as alerting. but... it's useless in almost all cases)
 
+Ayd will kick alert at only the timing that incident caused, and it won't kick at the timing that continuing or resolved the incident.
+
 You can specify alerting URI like below.
 
 ``` shell
 $ ayd -a https://alert.example.com/alert https://target.example.com
 ```
 
-In the above example, Ayd access `https://alert.example` with the below queries when `https://target.example.com` down.
+In the above example, Ayd access `https://alert.example/alert` with the below queries when `https://target.example.com` down.
 
 |query name      |example                     |description                  |
 |----------------|----------------------------|-----------------------------|
@@ -216,3 +218,19 @@ $ ayd -a exec:ayd-mail-alert https://target.example.com
 ```
 
 Please see more information in [the readme of ayd-mail-alert](https://github.com/macrat/ayd-mail-alert#readme).
+
+
+### Change listen port
+
+You can change the HTTP server listen port with `-p` option.
+In default, Ayd uses port 9000.
+
+
+### Check status just once
+
+If you want to use Ayd in a script, you may use `-1` option.
+Ayd will check status just once and exit when passed `-1` option.
+
+Exit status code is 0 if all targets are healthy.
+If some targets are unhealthy, the status code will 1.
+And, if your arguments are wrong (or can't resolve hostnames, or exec scripts not found), the status code will 2.
