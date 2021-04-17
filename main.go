@@ -1,12 +1,14 @@
 package main
 
 import (
+	_ "embed"
 	"flag"
 	"fmt"
 	"net/http"
 	"os"
 	"sync"
 	"sync/atomic"
+	"text/template"
 	"time"
 
 	"github.com/macrat/ayd/exporter"
@@ -22,76 +24,15 @@ var (
 	alertURI   = flag.String("a", "", "The alert URI that the same format as target URI.")
 )
 
+//go:embed help.txt
+var helpText string
+
 func Usage() {
-	out := flag.CommandLine.Output()
-	fmt.Fprintf(out, "Usage:\n")
-	fmt.Fprintf(out, "  %s [-p NUMBER | -o FILE]... INTERVALS|TARGETS...\n", os.Args[0])
-	fmt.Fprintf(out, "  %s -1 [-o FILE] INTERVALS|TARGETS...\n", os.Args[0])
-	fmt.Fprintf(out, "\n")
-	fmt.Fprintf(out, "OPTIONS:\n")
-	flag.PrintDefaults()
-	fmt.Fprintf(out, "\n")
-	fmt.Fprintf(out, "INTERVALS:\n")
-	fmt.Fprintf(out, "  Specify execution schedule in interval (e.g. \"2m\" means \"every 2 minutes\")\n")
-	fmt.Fprintf(out, "  or cron expression (e.g. \"*/5 8-19 * * *\" means \"every 5 minutes from 8 p.m. to 7 a.m.\").\n")
-	fmt.Fprintf(out, "  Default interval is \"5m\" in if don't pass any interval.\n")
-	fmt.Fprintf(out, "\n")
-	fmt.Fprintf(out, "TARGETS:\n")
-	fmt.Fprintf(out, "  The target address for status checking.\n")
-	fmt.Fprintf(out, "  Specify with URI format like \"ping:example.com\" or \"https://example.com/foo/bar\".\n")
-	fmt.Fprintf(out, "\n")
-	fmt.Fprintf(out, "  http, https:\n")
-	fmt.Fprintf(out, "   Send HTTP request, and check status code is 2xx or not.\n")
-	fmt.Fprintf(out, "   It will follow redirect up to %d times.\n", probe.HTTP_REDIRECT_MAX)
-	fmt.Fprintf(out, "   e.g. https://example.com/path/to\n")
-	fmt.Fprintf(out, "\n")
-	fmt.Fprintf(out, "   You can specify HTTP method in scheme like \"http-head\" or \"https-post\".\n")
-	fmt.Fprintf(out, "   Supported method is GET, HEAD, POST, and OPTION. Default is GET method.\n")
-	fmt.Fprintf(out, "\n")
-	fmt.Fprintf(out, "  ping:\n")
-	fmt.Fprintf(out, "   Send 4 ICMP echo request in 2 seconds.\n")
-	fmt.Fprintf(out, "   e.g. ping:example.com\n")
-	fmt.Fprintf(out, "\n")
-	fmt.Fprintf(out, "  tcp:\n")
-	fmt.Fprintf(out, "   Connect to TCP port.\n")
-	fmt.Fprintf(out, "   e.g. dns:example.com:3306\n")
-	fmt.Fprintf(out, "\n")
-	fmt.Fprintf(out, "  dns:\n")
-	fmt.Fprintf(out, "   Resolve name with DNS.\n")
-	fmt.Fprintf(out, "   e.g. dns:example.com\n")
-	fmt.Fprintf(out, "\n")
-	fmt.Fprintf(out, "  exec:\n")
-	fmt.Fprintf(out, "   Execute external command.\n")
-	fmt.Fprintf(out, "   You can set 1st argument with fragment,\n")
-	fmt.Fprintf(out, "   and you can set environment variable with query.\n")
-	fmt.Fprintf(out, "   e.g. exec:/path/to/script?something_variable=awesome-value#argument-for-script\n")
-	fmt.Fprintf(out, "\n")
-	fmt.Fprintf(out, "  source:\n")
-	fmt.Fprintf(out, "   Load a file, and test target URIs of each lines.\n")
-	fmt.Fprintf(out, "   Lines in the file that starts with \"#\" will ignore as comments.\n")
-	fmt.Fprintf(out, "   e.g. source:/path/to/list.txt\n")
-	fmt.Fprintf(out, "\n")
-	fmt.Fprintf(out, "EXAMPLES:\n")
-	fmt.Fprintf(out, " Send ping to example.com in default interval(5m):\n")
-	fmt.Fprintf(out, "  $ %s ping:example.com\n", os.Args[0])
-	fmt.Fprintf(out, "\n")
-	fmt.Fprintf(out, " Send ping to example.com every minutes:\n")
-	fmt.Fprintf(out, "  $ %s 1m ping:example.com\n", os.Args[0])
-	fmt.Fprintf(out, "\n")
-	fmt.Fprintf(out, " Access to http://example.com every half hours:\n")
-	fmt.Fprintf(out, "  $ %s 30m http://example.com\n", os.Args[0])
-	fmt.Fprintf(out, "\n")
-	fmt.Fprintf(out, " Check a.local(ping) and b.local(http) every minutes,\n")
-	fmt.Fprintf(out, " and execute ./check.sh command every 15 minutes:\n")
-	fmt.Fprintf(out, "  $ %s 1m ping:a.local http://b.local 15m exec:./check.sh\n", os.Args[0])
-	fmt.Fprintf(out, "\n")
-	fmt.Fprintf(out, " Check targets that listed in file named \"./list.txt\":\n")
-	fmt.Fprintf(out, "  $ echo ping:a.local >> list.txt\n")
-	fmt.Fprintf(out, "  $ echo ping:b.local >> list.txt\n")
-	fmt.Fprintf(out, "  $ %s source:./list.txt\n", os.Args[0])
-	fmt.Fprintf(out, "\n")
-	fmt.Fprintf(out, " Listen on http://0.0.0.0:8080 (and connect to example.com:3306 for check):\n")
-	fmt.Fprintf(out, "  $ %s -p 8080 1m tcp:example.com:3306\n", os.Args[0])
+	tmpl := template.Must(template.New("help.txt").Parse(helpText))
+	tmpl.Execute(flag.CommandLine.Output(), map[string]interface{}{
+		"Command":         os.Args[0],
+		"HTTPRedirectMax": probe.HTTP_REDIRECT_MAX,
+	})
 }
 
 type Task struct {
