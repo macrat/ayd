@@ -18,10 +18,13 @@ import (
 )
 
 var (
-	listenPort = flag.Int("p", 9000, "Listen port of status page.")
-	storePath  = flag.String("o", "./ayd.log", "Path to log file. Log file is also use for restore status history.")
-	oneshot    = flag.Bool("1", false, "Check status only once and exit. Exit with 0 if all check passed, otherwise exit with code 1.")
-	alertURI   = flag.String("a", "", "The alert URI that the same format as target URI.")
+	version = "0.1.0"
+
+	listenPort  = flag.Int("p", 9000, "Listen port of status page.")
+	storePath   = flag.String("o", "./ayd.log", "Path to log file. Log file is also use for restore status history.")
+	oneshot     = flag.Bool("1", false, "Check status only once and exit. Exit with 0 if all check passed, otherwise exit with code 1.")
+	alertURI    = flag.String("a", "", "The alert URI that the same format as target URI.")
+	showVersion = flag.Bool("v", false, "Show version and exit.")
 )
 
 //go:embed help.txt
@@ -31,6 +34,7 @@ func Usage() {
 	tmpl := template.Must(template.New("help.txt").Parse(helpText))
 	tmpl.Execute(flag.CommandLine.Output(), map[string]interface{}{
 		"Command":         os.Args[0],
+		"Version":         version,
 		"HTTPRedirectMax": probe.HTTP_REDIRECT_MAX,
 	})
 }
@@ -184,6 +188,11 @@ func RunServer(s *store.Store, tasks []Task) {
 func main() {
 	flag.Usage = Usage
 	flag.Parse()
+
+	if *showVersion {
+		fmt.Println("version:", version)
+		os.Exit(0)
+	}
 
 	tasks, errors := ParseArgs(flag.Args())
 	if errors != nil {
