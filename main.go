@@ -185,6 +185,20 @@ func main() {
 	flag.Usage = Usage
 	flag.Parse()
 
+	tasks, errors := ParseArgs(flag.Args())
+	if errors != nil {
+		fmt.Fprintln(os.Stderr, "Invalid argument:")
+		for _, err := range errors {
+			fmt.Fprintln(os.Stderr, "", err)
+		}
+		fmt.Fprintf(os.Stderr, "\nPlease see `%s -h` for more information.\n", os.Args[0])
+		os.Exit(2)
+	}
+	if len(tasks) == 0 {
+		Usage()
+		os.Exit(0)
+	}
+
 	s, err := store.New(*storePath)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to open log file: %s\n", err)
@@ -199,20 +213,6 @@ func main() {
 			os.Exit(2)
 		}
 		s.OnIncident = append(s.OnIncident, alert.Trigger)
-	}
-
-	tasks, errors := ParseArgs(flag.Args())
-	if errors != nil {
-		fmt.Fprintln(os.Stderr, "Invalid argument:")
-		for _, err := range errors {
-			fmt.Fprintln(os.Stderr, "", err)
-		}
-		fmt.Fprintf(os.Stderr, "\nPlease see `%s -h` for more information.\n", os.Args[0])
-		os.Exit(2)
-	}
-	if len(tasks) == 0 {
-		Usage()
-		os.Exit(0)
 	}
 
 	if *oneshot {
