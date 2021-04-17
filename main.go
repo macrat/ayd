@@ -31,6 +31,10 @@ var (
 //go:embed help.txt
 var helpText string
 
+func init() {
+	probe.HTTPUserAgent = fmt.Sprintf("ayd/%s health check", version)
+}
+
 func Usage() {
 	tmpl := template.Must(template.New("help.txt").Parse(helpText))
 	tmpl.Execute(flag.CommandLine.Output(), map[string]interface{}{

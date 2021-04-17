@@ -12,8 +12,11 @@ import (
 	"github.com/macrat/ayd/store"
 )
 
+var (
+	HTTPUserAgent = "ayd health check"
+)
+
 const (
-	USER_AGENT        = "ayd/0.1.0 health check"
 	HTTP_REDIRECT_MAX = 10
 )
 
@@ -76,7 +79,7 @@ func (p HTTPProbe) Check() []store.Record {
 		Method: p.method,
 		URL:    p.requrl,
 		Header: http.Header{
-			"User-Agent": {USER_AGENT},
+			"User-Agent": {HTTPUserAgent},
 		},
 	}
 
