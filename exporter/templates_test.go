@@ -1,8 +1,8 @@
 package exporter
 
 import (
-	"reflect"
 	"fmt"
+	"reflect"
 
 	"testing"
 )
@@ -45,9 +45,9 @@ func TestInvertIncidents(t *testing.T) {
 func TestBreakText(t *testing.T) {
 	f := templateFuncs["break_text"].(func(string, int) []string)
 
-	tests := []struct{
-		Input string
-		Width int
+	tests := []struct {
+		Input  string
+		Width  int
 		Output []string
 	}{
 		{"hello_world", 20, []string{"hello_world"}},
@@ -69,9 +69,9 @@ func TestBreakText(t *testing.T) {
 func TestAlignCenter(t *testing.T) {
 	f := templateFuncs["align_center"].(func(string, int) string)
 
-	tests := []struct{
-		Input string
-		Width int
+	tests := []struct {
+		Input  string
+		Width  int
 		Output string
 	}{
 		{"foobar", 10, "  foobar"},

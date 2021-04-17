@@ -7,6 +7,7 @@ import (
 	"os"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/macrat/ayd/exporter"
 	"github.com/macrat/ayd/probe"
@@ -198,9 +199,19 @@ func RunServer(s *store.Store, tasks []Task) {
 
 		s.AddTarget(t.Probe.Target())
 
-		f := t.Probe.Check
+		p := t.Probe
 		job := func() {
-			s.Append(f()...)
+			defer func() {
+				if err := recover(); err != nil {
+					s.Append(store.Record{
+						CheckedAt: time.Now(),
+						Target:    p.Target(),
+						Status:    store.STATUS_UNKNOWN,
+						Message:   fmt.Sprintf("panic: %s", err),
+					})
+				}
+			}()
+			s.Append(p.Check()...)
 		}
 
 		if t.Schedule.NeedKickWhenStart() {
