@@ -159,12 +159,14 @@ func TestStore_incident(t *testing.T) {
 	defer s.Close()
 
 	lastIncident := ""
-	s.OnIncident = func(s *string) func(*store.Incident) []store.Record {
-		return func(i *store.Incident) []store.Record {
-			*s = i.Message
-			return nil
-		}
-	}(&lastIncident)
+	s.OnIncident = []store.IncidentHandler{
+		func(s *string) func(*store.Incident) []store.Record {
+			return func(i *store.Incident) []store.Record {
+				*s = i.Message
+				return nil
+			}
+		}(&lastIncident),
+	}
 
 	assertLastIncident := func(s *string) func(string) {
 		return func(expect string) {

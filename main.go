@@ -99,6 +99,22 @@ type Task struct {
 	Probe    probe.Probe
 }
 
+func (t Task) MakeJob(s *store.Store) cron.Job {
+	return cron.FuncJob(func() {
+		defer func() {
+			if err := recover(); err != nil {
+				s.Append(store.Record{
+					CheckedAt: time.Now(),
+					Target:    t.Probe.Target(),
+					Status:    store.STATUS_UNKNOWN,
+					Message:   fmt.Sprintf("panic: %s", err),
+				})
+			}
+		}()
+		s.Append(t.Probe.Check()...)
+	})
+}
+
 func (t Task) SameAs(another Task) bool {
 	return t.Schedule.String() == another.Schedule.String() && t.Probe.Target().String() == another.Probe.Target().String()
 }
@@ -158,28 +174,36 @@ func ParseArgs(args []string) ([]Task, []error) {
 }
 
 func RunOneshot(s *store.Store, tasks []Task) {
-	var failed atomic.Value
+	var failure atomic.Value
+	var unknown atomic.Value
+
+	s.OnIncident = append(s.OnIncident, func(i *store.Incident) []store.Record {
+		switch i.Status {
+		case store.STATUS_FAILURE:
+			failure.Store(true)
+		case store.STATUS_UNKNOWN:
+			unknown.Store(true)
+		}
+		return nil
+	})
 
 	wg := &sync.WaitGroup{}
 	for _, t := range tasks {
 		wg.Add(1)
 
-		f := t.Probe.Check
+		f := t.MakeJob(s).Run
 		go func() {
-			rs := f()
-			s.Append(rs...)
-			for _, r := range rs {
-				if r.Status == store.STATUS_FAILURE {
-					failed.Store(true)
-				}
-			}
+			f()
 			wg.Done()
 		}()
 	}
 	wg.Wait()
 
-	if failed.Load() != nil {
+	if failure.Load() != nil {
 		os.Exit(1)
+	}
+	if unknown.Load() != nil {
+		os.Exit(2)
 	}
 }
 
@@ -199,26 +223,13 @@ func RunServer(s *store.Store, tasks []Task) {
 
 		s.AddTarget(t.Probe.Target())
 
-		p := t.Probe
-		job := func() {
-			defer func() {
-				if err := recover(); err != nil {
-					s.Append(store.Record{
-						CheckedAt: time.Now(),
-						Target:    p.Target(),
-						Status:    store.STATUS_UNKNOWN,
-						Message:   fmt.Sprintf("panic: %s", err),
-					})
-				}
-			}()
-			s.Append(p.Check()...)
-		}
+		job := t.MakeJob(s)
 
 		if t.Schedule.NeedKickWhenStart() {
-			go job()
+			go job.Run()
 		}
 
-		scheduler.Schedule(t.Schedule, cron.FuncJob(job))
+		scheduler.Schedule(t.Schedule, job)
 	}
 	fmt.Println()
 
@@ -246,7 +257,7 @@ func main() {
 			fmt.Fprintln(os.Stderr, "Invalid alert target:", err)
 			os.Exit(2)
 		}
-		s.OnIncident = alert.Trigger
+		s.OnIncident = append(s.OnIncident, alert.Trigger)
 	}
 
 	tasks, errors := ParseArgs(flag.Args())

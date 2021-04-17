@@ -54,6 +54,8 @@ func (hs ProbeHistoryMap) AsSortedArray() []*ProbeHistory {
 	return result
 }
 
+type IncidentHandler func(*Incident) []Record
+
 type Store struct {
 	sync.Mutex
 
@@ -63,7 +65,7 @@ type Store struct {
 	CurrentIncidents []*Incident
 	IncidentHistory  []*Incident
 
-	OnIncident func(*Incident) []Record
+	OnIncident []IncidentHandler
 
 	file      *os.File
 	lastError error
@@ -112,8 +114,10 @@ func (s *Store) setIncidentIfNeed(r Record, needCallback bool) {
 		incident := NewIncident(r)
 		s.CurrentIncidents = append(s.CurrentIncidents, incident)
 
-		if s.OnIncident != nil && needCallback {
-			s.appendWithoutLock(s.OnIncident(incident))
+		if needCallback {
+			for _, cb := range s.OnIncident {
+				s.appendWithoutLock(cb(incident))
+			}
 		}
 	}
 }
