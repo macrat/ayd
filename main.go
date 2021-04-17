@@ -18,7 +18,8 @@ import (
 )
 
 var (
-	version = "0.1.0"
+	version = "HEAD"
+	commit  = "UNKNOWN"
 
 	listenPort  = flag.Int("p", 9000, "Listen port of status page.")
 	storePath   = flag.String("o", "./ayd.log", "Path to log file. Log file is also use for restore status history.")
@@ -191,6 +192,7 @@ func main() {
 
 	if *showVersion {
 		fmt.Println("version:", version)
+		fmt.Println("commit:", commit)
 		os.Exit(0)
 	}
 
