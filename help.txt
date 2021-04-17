@@ -33,7 +33,7 @@ TARGETS:
 
   tcp:
    Connect to TCP port.
-   e.g. dns:example.com:3306
+   e.g. tcp:example.com:3306
 
   dns:
    Resolve name with DNS.
