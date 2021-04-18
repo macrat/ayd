@@ -65,7 +65,7 @@ func (p ExecuteProbe) Check() []store.Record {
 
 	if err != nil {
 		status = store.STATUS_FAILURE
-		if e := errors.Unwrap(err); e != nil && (e.Error() == "no such file or directory" || e.Error() == "executable file not found in $PATH") {
+		if e := errors.Unwrap(err); e != nil && (e.Error() == "no such file or directory" || e.Error() == "permission denied" || e.Error() == "executable file not found in $PATH") {
 			status = store.STATUS_UNKNOWN
 		}
 
