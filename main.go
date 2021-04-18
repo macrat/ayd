@@ -195,8 +195,7 @@ func main() {
 	flag.Parse()
 
 	if *showVersion {
-		fmt.Println("version:", version)
-		fmt.Println("commit:", commit)
+		fmt.Printf("Ayd? version %s (%s)\n", version, commit)
 		os.Exit(0)
 	}
 
