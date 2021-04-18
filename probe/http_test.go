@@ -21,6 +21,5 @@ func TestHTTPProbe(t *testing.T) {
 		{strings.Replace(server.URL, "http", "http-post", 1) + "/only/post", store.STATUS_HEALTHY, `200 OK`},
 		{strings.Replace(server.URL, "http", "http-head", 1) + "/only/head", store.STATUS_HEALTHY, `200 OK`},
 		{strings.Replace(server.URL, "http", "http-options", 1) + "/only/options", store.STATUS_HEALTHY, `200 OK`},
-		{"http://of-course-definitely-no-such-host/path/to", store.STATUS_UNKNOWN, `Get "http://of-course-definitely-no-such-host/path/to": dial tcp: lookup of-course-definitely-no-such-host on .*: no such host`},
 	})
 }

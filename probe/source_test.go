@@ -19,10 +19,10 @@ func TestSource(t *testing.T) {
 			"source:./stub/healthy-list.txt": store.STATUS_HEALTHY,
 		}, ""},
 		{"source:./stub/failure-list.txt", map[string]store.Status{
-			"ping:127.0.0.1":                         store.STATUS_HEALTHY,
-			"ping:localhost":                         store.STATUS_HEALTHY,
-			"ping:of-course-definitely-no-such-host": store.STATUS_UNKNOWN,
-			"source:./stub/failure-list.txt":         store.STATUS_HEALTHY,
+			"ping:127.0.0.1":                 store.STATUS_HEALTHY,
+			"ping:localhost":                 store.STATUS_HEALTHY,
+			"tcp:localhost:56789":            store.STATUS_FAILURE,
+			"source:./stub/failure-list.txt": store.STATUS_HEALTHY,
 		}, ""},
 		{"source:./stub/invalid-list.txt", map[string]store.Status{
 			"source:./stub/invalid-list.txt": store.STATUS_UNKNOWN,
