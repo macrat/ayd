@@ -66,6 +66,15 @@ func (p SourceProbe) load(path string, ignores ignoreSet) ([]Probe, error) {
 	var probes []Probe
 	var invalids invalidURIs
 
+	isDuplicated := func(p Probe) bool {
+		for _, x := range probes {
+			if x.Target().String() == p.Target().String() {
+				return true
+			}
+		}
+		return false
+	}
+
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
 		target := strings.TrimSpace(scanner.Text())
@@ -86,7 +95,11 @@ func (p SourceProbe) load(path string, ignores ignoreSet) ([]Probe, error) {
 			}
 			ps, err := p.load(u.Opaque, append(ignores, path))
 			if err == nil {
-				probes = append(probes, ps...)
+				for _, x := range ps {
+					if !isDuplicated(x) {
+						probes = append(probes, x)
+					}
+				}
 			} else if es, ok := err.(invalidURIs); ok {
 				invalids = append(invalids, es...)
 			}
@@ -96,7 +109,7 @@ func (p SourceProbe) load(path string, ignores ignoreSet) ([]Probe, error) {
 		probe, err := Get(target)
 		if err != nil {
 			invalids = append(invalids, target)
-		} else {
+		} else if !isDuplicated(probe) {
 			probes = append(probes, probe)
 		}
 	}
