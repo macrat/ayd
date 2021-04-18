@@ -1,0 +1,4 @@
+# sub target list
+# load by healthy-list.txt and failure-list.txt
+
+ping:127.0.0.1

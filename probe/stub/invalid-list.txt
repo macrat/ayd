@@ -1,0 +1,6 @@
+# invalid target list
+
+ping:localhost
+
+# this is ivalid
+invalid host

@@ -1,0 +1,7 @@
+# unhealthy target list
+
+source:./stub/sub-list.txt
+ping:localhost
+
+# it will make failure
+ping:of-course-definitely-no-such-host
