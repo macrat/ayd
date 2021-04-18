@@ -207,17 +207,40 @@ In the above example, Ayd access `https://alert.example/alert` with the below qu
 |`ayd_checked_at`|`2001-02-03T16:05:06+09:00` |The checked timestamp        |
 |`ayd_status`    |`FAILURE` or `UNKNOWN`      |The status of target checking|
 
+#### e-mail (SMTP)
+
 If you want to send an email via SMTP as an alert, you can use [ayd-mail-alert](https://github.com/macrat/ayd-mail-alert).
+
+![The screenshot of Ayd alert in email. You can see service status, target URI, and reason to failure. And there is button to open Status Page.](./assets/email-alert.jpg)
+
 Please download from [release page of ayd-mail-alert](https://github.com/macrat/ayd-mail-alert/releases) and use like below.
 
 ``` shell
 $ export SMTP_SERVER=smtp.example.com:465 SMTP_USERNAME=your-name SMTP_PASSWORD=your-password
+$ export AYD_URL="https://external-ayd-url.com"
 $ export AYD_MAIL_TO="your name <your-email@example.com>"
 
 $ ayd -a exec:ayd-mail-alert https://target.example.com
 ```
 
 Please see more information in [the readme of ayd-mail-alert](https://github.com/macrat/ayd-mail-alert#readme).
+
+#### Slack
+
+You can send an alert to Slack via [ayd-slack-alert](https://github.com/macrat/ayd-slack-alert).
+
+![The screenshot of Ayd alert in the Slack. You can see service status, target URI, and reason to failure. And there is button to open Status Page.](./assets/slack-alert.jpg)
+
+Please download from [release page of ayd-slack-alert](https://github.com/macrat/ayd-slack-alert/releases) and use like below.
+
+``` shell
+$ export SLACK_WEBHOOK_URL="https://hooks.slack.com/services/......"
+$ export AYD_URL="https://external-ayd-url.com"
+
+$ ayd -a exec:ayd-slack-alert https://target.example.com
+```
+
+Please see more information in [the readme of ayd-slack-alert](https://github.com/macrat/ayd-slack-alert#readme).
 
 
 ### Change listen port
