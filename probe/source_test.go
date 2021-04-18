@@ -1,6 +1,7 @@
 package probe_test
 
 import (
+	"regexp"
 	"testing"
 
 	"github.com/macrat/ayd/probe"
@@ -9,9 +10,9 @@ import (
 
 func TestSource(t *testing.T) {
 	tests := []struct {
-		Target  string
-		Records map[string]store.Status
-		Error   string
+		Target       string
+		Records      map[string]store.Status
+		ErrorPattern string
 	}{
 		{"source:./stub/healthy-list.txt", map[string]store.Status{
 			"ping:127.0.0.1":                 store.STATUS_HEALTHY,
@@ -29,7 +30,7 @@ func TestSource(t *testing.T) {
 		}, "Invalid URI: invalid host"},
 		{"source:./stub/no-such-list.txt", map[string]store.Status{
 			"source:./stub/no-such-list.txt": store.STATUS_UNKNOWN,
-		}, "open ./stub/no-such-list.txt: no such file or directory"},
+		}, `open \./stub/no-such-list\.txt: (no such file or directory|The system cannot find the file specified\.)`},
 	}
 
 	for _, tt := range tests {
@@ -38,13 +39,13 @@ func TestSource(t *testing.T) {
 			t.Parallel()
 
 			p, err := probe.Get(tt.Target)
-			if err != nil && tt.Error == "" {
+			if err != nil && tt.ErrorPattern == "" {
 				t.Fatalf("failed to create probe: %s", err)
 			}
-			if tt.Error != "" {
+			if tt.ErrorPattern != "" {
 				if err == nil {
-					t.Fatalf("expected error %#v but got nil", tt.Error)
-				} else if err.Error() != tt.Error {
+					t.Fatalf("expected error %v but got nil", tt.ErrorPattern)
+				} else if ok, _ := regexp.MatchString("^"+tt.ErrorPattern+"$", err.Error()); !ok {
 					t.Fatalf("unexpected error: %s", err)
 				}
 			}
