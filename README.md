@@ -171,7 +171,32 @@ $ ayd '*/5 6-21 * * *' https://your-service.example.com https://another-service.
 The above command will check `your-service.example.com` and `another-service.example.com` every 5 minutes from 6 a.m. to 9 p.m.
 
 
-### Change log place
+### Log file
+
+Logfile of Ayd is TSV (Tab Separated Values) format.
+The log has these columns.
+
+1. Timestamp in [RFC3339 format](https://tools.ietf.org/html/rfc3339) like `2001-02-30T16:05:06+00:00`.
+
+2. Status of the record that `HEALTHY`, `FAILURE`, or `UNKNOWN`.
+
+   * HEALTHY means service seems working well.
+   * FAILURE means service seems failure or stopped.
+   * UNKNOWN means Ayd is failed to status checking. For example, not found test script, failed to resolve service name, etc.
+
+3. Latency of the service in milliseconds.
+
+4. Target URI.
+
+5. The detail of status, the reason for failure, or the output of the executed script.
+
+For example, log lines look like below.
+
+```
+2001-02-30T16:00:00+09:00	FAILURE	0.544	http://localhost	Get "http://localhost": dial tcp [::1]:80: connect: connection refused
+2001-02-30T16:05:00+09:00	UNKNOWN	0.000	ping:somehost	lookup somehost on 192.168.1.1:53: no such host
+2001-02-30T16:10:00+09:00	HEALTHY	0.375	ping:mikage	rtt(min/avg/max)=0.31/0.38/0.47 send/rcv=4/4
+```
 
 Ayd will save the log file in the current directory in default.
 You can change this with `-o` option like below.
