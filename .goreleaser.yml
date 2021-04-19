@@ -28,4 +28,6 @@ changelog:
     exclude:
       - '^chore'
       - '^docs'
+      - '^refactor'
+      - '^style'
       - '^test'
