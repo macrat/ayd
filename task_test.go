@@ -1,10 +1,59 @@
 package main_test
 
 import (
+	"net/url"
+	"os"
 	"testing"
 
 	"github.com/macrat/ayd"
+	"github.com/macrat/ayd/store"
 )
+
+type PanicProbe struct{}
+
+func (p PanicProbe) Target() *url.URL {
+	return &url.URL{Scheme: "test", Opaque: "panic"}
+}
+
+func (p PanicProbe) Check() []store.Record {
+	panic("this always make panic")
+}
+
+func TestMakeJob(t *testing.T) {
+	f, err := os.CreateTemp("", "ayd-test-*")
+	if err != nil {
+		t.Fatalf("failed to create log file: %s", err)
+	}
+	defer os.Remove(f.Name())
+	f.Close()
+
+	s, err := store.New(f.Name())
+	if err != nil {
+		t.Fatalf("failed to create store: %s", err)
+	}
+	defer s.Close()
+
+	task := main.Task{Probe: PanicProbe{}}
+	task.MakeJob(s).Run()
+
+	history, ok := s.ProbeHistory["test:panic"]
+	if !ok {
+		t.Fatalf("history was not found:\ns.ProbeHistory = %#v", s.ProbeHistory)
+	}
+
+	if len(history.Records) != 1 {
+		t.Fatalf("unexpected length history found\nhistory.Records = %#v", history.Records)
+	}
+
+	r := history.Records[0]
+
+	if r.Status != store.STATUS_UNKNOWN {
+		t.Errorf("unexpected status: %s", r.Status)
+	}
+	if r.Message != "panic: this always make panic" {
+		t.Errorf("unexpected message: %s", r.Message)
+	}
+}
 
 func TestParseArgs(t *testing.T) {
 	type WantTask struct {
