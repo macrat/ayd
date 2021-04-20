@@ -1,0 +1,24 @@
+#!/bin/bash
+
+base=$(echo $DOCKER_TAG | sed -s 's/-.*$//')
+if [[ "$base" == "ubuntu" ]]; then
+    base="ubuntu"
+elif [[ "$base" == "scratch" ]]; then
+    base="scratch"
+else
+    base="alpine"
+fi
+
+version=${SOURCE_BRANCH#v}
+if [[ "$version" == "main" ]]; then
+    version="head"
+fi
+version="$version on $base container"
+
+commit=$(echo $SOURCE_COMMIT | head -c 7)
+
+docker build -t ${IMAGE_NAME:-macrat/ayd:${DOCKER_TAG:-latest}} \
+    --build-arg="BASE_IMAGE=${base}" \
+    --build-arg="VERSION=${version}" \
+    --build-arg="COMMIT=${commit:-UNKNOWN}" \
+    .
