@@ -16,11 +16,11 @@ jobs:
           go-version: 1.16.x
       - uses: actions/checkout@v2
       - name: Test
-        run: go test -race -coverprofile=coverage.txt -covermode=atomic ./...
+        run: go test -race -coverprofile=cov -covermode=atomic ./...
       - uses: codecov/codecov-action@v1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          file: ./coverage.txt
+          file: ./cov
 
   analyze:
     name: CodeQL
