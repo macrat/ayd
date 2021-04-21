@@ -1,6 +1,8 @@
 ![Ayd?](./assets/logo.svg)
 
 [![GitHub Actions CI Status](https://github.com/macrat/ayd/actions/workflows/ci.yml/badge.svg)](https://github.com/macrat/ayd/actions/workflows/ci.yml)
+[![Code Climate maintainability](https://img.shields.io/codeclimate/maintainability-percentage/macrat/ayd)](https://codeclimate.com/github/macrat/ayd)
+[![Codecov Test Coverage](https://img.shields.io/codecov/c/gh/macrat/ayd)](https://app.codecov.io/gh/macrat/ayd/)
 [![Docker Cloud Build Status](https://img.shields.io/docker/cloud/build/macrat/ayd)](https://hub.docker.com/r/macrat/ayd)
 [![License](https://img.shields.io/github/license/macrat/ayd)](https://github.com/macrat/ayd/blob/main/LICENSE)
 
