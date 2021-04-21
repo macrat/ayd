@@ -1,4 +1,5 @@
 ![Ayd?](./assets/logo.svg)
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fmacrat%2Fayd.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fmacrat%2Fayd?ref=badge_shield)
 
 [![GitHub Actions CI Status](https://github.com/macrat/ayd/actions/workflows/ci.yml/badge.svg)](https://github.com/macrat/ayd/actions/workflows/ci.yml)
 [![Docker Cloud Build Status](https://img.shields.io/docker/cloud/build/macrat/ayd)](https://hub.docker.com/r/macrat/ayd)
@@ -286,3 +287,7 @@ Ayd will check status just once and exit when passed `-1` option.
 Exit status code is 0 if all targets are healthy.
 If some targets are unhealthy, the status code will 1.
 And, if your arguments are wrong (or can't resolve hostnames, or exec scripts not found), the status code will 2.
+
+
+## License
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fmacrat%2Fayd.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fmacrat%2Fayd?ref=badge_large)
