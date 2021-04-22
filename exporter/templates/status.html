@@ -163,13 +163,13 @@ footer span {
                         {{ if eq .Status "NO_DATA" }}<span class="status-bit no-data" title="no data">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
                         </span>
-                        {{ end }}{{ if eq .Status "UNKNOWN" }}<span class="status-bit unknown" title="{{ printf "unknown\n%s\n%s" .CheckedAt .Message }}">
+                        {{ end }}{{ if eq .Status "UNKNOWN" }}<span class="status-bit unknown" title="{{ printf "unknown\n%s\n\n%s" .CheckedAt .Message }}">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#unknown-icon" /></svg>
                         </span>
-                        {{ end }}{{ if eq .Status "FAILURE" }}<span class="status-bit failure" title="{{ printf "failure\n%s\n%s" .CheckedAt .Message }}">
+                        {{ end }}{{ if eq .Status "FAILURE" }}<span class="status-bit failure" title="{{ printf "failure\n%s\n\n%s" .CheckedAt .Message }}">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#failure-icon" /></svg>
                         </span>
-                        {{ end }}{{ if eq .Status "HEALTHY" }}<span class="status-bit healthy" title="{{ printf "healthy\n%s\n%s" .CheckedAt .Message }}">
+                        {{ end }}{{ if eq .Status "HEALTHY" }}<span class="status-bit healthy" title="{{ printf "healthy\n%s\n\n%s" .CheckedAt .Message }}">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#healthy-icon" /></svg>
                         </span>
                     {{ end }}{{ end }}</div>
