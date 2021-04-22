@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"strings"
 	"time"
 
 	"github.com/macrat/ayd/store"
@@ -61,7 +62,7 @@ func (p ExecuteProbe) Check() []store.Record {
 	d := time.Now().Sub(st)
 
 	status := store.STATUS_HEALTHY
-	message := string(stdout)
+	message := strings.ReplaceAll(strings.ReplaceAll(string(stdout), "\r\n", "\n"), "\r", "\n")
 
 	if err != nil {
 		status = store.STATUS_FAILURE
