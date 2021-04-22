@@ -16,6 +16,20 @@ type Record struct {
 	Latency   time.Duration
 }
 
+func UnescapeMessage(s string) string {
+	for _, x := range []struct {
+		From string
+		To   string
+	}{
+		{`\t`, "\t"},
+		{`\n`, "\n"},
+		{`\\`, `\`},
+	} {
+		s = strings.ReplaceAll(s, x.From, x.To)
+	}
+	return s
+}
+
 func ParseRecord(s string) (Record, error) {
 	var r Record
 	var timestamp string
@@ -34,7 +48,7 @@ func ParseRecord(s string) (Record, error) {
 		return Record{}, err
 	}
 	target = ss[3]
-	r.Message = ss[4]
+	r.Message = UnescapeMessage(ss[4])
 
 	r.CheckedAt, err = time.Parse(time.RFC3339, timestamp)
 	if err != nil {
@@ -61,9 +75,23 @@ func (r Record) Sanitize() Record {
 		CheckedAt: r.CheckedAt,
 		Target:    r.Target,
 		Status:    r.Status,
-		Message:   strings.ReplaceAll(strings.ReplaceAll(r.Message, "\t", "    "), "\n", " "),
+		Message:   strings.Trim(r.Message, "\r\n"),
 		Latency:   r.Latency,
 	}
+}
+
+func EscapeMessage(s string) string {
+	for _, x := range []struct {
+		From string
+		To   string
+	}{
+		{`\`, `\\`},
+		{"\t", `\t`},
+		{"\n", `\n`},
+	} {
+		s = strings.ReplaceAll(s, x.From, x.To)
+	}
+	return s
 }
 
 func (r Record) String() string {
@@ -72,7 +100,7 @@ func (r Record) String() string {
 		r.Status.String(),
 		fmt.Sprintf("%.3f", float64(r.Latency.Microseconds())/1000),
 		r.Target.String(),
-		r.Message,
+		EscapeMessage(r.Message),
 	}, "\t")
 }
 
