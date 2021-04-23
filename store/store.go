@@ -65,7 +65,8 @@ type Store struct {
 	CurrentIncidents []*Incident
 	IncidentHistory  []*Incident
 
-	OnIncident []IncidentHandler
+	OnIncident    []IncidentHandler
+	IncidentCount int
 
 	file      *os.File
 	lastError error
@@ -115,6 +116,7 @@ func (s *Store) setIncidentIfNeed(r Record, needCallback bool) {
 		s.CurrentIncidents = append(s.CurrentIncidents, incident)
 
 		if needCallback {
+			s.IncidentCount++
 			for _, cb := range s.OnIncident {
 				s.appendWithoutLock(cb(incident))
 			}

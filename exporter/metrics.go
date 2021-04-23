@@ -32,5 +32,9 @@ func MetricsExporter(s *store.Store) http.HandlerFunc {
 				fmt.Fprintln(w)
 			}
 		}
+		fmt.Fprintln(w)
+		fmt.Fprintln(w, "# HELP ayd_incident_count The number of incident happend since server started")
+		fmt.Fprintln(w, "# TYPE ayd_incident_count Counter")
+		fmt.Fprintf(w, "ayd_incident_count %d\n", s.IncidentCount)
 	}
 }
