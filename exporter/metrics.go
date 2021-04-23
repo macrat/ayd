@@ -32,6 +32,15 @@ func MetricsExporter(s *store.Store) http.HandlerFunc {
 				fmt.Fprintln(w)
 			}
 		}
+
+		fmt.Fprintln(w, "# HELP ayd_healthy 1 if target is healthy, otherwise 0.")
+		fmt.Fprintln(w, "# TYPE ayd_healthy Gauge")
+		if s.Err() == nil {
+			fmt.Fprintln(w, `ayd_healthy{target="ayd"} 1`)
+		} else {
+			fmt.Fprintln(w, `ayd_healthy{target="ayd"} 0`)
+		}
+
 		fmt.Fprintln(w)
 		fmt.Fprintln(w, "# HELP ayd_incident_count The number of incident happend since server started")
 		fmt.Fprintln(w, "# TYPE ayd_incident_count Counter")
