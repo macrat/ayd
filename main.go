@@ -14,7 +14,7 @@ import (
 	"github.com/macrat/ayd/exporter"
 	"github.com/macrat/ayd/probe"
 	"github.com/macrat/ayd/store"
-	"github.com/robfig/cron"
+	"github.com/robfig/cron/v3"
 )
 
 const (
