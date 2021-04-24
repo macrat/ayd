@@ -1,11 +1,13 @@
 package probe_test
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"regexp"
 	"testing"
+	"time"
 
 	"github.com/macrat/ayd/probe"
 	"github.com/macrat/ayd/store"
@@ -96,7 +98,10 @@ func AssertProbe(t *testing.T, tests []ProbeTest) {
 				t.Fatalf("got unexpected probe: %s", p.Target())
 			}
 
-			rs := p.Check()
+			ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+			defer cancel()
+
+			rs := p.Check(ctx)
 
 			if len(rs) != 1 {
 				t.Fatalf("got unexpected number of results: %d", len(rs))
@@ -154,6 +159,10 @@ func RunDummyHTTPServer() *httptest.Server {
 		if r.Method != "OPTIONS" {
 			w.WriteHeader(http.StatusBadRequest)
 		}
+	})
+	mux.HandleFunc("/slow-page", func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(10 * time.Second)
+		w.Write([]byte("OK"))
 	})
 
 	return httptest.NewServer(mux)

@@ -14,5 +14,6 @@ func TestExecuteProbe(t *testing.T) {
 		{`exec:stub\test.bat?message=world&code=1`, store.STATUS_FAILURE, "world\n"},
 		{`exec:stub\no-such-script`, store.STATUS_UNKNOWN, `exec: "stub\\\\no-such-script": file does not exist`},
 		{"exec:no-such-command", store.STATUS_UNKNOWN, `exec: "no-such-command": executable file not found in %PATH%`},
+		{"exec:sleep#10", store.STATUS_UNKNOWN, `timeout`},
 	})
 }

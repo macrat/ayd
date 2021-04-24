@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"net/url"
 	"time"
 
@@ -47,7 +48,10 @@ func (a *Alert) Trigger(incident *store.Incident) []store.Record {
 		}}
 	}
 
-	result := p.Check()
+	ctx, cancel := context.WithTimeout(context.Background(), TASK_TIMEOUT)
+	defer cancel()
+
+	result := p.Check(ctx)
 	for i := range result {
 		result[i].Target = &url.URL{
 			Scheme: "alert",

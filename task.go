@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -26,7 +27,11 @@ func (t Task) MakeJob(s *store.Store) cron.Job {
 				})
 			}
 		}()
-		s.Append(t.Probe.Check()...)
+
+		ctx, cancel := context.WithTimeout(context.Background(), TASK_TIMEOUT)
+		defer cancel()
+
+		s.Append(t.Probe.Check(ctx)...)
 	})
 }
 

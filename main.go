@@ -9,11 +9,16 @@ import (
 	"sync"
 	"sync/atomic"
 	"text/template"
+	"time"
 
 	"github.com/macrat/ayd/exporter"
 	"github.com/macrat/ayd/probe"
 	"github.com/macrat/ayd/store"
 	"github.com/robfig/cron"
+)
+
+const (
+	TASK_TIMEOUT = 1 * time.Hour
 )
 
 var (

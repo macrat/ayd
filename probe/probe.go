@@ -1,6 +1,7 @@
 package probe
 
 import (
+	"context"
 	"errors"
 	"net/url"
 	"strings"
@@ -16,7 +17,7 @@ var (
 
 type Probe interface {
 	Target() *url.URL
-	Check() []store.Record
+	Check(context.Context) []store.Record
 }
 
 func GetByURL(u *url.URL) (Probe, error) {

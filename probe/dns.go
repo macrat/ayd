@@ -1,6 +1,7 @@
 package probe
 
 import (
+	"context"
 	"net"
 	"net/url"
 	"strings"
@@ -25,9 +26,14 @@ func (p DNSProbe) Target() *url.URL {
 	return p.target
 }
 
-func (p DNSProbe) Check() []store.Record {
+func (p DNSProbe) Check(ctx context.Context) []store.Record {
+	resolver := &net.Resolver{}
+
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
 	st := time.Now()
-	addrs, err := net.LookupHost(p.target.Opaque)
+	addrs, err := resolver.LookupHost(ctx, p.target.Opaque)
 	d := time.Now().Sub(st)
 
 	r := store.Record{

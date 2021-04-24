@@ -1,6 +1,7 @@
 package main_test
 
 import (
+	"context"
 	"net/url"
 	"os"
 	"testing"
@@ -15,7 +16,7 @@ func (p PanicProbe) Target() *url.URL {
 	return &url.URL{Scheme: "test", Opaque: "panic"}
 }
 
-func (p PanicProbe) Check() []store.Record {
+func (p PanicProbe) Check(ctx context.Context) []store.Record {
 	panic("this always make panic")
 }
 

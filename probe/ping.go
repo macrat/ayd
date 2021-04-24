@@ -1,6 +1,7 @@
 package probe
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"net/url"
@@ -25,7 +26,10 @@ func (p PingProbe) Target() *url.URL {
 	return p.target
 }
 
-func (p PingProbe) Check() []store.Record {
+func (p PingProbe) Check(ctx context.Context) []store.Record {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
 	pinger, err := getPinger(p.target.Opaque)
 	if err != nil {
 		status := store.STATUS_FAILURE
@@ -46,6 +50,11 @@ func (p PingProbe) Check() []store.Record {
 	pinger.Timeout = 10 * time.Second
 	pinger.Count = 4
 	pinger.Debug = true
+
+	go func() {
+		<-ctx.Done()
+		pinger.Stop()
+	}()
 
 	startTime := time.Now()
 

@@ -2,6 +2,7 @@ package probe
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"net/url"
 	"os"
@@ -121,7 +122,7 @@ func (p SourceProbe) load(path string, ignores ignoreSet) ([]Probe, error) {
 	return probes, nil
 }
 
-func (p SourceProbe) Check() []store.Record {
+func (p SourceProbe) Check(ctx context.Context) []store.Record {
 	stime := time.Now()
 
 	probes, err := p.load(p.target.Opaque, nil)
@@ -136,6 +137,9 @@ func (p SourceProbe) Check() []store.Record {
 		}}
 	}
 
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
 	ch := make(chan []store.Record, len(probes))
 	wg := &sync.WaitGroup{}
 
@@ -143,7 +147,7 @@ func (p SourceProbe) Check() []store.Record {
 		wg.Add(1)
 
 		go func(p Probe, ch chan []store.Record) {
-			ch <- p.Check()
+			ch <- p.Check(ctx)
 			wg.Done()
 		}(p, ch)
 	}

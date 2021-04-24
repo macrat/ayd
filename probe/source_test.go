@@ -1,8 +1,10 @@
 package probe_test
 
 import (
+	"context"
 	"regexp"
 	"testing"
+	"time"
 
 	"github.com/macrat/ayd/probe"
 	"github.com/macrat/ayd/store"
@@ -50,7 +52,10 @@ func TestSource(t *testing.T) {
 				}
 			}
 
-			rs := p.Check()
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+
+			rs := p.Check(ctx)
 
 			if len(rs) != len(tt.Records) {
 				t.Fatalf("unexpected number of records: %d\n%v", len(rs), rs)

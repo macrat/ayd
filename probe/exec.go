@@ -44,8 +44,8 @@ func (p ExecuteProbe) Target() *url.URL {
 	return p.target
 }
 
-func (p ExecuteProbe) Check() []store.Record {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+func (p ExecuteProbe) Check(ctx context.Context) []store.Record {
+	ctx, cancel := context.WithTimeout(ctx, 60*time.Minute)
 	defer cancel()
 
 	var cmd *exec.Cmd
@@ -71,6 +71,13 @@ func (p ExecuteProbe) Check() []store.Record {
 			case "no such file or directory", "permission denied", "executable file not found in $PATH", "file does not exist", "executable file not found in %PATH%":
 				status = store.STATUS_UNKNOWN
 			}
+		}
+
+		select {
+		case <-ctx.Done():
+			status = store.STATUS_UNKNOWN
+			message = "timeout"
+		default:
 		}
 
 		if message == "" {

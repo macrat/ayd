@@ -1,6 +1,7 @@
 package probe
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net"
@@ -74,14 +75,17 @@ func (p HTTPProbe) Target() *url.URL {
 	return p.target
 }
 
-func (p HTTPProbe) Check() []store.Record {
-	req := &http.Request{
+func (p HTTPProbe) Check(ctx context.Context) []store.Record {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
+	defer cancel()
+
+	req := (&http.Request{
 		Method: p.method,
 		URL:    p.requrl,
 		Header: http.Header{
 			"User-Agent": {HTTPUserAgent},
 		},
-	}
+	}).WithContext(ctx)
 
 	st := time.Now()
 	resp, err := p.client.Do(req)
@@ -93,6 +97,10 @@ func (p HTTPProbe) Check() []store.Record {
 		message = err.Error()
 		if e, ok := errors.Unwrap(errors.Unwrap(err)).(*net.DNSError); ok && e.IsNotFound {
 			status = store.STATUS_UNKNOWN
+		}
+		if e := errors.Unwrap(err); e != nil && e.Error() == "context deadline exceeded" {
+			status = store.STATUS_UNKNOWN
+			message = "timeout"
 		}
 	} else {
 		message = resp.Status

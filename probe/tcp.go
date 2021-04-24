@@ -1,6 +1,7 @@
 package probe
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net"
@@ -29,9 +30,14 @@ func (p TCPProbe) Target() *url.URL {
 	return p.target
 }
 
-func (p TCPProbe) Check() []store.Record {
+func (p TCPProbe) Check(ctx context.Context) []store.Record {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	var dialer net.Dialer
+
 	st := time.Now()
-	conn, err := net.DialTimeout("tcp", p.target.Opaque, 10*time.Second)
+	conn, err := dialer.DialContext(ctx, "tcp", p.target.Opaque)
 	d := time.Now().Sub(st)
 
 	r := store.Record{

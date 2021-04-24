@@ -15,5 +15,6 @@ func TestExecuteProbe(t *testing.T) {
 		{"exec:./stub/no-such-script", store.STATUS_UNKNOWN, `fork/exec ./stub/no-such-script: no such file or directory`},
 		{"exec:./stub/no-permission.sh", store.STATUS_UNKNOWN, `fork/exec ./stub/no-permission.sh: permission denied`},
 		{"exec:no-such-command", store.STATUS_UNKNOWN, `exec: "no-such-command": executable file not found in \$PATH`},
+		{"exec:sleep#10", store.STATUS_UNKNOWN, `timeout`},
 	})
 }
