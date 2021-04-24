@@ -18,5 +18,7 @@ func TestExecuteProbe(t *testing.T) {
 		{`exec:stub\no-such-script`, store.STATUS_UNKNOWN, `exec: "stub\\\\no-such-script": file does not exist`},
 		{"exec:no-such-command", store.STATUS_UNKNOWN, `exec: "no-such-command": executable file not found in %PATH%`},
 		{"exec:sleep#10", store.STATUS_UNKNOWN, `timeout`},
+		{"exec:echo#::status::unknown", store.STATUS_UNKNOWN, ``},
+		{"exec:echo#::status::failure", store.STATUS_FAILURE, ``},
 	})
 }

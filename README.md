@@ -144,6 +144,24 @@ examples:
 - `exec:./check.exe`
 - `exec:/usr/local/bin/check.sh`
 
+##### Extra report output for exec
+
+In exec, you can set latency of service, and status of service with the output of the command.
+Please write output like below.
+
+```
+::latency::123.456
+::status::failure
+hello world
+```
+
+This output is reporting latency is `123.456ms`, status is `FAILURE`, and message is `hello world`.
+
+- `::latency::`: Reports the latency of service in milliseconds.
+- `::status::`: Reports the status of service in `healthy`, `failure`, or `unknown`.
+
+Ayd uses the last value if found multiple reports in single output.
+
 #### source
 
 This is a special scheme for load targets from a file.
