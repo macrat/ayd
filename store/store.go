@@ -3,6 +3,7 @@ package store
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"net/url"
 	"os"
 	"sort"
@@ -61,6 +62,8 @@ type Store struct {
 
 	Path string
 
+	Console io.Writer
+
 	ProbeHistory     ProbeHistoryMap
 	CurrentIncidents []*Incident
 	IncidentHistory  []*Incident
@@ -75,6 +78,7 @@ type Store struct {
 func New(path string) (*Store, error) {
 	store := &Store{
 		Path:         path,
+		Console:      os.Stdout,
 		ProbeHistory: make(ProbeHistoryMap),
 	}
 
@@ -134,7 +138,7 @@ func (s *Store) appendWithoutLock(rs []Record) {
 		r = r.Sanitize()
 
 		str := r.String()
-		fmt.Println(str)
+		fmt.Fprintln(s.Console, str)
 		_, s.lastError = fmt.Fprintln(s.file, str)
 
 		if r.Target.Scheme != "alert" {
