@@ -53,6 +53,10 @@ func TestRunServer(t *testing.T) {
 				t.Errorf("unexpected exit code: %d", code)
 			}
 
+			time.Sleep(10 * time.Millisecond)
+			s.Lock()
+			defer s.Unlock()
+
 			count := 0
 			for _, xs := range s.ProbeHistory {
 				count += len(xs.Records)
