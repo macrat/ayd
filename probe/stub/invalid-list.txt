@@ -3,4 +3,10 @@
 ping:localhost
 
 # this is ivalid
-invalid host
+::invalid host::
+
+# unknown scheme
+no-such-scheme:hello world
+
+# no such target list
+source:./stub/no-such-list.txt

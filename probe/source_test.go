@@ -23,6 +23,11 @@ func TestSource(t *testing.T) {
 			"ping:localhost":                 store.STATUS_HEALTHY,
 			"source:./stub/healthy-list.txt": store.STATUS_HEALTHY,
 		}, ""},
+		{"source:stub/healthy-list.txt", map[string]store.Status{
+			"ping:127.0.0.1":               store.STATUS_HEALTHY,
+			"ping:localhost":               store.STATUS_HEALTHY,
+			"source:stub/healthy-list.txt": store.STATUS_HEALTHY,
+		}, ""},
 		{"source:./stub/failure-list.txt", map[string]store.Status{
 			"ping:127.0.0.1":                 store.STATUS_HEALTHY,
 			"ping:localhost":                 store.STATUS_HEALTHY,
@@ -31,7 +36,13 @@ func TestSource(t *testing.T) {
 		}, ""},
 		{"source:./stub/invalid-list.txt", map[string]store.Status{
 			"source:./stub/invalid-list.txt": store.STATUS_UNKNOWN,
-		}, "Invalid URI: invalid host"},
+		}, "Invalid URI: ::invalid host::, no-such-scheme:hello world, source:./stub/no-such-list.txt"},
+		{"source:stub/invalid-list.txt", map[string]store.Status{
+			"source:stub/invalid-list.txt": store.STATUS_UNKNOWN,
+		}, "Invalid URI: ::invalid host::, no-such-scheme:hello world, source:./stub/no-such-list.txt"},
+		{"source:./stub/include-invalid-list.txt", map[string]store.Status{
+			"source:./stub/include-invalid-list.txt": store.STATUS_UNKNOWN,
+		}, "Invalid URI: ::invalid host::, no-such-scheme:hello world, source:./stub/no-such-list.txt"},
 		{"source:./stub/no-such-list.txt", map[string]store.Status{
 			"source:./stub/no-such-list.txt": store.STATUS_UNKNOWN,
 		}, `open \./stub/no-such-list\.txt: (no such file or directory|The system cannot find the file specified\.)`},
