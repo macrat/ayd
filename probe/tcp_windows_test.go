@@ -10,6 +10,8 @@ import (
 )
 
 func TestTCPProbe(t *testing.T) {
+	t.Parallel()
+
 	server := RunDummyHTTPServer()
 	defer server.Close()
 

@@ -8,6 +8,8 @@ import (
 )
 
 func TestHTTPProbe(t *testing.T) {
+	t.Parallel()
+
 	server := RunDummyHTTPServer()
 	defer server.Close()
 

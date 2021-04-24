@@ -9,6 +9,8 @@ import (
 )
 
 func TestExecuteProbe(t *testing.T) {
+	t.Parallel()
+
 	AssertProbe(t, []ProbeTest{
 		{`exec:stub\test.bat?message=hello&code=0`, store.STATUS_HEALTHY, "hello\n"},
 		{`exec:stub\test.bat?message=world&code=1`, store.STATUS_FAILURE, "world\n"},

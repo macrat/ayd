@@ -11,6 +11,8 @@ import (
 )
 
 func TestSource(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		Target       string
 		Records      map[string]store.Status

@@ -14,6 +14,8 @@ import (
 )
 
 func TestTargetURLNormalize(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		Input string
 		Want  url.URL
