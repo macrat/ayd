@@ -98,9 +98,12 @@ func (p HTTPProbe) Check(ctx context.Context) []store.Record {
 		if e, ok := errors.Unwrap(errors.Unwrap(err)).(*net.DNSError); ok && e.IsNotFound {
 			status = store.STATUS_UNKNOWN
 		}
-		if e := errors.Unwrap(err); e != nil && e.Error() == "context deadline exceeded" {
-			status = store.STATUS_UNKNOWN
-			message = "timed out or interrupted"
+		if e := errors.Unwrap(err); e != nil {
+			switch e.Error() {
+			case "context deadline exceeded", "context canceled":
+				status = store.STATUS_UNKNOWN
+				message = "timed out or interrupted"
+			}
 		}
 	} else {
 		message = resp.Status

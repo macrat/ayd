@@ -123,6 +123,31 @@ func AssertProbe(t *testing.T, tests []ProbeTest) {
 	}
 }
 
+func AssertTimeout(t *testing.T, target string) {
+	t.Run("timeout-or-interrupt", func(t *testing.T) {
+		p, err := probe.New(target)
+		if err != nil {
+			t.Fatalf("failed to get probe: %s", err)
+		}
+
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel()
+
+		records := p.Check(ctx)
+		if len(records) != 1 {
+			t.Fatalf("unexpected number of records: %#v", records)
+		}
+
+		if records[0].Message != "timed out or interrupted" {
+			t.Errorf("unexpected message: %s", records[0].Message)
+		}
+
+		if records[0].Status != store.STATUS_UNKNOWN {
+			t.Errorf("unexpected status: %s", records[0].Status)
+		}
+	})
+}
+
 func RunDummyHTTPServer() *httptest.Server {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/ok", func(w http.ResponseWriter, r *http.Request) {

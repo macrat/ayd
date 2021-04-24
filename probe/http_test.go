@@ -25,4 +25,6 @@ func TestHTTPProbe(t *testing.T) {
 		{strings.Replace(server.URL, "http", "http-options", 1) + "/only/options", store.STATUS_HEALTHY, `200 OK`},
 		{server.URL + "/slow-page", store.STATUS_UNKNOWN, `timed out or interrupted`},
 	})
+
+	AssertTimeout(t, server.URL)
 }

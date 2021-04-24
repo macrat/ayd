@@ -61,7 +61,7 @@ func (p PingProbe) Check(ctx context.Context) []store.Record {
 	err = pinger.Run()
 	if err != nil {
 		return []store.Record{{
-			CheckedAt: time.Now(),
+			CheckedAt: startTime,
 			Target:    p.target,
 			Status:    store.STATUS_UNKNOWN,
 			Message:   err.Error(),
@@ -76,18 +76,27 @@ func (p PingProbe) Check(ctx context.Context) []store.Record {
 		status = store.STATUS_HEALTHY
 	}
 
-	return []store.Record{{
-		CheckedAt: startTime,
-		Target:    p.target,
-		Status:    status,
-		Message: fmt.Sprintf(
+	var message string
+	select {
+	case <-ctx.Done():
+		status = store.STATUS_UNKNOWN
+		message = "timed out or interrupted"
+	default:
+		message = fmt.Sprintf(
 			"rtt(min/avg/max)=%.2f/%.2f/%.2f send/rcv=%d/%d",
 			float64(stat.MinRtt.Microseconds())/1000,
 			float64(stat.AvgRtt.Microseconds())/1000,
 			float64(stat.MaxRtt.Microseconds())/1000,
 			pinger.PacketsSent,
 			pinger.PacketsRecv,
-		),
-		Latency: stat.AvgRtt,
+		)
+	}
+
+	return []store.Record{{
+		CheckedAt: startTime,
+		Target:    p.target,
+		Status:    status,
+		Message:   message,
+		Latency:   stat.AvgRtt,
 	}}
 }
