@@ -18,34 +18,34 @@ func TestSource(t *testing.T) {
 		Records      map[string]store.Status
 		ErrorPattern string
 	}{
-		{"source:./stub/healthy-list.txt", map[string]store.Status{
+		{"source:./testdata/healthy-list.txt", map[string]store.Status{
 			"ping:127.0.0.1":                 store.STATUS_HEALTHY,
 			"ping:localhost":                 store.STATUS_HEALTHY,
-			"source:./stub/healthy-list.txt": store.STATUS_HEALTHY,
+			"source:./testdata/healthy-list.txt": store.STATUS_HEALTHY,
 		}, ""},
-		{"source:stub/healthy-list.txt", map[string]store.Status{
+		{"source:testdata/healthy-list.txt", map[string]store.Status{
 			"ping:127.0.0.1":               store.STATUS_HEALTHY,
 			"ping:localhost":               store.STATUS_HEALTHY,
-			"source:stub/healthy-list.txt": store.STATUS_HEALTHY,
+			"source:testdata/healthy-list.txt": store.STATUS_HEALTHY,
 		}, ""},
-		{"source:./stub/failure-list.txt", map[string]store.Status{
+		{"source:./testdata/failure-list.txt", map[string]store.Status{
 			"ping:127.0.0.1":                 store.STATUS_HEALTHY,
 			"ping:localhost":                 store.STATUS_HEALTHY,
 			"tcp:localhost:56789":            store.STATUS_FAILURE,
-			"source:./stub/failure-list.txt": store.STATUS_HEALTHY,
+			"source:./testdata/failure-list.txt": store.STATUS_HEALTHY,
 		}, ""},
-		{"source:./stub/invalid-list.txt", map[string]store.Status{
-			"source:./stub/invalid-list.txt": store.STATUS_UNKNOWN,
-		}, "Invalid URI: ::invalid host::, no-such-scheme:hello world, source:./stub/no-such-list.txt"},
-		{"source:stub/invalid-list.txt", map[string]store.Status{
-			"source:stub/invalid-list.txt": store.STATUS_UNKNOWN,
-		}, "Invalid URI: ::invalid host::, no-such-scheme:hello world, source:./stub/no-such-list.txt"},
-		{"source:./stub/include-invalid-list.txt", map[string]store.Status{
-			"source:./stub/include-invalid-list.txt": store.STATUS_UNKNOWN,
-		}, "Invalid URI: ::invalid host::, no-such-scheme:hello world, source:./stub/no-such-list.txt"},
-		{"source:./stub/no-such-list.txt", map[string]store.Status{
-			"source:./stub/no-such-list.txt": store.STATUS_UNKNOWN,
-		}, `open \./stub/no-such-list\.txt: (no such file or directory|The system cannot find the file specified\.)`},
+		{"source:./testdata/invalid-list.txt", map[string]store.Status{
+			"source:./testdata/invalid-list.txt": store.STATUS_UNKNOWN,
+		}, "Invalid URI: ::invalid host::, no-such-scheme:hello world, source:./testdata/no-such-list.txt"},
+		{"source:testdata/invalid-list.txt", map[string]store.Status{
+			"source:testdata/invalid-list.txt": store.STATUS_UNKNOWN,
+		}, "Invalid URI: ::invalid host::, no-such-scheme:hello world, source:./testdata/no-such-list.txt"},
+		{"source:./testdata/include-invalid-list.txt", map[string]store.Status{
+			"source:./testdata/include-invalid-list.txt": store.STATUS_UNKNOWN,
+		}, "Invalid URI: ::invalid host::, no-such-scheme:hello world, source:./testdata/no-such-list.txt"},
+		{"source:./testdata/no-such-list.txt", map[string]store.Status{
+			"source:./testdata/no-such-list.txt": store.STATUS_UNKNOWN,
+		}, `open \./testdata/no-such-list\.txt: (no such file or directory|The system cannot find the file specified\.)`},
 	}
 
 	for _, tt := range tests {

@@ -1,6 +1,6 @@
 # unhealthy target list
 
-source:./stub/sub-list.txt
+source:./testdata/sub-list.txt
 ping:localhost
 
 # it will make failure

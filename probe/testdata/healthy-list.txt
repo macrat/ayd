@@ -1,0 +1,7 @@
+# healthy target list
+
+source:./testdata/sub-list.txt
+ping:localhost
+
+# ignore self including
+source:./testdata/healthy-list.txt

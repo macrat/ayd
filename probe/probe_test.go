@@ -44,7 +44,7 @@ func TestTargetURLNormalize(t *testing.T) {
 		{"exec:foo.sh?hoge=fuga#piyo", url.URL{Scheme: "exec", Opaque: "foo.sh", RawQuery: "hoge=fuga", Fragment: "piyo"}},
 		{"exec:/foo/bar.sh?hoge=fuga#piyo", url.URL{Scheme: "exec", Opaque: "/foo/bar.sh", RawQuery: "hoge=fuga", Fragment: "piyo"}},
 
-		{"source:./stub/healthy-list.txt", url.URL{Scheme: "source", Opaque: "./stub/healthy-list.txt"}},
+		{"source:./testdata/healthy-list.txt", url.URL{Scheme: "source", Opaque: "./testdata/healthy-list.txt"}},
 	}
 
 	for _, tt := range tests {

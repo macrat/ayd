@@ -9,4 +9,4 @@ ping:localhost
 no-such-scheme:hello world
 
 # no such target list
-source:./stub/no-such-list.txt
+source:./testdata/no-such-list.txt

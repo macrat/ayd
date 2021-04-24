@@ -1,7 +1,0 @@
-# healthy target list
-
-source:./stub/sub-list.txt
-ping:localhost
-
-# ignore self including
-source:./stub/healthy-list.txt
