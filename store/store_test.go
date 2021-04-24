@@ -2,6 +2,7 @@ package store_test
 
 import (
 	"fmt"
+	"io"
 	"net/url"
 	"os"
 	"strings"
@@ -272,5 +273,37 @@ func TestStore_incident_len_limit(t *testing.T) {
 
 	if len(s.IncidentHistory) != store.INCIDENT_HISTORY_LEN {
 		t.Fatalf("unexpected incident history length: %d (expected maximum is %d)", len(s.IncidentHistory), store.INCIDENT_HISTORY_LEN)
+	}
+}
+
+func BenchmarkStore_Append(b *testing.B) {
+	for _, status := range []store.Status{store.STATUS_HEALTHY, store.STATUS_FAILURE} {
+		b.Run(status.String(), func(b *testing.B) {
+			f, err := os.CreateTemp("", "ayd-test-*")
+			if err != nil {
+				b.Fatalf("failed to create log file: %s", err)
+			}
+			defer os.Remove(f.Name())
+			f.Close()
+
+			s, err := store.New(f.Name())
+			if err != nil {
+				b.Fatalf("failed to create store: %s", err)
+			}
+			s.Console = io.Discard
+			defer s.Close()
+
+			record := store.Record{
+				CheckedAt: time.Now(),
+				Target:    &url.URL{Scheme: "dummy", Opaque: "benchmark-append"},
+				Status:    status,
+				Message:   "hello world",
+			}
+
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				s.Append(record)
+			}
+		})
 	}
 }
