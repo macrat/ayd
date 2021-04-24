@@ -311,7 +311,7 @@ If you using systemd, it is easy to daemonize Ayd.
 
 Please put `ayd` command to `/usr/local/bin/ayd` (you can use another place if you want), and write a setting like below to `/etc/systemd/system/ayd.service`.
 
-``` toml
+``` ini
 [Unit]
 Description=Ayd status monitoring server
 After=network.target remote-fs.target
