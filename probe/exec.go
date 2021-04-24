@@ -62,7 +62,7 @@ func (p ExecuteProbe) Check(ctx context.Context) []store.Record {
 	d := time.Now().Sub(st)
 
 	status := store.STATUS_HEALTHY
-	message := strings.ReplaceAll(strings.ReplaceAll(string(stdout), "\r\n", "\n"), "\r", "\n")
+	message := strings.Trim(strings.ReplaceAll(strings.ReplaceAll(string(stdout), "\r\n", "\n"), "\r", "\n"), "\n")
 
 	if err != nil {
 		status = store.STATUS_FAILURE
