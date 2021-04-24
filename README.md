@@ -291,6 +291,54 @@ You can change the HTTP server listen port with `-p` option.
 In default, Ayd uses port 9000.
 
 
+### Daemonize
+
+#### Use docker
+
+You can use [docker image](https://hub.docker.com/r/macrat/ayd) for execute Ayd.
+This image includes ayd, and alert sender for email and slack.
+
+``` shell
+$ docker run --restart=always -v /var/log/ayd:/var/log/ayd macrat/ayd http://your-target.example.com
+```
+
+Of course, you can also use docker-compose or Kubernetes, etc.
+Please see [ayd-docker](https://github.com/macrat/ayd-docker) repository for more information about this contianer image.
+
+#### Systemd
+
+If you using systemd, it is easy to daemonize Ayd.
+
+Please put `ayd` command to `/usr/local/bin/ayd` (you can use another place if you want), and write a setting like below to `/etc/systemd/system/ayd.service`.
+
+``` toml
+[Unit]
+Description=Ayd status monitoring server
+After=network.target remote-fs.target
+
+[Service]
+ExecStart=/usr/local/bin/ayd -o /var/log/ayd.log \
+    http://your-target.example.com
+#   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ please change target
+
+[Install]
+WantedBy=multi-user.target
+```
+
+And then, you can enable this service.
+
+``` shell
+# reload config
+$ sudo systemctl daemon-reload
+
+# start service
+$ sudo systemctl start ayd
+
+# enable auto start when boot system
+$ sudo systemctl enable ayd
+```
+
+
 ### Check status just once
 
 If you want to use Ayd in a script, you may use `-1` option.
