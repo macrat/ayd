@@ -12,13 +12,13 @@ Easiest status monitoring service to check something service is dead or alive.
 ## Features
 
 - status checking with:
-  * HTTP/HTTPS
-  * ICMP echo (ping)
-  * TCP connect
-  * DNS resolve
-  * execute external command (or script file)
-- view status page in browser, console, or program.
-- kick alert if target failure.
+  * [HTTP/HTTPS](#http--https)
+  * [ICMP echo (ping)](#ping)
+  * [TCP connect](#tcp)
+  * [DNS resolve](#dns)
+  * [execute external command (or script file)](#exec)
+- [view status page in browser, console, or program.](#status-page-and-endpoints)
+- [kick alert if target failure.](#alerting)
 
 ### Good at
 - Make a status page for temporary usage. (You can start it via one command! And, stop via just Ctrl-C!)
@@ -227,7 +227,7 @@ Please consider using the log rotation tool if you have a plan to use it for a l
 (Ayd can handle the huge log, but it is not easy to investigate the huge log when trouble)
 
 
-### Setup alerting
+### Alerting
 
 Ayd can kick a URI when a target status checks failure.
 You may want to use exec or HTTP for alerting.
