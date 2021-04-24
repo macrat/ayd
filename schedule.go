@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"regexp"
+	"strings"
 	"time"
 
 	"github.com/robfig/cron/v3"
@@ -56,7 +58,15 @@ type CronSchedule struct {
 }
 
 func ParseCronSchedule(spec string) (CronSchedule, error) {
-	if s, err := cron.ParseStandard(spec); err != nil {
+	delimiter := regexp.MustCompile("[ \t]+")
+
+	ss := delimiter.Split(strings.TrimSpace(spec), -1)
+	if len(ss) == 4 {
+		ss = append(ss, "?")
+	}
+	spec = strings.Join(ss, " ")
+
+	if s, err := cron.NewParser(cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.DowOptional).Parse(spec); err != nil {
 		return CronSchedule{}, err
 	} else {
 		return CronSchedule{

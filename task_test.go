@@ -88,6 +88,13 @@ func TestParseArgs(t *testing.T) {
 				{"2m0s", "ping:hoge"},
 			},
 		},
+		{
+			Args: []string{"*/10  * * *", "ping:hoge", "*/5 *\t* * 0", "ping:fuga"},
+			Want: []WantTask{
+				{"*/10 * * * ?", "ping:hoge"},
+				{"*/5 * * * 0", "ping:fuga"},
+			},
+		},
 	}
 
 	for _, tt := range tests {

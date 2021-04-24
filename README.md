@@ -171,10 +171,21 @@ The above command will check `your-service.example.com` every 10 minutes, and ch
 You can also use [the Cron](https://en.wikipedia.org/wiki/Cron) style spec as a timing spec like below.
 
 ``` shell
-$ ayd '*/5 6-21 * * *' https://your-service.example.com https://another-service.example.com
+$ ayd '*/5  6-21 * *'     https://your-service.example.com \
+      '*/10 *    * * 1-5' https://another-service.example.com
 ```
 
-The above command will check `your-service.example.com` and `another-service.example.com` every 5 minutes from 6 a.m. to 9 p.m.
+The above command will check `your-service.example.com` every 5 minutes from 6 a.m. to 9 p.m, and check `another-service.example.com` every 10 minutes from monday to friday.
+
+```
+ ┌─────── minute (0 - 59)
+ │ ┌────── hour (0 - 23)
+ │ │ ┌───── day of the month (1 - 31)
+ │ │ │ ┌──── month (1 - 12)
+ │ │ │ │ ┌─── [optional] day of the week (0 - 6 (sunday - saturday))
+ │ │ │ │ │
+'* * * * *'
+```
 
 
 ### Log file
