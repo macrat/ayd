@@ -74,48 +74,61 @@ func TestRunOneshot(t *testing.T) {
 }
 
 type DummyProbe struct {
-	Name string
+	target *url.URL
+	status store.Status
 }
 
 func (p DummyProbe) Target() *url.URL {
-	return &url.URL{Scheme: "dummy-probe", Opaque: p.Name}
+	return p.target
 }
 
 func (p DummyProbe) Check(ctx context.Context) []store.Record {
+	status := p.status
+	if p.status == store.STATUS_UNKNOWN {
+		status = []store.Status{store.STATUS_UNKNOWN, store.STATUS_HEALTHY, store.STATUS_FAILURE}[rand.Intn(3)]
+	}
 	return []store.Record{{
-		CheckedAt: time.Now(),
-		Target:    p.Target(),
-		Status:    []store.Status{store.STATUS_UNKNOWN, store.STATUS_HEALTHY, store.STATUS_FAILURE}[rand.Intn(3)],
-		Message:   p.Name,
+		Target:  p.target,
+		Status:  status,
+		Message: p.target.Opaque,
 	}}
 }
 
-func BenchmarkRunOneshotWithManyTargets(b *testing.B) {
-	f, err := os.CreateTemp("", "ayd-test-*")
-	if err != nil {
-		b.Fatalf("failed to create log file: %s", err)
-	}
-	defer os.Remove(f.Name())
-	f.Close()
+func BenchmarkRunOneshotWith10000Targets(b *testing.B) {
+	for _, status := range []store.Status{store.STATUS_UNKNOWN, store.STATUS_HEALTHY, store.STATUS_FAILURE} {
+		name := status.String()
+		if status == store.STATUS_UNKNOWN {
+			name = "RANDOM"
+		}
 
-	s, err := store.New(f.Name())
-	if err != nil {
-		b.Fatalf("failed to create store: %s", err)
-	}
-	s.Console = io.Discard
-	defer s.Close()
+		b.Run(name, func(b *testing.B) {
+			f, err := os.CreateTemp("", "ayd-test-*")
+			if err != nil {
+				b.Fatalf("failed to create log file: %s", err)
+			}
+			defer os.Remove(f.Name())
+			f.Close()
 
-	tasks := make([]main.Task, 10000)
-	schedule, _ := main.ParseIntervalSchedule("1s")
-	for i := range tasks {
-		tasks[i] = main.Task{Schedule: schedule, Probe: DummyProbe{Name: fmt.Sprint(i)}}
-	}
+			s, err := store.New(f.Name())
+			if err != nil {
+				b.Fatalf("failed to create store: %s", err)
+			}
+			s.Console = io.Discard
+			defer s.Close()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+			tasks := make([]main.Task, 10000)
+			schedule, _ := main.ParseIntervalSchedule("1s")
+			for i := range tasks {
+				tasks[i] = main.Task{Schedule: schedule, Probe: DummyProbe{target: &url.URL{Scheme: "dummy", Opaque: fmt.Sprintf("benchmark-%d", i)}, status: status}}
+			}
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		main.RunOneshot(ctx, s, tasks)
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				main.RunOneshot(ctx, s, tasks)
+			}
+		})
 	}
 }
