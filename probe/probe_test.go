@@ -163,7 +163,7 @@ func RunDummyHTTPServer() *httptest.Server {
 		}
 	})
 	mux.HandleFunc("/slow-page", func(w http.ResponseWriter, r *http.Request) {
-		time.Sleep(10 * time.Second)
+		time.Sleep(5 * time.Second)
 		w.Write([]byte("OK"))
 	})
 
