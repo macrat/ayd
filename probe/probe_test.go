@@ -48,7 +48,7 @@ func TestTargetURLNormalize(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		p, err := probe.Get(tt.Input)
+		p, err := probe.New(tt.Input)
 		if err != nil {
 			t.Errorf("%#v: failed to parse: %#s", tt.Input, err)
 			continue
@@ -91,7 +91,7 @@ type ProbeTest struct {
 func AssertProbe(t *testing.T, tests []ProbeTest) {
 	for _, tt := range tests {
 		t.Run(tt.Target, func(t *testing.T) {
-			p, err := probe.Get(tt.Target)
+			p, err := probe.New(tt.Target)
 			if err != nil {
 				t.Fatalf("failed to create probe: %s", err)
 			}

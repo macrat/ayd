@@ -60,7 +60,7 @@ func ParseArgs(args []string) ([]Task, []error) {
 			continue
 		}
 
-		p, err := probe.Get(a)
+		p, err := probe.New(a)
 		if err != nil {
 			switch err {
 			case probe.ErrUnsupportedScheme:

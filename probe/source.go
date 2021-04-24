@@ -140,7 +140,7 @@ func (p SourceProbe) load(path string, ignores ignoreSet) (*probeSet, error) {
 			continue
 		}
 
-		probe, err := GetByURL(target)
+		probe, err := NewFromURL(target)
 		if err != nil {
 			invalids = append(invalids, scanner.Text)
 		} else {

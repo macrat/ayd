@@ -14,7 +14,7 @@ type Alert struct {
 }
 
 func NewAlert(target string) (*Alert, error) {
-	p, err := probe.Get(target)
+	p, err := probe.New(target)
 	if err != nil {
 		return nil, err
 	}
@@ -38,7 +38,7 @@ func (a *Alert) Trigger(incident *store.Incident) []store.Record {
 	u := *a.target
 	u.RawQuery = qs.Encode()
 
-	p, err := probe.GetByURL(&u)
+	p, err := probe.NewFromURL(&u)
 	if err != nil {
 		return []store.Record{{
 			CheckedAt: time.Now(),

@@ -20,7 +20,7 @@ type Probe interface {
 	Check(context.Context) []store.Record
 }
 
-func GetByURL(u *url.URL) (Probe, error) {
+func NewFromURL(u *url.URL) (Probe, error) {
 	if strings.HasPrefix(u.Scheme, "http-") || strings.HasPrefix(u.Scheme, "https-") {
 		return NewHTTPProbe(u)
 	}
@@ -43,7 +43,7 @@ func GetByURL(u *url.URL) (Probe, error) {
 	}
 }
 
-func Get(rawURL string) (Probe, error) {
+func New(rawURL string) (Probe, error) {
 	u, err := url.Parse(rawURL)
 	if err != nil {
 		return nil, ErrInvalidURI
@@ -53,5 +53,5 @@ func Get(rawURL string) (Probe, error) {
 		return nil, ErrMissingScheme
 	}
 
-	return GetByURL(u)
+	return NewFromURL(u)
 }
