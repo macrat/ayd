@@ -118,3 +118,19 @@ func TestFreezeProbeHistory(t *testing.T) {
 		})
 	}
 }
+
+func BenchmarkFreeze(b *testing.B) {
+	s, err := store.New("./testdata/test.log")
+	if err != nil {
+		b.Fatalf("failed to open store: %s", err)
+	}
+
+	if err = s.Restore(); err != nil {
+		b.Fatalf("failed to restore store: %s", err)
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		freezeStatus(s)
+	}
+}
