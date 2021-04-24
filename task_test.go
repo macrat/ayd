@@ -35,7 +35,7 @@ func TestMakeJob(t *testing.T) {
 	defer s.Close()
 
 	task := main.Task{Probe: PanicProbe{}}
-	task.MakeJob(s).Run()
+	task.MakeJob(context.Background(), s).Run()
 
 	history, ok := s.ProbeHistory["test:panic"]
 	if !ok {

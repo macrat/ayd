@@ -108,7 +108,7 @@ func (p ExecuteProbe) Check(ctx context.Context) []store.Record {
 		select {
 		case <-ctx.Done():
 			status = store.STATUS_UNKNOWN
-			message = "timeout"
+			message = "timed out or interrupted"
 		default:
 		}
 

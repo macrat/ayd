@@ -100,7 +100,7 @@ func (p HTTPProbe) Check(ctx context.Context) []store.Record {
 		}
 		if e := errors.Unwrap(err); e != nil && e.Error() == "context deadline exceeded" {
 			status = store.STATUS_UNKNOWN
-			message = "timeout"
+			message = "timed out or interrupted"
 		}
 	} else {
 		message = resp.Status

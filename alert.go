@@ -29,7 +29,7 @@ func (a *Alert) Target() *url.URL {
 	}
 }
 
-func (a *Alert) Trigger(incident *store.Incident) []store.Record {
+func (a *Alert) Trigger(ctx context.Context, incident *store.Incident) []store.Record {
 	qs := a.target.Query()
 	qs.Set("ayd_target", incident.Target.String())
 	qs.Set("ayd_checked_at", incident.CausedAt.Format(time.RFC3339))
@@ -48,7 +48,7 @@ func (a *Alert) Trigger(incident *store.Incident) []store.Record {
 		}}
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), TASK_TIMEOUT)
+	ctx, cancel := context.WithTimeout(ctx, TASK_TIMEOUT)
 	defer cancel()
 
 	result := p.Check(ctx)

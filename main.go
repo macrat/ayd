@@ -1,10 +1,12 @@
 package main
 
 import (
+	"context"
 	_ "embed"
 	"flag"
 	"fmt"
 	"os"
+	"os/signal"
 	"text/template"
 	"time"
 
@@ -73,18 +75,23 @@ func main() {
 	}
 	defer s.Close()
 
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer stop()
+
 	if *alertURI != "" {
 		alert, err := NewAlert(*alertURI)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "Invalid alert target:", err)
 			os.Exit(2)
 		}
-		s.OnIncident = append(s.OnIncident, alert.Trigger)
+		s.OnIncident = append(s.OnIncident, func(i *store.Incident) []store.Record {
+			return alert.Trigger(ctx, i)
+		})
 	}
 
 	if *oneshot {
-		os.Exit(RunOneshot(s, tasks))
+		os.Exit(RunOneshot(ctx, s, tasks))
 	} else {
-		os.Exit(RunServer(s, tasks))
+		os.Exit(RunServer(ctx, s, tasks))
 	}
 }

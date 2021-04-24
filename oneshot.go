@@ -1,13 +1,14 @@
 package main
 
 import (
+	"context"
 	"sync"
 	"sync/atomic"
 
 	"github.com/macrat/ayd/store"
 )
 
-func RunOneshot(s *store.Store, tasks []Task) (exitCode int) {
+func RunOneshot(ctx context.Context, s *store.Store, tasks []Task) (exitCode int) {
 	var failure atomic.Value
 	var unknown atomic.Value
 
@@ -25,7 +26,7 @@ func RunOneshot(s *store.Store, tasks []Task) (exitCode int) {
 	for _, t := range tasks {
 		wg.Add(1)
 
-		f := t.MakeJob(s).Run
+		f := t.MakeJob(ctx, s).Run
 		go func() {
 			f()
 			wg.Done()
