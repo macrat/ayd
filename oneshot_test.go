@@ -94,7 +94,7 @@ func (p DummyProbe) Check(ctx context.Context) []store.Record {
 	}}
 }
 
-func BenchmarkRunOneshotWith10000Targets(b *testing.B) {
+func BenchmarkRunOneshot(b *testing.B) {
 	for _, status := range []store.Status{store.STATUS_UNKNOWN, store.STATUS_HEALTHY, store.STATUS_FAILURE} {
 		name := status.String()
 		if status == store.STATUS_UNKNOWN {
@@ -102,32 +102,36 @@ func BenchmarkRunOneshotWith10000Targets(b *testing.B) {
 		}
 
 		b.Run(name, func(b *testing.B) {
-			f, err := os.CreateTemp("", "ayd-test-*")
-			if err != nil {
-				b.Fatalf("failed to create log file: %s", err)
-			}
-			defer os.Remove(f.Name())
-			f.Close()
+			for _, n := range []int{10, 25, 50, 75, 100, 250, 500, 750, 1000} {
+				b.Run(fmt.Sprintf("%dtargets", n), func(b *testing.B) {
+					f, err := os.CreateTemp("", "ayd-test-*")
+					if err != nil {
+						b.Fatalf("failed to create log file: %s", err)
+					}
+					defer os.Remove(f.Name())
+					f.Close()
 
-			s, err := store.New(f.Name())
-			if err != nil {
-				b.Fatalf("failed to create store: %s", err)
-			}
-			s.Console = io.Discard
-			defer s.Close()
+					s, err := store.New(f.Name())
+					if err != nil {
+						b.Fatalf("failed to create store: %s", err)
+					}
+					s.Console = io.Discard
+					defer s.Close()
 
-			tasks := make([]main.Task, 10000)
-			schedule, _ := main.ParseIntervalSchedule("1s")
-			for i := range tasks {
-				tasks[i] = main.Task{Schedule: schedule, Probe: DummyProbe{target: &url.URL{Scheme: "dummy", Opaque: fmt.Sprintf("benchmark-%d", i)}, status: status}}
-			}
+					tasks := make([]main.Task, n)
+					schedule, _ := main.ParseIntervalSchedule("1s")
+					for i := range tasks {
+						tasks[i] = main.Task{Schedule: schedule, Probe: DummyProbe{target: &url.URL{Scheme: "dummy", Opaque: fmt.Sprintf("benchmark-%d", i)}, status: status}}
+					}
 
-			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-			defer cancel()
+					ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+					defer cancel()
 
-			b.ResetTimer()
-			for i := 0; i < b.N; i++ {
-				main.RunOneshot(ctx, s, tasks)
+					b.ResetTimer()
+					for i := 0; i < b.N; i++ {
+						main.RunOneshot(ctx, s, tasks)
+					}
+				})
 			}
 		})
 	}
