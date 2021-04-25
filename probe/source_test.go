@@ -2,6 +2,9 @@ package probe_test
 
 import (
 	"context"
+	"fmt"
+	"net/url"
+	"os"
 	"regexp"
 	"testing"
 	"time"
@@ -88,6 +91,30 @@ func TestSource(t *testing.T) {
 
 			for target := range tt.Records {
 				t.Errorf("missing record of %s", target)
+			}
+		})
+	}
+}
+
+func BenchmarkSource_load(b *testing.B) {
+	for _, n := range []int{10, 25, 50, 75, 100, 250, 500, 750, 1000} {
+		b.Run(fmt.Sprint(n), func(b *testing.B) {
+			f, err := os.CreateTemp("", "ayd-test-*-list.txt")
+			if err != nil {
+				b.Fatalf("failed to create test file: %s", err)
+			}
+			defer f.Close()
+			defer os.Remove(f.Name())
+
+			for i := 0; i < n; i++ {
+				fmt.Fprintf(f, "ping:host-%d\n", i)
+			}
+
+			target := &url.URL{Scheme: "source", Opaque: f.Name()}
+
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				_, _ = probe.NewSourceProbe(target)
 			}
 		})
 	}
