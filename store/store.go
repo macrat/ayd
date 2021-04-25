@@ -22,11 +22,11 @@ type ProbeHistory struct {
 
 type ProbeHistoryMap map[string]*ProbeHistory
 
-func (hs ProbeHistoryMap) append(r Record) {
+func (hs ProbeHistoryMap) Append(r Record) {
 	target := r.Target.String()
 
 	if h, ok := hs[target]; ok {
-		if len(h.Records) > PROBE_HISTORY_LEN {
+		if len(h.Records) >= PROBE_HISTORY_LEN {
 			h.Records = h.Records[1:]
 		}
 
@@ -156,7 +156,7 @@ func (s *Store) appendWithoutLock(rs []Record) {
 		_, s.lastError = s.file.Write(msg)
 
 		if r.Target.Scheme != "alert" {
-			s.probeHistory.append(r)
+			s.probeHistory.Append(r)
 			s.setIncidentIfNeed(r, true)
 		}
 	}
@@ -190,7 +190,7 @@ func (s *Store) Restore() error {
 		}
 
 		if r.Target.Scheme != "alert" {
-			s.probeHistory.append(r)
+			s.probeHistory.Append(r)
 			s.setIncidentIfNeed(r, false)
 		}
 	}
