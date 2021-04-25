@@ -65,7 +65,7 @@ type Store struct {
 	Console io.Writer
 
 	ProbeHistory     ProbeHistoryMap
-	CurrentIncidents []*Incident
+	currentIncidents map[string]*Incident
 	IncidentHistory  []*Incident
 
 	OnIncident    []IncidentHandler
@@ -77,9 +77,10 @@ type Store struct {
 
 func New(path string) (*Store, error) {
 	store := &Store{
-		Path:         path,
-		Console:      os.Stdout,
-		ProbeHistory: make(ProbeHistoryMap),
+		Path:             path,
+		Console:          os.Stdout,
+		ProbeHistory:     make(ProbeHistoryMap),
+		currentIncidents: make(map[string]*Incident),
 	}
 
 	var err error
@@ -95,29 +96,39 @@ func (s *Store) Close() error {
 	return s.file.Close()
 }
 
+func (s *Store) CurrentIncidents() []*Incident {
+	result := make([]*Incident, len(s.currentIncidents))
+
+	i := 0
+	for _, x := range s.currentIncidents {
+		result[i] = x
+		i++
+	}
+
+	sort.Sort(byIncidentCaused(result))
+
+	return result
+}
+
 func (s *Store) setIncidentIfNeed(r Record, needCallback bool) {
-	for i := 0; i < len(s.CurrentIncidents); i++ {
-		x := s.CurrentIncidents[i]
-		if x.SameTarget(r) {
-			if !x.IsContinued(r) {
-				x.ResolvedAt = r.CheckedAt
-				s.IncidentHistory = append(s.IncidentHistory, x)
-				s.CurrentIncidents = append(s.CurrentIncidents[:i], s.CurrentIncidents[i+1:]...)
-
-				if len(s.IncidentHistory) > INCIDENT_HISTORY_LEN {
-					s.IncidentHistory = s.IncidentHistory[1:]
-				}
-
-				break
-			}
-
+	target := r.Target.String()
+	if cur, ok := s.currentIncidents[target]; ok {
+		if cur.IsContinued(r) {
 			return
+		}
+
+		cur.ResolvedAt = r.CheckedAt
+		s.IncidentHistory = append(s.IncidentHistory, cur)
+		delete(s.currentIncidents, target)
+
+		if len(s.IncidentHistory) > INCIDENT_HISTORY_LEN {
+			s.IncidentHistory = s.IncidentHistory[1:]
 		}
 	}
 
 	if r.Status != STATUS_HEALTHY {
 		incident := NewIncident(r)
-		s.CurrentIncidents = append(s.CurrentIncidents, incident)
+		s.currentIncidents[target] = incident
 
 		if needCallback {
 			s.IncidentCount++

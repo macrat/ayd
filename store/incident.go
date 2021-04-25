@@ -29,3 +29,17 @@ func (i *Incident) SameTarget(r Record) bool {
 func (i *Incident) IsContinued(r Record) bool {
 	return i.ResolvedAt.IsZero() && i.Status == r.Status && i.Message == r.Message
 }
+
+type byIncidentCaused []*Incident
+
+func (xs byIncidentCaused) Len() int {
+	return len(xs)
+}
+
+func (xs byIncidentCaused) Less(i, j int) bool {
+	return xs[i].CausedAt.Before(xs[j].CausedAt)
+}
+
+func (xs byIncidentCaused) Swap(i, j int) {
+	xs[i], xs[j] = xs[j], xs[i]
+}

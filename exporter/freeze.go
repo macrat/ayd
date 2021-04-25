@@ -91,7 +91,7 @@ func freezeStatus(s *store.Store) frozenStatus {
 		status.CurrentStatus = append(status.CurrentStatus, freezeProbeHistory(r))
 	}
 
-	for _, i := range s.CurrentIncidents {
+	for _, i := range s.CurrentIncidents() {
 		status.CurrentIncidents = append(status.CurrentIncidents, freezeIncident(i))
 	}
 	for _, i := range s.IncidentHistory {
