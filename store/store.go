@@ -40,21 +40,6 @@ func (hs ProbeHistoryMap) append(r Record) {
 	}
 }
 
-func (hs ProbeHistoryMap) AsSortedArray() []*ProbeHistory {
-	var targets []string
-	for t := range hs {
-		targets = append(targets, t)
-	}
-	sort.Strings(targets)
-
-	var result []*ProbeHistory
-	for _, t := range targets {
-		result = append(result, hs[t])
-	}
-
-	return result
-}
-
 type IncidentHandler func(*Incident) []Record
 
 type Store struct {
@@ -64,9 +49,9 @@ type Store struct {
 
 	Console io.Writer
 
-	ProbeHistory     ProbeHistoryMap
+	probeHistory     ProbeHistoryMap
 	currentIncidents map[string]*Incident
-	IncidentHistory  []*Incident
+	incidentHistory  []*Incident
 
 	OnIncident    []IncidentHandler
 	IncidentCount int
@@ -79,7 +64,7 @@ func New(path string) (*Store, error) {
 	store := &Store{
 		Path:             path,
 		Console:          os.Stdout,
-		ProbeHistory:     make(ProbeHistoryMap),
+		probeHistory:     make(ProbeHistoryMap),
 		currentIncidents: make(map[string]*Incident),
 	}
 
@@ -96,6 +81,21 @@ func (s *Store) Close() error {
 	return s.file.Close()
 }
 
+func (s *Store) ProbeHistory() []*ProbeHistory {
+	var targets []string
+	for t := range s.probeHistory {
+		targets = append(targets, t)
+	}
+	sort.Strings(targets)
+
+	var result []*ProbeHistory
+	for _, t := range targets {
+		result = append(result, s.probeHistory[t])
+	}
+
+	return result
+}
+
 func (s *Store) CurrentIncidents() []*Incident {
 	result := make([]*Incident, len(s.currentIncidents))
 
@@ -110,6 +110,10 @@ func (s *Store) CurrentIncidents() []*Incident {
 	return result
 }
 
+func (s *Store) IncidentHistory() []*Incident {
+	return s.incidentHistory
+}
+
 func (s *Store) setIncidentIfNeed(r Record, needCallback bool) {
 	target := r.Target.String()
 	if cur, ok := s.currentIncidents[target]; ok {
@@ -118,11 +122,11 @@ func (s *Store) setIncidentIfNeed(r Record, needCallback bool) {
 		}
 
 		cur.ResolvedAt = r.CheckedAt
-		s.IncidentHistory = append(s.IncidentHistory, cur)
+		s.incidentHistory = append(s.incidentHistory, cur)
 		delete(s.currentIncidents, target)
 
-		if len(s.IncidentHistory) > INCIDENT_HISTORY_LEN {
-			s.IncidentHistory = s.IncidentHistory[1:]
+		if len(s.incidentHistory) > INCIDENT_HISTORY_LEN {
+			s.incidentHistory = s.incidentHistory[1:]
 		}
 	}
 
@@ -153,7 +157,7 @@ func (s *Store) appendWithoutLock(rs []Record) {
 		_, s.lastError = fmt.Fprintln(s.file, str)
 
 		if r.Target.Scheme != "alert" {
-			s.ProbeHistory.append(r)
+			s.probeHistory.append(r)
 			s.setIncidentIfNeed(r, true)
 		}
 	}
@@ -177,7 +181,7 @@ func (s *Store) Restore() error {
 	defer f.Close()
 	f.Seek(-LOG_RESTORE_BYTES, os.SEEK_END)
 
-	s.ProbeHistory = make(ProbeHistoryMap)
+	s.probeHistory = make(ProbeHistoryMap)
 
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
@@ -187,7 +191,7 @@ func (s *Store) Restore() error {
 		}
 
 		if r.Target.Scheme != "alert" {
-			s.ProbeHistory.append(r)
+			s.probeHistory.append(r)
 			s.setIncidentIfNeed(r, false)
 		}
 	}
@@ -199,8 +203,8 @@ func (s *Store) AddTarget(target *url.URL) {
 	s.Lock()
 	defer s.Unlock()
 
-	if _, ok := s.ProbeHistory[target.String()]; !ok {
-		s.ProbeHistory[target.String()] = &ProbeHistory{
+	if _, ok := s.probeHistory[target.String()]; !ok {
+		s.probeHistory[target.String()] = &ProbeHistory{
 			Target: target,
 		}
 	}

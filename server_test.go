@@ -58,7 +58,7 @@ func TestRunServer(t *testing.T) {
 			defer s.Unlock()
 
 			count := 0
-			for _, xs := range s.ProbeHistory {
+			for _, xs := range s.ProbeHistory() {
 				count += len(xs.Records)
 			}
 

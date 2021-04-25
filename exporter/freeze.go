@@ -87,14 +87,14 @@ func freezeStatus(s *store.Store) frozenStatus {
 		ReportedAt:       time.Now().Format(time.RFC3339),
 	}
 
-	for _, r := range s.ProbeHistory.AsSortedArray() {
+	for _, r := range s.ProbeHistory() {
 		status.CurrentStatus = append(status.CurrentStatus, freezeProbeHistory(r))
 	}
 
 	for _, i := range s.CurrentIncidents() {
 		status.CurrentIncidents = append(status.CurrentIncidents, freezeIncident(i))
 	}
-	for _, i := range s.IncidentHistory {
+	for _, i := range s.IncidentHistory() {
 		status.IncidentHistory = append(status.IncidentHistory, freezeIncident(i))
 	}
 

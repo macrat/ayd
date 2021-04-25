@@ -37,10 +37,7 @@ func TestMakeJob(t *testing.T) {
 	task := main.Task{Probe: PanicProbe{}}
 	task.MakeJob(context.Background(), s).Run()
 
-	history, ok := s.ProbeHistory["test:panic"]
-	if !ok {
-		t.Fatalf("history was not found:\ns.ProbeHistory = %#v", s.ProbeHistory)
-	}
+	history := s.ProbeHistory()[0]
 
 	if len(history.Records) != 1 {
 		t.Fatalf("unexpected length history found\nhistory.Records = %#v", history.Records)

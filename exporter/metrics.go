@@ -10,7 +10,7 @@ import (
 
 func MetricsExporter(s *store.Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		for _, hs := range s.ProbeHistory {
+		for _, hs := range s.ProbeHistory() {
 			if len(hs.Records) > 0 {
 				last := hs.Records[len(hs.Records)-1]
 

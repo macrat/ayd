@@ -69,25 +69,30 @@ func TestStore_restore(t *testing.T) {
 		t.Fatalf("failed to restore store: %s", err)
 	}
 
-	if len(s1.ProbeHistory) != len(s2.ProbeHistory) {
-		t.Fatalf("unexpected history length: %d", len(s2.ProbeHistory))
+	hs1 := s1.ProbeHistory()
+	hs2 := s2.ProbeHistory()
+
+	if len(hs1) != len(hs2) {
+		t.Fatalf("unexpected history length: %d", len(s2.ProbeHistory()))
 	}
 
-	for key, ph1 := range s1.ProbeHistory {
-		ph2, ok := s2.ProbeHistory[key]
-		if !ok {
-			t.Errorf("restored store has no %s", key)
+	for i := range hs1 {
+		ph1 := hs1[i]
+		ph2 := hs2[i]
+
+		if ph1.Target.String() != ph2.Target.String() {
+			t.Errorf("%d: different target %s != %s", i, ph1.Target, ph2.Target)
 			continue
 		}
 
 		if len(ph1.Records) != len(ph2.Records) {
-			t.Errorf("%s: unmatch restored records number: %d != %d", key, len(ph1.Records), len(ph2.Records))
+			t.Errorf("%d: unmatch restored records number: %d != %d", i, len(ph1.Records), len(ph2.Records))
 			continue
 		}
 
-		for i := range ph1.Records {
-			if ph1.Records[i].Equals(*ph2.Records[i]) {
-				t.Errorf("%s %d: unexpected record", key, i)
+		for j := range ph1.Records {
+			if ph1.Records[j].Equals(*ph2.Records[j]) {
+				t.Errorf("%d %d: unexpected record", i, j)
 			}
 		}
 	}
@@ -107,7 +112,7 @@ func TestStore_AddTarget(t *testing.T) {
 	}
 	defer s.Close()
 
-	if len(s.ProbeHistory) != 0 {
+	if len(s.ProbeHistory()) != 0 {
 		t.Fatalf("found unexpected probe history")
 	}
 
@@ -116,7 +121,7 @@ func TestStore_AddTarget(t *testing.T) {
 		Message: "already exists history",
 		Status:  store.STATUS_HEALTHY,
 	})
-	if len(s.ProbeHistory) != 1 {
+	if len(s.ProbeHistory()) != 1 {
 		t.Fatalf("found unexpected probe history")
 	}
 
@@ -124,11 +129,11 @@ func TestStore_AddTarget(t *testing.T) {
 	s.AddTarget(&url.URL{Scheme: "dummy", Opaque: "add-target-1"})
 	s.AddTarget(&url.URL{Scheme: "dummy", Opaque: "add-target-2"})
 
-	if len(s.ProbeHistory) != 2 {
-		t.Fatalf("unexpected length probe history: %d", len(s.ProbeHistory))
+	if len(s.ProbeHistory()) != 2 {
+		t.Fatalf("unexpected length probe history: %d", len(s.ProbeHistory()))
 	}
 
-	hs := s.ProbeHistory.AsSortedArray()
+	hs := s.ProbeHistory()
 
 	if hs[0].Target.String() != "dummy:add-target-1" {
 		t.Errorf("unexpected 1st target: %s", hs[0].Target)
@@ -211,42 +216,42 @@ func TestStore_incident(t *testing.T) {
 
 	appendRecord("incident-test-1", "1-1", store.STATUS_HEALTHY)
 	assertIncidents(s.CurrentIncidents())
-	assertIncidents(s.IncidentHistory)
+	assertIncidents(s.IncidentHistory())
 	assertLastIncident("")
 
 	appendRecord("incident-test-1", "1-2", store.STATUS_FAILURE)
 	assertIncidents(s.CurrentIncidents(), "dummy:incident-test-1")
-	assertIncidents(s.IncidentHistory)
+	assertIncidents(s.IncidentHistory())
 	assertLastIncident("1-2")
 
 	appendRecord("incident-test-1", "1-2", store.STATUS_FAILURE)
 	assertIncidents(s.CurrentIncidents(), "dummy:incident-test-1")
-	assertIncidents(s.IncidentHistory)
+	assertIncidents(s.IncidentHistory())
 	assertLastIncident("1-2")
 
 	appendRecord("incident-test-2", "2-1", store.STATUS_FAILURE)
 	assertIncidents(s.CurrentIncidents(), "dummy:incident-test-1", "dummy:incident-test-2")
-	assertIncidents(s.IncidentHistory)
+	assertIncidents(s.IncidentHistory())
 	assertLastIncident("2-1")
 
 	appendRecord("incident-test-1", "1-3", store.STATUS_FAILURE)
 	assertIncidents(s.CurrentIncidents(), "dummy:incident-test-2", "dummy:incident-test-1")
-	assertIncidents(s.IncidentHistory, "dummy:incident-test-1")
+	assertIncidents(s.IncidentHistory(), "dummy:incident-test-1")
 	assertLastIncident("1-3")
 
 	appendRecord("incident-test-2", "2-1", store.STATUS_FAILURE)
 	assertIncidents(s.CurrentIncidents(), "dummy:incident-test-2", "dummy:incident-test-1")
-	assertIncidents(s.IncidentHistory, "dummy:incident-test-1")
+	assertIncidents(s.IncidentHistory(), "dummy:incident-test-1")
 	assertLastIncident("1-3")
 
 	appendRecord("incident-test-1", "1-4", store.STATUS_HEALTHY)
 	assertIncidents(s.CurrentIncidents(), "dummy:incident-test-2")
-	assertIncidents(s.IncidentHistory, "dummy:incident-test-1", "dummy:incident-test-1")
+	assertIncidents(s.IncidentHistory(), "dummy:incident-test-1", "dummy:incident-test-1")
 	assertLastIncident("1-3")
 
 	appendRecord("incident-test-2", "2-2", store.STATUS_HEALTHY)
 	assertIncidents(s.CurrentIncidents())
-	assertIncidents(s.IncidentHistory, "dummy:incident-test-1", "dummy:incident-test-1", "dummy:incident-test-2")
+	assertIncidents(s.IncidentHistory(), "dummy:incident-test-1", "dummy:incident-test-1", "dummy:incident-test-2")
 	assertLastIncident("1-3")
 }
 
@@ -272,8 +277,8 @@ func TestStore_incident_len_limit(t *testing.T) {
 		})
 	}
 
-	if len(s.IncidentHistory) != store.INCIDENT_HISTORY_LEN {
-		t.Fatalf("unexpected incident history length: %d (expected maximum is %d)", len(s.IncidentHistory), store.INCIDENT_HISTORY_LEN)
+	if len(s.IncidentHistory()) != store.INCIDENT_HISTORY_LEN {
+		t.Fatalf("unexpected incident history length: %d (expected maximum is %d)", len(s.IncidentHistory()), store.INCIDENT_HISTORY_LEN)
 	}
 }
 
