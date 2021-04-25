@@ -21,19 +21,20 @@ type frozenProbeHistory struct {
 }
 
 func freezeProbeHistory(h *store.ProbeHistory) frozenProbeHistory {
-	hs := []frozenRecord{}
-	for i := 0; i < store.PROBE_HISTORY_LEN-len(h.Records); i++ {
-		hs = append(hs, frozenRecord{
+	hs := make([]frozenRecord, store.PROBE_HISTORY_LEN)
+	offset := store.PROBE_HISTORY_LEN - len(h.Records)
+	for i := 0; i < offset; i++ {
+		hs[i] = frozenRecord{
 			Status: "NO_DATA",
-		})
+		}
 	}
-	for _, x := range h.Records {
-		hs = append(hs, frozenRecord{
+	for i, x := range h.Records {
+		hs[offset+i] = frozenRecord{
 			CheckedAt: x.CheckedAt.Format(time.RFC3339),
 			Status:    x.Status.String(),
 			Message:   x.Message,
 			Latency:   float64(x.Latency.Microseconds()) / 1000,
-		})
+		}
 	}
 
 	status := "NO_DATA"
@@ -81,21 +82,26 @@ type frozenStatus struct {
 }
 
 func freezeStatus(s *store.Store) frozenStatus {
+	ph := s.ProbeHistory()
+	ci := s.CurrentIncidents()
+	ih := s.IncidentHistory()
+
 	status := frozenStatus{
-		CurrentIncidents: []frozenIncident{},
-		IncidentHistory:  []frozenIncident{},
+		CurrentStatus:    make([]frozenProbeHistory, len(ph)),
+		CurrentIncidents: make([]frozenIncident, len(ci)),
+		IncidentHistory:  make([]frozenIncident, len(ih)),
 		ReportedAt:       time.Now().Format(time.RFC3339),
 	}
 
-	for _, r := range s.ProbeHistory() {
-		status.CurrentStatus = append(status.CurrentStatus, freezeProbeHistory(r))
+	for i, x := range ph {
+		status.CurrentStatus[i] = freezeProbeHistory(x)
 	}
 
-	for _, i := range s.CurrentIncidents() {
-		status.CurrentIncidents = append(status.CurrentIncidents, freezeIncident(i))
+	for i, x := range ci {
+		status.CurrentIncidents[i] = freezeIncident(x)
 	}
-	for _, i := range s.IncidentHistory() {
-		status.IncidentHistory = append(status.IncidentHistory, freezeIncident(i))
+	for i, x := range s.IncidentHistory() {
+		status.IncidentHistory[i] = freezeIncident(x)
 	}
 
 	return status
