@@ -143,11 +143,6 @@ func (s *Store) setIncidentIfNeed(r Record, needCallback bool) {
 }
 
 func (s *Store) appendWithoutLock(rs []Record) {
-	if s.file == nil {
-		os.Stderr.Write([]byte("log file isn't opened. may be bug.\n"))
-		return
-	}
-
 	for _, r := range rs {
 		r = r.Sanitize()
 
