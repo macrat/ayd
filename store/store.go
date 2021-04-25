@@ -2,7 +2,6 @@ package store
 
 import (
 	"bufio"
-	"fmt"
 	"io"
 	"net/url"
 	"os"
@@ -145,16 +144,16 @@ func (s *Store) setIncidentIfNeed(r Record, needCallback bool) {
 
 func (s *Store) appendWithoutLock(rs []Record) {
 	if s.file == nil {
-		fmt.Fprintf(os.Stderr, "log file isn't opened. may be bug.")
+		os.Stderr.Write([]byte("log file isn't opened. may be bug.\n"))
 		return
 	}
 
 	for _, r := range rs {
 		r = r.Sanitize()
 
-		str := r.String()
-		fmt.Fprintln(s.Console, str)
-		_, s.lastError = fmt.Fprintln(s.file, str)
+		msg := []byte(r.String() + "\n")
+		s.Console.Write(msg)
+		_, s.lastError = s.file.Write(msg)
 
 		if r.Target.Scheme != "alert" {
 			s.probeHistory.append(r)

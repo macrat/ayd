@@ -98,7 +98,7 @@ func (r Record) String() string {
 	return strings.Join([]string{
 		r.CheckedAt.Format(time.RFC3339),
 		r.Status.String(),
-		fmt.Sprintf("%.3f", float64(r.Latency.Microseconds())/1000),
+		strconv.FormatFloat(float64(r.Latency.Microseconds())/1000, 'f', 3, 64),
 		r.Target.String(),
 		EscapeMessage(r.Message),
 	}, "\t")

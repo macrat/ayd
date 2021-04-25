@@ -3,7 +3,6 @@ package probe
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net"
 	"net/url"
 	"time"
@@ -61,7 +60,7 @@ func (p TCPProbe) Check(ctx context.Context) []store.Record {
 		}
 	} else {
 		r.Status = store.STATUS_HEALTHY
-		r.Message = fmt.Sprintf("%s -> %s", conn.LocalAddr(), conn.RemoteAddr())
+		r.Message = conn.LocalAddr().String() + " -> " + conn.RemoteAddr().String()
 		conn.Close()
 	}
 

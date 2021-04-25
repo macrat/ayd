@@ -3,7 +3,6 @@ package probe
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/url"
 	"os"
 	"os/exec"
@@ -36,7 +35,7 @@ func NewExecuteProbe(u *url.URL) (ExecuteProbe, error) {
 
 	p.env = os.Environ()
 	for k, v := range u.Query() {
-		p.env = append(p.env, fmt.Sprintf("%s=%s", k, v[len(v)-1]))
+		p.env = append(p.env, k+"="+v[len(v)-1])
 	}
 
 	return p, nil
