@@ -203,11 +203,14 @@ func TestStore_incident(t *testing.T) {
 			t.FailNow()
 		}
 	}
+
+	var offset time.Duration
 	appendRecord := func(opaque, message string, status store.Status) {
 		t.Helper()
+		offset += 1 * time.Second
 
 		s.Append(store.Record{
-			CheckedAt: time.Now(),
+			CheckedAt: time.Now().Add(offset),
 			Target:    &url.URL{Scheme: "dummy", Opaque: opaque},
 			Message:   message,
 			Status:    status,
