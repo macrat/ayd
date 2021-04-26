@@ -99,7 +99,7 @@ func (r Record) String() string {
 		r.CheckedAt.Format(time.RFC3339),
 		r.Status.String(),
 		strconv.FormatFloat(float64(r.Latency.Microseconds())/1000, 'f', 3, 64),
-		r.Target.String(),
+		r.Target.Redacted(),
 		EscapeMessage(r.Message),
 	}, "\t")
 }

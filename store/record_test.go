@@ -2,6 +2,7 @@ package store_test
 
 import (
 	"net/url"
+	"strings"
 	"testing"
 	"time"
 
@@ -90,6 +91,27 @@ func TestRecord(t *testing.T) {
 		if tt.Record.String() != tt.String {
 			t.Errorf("expected: %#v\n but got: %#v", tt.String, tt.Record.String())
 		}
+	}
+}
+
+func TestRecord_redact(t *testing.T) {
+	record := store.Record{
+		CheckedAt: time.Date(2021, 1, 2, 15, 4, 5, 0, time.UTC),
+		Target:    &url.URL{Scheme: "http", Path: "/path/to/file", User: url.UserPassword("MyName", "HideMe")},
+		Status:    store.STATUS_HEALTHY,
+		Message:   "hello world",
+		Latency:   123456 * time.Microsecond,
+	}
+
+	str := record.String()
+	if !strings.Contains(str, "/path/to/file") {
+		t.Errorf("record does not contain URL path\n%#v", str)
+	}
+	if !strings.Contains(str, "MyName") {
+		t.Errorf("record does not contain username\n%#v", str)
+	}
+	if strings.Contains(str, "HideMe") {
+		t.Errorf("record contains password\n%#v", str)
 	}
 }
 
