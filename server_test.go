@@ -54,8 +54,6 @@ func TestRunServer(t *testing.T) {
 			}
 
 			time.Sleep(10 * time.Millisecond)
-			s.Lock()
-			defer s.Unlock()
 
 			count := 0
 			for _, xs := range s.ProbeHistory() {

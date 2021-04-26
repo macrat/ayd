@@ -42,7 +42,7 @@ func (hs ProbeHistoryMap) Append(r Record) {
 type IncidentHandler func(*Incident) []Record
 
 type Store struct {
-	sync.Mutex
+	sync.RWMutex
 
 	Path string
 
@@ -81,6 +81,9 @@ func (s *Store) Close() error {
 }
 
 func (s *Store) ProbeHistory() []*ProbeHistory {
+	s.RLock()
+	defer s.RUnlock()
+
 	var targets []string
 	for t := range s.probeHistory {
 		targets = append(targets, t)
@@ -96,6 +99,9 @@ func (s *Store) ProbeHistory() []*ProbeHistory {
 }
 
 func (s *Store) CurrentIncidents() []*Incident {
+	s.RLock()
+	defer s.RUnlock()
+
 	result := make([]*Incident, len(s.currentIncidents))
 
 	i := 0
