@@ -34,27 +34,6 @@ func (is ignoreSet) Has(s string) bool {
 	return false
 }
 
-type probeSet struct {
-	Probes []Probe
-}
-
-func (ps *probeSet) Has(x Probe) bool {
-	for _, p := range ps.Probes {
-		if x.Target().String() == p.Target().String() {
-			return true
-		}
-	}
-	return false
-}
-
-func (ps *probeSet) Append(xs ...Probe) {
-	for _, x := range xs {
-		if !ps.Has(x) {
-			ps.Probes = append(ps.Probes, x)
-		}
-	}
-}
-
 func normalizeSourceURL(u *url.URL) *url.URL {
 	if u.Opaque == "" {
 		return &url.URL{Scheme: "source", Opaque: u.Path}
@@ -108,13 +87,13 @@ func (p SourceProbe) Target() *url.URL {
 	return p.target
 }
 
-func (p SourceProbe) load(path string, ignores ignoreSet) (*probeSet, error) {
+func (p SourceProbe) load(path string, ignores ignoreSet) (map[string]Probe, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, err
 	}
 
-	probes := &probeSet{}
+	probes := make(map[string]Probe)
 	var invalids invalidURIs
 
 	scanner := &sourceScanner{Scanner: bufio.NewScanner(f)}
@@ -129,7 +108,9 @@ func (p SourceProbe) load(path string, ignores ignoreSet) (*probeSet, error) {
 			if !ignores.Has(target.Opaque) {
 				ps, err := p.load(target.Opaque, append(ignores, path))
 				if err == nil {
-					probes.Append(ps.Probes...)
+					for k, v := range ps {
+						probes[k] = v
+					}
 				} else if es, ok := err.(invalidURIs); ok {
 					invalids = append(invalids, es...)
 				} else {
@@ -144,7 +125,7 @@ func (p SourceProbe) load(path string, ignores ignoreSet) (*probeSet, error) {
 		if err != nil {
 			invalids = append(invalids, scanner.Text)
 		} else {
-			probes.Append(probe)
+			probes[probe.Target().String()] = probe
 		}
 	}
 
@@ -173,10 +154,10 @@ func (p SourceProbe) Check(ctx context.Context) []store.Record {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	ch := make(chan []store.Record, len(probes.Probes))
+	ch := make(chan []store.Record, len(probes))
 	wg := &sync.WaitGroup{}
 
-	for _, p := range probes.Probes {
+	for _, p := range probes {
 		wg.Add(1)
 
 		go func(p Probe, ch chan []store.Record) {
@@ -197,7 +178,7 @@ func (p SourceProbe) Check(ctx context.Context) []store.Record {
 		CheckedAt: stime,
 		Target:    p.target,
 		Status:    store.STATUS_HEALTHY,
-		Message:   fmt.Sprintf("checked %d targets", len(probes.Probes)),
+		Message:   fmt.Sprintf("checked %d targets", len(probes)),
 		Latency:   d,
 	})
 }
