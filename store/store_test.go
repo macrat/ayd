@@ -17,8 +17,9 @@ func TestProbeHistoryMap(t *testing.T) {
 
 	for i := 1; i <= 100; i++ {
 		m.Append(store.Record{
-			Target:  &url.URL{Scheme: "dummy", Opaque: "append-test"},
-			Message: fmt.Sprint(i),
+			CheckedAt: time.Now().Add(time.Duration(i) * time.Second),
+			Target:    &url.URL{Scheme: "dummy", Opaque: "append-test"},
+			Message:   fmt.Sprint(i),
 		})
 	}
 
@@ -32,8 +33,9 @@ func TestProbeHistoryMap(t *testing.T) {
 
 	for i := 1; i <= 10; i++ {
 		m.Append(store.Record{
-			Target:  &url.URL{Scheme: "dummy", Opaque: "append-test-another"},
-			Message: fmt.Sprint(i),
+			CheckedAt: time.Now().Add(time.Duration(i) * time.Second),
+			Target:    &url.URL{Scheme: "dummy", Opaque: "append-test-another"},
+			Message:   fmt.Sprint(i),
 		})
 	}
 
@@ -42,6 +44,42 @@ func TestProbeHistoryMap(t *testing.T) {
 	} else if len(hs.Records) != 10 {
 		t.Errorf("unexpected number of records: %d", len(hs.Records))
 	} else if hs.Records[len(hs.Records)-1].Message != "10" {
+		t.Errorf("unexpected message of latest record: %#v", hs.Records[len(hs.Records)-1])
+	}
+
+	for i := 1; i <= 10; i++ {
+		m.Append(store.Record{
+			CheckedAt: time.Now().Add(time.Duration(-i) * time.Second),
+			Target:    &url.URL{Scheme: "dummy", Opaque: "append-test-reverse"},
+			Message:   fmt.Sprint(i),
+		})
+	}
+
+	if hs, ok := m["dummy:append-test-reverse"]; !ok {
+		t.Errorf("failed to get history\n%#v", m)
+	} else if len(hs.Records) != 10 {
+		t.Errorf("unexpected number of records: %d", len(hs.Records))
+	} else if hs.Records[len(hs.Records)-1].Message != "1" {
+		t.Errorf("unexpected message of latest record: %#v", hs.Records[len(hs.Records)-1])
+	}
+
+	timestamp := time.Now()
+	m.Append(store.Record{
+		CheckedAt: timestamp,
+		Target:    &url.URL{Scheme: "dummy", Opaque: "append-test-same-time"},
+		Message:   "first",
+	})
+	m.Append(store.Record{
+		CheckedAt: timestamp,
+		Target:    &url.URL{Scheme: "dummy", Opaque: "append-test-same-time"},
+		Message:   "second",
+	})
+
+	if hs, ok := m["dummy:append-test-same-time"]; !ok {
+		t.Errorf("failed to get history\n%#v", m)
+	} else if len(hs.Records) != 2 {
+		t.Errorf("unexpected number of records: %d", len(hs.Records))
+	} else if hs.Records[len(hs.Records)-1].Message != "second" {
 		t.Errorf("unexpected message of latest record: %#v", hs.Records[len(hs.Records)-1])
 	}
 }

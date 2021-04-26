@@ -26,11 +26,15 @@ func (hs ProbeHistoryMap) Append(r Record) {
 	target := r.Target.String()
 
 	if h, ok := hs[target]; ok {
-		if len(h.Records) >= PROBE_HISTORY_LEN {
-			h.Records = h.Records[1:]
+		h.Records = append(h.Records, &r)
+
+		for i := len(h.Records) - 1; i > 0 && h.Records[i-1].CheckedAt.After(h.Records[i].CheckedAt); i-- {
+			h.Records[i], h.Records[i-1] = h.Records[i-1], h.Records[i]
 		}
 
-		h.Records = append(h.Records, &r)
+		if len(h.Records) > PROBE_HISTORY_LEN {
+			h.Records = h.Records[1:]
+		}
 	} else {
 		hs[target] = &ProbeHistory{
 			Target:  r.Target,
