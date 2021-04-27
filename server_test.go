@@ -16,13 +16,13 @@ func TestRunServer(t *testing.T) {
 		Args    []string
 		Records int
 	}{
-		{[]string{"exec:echo#with-healthy", "exec:echo#::status::healthy", "exec:echo#hello"}, 3},
-		{[]string{"exec:echo#with-failure", "exec:echo#::status::failure", "exec:echo#hello"}, 3},
-		{[]string{"exec:echo#with-unknown", "exec:echo#::status::unknown", "exec:echo#hello"}, 3},
-		{[]string{"exec:echo#with-interval", "10m", "exec:echo#hello"}, 2},
-		{[]string{"exec:echo#single-target"}, 1},
-		{[]string{"exec:sleep#0.01"}, 1},
-		{[]string{"exec:sleep#0.2"}, 1},
+		{[]string{"dummy:#with-healthy", "dummy:healthy", "dummy:"}, 3},
+		{[]string{"dummy:#with-failure", "dummy:failure", "dummy:"}, 3},
+		{[]string{"dummy:#with-unknown", "dummy:unknown", "dummy:"}, 3},
+		{[]string{"dummy:#with-interval", "10m", "dummy:"}, 2},
+		{[]string{"dummy:#single-target"}, 1},
+		{[]string{"dummy:?latency=10ms"}, 1},
+		{[]string{"dummy:?latency=200ms"}, 1},
 	}
 
 	for _, tt := range tests {

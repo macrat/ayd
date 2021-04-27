@@ -22,19 +22,19 @@ func TestSource(t *testing.T) {
 		ErrorPattern string
 	}{
 		{"source:./testdata/healthy-list.txt", map[string]store.Status{
-			"ping:127.0.0.1":                     store.STATUS_HEALTHY,
-			"ping:localhost":                     store.STATUS_HEALTHY,
+			"dummy:healthy#sub-list":             store.STATUS_HEALTHY,
+			"dummy:healthy#healthy-list":         store.STATUS_HEALTHY,
 			"source:./testdata/healthy-list.txt": store.STATUS_HEALTHY,
 		}, ""},
 		{"source:testdata/healthy-list.txt", map[string]store.Status{
-			"ping:127.0.0.1":                   store.STATUS_HEALTHY,
-			"ping:localhost":                   store.STATUS_HEALTHY,
+			"dummy:healthy#sub-list":           store.STATUS_HEALTHY,
+			"dummy:healthy#healthy-list":       store.STATUS_HEALTHY,
 			"source:testdata/healthy-list.txt": store.STATUS_HEALTHY,
 		}, ""},
 		{"source:./testdata/failure-list.txt", map[string]store.Status{
-			"ping:127.0.0.1":                     store.STATUS_HEALTHY,
-			"ping:localhost":                     store.STATUS_HEALTHY,
-			"tcp:localhost:56789":                store.STATUS_FAILURE,
+			"dummy:healthy#sub-list":             store.STATUS_HEALTHY,
+			"dummy:healthy#failure-list":         store.STATUS_HEALTHY,
+			"dummy:failure":                      store.STATUS_FAILURE,
 			"source:./testdata/failure-list.txt": store.STATUS_HEALTHY,
 		}, ""},
 		{"source:./testdata/invalid-list.txt", map[string]store.Status{

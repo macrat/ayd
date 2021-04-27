@@ -1,6 +1,6 @@
 # invalid target list
 
-ping:localhost
+dummy:healthy#invalid-list
 
 # this is ivalid
 ::invalid host::

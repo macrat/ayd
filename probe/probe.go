@@ -38,6 +38,8 @@ func NewFromURL(u *url.URL) (Probe, error) {
 		return NewExecuteProbe(u)
 	case "source":
 		return NewSourceProbe(u)
+	case "dummy":
+		return NewDummyProbe(u)
 	default:
 		return nil, ErrUnsupportedScheme
 	}

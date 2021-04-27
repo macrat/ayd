@@ -18,12 +18,12 @@ func TestProbeHistoryMap(t *testing.T) {
 	for i := 1; i <= 100; i++ {
 		m.Append(store.Record{
 			CheckedAt: time.Now().Add(time.Duration(i) * time.Second),
-			Target:    &url.URL{Scheme: "dummy", Opaque: "append-test"},
+			Target:    &url.URL{Scheme: "dummy", Fragment: "append-test"},
 			Message:   fmt.Sprint(i),
 		})
 	}
 
-	if hs, ok := m["dummy:append-test"]; !ok {
+	if hs, ok := m["dummy:#append-test"]; !ok {
 		t.Errorf("failed to get history\n%#v", m)
 	} else if len(hs.Records) != store.PROBE_HISTORY_LEN {
 		t.Errorf("unexpected number of records: %d", len(hs.Records))
@@ -34,12 +34,12 @@ func TestProbeHistoryMap(t *testing.T) {
 	for i := 1; i <= 10; i++ {
 		m.Append(store.Record{
 			CheckedAt: time.Now().Add(time.Duration(i) * time.Second),
-			Target:    &url.URL{Scheme: "dummy", Opaque: "append-test-another"},
+			Target:    &url.URL{Scheme: "dummy", Fragment: "append-test-another"},
 			Message:   fmt.Sprint(i),
 		})
 	}
 
-	if hs, ok := m["dummy:append-test-another"]; !ok {
+	if hs, ok := m["dummy:#append-test-another"]; !ok {
 		t.Errorf("failed to get history\n%#v", m)
 	} else if len(hs.Records) != 10 {
 		t.Errorf("unexpected number of records: %d", len(hs.Records))
@@ -50,12 +50,12 @@ func TestProbeHistoryMap(t *testing.T) {
 	for i := 1; i <= 10; i++ {
 		m.Append(store.Record{
 			CheckedAt: time.Now().Add(time.Duration(-i) * time.Second),
-			Target:    &url.URL{Scheme: "dummy", Opaque: "append-test-reverse"},
+			Target:    &url.URL{Scheme: "dummy", Fragment: "append-test-reverse"},
 			Message:   fmt.Sprint(i),
 		})
 	}
 
-	if hs, ok := m["dummy:append-test-reverse"]; !ok {
+	if hs, ok := m["dummy:#append-test-reverse"]; !ok {
 		t.Errorf("failed to get history\n%#v", m)
 	} else if len(hs.Records) != 10 {
 		t.Errorf("unexpected number of records: %d", len(hs.Records))
@@ -66,16 +66,16 @@ func TestProbeHistoryMap(t *testing.T) {
 	timestamp := time.Now()
 	m.Append(store.Record{
 		CheckedAt: timestamp,
-		Target:    &url.URL{Scheme: "dummy", Opaque: "append-test-same-time"},
+		Target:    &url.URL{Scheme: "dummy", Fragment: "append-test-same-time"},
 		Message:   "first",
 	})
 	m.Append(store.Record{
 		CheckedAt: timestamp,
-		Target:    &url.URL{Scheme: "dummy", Opaque: "append-test-same-time"},
+		Target:    &url.URL{Scheme: "dummy", Fragment: "append-test-same-time"},
 		Message:   "second",
 	})
 
-	if hs, ok := m["dummy:append-test-same-time"]; !ok {
+	if hs, ok := m["dummy:#append-test-same-time"]; !ok {
 		t.Errorf("failed to get history\n%#v", m)
 	} else if len(hs.Records) != 2 {
 		t.Errorf("unexpected number of records: %d", len(hs.Records))
@@ -189,7 +189,7 @@ func TestStore_AddTarget(t *testing.T) {
 	}
 
 	s.Append(store.Record{
-		Target:  &url.URL{Scheme: "dummy", Opaque: "add-target-1"},
+		Target:  &url.URL{Scheme: "dummy", Fragment: "add-target-1"},
 		Message: "already exists history",
 		Status:  store.STATUS_HEALTHY,
 	})
@@ -197,9 +197,9 @@ func TestStore_AddTarget(t *testing.T) {
 		t.Fatalf("found unexpected probe history")
 	}
 
-	s.AddTarget(&url.URL{Scheme: "dummy", Opaque: "add-target-2"})
-	s.AddTarget(&url.URL{Scheme: "dummy", Opaque: "add-target-1"})
-	s.AddTarget(&url.URL{Scheme: "dummy", Opaque: "add-target-2"})
+	s.AddTarget(&url.URL{Scheme: "dummy", Fragment: "add-target-2"})
+	s.AddTarget(&url.URL{Scheme: "dummy", Fragment: "add-target-1"})
+	s.AddTarget(&url.URL{Scheme: "dummy", Fragment: "add-target-2"})
 
 	if len(s.ProbeHistory()) != 2 {
 		t.Fatalf("unexpected length probe history: %d", len(s.ProbeHistory()))
@@ -207,14 +207,14 @@ func TestStore_AddTarget(t *testing.T) {
 
 	hs := s.ProbeHistory()
 
-	if hs[0].Target.String() != "dummy:add-target-1" {
+	if hs[0].Target.String() != "dummy:#add-target-1" {
 		t.Errorf("unexpected 1st target: %s", hs[0].Target)
 	}
 	if len(hs[0].Records) != 1 || hs[0].Records[0].Message != "already exists history" {
 		t.Errorf("1st target's record may override: %#v", hs[0].Records)
 	}
 
-	if hs[1].Target.String() != "dummy:add-target-2" {
+	if hs[1].Target.String() != "dummy:#add-target-2" {
 		t.Errorf("unexpected 2nd target: %s", hs[1].Target)
 	}
 	if len(hs[1].Records) != 0 {
@@ -277,13 +277,13 @@ func TestStore_incident(t *testing.T) {
 	}
 
 	var offset time.Duration
-	appendRecord := func(opaque, message string, status store.Status) {
+	appendRecord := func(fragment, message string, status store.Status) {
 		t.Helper()
 		offset += 1 * time.Second
 
 		s.Append(store.Record{
 			CheckedAt: time.Now().Add(offset),
-			Target:    &url.URL{Scheme: "dummy", Opaque: opaque},
+			Target:    &url.URL{Scheme: "dummy", Fragment: fragment},
 			Message:   message,
 			Status:    status,
 		})
@@ -295,38 +295,38 @@ func TestStore_incident(t *testing.T) {
 	assertLastIncident("")
 
 	appendRecord("incident-test-1", "1-2", store.STATUS_FAILURE)
-	assertIncidents(s.CurrentIncidents(), "dummy:incident-test-1")
+	assertIncidents(s.CurrentIncidents(), "dummy:#incident-test-1")
 	assertIncidents(s.IncidentHistory())
 	assertLastIncident("1-2")
 
 	appendRecord("incident-test-1", "1-2", store.STATUS_FAILURE)
-	assertIncidents(s.CurrentIncidents(), "dummy:incident-test-1")
+	assertIncidents(s.CurrentIncidents(), "dummy:#incident-test-1")
 	assertIncidents(s.IncidentHistory())
 	assertLastIncident("1-2")
 
 	appendRecord("incident-test-2", "2-1", store.STATUS_FAILURE)
-	assertIncidents(s.CurrentIncidents(), "dummy:incident-test-1", "dummy:incident-test-2")
+	assertIncidents(s.CurrentIncidents(), "dummy:#incident-test-1", "dummy:#incident-test-2")
 	assertIncidents(s.IncidentHistory())
 	assertLastIncident("2-1")
 
 	appendRecord("incident-test-1", "1-3", store.STATUS_FAILURE)
-	assertIncidents(s.CurrentIncidents(), "dummy:incident-test-2", "dummy:incident-test-1")
-	assertIncidents(s.IncidentHistory(), "dummy:incident-test-1")
+	assertIncidents(s.CurrentIncidents(), "dummy:#incident-test-2", "dummy:#incident-test-1")
+	assertIncidents(s.IncidentHistory(), "dummy:#incident-test-1")
 	assertLastIncident("1-3")
 
 	appendRecord("incident-test-2", "2-1", store.STATUS_FAILURE)
-	assertIncidents(s.CurrentIncidents(), "dummy:incident-test-2", "dummy:incident-test-1")
-	assertIncidents(s.IncidentHistory(), "dummy:incident-test-1")
+	assertIncidents(s.CurrentIncidents(), "dummy:#incident-test-2", "dummy:#incident-test-1")
+	assertIncidents(s.IncidentHistory(), "dummy:#incident-test-1")
 	assertLastIncident("1-3")
 
 	appendRecord("incident-test-1", "1-4", store.STATUS_HEALTHY)
-	assertIncidents(s.CurrentIncidents(), "dummy:incident-test-2")
-	assertIncidents(s.IncidentHistory(), "dummy:incident-test-1", "dummy:incident-test-1")
+	assertIncidents(s.CurrentIncidents(), "dummy:#incident-test-2")
+	assertIncidents(s.IncidentHistory(), "dummy:#incident-test-1", "dummy:#incident-test-1")
 	assertLastIncident("1-3")
 
 	appendRecord("incident-test-2", "2-2", store.STATUS_HEALTHY)
 	assertIncidents(s.CurrentIncidents())
-	assertIncidents(s.IncidentHistory(), "dummy:incident-test-1", "dummy:incident-test-1", "dummy:incident-test-2")
+	assertIncidents(s.IncidentHistory(), "dummy:#incident-test-1", "dummy:#incident-test-1", "dummy:#incident-test-2")
 	assertLastIncident("1-3")
 }
 
@@ -346,7 +346,7 @@ func TestStore_incident_len_limit(t *testing.T) {
 
 	for i := 0; i < store.INCIDENT_HISTORY_LEN*2; i++ {
 		s.Append(store.Record{
-			Target:  &url.URL{Scheme: "dummy", Opaque: "history-limit-test"},
+			Target:  &url.URL{Scheme: "dummy", Fragment: "history-limit-test"},
 			Message: fmt.Sprintf("incident-%d", i),
 			Status:  store.STATUS_FAILURE,
 		})
@@ -376,7 +376,7 @@ func BenchmarkStore_Append(b *testing.B) {
 
 			record := store.Record{
 				CheckedAt: time.Now(),
-				Target:    &url.URL{Scheme: "dummy", Opaque: "benchmark-append"},
+				Target:    &url.URL{Scheme: "dummy", Fragment: "benchmark-append"},
 				Status:    status,
 				Message:   "hello world",
 			}

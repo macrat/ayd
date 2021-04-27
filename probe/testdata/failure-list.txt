@@ -1,7 +1,7 @@
 # unhealthy target list
 
 source:./testdata/sub-list.txt
-ping:localhost
+dummy:healthy#failure-list
 
 # it will make failure
-tcp:localhost:56789
+dummy:failure

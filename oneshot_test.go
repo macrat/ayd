@@ -4,13 +4,12 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"math/rand"
-	"net/url"
 	"os"
 	"testing"
 	"time"
 
 	"github.com/macrat/ayd"
+	"github.com/macrat/ayd/probe"
 	"github.com/macrat/ayd/store"
 )
 
@@ -20,13 +19,13 @@ func TestRunOneshot(t *testing.T) {
 		Records int
 		Code    int
 	}{
-		{[]string{"exec:echo#with-healthy", "exec:echo#::status::healthy", "exec:echo#hello"}, 3, 0},
-		{[]string{"exec:echo#with-failure", "exec:echo#::status::failure", "exec:echo#hello"}, 3, 1},
-		{[]string{"exec:echo#with-unknown", "exec:echo#::status::unknown", "exec:echo#hello"}, 3, 2},
-		{[]string{"exec:echo#with-interval", "10m", "exec:echo#hello"}, 2, 0},
-		{[]string{"exec:echo#single-target"}, 1, 0},
-		{[]string{"exec:sleep#0.01"}, 1, 0},
-		{[]string{"exec:sleep#0.2"}, 1, 2},
+		{[]string{"dummy:#with-healthy", "dummy:healthy", "dummy:"}, 3, 0},
+		{[]string{"dummy:#with-failure", "dummy:failure", "dummy:"}, 3, 1},
+		{[]string{"dummy:#with-unknown", "dummy:unknown", "dummy:"}, 3, 2},
+		{[]string{"dummy:#with-interval", "10m", "dummy:healthy"}, 2, 0},
+		{[]string{"dummy:#single-target"}, 1, 0},
+		{[]string{"dummy:?latency=10ms"}, 1, 0},
+		{[]string{"dummy:?latency=200ms"}, 1, 2},
 	}
 
 	for _, tt := range tests {
@@ -71,27 +70,6 @@ func TestRunOneshot(t *testing.T) {
 	}
 }
 
-type DummyProbe struct {
-	target *url.URL
-	status store.Status
-}
-
-func (p DummyProbe) Target() *url.URL {
-	return p.target
-}
-
-func (p DummyProbe) Check(ctx context.Context) []store.Record {
-	status := p.status
-	if p.status == store.STATUS_UNKNOWN {
-		status = []store.Status{store.STATUS_UNKNOWN, store.STATUS_HEALTHY, store.STATUS_FAILURE}[rand.Intn(3)]
-	}
-	return []store.Record{{
-		Target:  p.target,
-		Status:  status,
-		Message: p.target.Opaque,
-	}}
-}
-
 func BenchmarkRunOneshot(b *testing.B) {
 	for _, status := range []store.Status{store.STATUS_UNKNOWN, store.STATUS_HEALTHY, store.STATUS_FAILURE} {
 		name := status.String()
@@ -119,7 +97,11 @@ func BenchmarkRunOneshot(b *testing.B) {
 					tasks := make([]main.Task, n)
 					schedule, _ := main.ParseIntervalSchedule("1s")
 					for i := range tasks {
-						tasks[i] = main.Task{Schedule: schedule, Probe: DummyProbe{target: &url.URL{Scheme: "dummy", Opaque: fmt.Sprintf("benchmark-%d", i)}, status: status}}
+						p, err := probe.New(fmt.Sprintf("dummy:random#benchmark-%d", i))
+						if err != nil {
+							b.Fatalf("failed to create probe: %s", err)
+						}
+						tasks[i] = main.Task{Schedule: schedule, Probe: p}
 					}
 
 					ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
