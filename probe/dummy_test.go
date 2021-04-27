@@ -64,7 +64,7 @@ func TestDummyProbe(t *testing.T) {
 		rs := p.Check(context.Background())
 		latency := time.Now().Sub(stime)
 
-		if latency < 4100*time.Millisecond || 5100*time.Millisecond < latency {
+		if latency < 4800*time.Millisecond || 5200*time.Millisecond < latency {
 			t.Errorf("real latency was out of expected range: %s", latency)
 		}
 
@@ -88,12 +88,12 @@ func TestDummyProbe(t *testing.T) {
 		rs := p.Check(ctx)
 		latency := time.Now().Sub(stime)
 
-		if latency < 900*time.Millisecond || 1100*time.Millisecond < latency {
+		if latency < 800*time.Millisecond || 1200*time.Millisecond < latency {
 			t.Errorf("real latency was out of expected range: %s", latency)
 		}
 
 		for _, r := range rs {
-			if r.Latency < 900*time.Millisecond || 1100*time.Millisecond < r.Latency {
+			if r.Latency < 800*time.Millisecond || 1200*time.Millisecond < r.Latency {
 				t.Errorf("latency in record was out of expected range: %s", r.Latency)
 			}
 			if r.Message != "timed out or interrupted" {
