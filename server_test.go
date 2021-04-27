@@ -57,6 +57,7 @@ func TestRunServer(t *testing.T) {
 
 			count := 0
 			for _, xs := range s.ProbeHistory() {
+				t.Log("history of", xs.Target)
 				count += len(xs.Records)
 			}
 
