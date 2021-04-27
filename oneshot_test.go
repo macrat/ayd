@@ -60,7 +60,7 @@ func TestRunOneshot(t *testing.T) {
 
 			count := 0
 			for _, xs := range s.ProbeHistory() {
-				t.Log("history of", xs.Target)
+				t.Log(len(xs.Records), "records by", xs.Target)
 				count += len(xs.Records)
 			}
 
