@@ -78,7 +78,6 @@ func (p DummyProbe) Target() *url.URL {
 
 func (p DummyProbe) Check(ctx context.Context) []store.Record {
 	stime := time.Now()
-	t := time.After(p.latency)
 
 	r := []store.Record{{
 		CheckedAt: stime,
@@ -88,15 +87,15 @@ func (p DummyProbe) Check(ctx context.Context) []store.Record {
 		Message:   p.message,
 	}}
 
-	select {
-	case <-t:
-	case <-ctx.Done():
-		r[0].Latency = time.Now().Sub(stime)
-		r[0].Status = store.STATUS_UNKNOWN
-		r[0].Message = "timed out or interrupted"
-	}
-
-	if p.latency == 0 {
+	if p.latency > 0 {
+		select {
+		case <-time.After(p.latency):
+		case <-ctx.Done():
+			r[0].Latency = time.Now().Sub(stime)
+			r[0].Status = store.STATUS_UNKNOWN
+			r[0].Message = "timed out or interrupted"
+		}
+	} else {
 		r[0].Latency = time.Now().Sub(stime)
 	}
 
