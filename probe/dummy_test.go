@@ -41,15 +41,15 @@ func TestDummyProbe(t *testing.T) {
 			}
 		}
 
-		if h < 180 || 220 < h {
+		if h < 150 || 250 < h {
 			t.Errorf("number of healthy records was out of expected range: %d", h)
 		}
 
-		if f < 180 || 220 < f {
+		if f < 150 || 250 < f {
 			t.Errorf("number of failure records was out of expected range: %d", f)
 		}
 
-		if u < 180 || 220 < u {
+		if u < 150 || 250 < u {
 			t.Errorf("number of unknown records was out of expected range: %d", u)
 		}
 	})
