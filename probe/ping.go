@@ -81,8 +81,6 @@ func (p PingProbe) Check(ctx context.Context, r Reporter) {
 	var message string
 	select {
 	case <-ctx.Done():
-		status = store.STATUS_UNKNOWN
-		message = "timed out or interrupted"
 	default:
 		message = fmt.Sprintf(
 			"rtt(min/avg/max)=%.2f/%.2f/%.2f send/rcv=%d/%d",
@@ -94,11 +92,11 @@ func (p PingProbe) Check(ctx context.Context, r Reporter) {
 		)
 	}
 
-	r.Report(store.Record{
+	r.Report(timeoutOr(ctx, store.Record{
 		CheckedAt: startTime,
 		Target:    p.target,
 		Status:    status,
 		Message:   message,
 		Latency:   stat.AvgRtt,
-	})
+	}))
 }

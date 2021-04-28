@@ -61,3 +61,13 @@ func New(rawURL string) (Probe, error) {
 
 	return NewFromURL(u)
 }
+
+func timeoutOr(ctx context.Context, r store.Record) store.Record {
+	switch ctx.Err() {
+	case context.Canceled, context.DeadlineExceeded:
+		r.Status = store.STATUS_UNKNOWN
+		r.Message = "timed out or interrupted"
+	default:
+	}
+	return r
+}

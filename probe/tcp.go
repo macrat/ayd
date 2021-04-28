@@ -54,15 +54,11 @@ func (p TCPProbe) Check(ctx context.Context, r Reporter) {
 		if e, ok := errors.Unwrap(err).(*net.DNSError); ok && e.IsNotFound {
 			rec.Status = store.STATUS_UNKNOWN
 		}
-		if e := errors.Unwrap(err); e != nil && e.Error() == "operation was canceled" {
-			rec.Status = store.STATUS_UNKNOWN
-			rec.Message = "timed out or interrupted"
-		}
 	} else {
 		rec.Status = store.STATUS_HEALTHY
 		rec.Message = conn.LocalAddr().String() + " -> " + conn.RemoteAddr().String()
 		conn.Close()
 	}
 
-	r.Report(rec)
+	r.Report(timeoutOr(ctx, rec))
 }

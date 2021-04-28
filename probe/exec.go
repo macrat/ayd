@@ -104,13 +104,6 @@ func (p ExecuteProbe) Check(ctx context.Context, r Reporter) {
 			}
 		}
 
-		select {
-		case <-ctx.Done():
-			status = store.STATUS_UNKNOWN
-			message = "timed out or interrupted"
-		default:
-		}
-
 		if message == "" {
 			message = err.Error()
 		}
@@ -119,11 +112,11 @@ func (p ExecuteProbe) Check(ctx context.Context, r Reporter) {
 	message, latency = getLatencyByMessage(message, latency)
 	message, status = getStatusByMessage(message, status)
 
-	r.Report(store.Record{
+	r.Report(timeoutOr(ctx, store.Record{
 		CheckedAt: st,
 		Target:    p.target,
 		Status:    status,
 		Message:   message,
 		Latency:   latency,
-	})
+	}))
 }

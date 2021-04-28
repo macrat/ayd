@@ -92,12 +92,10 @@ func (p DummyProbe) Check(ctx context.Context, r Reporter) {
 		case <-time.After(p.latency):
 		case <-ctx.Done():
 			rec.Latency = time.Now().Sub(stime)
-			rec.Status = store.STATUS_UNKNOWN
-			rec.Message = "timed out or interrupted"
 		}
 	} else {
 		rec.Latency = time.Now().Sub(stime)
 	}
 
-	r.Report(rec)
+	r.Report(timeoutOr(ctx, rec))
 }

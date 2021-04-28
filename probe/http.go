@@ -98,13 +98,6 @@ func (p HTTPProbe) Check(ctx context.Context, r Reporter) {
 		if e, ok := errors.Unwrap(errors.Unwrap(err)).(*net.DNSError); ok && e.IsNotFound {
 			status = store.STATUS_UNKNOWN
 		}
-		if e := errors.Unwrap(err); e != nil {
-			switch e.Error() {
-			case "context deadline exceeded", "context canceled":
-				status = store.STATUS_UNKNOWN
-				message = "timed out or interrupted"
-			}
-		}
 	} else {
 		message = resp.Status
 		if 200 <= resp.StatusCode && resp.StatusCode <= 299 {
@@ -112,11 +105,11 @@ func (p HTTPProbe) Check(ctx context.Context, r Reporter) {
 		}
 	}
 
-	r.Report(store.Record{
+	r.Report(timeoutOr(ctx, store.Record{
 		CheckedAt: st,
 		Target:    p.target,
 		Status:    status,
 		Message:   message,
 		Latency:   d,
-	})
+	}))
 }
