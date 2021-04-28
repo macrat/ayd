@@ -13,6 +13,12 @@ import (
 	"github.com/macrat/ayd/store"
 )
 
+type DummyReporter []store.Record
+
+func (r *DummyReporter) Report(rec store.Record) {
+	*r = append(*r, rec)
+}
+
 func TestTargetURLNormalize(t *testing.T) {
 	t.Parallel()
 
@@ -103,7 +109,8 @@ func AssertProbe(t *testing.T, tests []ProbeTest) {
 			ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 			defer cancel()
 
-			rs := p.Check(ctx)
+			rs := []store.Record{}
+			p.Check(ctx, (*DummyReporter)(&rs))
 
 			if len(rs) != 1 {
 				t.Fatalf("got unexpected number of results: %d", len(rs))
@@ -133,7 +140,8 @@ func AssertTimeout(t *testing.T, target string) {
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel()
 
-		records := p.Check(ctx)
+		records := []store.Record{}
+		p.Check(ctx, (*DummyReporter)(&records))
 		if len(records) != 1 {
 			t.Fatalf("unexpected number of records: %#v", records)
 		}

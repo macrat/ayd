@@ -71,7 +71,8 @@ func TestSource(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
 
-			rs := p.Check(ctx)
+			rs := []store.Record{}
+			p.Check(ctx, (*DummyReporter)(&rs))
 
 			if len(rs) != len(tt.Records) {
 				t.Fatalf("unexpected number of records: %d\n%v", len(rs), rs)

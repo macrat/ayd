@@ -15,9 +15,13 @@ var (
 	ErrUnsupportedScheme = errors.New("unsupported scheme")
 )
 
+type Reporter interface {
+	Report(r store.Record)
+}
+
 type Probe interface {
 	Target() *url.URL
-	Check(context.Context) []store.Record
+	Check(context.Context, Reporter)
 }
 
 func NewFromURL(u *url.URL) (Probe, error) {

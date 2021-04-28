@@ -75,7 +75,7 @@ func (p HTTPProbe) Target() *url.URL {
 	return p.target
 }
 
-func (p HTTPProbe) Check(ctx context.Context) []store.Record {
+func (p HTTPProbe) Check(ctx context.Context, r Reporter) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
 	defer cancel()
 
@@ -112,11 +112,11 @@ func (p HTTPProbe) Check(ctx context.Context) []store.Record {
 		}
 	}
 
-	return []store.Record{{
+	r.Report(store.Record{
 		CheckedAt: st,
 		Target:    p.target,
 		Status:    status,
 		Message:   message,
 		Latency:   d,
-	}}
+	})
 }

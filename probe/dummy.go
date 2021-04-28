@@ -76,28 +76,28 @@ func (p DummyProbe) Target() *url.URL {
 	return p.target
 }
 
-func (p DummyProbe) Check(ctx context.Context) []store.Record {
+func (p DummyProbe) Check(ctx context.Context, r Reporter) {
 	stime := time.Now()
 
-	r := []store.Record{{
+	rec := store.Record{
 		CheckedAt: stime,
 		Status:    p.Status(),
 		Target:    p.target,
 		Latency:   p.latency,
 		Message:   p.message,
-	}}
+	}
 
 	if p.latency > 0 {
 		select {
 		case <-time.After(p.latency):
 		case <-ctx.Done():
-			r[0].Latency = time.Now().Sub(stime)
-			r[0].Status = store.STATUS_UNKNOWN
-			r[0].Message = "timed out or interrupted"
+			rec.Latency = time.Now().Sub(stime)
+			rec.Status = store.STATUS_UNKNOWN
+			rec.Message = "timed out or interrupted"
 		}
 	} else {
-		r[0].Latency = time.Now().Sub(stime)
+		rec.Latency = time.Now().Sub(stime)
 	}
 
-	return r
+	r.Report(rec)
 }

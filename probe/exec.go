@@ -75,7 +75,7 @@ func getStatusByMessage(message string, default_ store.Status) (replacedMessage 
 	return message, default_
 }
 
-func (p ExecuteProbe) Check(ctx context.Context) []store.Record {
+func (p ExecuteProbe) Check(ctx context.Context, r Reporter) {
 	ctx, cancel := context.WithTimeout(ctx, 60*time.Minute)
 	defer cancel()
 
@@ -119,11 +119,11 @@ func (p ExecuteProbe) Check(ctx context.Context) []store.Record {
 	message, latency = getLatencyByMessage(message, latency)
 	message, status = getStatusByMessage(message, status)
 
-	return []store.Record{{
+	r.Report(store.Record{
 		CheckedAt: st,
 		Target:    p.target,
 		Status:    status,
 		Message:   message,
 		Latency:   latency,
-	}}
+	})
 }

@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/macrat/ayd"
+	"github.com/macrat/ayd/probe"
 	"github.com/macrat/ayd/store"
 )
 
@@ -16,7 +17,7 @@ func (p PanicProbe) Target() *url.URL {
 	return &url.URL{Scheme: "test", Opaque: "panic"}
 }
 
-func (p PanicProbe) Check(ctx context.Context) []store.Record {
+func (p PanicProbe) Check(ctx context.Context, r probe.Reporter) {
 	panic("this always make panic")
 }
 

@@ -129,7 +129,9 @@ func TestStore_restore(t *testing.T) {
 		},
 	}
 
-	s1.Append(records...)
+	for _, r := range records {
+		s1.Report(r)
+	}
 
 	s2, err := store.New(f.Name())
 	if err != nil {
@@ -188,7 +190,7 @@ func TestStore_AddTarget(t *testing.T) {
 		t.Fatalf("found unexpected probe history")
 	}
 
-	s.Append(store.Record{
+	s.Report(store.Record{
 		Target:  &url.URL{Scheme: "dummy", Fragment: "add-target-1"},
 		Message: "already exists history",
 		Status:  store.STATUS_HEALTHY,
@@ -238,10 +240,9 @@ func TestStore_incident(t *testing.T) {
 
 	lastIncident := ""
 	s.OnIncident = []store.IncidentHandler{
-		func(s *string) func(*store.Incident) []store.Record {
-			return func(i *store.Incident) []store.Record {
+		func(s *string) func(*store.Incident) {
+			return func(i *store.Incident) {
 				*s = i.Message
-				return nil
 			}
 		}(&lastIncident),
 	}
@@ -281,7 +282,7 @@ func TestStore_incident(t *testing.T) {
 		t.Helper()
 		offset += 1 * time.Second
 
-		s.Append(store.Record{
+		s.Report(store.Record{
 			CheckedAt: time.Now().Add(offset),
 			Target:    &url.URL{Scheme: "dummy", Fragment: fragment},
 			Message:   message,
@@ -345,7 +346,7 @@ func TestStore_incident_len_limit(t *testing.T) {
 	defer s.Close()
 
 	for i := 0; i < store.INCIDENT_HISTORY_LEN*2; i++ {
-		s.Append(store.Record{
+		s.Report(store.Record{
 			Target:  &url.URL{Scheme: "dummy", Fragment: "history-limit-test"},
 			Message: fmt.Sprintf("incident-%d", i),
 			Status:  store.STATUS_FAILURE,
@@ -383,7 +384,7 @@ func BenchmarkStore_Append(b *testing.B) {
 
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
-				s.Append(record)
+				s.Report(record)
 			}
 		})
 	}

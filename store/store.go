@@ -43,7 +43,7 @@ func (hs ProbeHistoryMap) Append(r Record) {
 	}
 }
 
-type IncidentHandler func(*Incident) []Record
+type IncidentHandler func(*Incident)
 
 type Store struct {
 	sync.RWMutex
@@ -146,32 +146,30 @@ func (s *Store) setIncidentIfNeed(r Record, needCallback bool) {
 		if needCallback {
 			s.IncidentCount++
 			for _, cb := range s.OnIncident {
-				s.appendWithoutLock(cb(incident))
+				cb(incident)
 			}
 		}
 	}
 }
 
-func (s *Store) appendWithoutLock(rs []Record) {
-	for _, r := range rs {
-		r = r.Sanitize()
+func (s *Store) reportWithoutLock(r Record) {
+	r = r.Sanitize()
 
-		msg := []byte(r.String() + "\n")
-		s.Console.Write(msg)
-		_, s.lastError = s.file.Write(msg)
+	msg := []byte(r.String() + "\n")
+	s.Console.Write(msg)
+	_, s.lastError = s.file.Write(msg)
 
-		if r.Target.Scheme != "alert" {
-			s.probeHistory.Append(r)
-			s.setIncidentIfNeed(r, true)
-		}
+	if r.Target.Scheme != "alert" {
+		s.probeHistory.Append(r)
+		s.setIncidentIfNeed(r, true)
 	}
 }
 
-func (s *Store) Append(rs ...Record) {
+func (s *Store) Report(r Record) {
 	s.Lock()
 	defer s.Unlock()
 
-	s.appendWithoutLock(rs)
+	s.reportWithoutLock(r)
 }
 
 func (s *Store) Restore() error {

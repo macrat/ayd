@@ -136,45 +136,39 @@ func (p SourceProbe) load(path string, ignores ignoreSet) (map[string]Probe, err
 	return probes, nil
 }
 
-func (p SourceProbe) Check(ctx context.Context) []store.Record {
+func (p SourceProbe) Check(ctx context.Context, r Reporter) {
 	stime := time.Now()
 
 	probes, err := p.load(p.target.Opaque, nil)
 	if err != nil {
 		d := time.Now().Sub(stime)
-		return []store.Record{{
+		r.Report(store.Record{
 			CheckedAt: stime,
 			Target:    p.target,
 			Status:    store.STATUS_UNKNOWN,
 			Message:   err.Error(),
 			Latency:   d,
-		}}
+		})
+		return
 	}
 
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	ch := make(chan []store.Record, len(probes))
 	wg := &sync.WaitGroup{}
 
 	for _, p := range probes {
 		wg.Add(1)
 
-		go func(p Probe, ch chan []store.Record) {
-			ch <- p.Check(ctx)
+		go func(p Probe) {
+			p.Check(ctx, r)
 			wg.Done()
-		}(p, ch)
+		}(p)
 	}
 	wg.Wait()
-	close(ch)
-
-	results := []store.Record{}
-	for rs := range ch {
-		results = append(results, rs...)
-	}
 
 	d := time.Now().Sub(stime)
-	return append(results, store.Record{
+	r.Report(store.Record{
 		CheckedAt: stime,
 		Target:    p.target,
 		Status:    store.STATUS_HEALTHY,

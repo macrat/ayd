@@ -29,7 +29,7 @@ func (p TCPProbe) Target() *url.URL {
 	return p.target
 }
 
-func (p TCPProbe) Check(ctx context.Context) []store.Record {
+func (p TCPProbe) Check(ctx context.Context, r Reporter) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
@@ -39,30 +39,30 @@ func (p TCPProbe) Check(ctx context.Context) []store.Record {
 	conn, err := dialer.DialContext(ctx, "tcp", p.target.Opaque)
 	d := time.Now().Sub(st)
 
-	r := store.Record{
+	rec := store.Record{
 		CheckedAt: st,
 		Target:    p.target,
 		Latency:   d,
 	}
 
 	if err != nil {
-		r.Status = store.STATUS_FAILURE
-		r.Message = err.Error()
+		rec.Status = store.STATUS_FAILURE
+		rec.Message = err.Error()
 		if _, ok := errors.Unwrap(err).(*net.AddrError); ok {
-			r.Status = store.STATUS_UNKNOWN
+			rec.Status = store.STATUS_UNKNOWN
 		}
 		if e, ok := errors.Unwrap(err).(*net.DNSError); ok && e.IsNotFound {
-			r.Status = store.STATUS_UNKNOWN
+			rec.Status = store.STATUS_UNKNOWN
 		}
 		if e := errors.Unwrap(err); e != nil && e.Error() == "operation was canceled" {
-			r.Status = store.STATUS_UNKNOWN
-			r.Message = "timed out or interrupted"
+			rec.Status = store.STATUS_UNKNOWN
+			rec.Message = "timed out or interrupted"
 		}
 	} else {
-		r.Status = store.STATUS_HEALTHY
-		r.Message = conn.LocalAddr().String() + " -> " + conn.RemoteAddr().String()
+		rec.Status = store.STATUS_HEALTHY
+		rec.Message = conn.LocalAddr().String() + " -> " + conn.RemoteAddr().String()
 		conn.Close()
 	}
 
-	return []store.Record{r}
+	r.Report(rec)
 }

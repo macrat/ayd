@@ -12,14 +12,13 @@ func RunOneshot(ctx context.Context, s *store.Store, tasks []Task) (exitCode int
 	var failure atomic.Value
 	var unknown atomic.Value
 
-	s.OnIncident = append(s.OnIncident, func(i *store.Incident) []store.Record {
+	s.OnIncident = append(s.OnIncident, func(i *store.Incident) {
 		switch i.Status {
 		case store.STATUS_FAILURE:
 			failure.Store(true)
 		case store.STATUS_UNKNOWN:
 			unknown.Store(true)
 		}
-		return nil
 	})
 
 	wg := &sync.WaitGroup{}

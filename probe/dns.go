@@ -26,7 +26,7 @@ func (p DNSProbe) Target() *url.URL {
 	return p.target
 }
 
-func (p DNSProbe) Check(ctx context.Context) []store.Record {
+func (p DNSProbe) Check(ctx context.Context, r Reporter) {
 	resolver := &net.Resolver{}
 
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
@@ -36,19 +36,19 @@ func (p DNSProbe) Check(ctx context.Context) []store.Record {
 	addrs, err := resolver.LookupHost(ctx, p.target.Opaque)
 	d := time.Now().Sub(st)
 
-	r := store.Record{
+	rec := store.Record{
 		CheckedAt: st,
 		Target:    p.target,
 		Latency:   d,
 	}
 
 	if err != nil {
-		r.Status = store.STATUS_FAILURE
-		r.Message = err.Error()
+		rec.Status = store.STATUS_FAILURE
+		rec.Message = err.Error()
 	} else {
-		r.Status = store.STATUS_HEALTHY
-		r.Message = strings.Join(addrs, ", ")
+		rec.Status = store.STATUS_HEALTHY
+		rec.Message = strings.Join(addrs, ", ")
 	}
 
-	return []store.Record{r}
+	r.Report(rec)
 }

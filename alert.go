@@ -29,7 +29,7 @@ func (a *Alert) Target() *url.URL {
 	}
 }
 
-func (a *Alert) Trigger(ctx context.Context, incident *store.Incident) []store.Record {
+func (a *Alert) Trigger(ctx context.Context, incident *store.Incident, r probe.Reporter) {
 	qs := a.target.Query()
 	qs.Set("ayd_target", incident.Target.String())
 	qs.Set("ayd_checked_at", incident.CausedAt.Format(time.RFC3339))
@@ -40,24 +40,29 @@ func (a *Alert) Trigger(ctx context.Context, incident *store.Incident) []store.R
 
 	p, err := probe.NewFromURL(&u)
 	if err != nil {
-		return []store.Record{{
+		r.Report(store.Record{
 			CheckedAt: time.Now(),
 			Target:    a.Target(),
 			Status:    store.STATUS_UNKNOWN,
 			Message:   err.Error(),
-		}}
+		})
+		return
 	}
 
 	ctx, cancel := context.WithTimeout(ctx, TASK_TIMEOUT)
 	defer cancel()
 
-	result := p.Check(ctx)
-	for i := range result {
-		result[i].Target = &url.URL{
-			Scheme: "alert",
-			Opaque: result[i].Target.String(),
-		}
-	}
+	p.Check(ctx, AlertReporter{r})
+}
 
-	return result
+type AlertReporter struct {
+	Upstream probe.Reporter
+}
+
+func (r AlertReporter) Report(rec store.Record) {
+	rec.Target = &url.URL{
+		Scheme: "alert",
+		Opaque: rec.Target.String(),
+	}
+	r.Upstream.Report(rec)
 }

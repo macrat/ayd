@@ -19,7 +19,7 @@ func (t Task) MakeJob(baseContext context.Context, s *store.Store) cron.Job {
 	return cron.FuncJob(func() {
 		defer func() {
 			if err := recover(); err != nil {
-				s.Append(store.Record{
+				s.Report(store.Record{
 					CheckedAt: time.Now(),
 					Target:    t.Probe.Target(),
 					Status:    store.STATUS_UNKNOWN,
@@ -31,7 +31,7 @@ func (t Task) MakeJob(baseContext context.Context, s *store.Store) cron.Job {
 		ctx, cancel := context.WithTimeout(baseContext, TASK_TIMEOUT)
 		defer cancel()
 
-		s.Append(t.Probe.Check(ctx)...)
+		t.Probe.Check(ctx, s)
 	})
 }
 

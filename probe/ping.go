@@ -26,7 +26,7 @@ func (p PingProbe) Target() *url.URL {
 	return p.target
 }
 
-func (p PingProbe) Check(ctx context.Context) []store.Record {
+func (p PingProbe) Check(ctx context.Context, r Reporter) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
@@ -38,12 +38,13 @@ func (p PingProbe) Check(ctx context.Context) []store.Record {
 			status = store.STATUS_UNKNOWN
 		}
 
-		return []store.Record{{
+		r.Report(store.Record{
 			CheckedAt: time.Now(),
 			Target:    p.target,
 			Status:    status,
 			Message:   err.Error(),
-		}}
+		})
+		return
 	}
 
 	pinger.Interval = 500 * time.Millisecond
@@ -60,13 +61,14 @@ func (p PingProbe) Check(ctx context.Context) []store.Record {
 
 	err = pinger.Run()
 	if err != nil {
-		return []store.Record{{
+		r.Report(store.Record{
 			CheckedAt: startTime,
 			Target:    p.target,
 			Status:    store.STATUS_UNKNOWN,
 			Message:   err.Error(),
 			Latency:   time.Now().Sub(time.Now()),
-		}}
+		})
+		return
 	}
 
 	stat := pinger.Statistics()
@@ -92,11 +94,11 @@ func (p PingProbe) Check(ctx context.Context) []store.Record {
 		)
 	}
 
-	return []store.Record{{
+	r.Report(store.Record{
 		CheckedAt: startTime,
 		Target:    p.target,
 		Status:    status,
 		Message:   message,
 		Latency:   stat.AvgRtt,
-	}}
+	})
 }

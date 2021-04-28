@@ -84,8 +84,8 @@ func main() {
 			fmt.Fprintln(os.Stderr, "Invalid alert target:", err)
 			os.Exit(2)
 		}
-		s.OnIncident = append(s.OnIncident, func(i *store.Incident) []store.Record {
-			return alert.Trigger(ctx, i)
+		s.OnIncident = append(s.OnIncident, func(i *store.Incident) {
+			go alert.Trigger(ctx, i, s)
 		})
 	}
 

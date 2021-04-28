@@ -29,7 +29,9 @@ func TestDummyProbe(t *testing.T) {
 
 		h, f, u := 0, 0, 0
 		for i := 0; i < 600; i++ {
-			for _, r := range p.Check(context.Background()) {
+			rs := []store.Record{}
+			p.Check(context.Background(), (*DummyReporter)(&rs))
+			for _, r := range rs {
 				switch r.Status {
 				case store.STATUS_HEALTHY:
 					h++
@@ -61,7 +63,8 @@ func TestDummyProbe(t *testing.T) {
 		}
 
 		stime := time.Now()
-		rs := p.Check(context.Background())
+		rs := []store.Record{}
+		p.Check(context.Background(), (*DummyReporter)(&rs))
 		latency := time.Now().Sub(stime)
 
 		if latency < 4800*time.Millisecond || 5200*time.Millisecond < latency {
@@ -85,7 +88,8 @@ func TestDummyProbe(t *testing.T) {
 		defer cancel()
 
 		stime := time.Now()
-		rs := p.Check(ctx)
+		rs := []store.Record{}
+		p.Check(ctx, (*DummyReporter)(&rs))
 		latency := time.Now().Sub(stime)
 
 		if latency < 800*time.Millisecond || 1200*time.Millisecond < latency {
