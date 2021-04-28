@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"regexp"
+	"sync"
 	"testing"
 	"time"
 
@@ -13,10 +14,23 @@ import (
 	"github.com/macrat/ayd/store"
 )
 
-type DummyReporter []store.Record
+type DummyReporter struct {
+	sync.Mutex
+
+	Records []store.Record
+}
 
 func (r *DummyReporter) Report(rec store.Record) {
-	*r = append(*r, rec)
+	r.Lock()
+	defer r.Unlock()
+
+	r.Records = append(r.Records, rec)
+}
+
+func RunCheck(ctx context.Context, probe probe.Probe) []store.Record {
+	reporter := &DummyReporter{}
+	probe.Check(ctx, reporter)
+	return reporter.Records
 }
 
 func TestTargetURLNormalize(t *testing.T) {
@@ -109,8 +123,7 @@ func AssertProbe(t *testing.T, tests []ProbeTest) {
 			ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 			defer cancel()
 
-			rs := []store.Record{}
-			p.Check(ctx, (*DummyReporter)(&rs))
+			rs := RunCheck(ctx, p)
 
 			if len(rs) != 1 {
 				t.Fatalf("got unexpected number of results: %d", len(rs))
@@ -141,8 +154,7 @@ func AssertTimeout(t *testing.T, target string) {
 		time.Sleep(10 * time.Millisecond)
 		defer cancel()
 
-		records := []store.Record{}
-		p.Check(ctx, (*DummyReporter)(&records))
+		records := RunCheck(ctx, p)
 		if len(records) != 1 {
 			t.Fatalf("unexpected number of records: %#v", records)
 		}
@@ -164,8 +176,7 @@ func AssertTimeout(t *testing.T, target string) {
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel()
 
-		records := []store.Record{}
-		p.Check(ctx, (*DummyReporter)(&records))
+		records := RunCheck(ctx, p)
 		if len(records) != 1 {
 			t.Fatalf("unexpected number of records: %#v", records)
 		}
