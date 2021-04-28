@@ -213,10 +213,11 @@ The log has these columns.
 
 1. Timestamp in [RFC3339 format](https://tools.ietf.org/html/rfc3339) like `2001-02-30T16:05:06+00:00`.
 
-2. Status of the record that `HEALTHY`, `FAILURE`, or `UNKNOWN`.
+2. Status of the record that `HEALTHY`, `FAILURE`, `ABORTED`, or `UNKNOWN`.
 
    * HEALTHY means service seems working well.
    * FAILURE means service seems failure or stopped.
+   * ABORTED means Ayd terminated during status checking. For example, this reported when terminated Ayd with Ctrl-C.
    * UNKNOWN means Ayd is failed to status checking. For example, not found test script, failed to resolve service name, etc.
 
 3. Latency of the service in milliseconds.
