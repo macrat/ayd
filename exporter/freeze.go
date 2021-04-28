@@ -100,7 +100,7 @@ func freezeStatus(s *store.Store) frozenStatus {
 	for i, x := range ci {
 		status.CurrentIncidents[i] = freezeIncident(x)
 	}
-	for i, x := range s.IncidentHistory() {
+	for i, x := range ih {
 		status.IncidentHistory[i] = freezeIncident(x)
 	}
 
