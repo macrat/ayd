@@ -4,6 +4,7 @@
 └{{ range .History }}{{
     if eq .Status "NO_DATA" }}─{{ end }}{{
     if eq .Status "UNKNOWN" }}━{{ end }}{{
+    if eq .Status "ABORTED" }}─{{ end }}{{
     if eq .Status "FAILURE" }}!{{ end }}{{
     if eq .Status "HEALTHY" }}✓{{ end }}{{ end }}┤  updated: {{ if .Updated }}{{ .Updated }}{{ else }}(not yet){{ end }}
 {{ end }}

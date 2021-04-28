@@ -131,7 +131,31 @@ func AssertProbe(t *testing.T, tests []ProbeTest) {
 }
 
 func AssertTimeout(t *testing.T, target string) {
-	t.Run("timeout-or-interrupt", func(t *testing.T) {
+	t.Run("timeout", func(t *testing.T) {
+		p, err := probe.New(target)
+		if err != nil {
+			t.Fatalf("failed to get probe: %s", err)
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Millisecond)
+		time.Sleep(10 * time.Millisecond)
+		defer cancel()
+
+		records := []store.Record{}
+		p.Check(ctx, (*DummyReporter)(&records))
+		if len(records) != 1 {
+			t.Fatalf("unexpected number of records: %#v", records)
+		}
+
+		if records[0].Message != "probe timed out" {
+			t.Errorf("unexpected message: %s", records[0].Message)
+		}
+
+		if records[0].Status != store.STATUS_UNKNOWN {
+			t.Errorf("unexpected status: %s", records[0].Status)
+		}
+	})
+	t.Run("cancel", func(t *testing.T) {
 		p, err := probe.New(target)
 		if err != nil {
 			t.Fatalf("failed to get probe: %s", err)
@@ -146,11 +170,11 @@ func AssertTimeout(t *testing.T, target string) {
 			t.Fatalf("unexpected number of records: %#v", records)
 		}
 
-		if records[0].Message != "timed out or interrupted" {
+		if records[0].Message != "probe aborted" {
 			t.Errorf("unexpected message: %s", records[0].Message)
 		}
 
-		if records[0].Status != store.STATUS_UNKNOWN {
+		if records[0].Status != store.STATUS_ABORTED {
 			t.Errorf("unexpected status: %s", records[0].Status)
 		}
 	})

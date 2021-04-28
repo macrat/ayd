@@ -100,9 +100,14 @@ func TestDummyProbe(t *testing.T) {
 			if r.Latency < 800*time.Millisecond || 1200*time.Millisecond < r.Latency {
 				t.Errorf("latency in record was out of expected range: %s", r.Latency)
 			}
-			if r.Message != "timed out or interrupted" {
+			if r.Status != store.STATUS_UNKNOWN {
+				t.Errorf("unexpected status: %s", r.Status)
+			}
+			if r.Message != "probe timed out" {
 				t.Errorf("unexpected message: %#v", r.Message)
 			}
 		}
 	})
+
+	AssertTimeout(t, "dummy:")
 }

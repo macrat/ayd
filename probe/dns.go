@@ -50,5 +50,5 @@ func (p DNSProbe) Check(ctx context.Context, r Reporter) {
 		rec.Message = strings.Join(addrs, ", ")
 	}
 
-	r.Report(rec)
+	r.Report(timeoutOr(ctx, rec))
 }

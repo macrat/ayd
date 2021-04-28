@@ -64,9 +64,12 @@ func New(rawURL string) (Probe, error) {
 
 func timeoutOr(ctx context.Context, r store.Record) store.Record {
 	switch ctx.Err() {
-	case context.Canceled, context.DeadlineExceeded:
+	case context.Canceled:
+		r.Status = store.STATUS_ABORTED
+		r.Message = "probe aborted"
+	case context.DeadlineExceeded:
 		r.Status = store.STATUS_UNKNOWN
-		r.Message = "timed out or interrupted"
+		r.Message = "probe timed out"
 	default:
 	}
 	return r

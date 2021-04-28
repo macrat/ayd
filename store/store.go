@@ -139,7 +139,7 @@ func (s *Store) setIncidentIfNeed(r Record, needCallback bool) {
 		}
 	}
 
-	if r.Status != STATUS_HEALTHY {
+	if r.Status != STATUS_HEALTHY && r.Status != STATUS_ABORTED {
 		incident := NewIncident(r)
 		s.currentIncidents[target] = incident
 

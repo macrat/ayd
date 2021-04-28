@@ -28,13 +28,23 @@ func TestRecord(t *testing.T) {
 			},
 		},
 		{
-			String: "2021-01-02T15:04:05+09:00\tHEALTHY\t123.456\texec:/path/to/file.sh\thello world",
+			String: "2021-01-02T15:04:05+09:00\tFAILURE\t123.456\texec:/path/to/file.sh\thello world",
 			Record: store.Record{
 				CheckedAt: time.Date(2021, 1, 2, 15, 4, 5, 0, tokyo),
 				Target:    &url.URL{Scheme: "exec", Opaque: "/path/to/file.sh"},
-				Status:    store.STATUS_HEALTHY,
+				Status:    store.STATUS_FAILURE,
 				Message:   "hello world",
 				Latency:   123456 * time.Microsecond,
+			},
+		},
+		{
+			String: "2021-01-02T15:04:05+09:00\tABORTED\t1234.567\tdummy:#hello\thello world",
+			Record: store.Record{
+				CheckedAt: time.Date(2021, 1, 2, 15, 4, 5, 0, tokyo),
+				Target:    &url.URL{Scheme: "dummy", Fragment: "hello"},
+				Status:    store.STATUS_ABORTED,
+				Message:   "hello world",
+				Latency:   1234567 * time.Microsecond,
 			},
 		},
 		{

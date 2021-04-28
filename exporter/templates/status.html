@@ -66,6 +66,7 @@ h2 {
 }
 .status-bit.no-data { background-color: rgba(var(--fg), .1) }
 .status-bit.unknown { background-color: rgba(var(--fg), .8) }
+.status-bit.aborted { background-color: rgba(var(--fg), .5) }
 .status-bit.failure { background-color: rgba(var(--failure), .9) }
 .status-bit.healthy { background-color: rgba(var(--healthy), .9) }
 .status-bit svg         { fill: rgba(var(--light), .8) }
@@ -164,6 +165,9 @@ footer span {
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
                         </span>
                         {{ end }}{{ if eq .Status "UNKNOWN" }}<span class="status-bit unknown" title="{{ printf "unknown\n%s\n\n%s" .CheckedAt .Message }}">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#unknown-icon" /></svg>
+                        </span>
+                        {{ end }}{{ if eq .Status "ABORTED" }}<span class="status-bit aborted" title="{{ printf "aborted\n%s\n\n%s" .CheckedAt .Message }}">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#unknown-icon" /></svg>
                         </span>
                         {{ end }}{{ if eq .Status "FAILURE" }}<span class="status-bit failure" title="{{ printf "failure\n%s\n\n%s" .CheckedAt .Message }}">
