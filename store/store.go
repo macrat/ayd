@@ -124,6 +124,10 @@ func (s *Store) IncidentHistory() []*Incident {
 }
 
 func (s *Store) setIncidentIfNeed(r Record, needCallback bool) {
+	if r.Status == STATUS_ABORTED {
+		return
+	}
+
 	target := r.Target.String()
 	if cur, ok := s.currentIncidents[target]; ok {
 		if cur.IsContinued(r) {
@@ -139,7 +143,7 @@ func (s *Store) setIncidentIfNeed(r Record, needCallback bool) {
 		}
 	}
 
-	if r.Status != STATUS_HEALTHY && r.Status != STATUS_ABORTED {
+	if r.Status != STATUS_HEALTHY {
 		incident := NewIncident(r)
 		s.currentIncidents[target] = incident
 

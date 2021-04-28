@@ -320,12 +320,22 @@ func TestStore_incident(t *testing.T) {
 	assertIncidents(s.IncidentHistory(), "dummy:#incident-test-1")
 	assertLastIncident("1-3")
 
+	appendRecord("incident-test-2", "2-?", store.STATUS_ABORTED)
+	assertIncidents(s.CurrentIncidents(), "dummy:#incident-test-2", "dummy:#incident-test-1")
+	assertIncidents(s.IncidentHistory(), "dummy:#incident-test-1")
+	assertLastIncident("1-3")
+
 	appendRecord("incident-test-1", "1-4", store.STATUS_HEALTHY)
 	assertIncidents(s.CurrentIncidents(), "dummy:#incident-test-2")
 	assertIncidents(s.IncidentHistory(), "dummy:#incident-test-1", "dummy:#incident-test-1")
 	assertLastIncident("1-3")
 
 	appendRecord("incident-test-2", "2-2", store.STATUS_HEALTHY)
+	assertIncidents(s.CurrentIncidents())
+	assertIncidents(s.IncidentHistory(), "dummy:#incident-test-1", "dummy:#incident-test-1", "dummy:#incident-test-2")
+	assertLastIncident("1-3")
+
+	appendRecord("incident-test-2", "2-?", store.STATUS_ABORTED)
 	assertIncidents(s.CurrentIncidents())
 	assertIncidents(s.IncidentHistory(), "dummy:#incident-test-1", "dummy:#incident-test-1", "dummy:#incident-test-2")
 	assertLastIncident("1-3")
