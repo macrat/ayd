@@ -92,6 +92,7 @@ func (p SourceProbe) load(path string, ignores ignoreSet) (map[string]Probe, err
 	if err != nil {
 		return nil, err
 	}
+	defer f.Close()
 
 	probes := make(map[string]Probe)
 	var invalids invalidURIs
