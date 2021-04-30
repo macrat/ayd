@@ -45,6 +45,18 @@ func Usage() {
 	})
 }
 
+func StartProbeServer(ctx context.Context, tasks []Task) {
+	for _, task := range tasks {
+		if task.Probe.Target().Scheme == "ping" {
+			if err := probe.StartPinger(ctx); err != nil {
+				fmt.Fprintf(os.Stderr, "failed to start ping service: %s\n", err)
+				os.Exit(1)
+			}
+			return
+		}
+	}
+}
+
 func main() {
 	flag.Usage = Usage
 	flag.Parse()
@@ -88,6 +100,8 @@ func main() {
 			go alert.Trigger(ctx, i, s)
 		})
 	}
+
+	StartProbeServer(ctx, tasks)
 
 	if *oneshot {
 		os.Exit(RunOneshot(ctx, s, tasks))

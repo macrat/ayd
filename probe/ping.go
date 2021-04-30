@@ -8,7 +8,28 @@ import (
 	"time"
 
 	"github.com/macrat/ayd/store"
+	"github.com/macrat/go-parallel-pinger"
 )
+
+var (
+	pingerV4 *pinger.Pinger = nil
+	pingerV6 *pinger.Pinger = nil
+)
+
+func StartPinger(ctx context.Context) error {
+	pingerV4 = pinger.NewIPv4()
+	pingerV6 = pinger.NewIPv6()
+
+	if err := pingerV4.Start(ctx); err != nil {
+		return err
+	}
+
+	if err := pingerV6.Start(ctx); err != nil {
+		return err
+	}
+
+	return nil
+}
 
 type PingProbe struct {
 	target *url.URL
@@ -30,73 +51,41 @@ func (p PingProbe) Check(ctx context.Context, r Reporter) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
-	pinger, err := getPinger(p.target.Opaque)
+	target, err := net.ResolveIPAddr("ip", p.target.Opaque)
 	if err != nil {
-		status := store.STATUS_FAILURE
-
-		if e, ok := err.(*net.DNSError); ok && e.IsNotFound {
-			status = store.STATUS_UNKNOWN
-		}
-
 		r.Report(store.Record{
 			CheckedAt: time.Now(),
 			Target:    p.target,
-			Status:    status,
-			Message:   err.Error(),
-		})
-		return
-	}
-
-	pinger.Interval = 500 * time.Millisecond
-	pinger.Timeout = 10 * time.Second
-	pinger.Count = 4
-	pinger.Debug = true
-
-	go func() {
-		<-ctx.Done()
-		pinger.Stop()
-	}()
-
-	startTime := time.Now()
-
-	err = pinger.Run()
-	if err != nil {
-		r.Report(store.Record{
-			CheckedAt: startTime,
-			Target:    p.target,
 			Status:    store.STATUS_UNKNOWN,
 			Message:   err.Error(),
-			Latency:   time.Now().Sub(time.Now()),
 		})
-		return
 	}
 
-	stat := pinger.Statistics()
+	ping := pingerV4
+	if target.IP.To4() == nil {
+		ping = pingerV6
+	}
+
+	startTime := time.Now()
+	result, err := ping.Ping(ctx, target, 4, 500*time.Millisecond)
 
 	status := store.STATUS_FAILURE
-	if stat.PacketLoss == 0 {
+	if result.Loss == 0 {
 		status = store.STATUS_HEALTHY
-	}
-
-	var message string
-	select {
-	case <-ctx.Done():
-	default:
-		message = fmt.Sprintf(
-			"rtt(min/avg/max)=%.2f/%.2f/%.2f send/rcv=%d/%d",
-			float64(stat.MinRtt.Microseconds())/1000,
-			float64(stat.AvgRtt.Microseconds())/1000,
-			float64(stat.MaxRtt.Microseconds())/1000,
-			pinger.PacketsSent,
-			pinger.PacketsRecv,
-		)
 	}
 
 	r.Report(timeoutOr(ctx, store.Record{
 		CheckedAt: startTime,
 		Target:    p.target,
 		Status:    status,
-		Message:   message,
-		Latency:   stat.AvgRtt,
+		Message: fmt.Sprintf(
+			"rtt(min/avg/max)=%.2f/%.2f/%.2f send/rcv=%d/%d",
+			float64(result.MinRTT.Microseconds())/1000,
+			float64(result.AvgRTT.Microseconds())/1000,
+			float64(result.MaxRTT.Microseconds())/1000,
+			result.Sent,
+			result.Recv,
+		),
+		Latency: result.AvgRTT,
 	}))
 }
