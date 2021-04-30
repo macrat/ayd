@@ -59,6 +59,7 @@ func (p PingProbe) Check(ctx context.Context, r Reporter) {
 			Status:    store.STATUS_UNKNOWN,
 			Message:   err.Error(),
 		})
+		return
 	}
 
 	ping := pingerV4

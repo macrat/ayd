@@ -22,6 +22,7 @@ func TestPingProbe(t *testing.T) {
 		{"ping:localhost", store.STATUS_HEALTHY, `rtt\(min/avg/max\)=[0-9.]*/[0-9.]*/[0-9.]* send/rcv=4/4`},
 		{"ping:127.0.0.1", store.STATUS_HEALTHY, `rtt\(min/avg/max\)=[0-9.]*/[0-9.]*/[0-9.]* send/rcv=4/4`},
 		{"ping:::1", store.STATUS_HEALTHY, `rtt\(min/avg/max\)=[0-9.]*/[0-9.]*/[0-9.]* send/rcv=4/4`},
+		{"ping:of-course-definitely-no-such-host", store.STATUS_UNKNOWN, `.*`},
 	})
 
 	AssertTimeout(t, "ping:localhost")
