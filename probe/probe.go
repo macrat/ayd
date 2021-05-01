@@ -62,6 +62,18 @@ func New(rawURL string) (Probe, error) {
 	return NewFromURL(u)
 }
 
+func WithoutPlugin(p Probe, err error) (Probe, error) {
+	if err != nil {
+		return nil, err
+	}
+
+	if _, ok := p.(PluginProbe); ok {
+		return nil, ErrUnsupportedScheme
+	}
+
+	return p, nil
+}
+
 func timeoutOr(ctx context.Context, r store.Record) store.Record {
 	switch ctx.Err() {
 	case context.Canceled:

@@ -47,13 +47,7 @@ func Usage() {
 }
 
 func SetupProbe(ctx context.Context, tasks []Task) {
-	if *externalURL != "" {
-		probe.ExternalURL = *externalURL
-	} else if *listenPort == 80 {
-		probe.ExternalURL = "http://localhost"
-	} else {
-		probe.ExternalURL = fmt.Sprintf("http://localhost:%d", listenPort)
-	}
+	probe.ExternalURL = *externalURL
 
 	for _, task := range tasks {
 		if task.Probe.Target().Scheme == "ping" {
@@ -99,8 +93,16 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
 
+	if *externalURL == "" {
+		if *listenPort == 80 {
+			*externalURL = "http://localhost"
+		} else {
+			*externalURL = fmt.Sprintf("http://localhost:%d", listenPort)
+		}
+	}
+
 	if *alertURI != "" {
-		alert, err := NewAlert(*alertURI)
+		alert, err := NewAlert(*alertURI, *externalURL)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "Invalid alert target:", err)
 			os.Exit(2)

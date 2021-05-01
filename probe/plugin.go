@@ -54,5 +54,5 @@ func (p PluginProbe) Check(ctx context.Context, r Reporter) {
 	ctx, cancel := context.WithTimeout(ctx, 60*time.Minute)
 	defer cancel()
 
-	executeExternalCommand(ctx, r, p.target, p.command, "", p.env)
+	ExecuteExternalCommand(ctx, r, p.target, p.command, "", p.env)
 }

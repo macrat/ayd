@@ -68,7 +68,7 @@ func getStatusByMessage(message string, default_ store.Status) (replacedMessage 
 	return message, default_
 }
 
-func executeExternalCommand(ctx context.Context, r Reporter, target *url.URL, command, argument string, env []string) {
+func ExecuteExternalCommand(ctx context.Context, r Reporter, target *url.URL, command, argument string, env []string) {
 	var cmd *exec.Cmd
 	if argument != "" {
 		cmd = exec.CommandContext(ctx, command, argument)
@@ -115,5 +115,5 @@ func (p ExecuteProbe) Check(ctx context.Context, r Reporter) {
 	ctx, cancel := context.WithTimeout(ctx, 60*time.Minute)
 	defer cancel()
 
-	executeExternalCommand(ctx, r, p.target, p.target.Opaque, p.target.Fragment, p.env)
+	ExecuteExternalCommand(ctx, r, p.target, p.target.Opaque, p.target.Fragment, p.env)
 }
