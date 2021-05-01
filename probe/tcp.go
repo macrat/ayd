@@ -10,17 +10,21 @@ import (
 	"github.com/macrat/ayd/store"
 )
 
+var (
+	ErrTCPPortMissing = errors.New("TCP target's port number is required")
+)
+
 type TCPProbe struct {
 	target *url.URL
 }
 
 func NewTCPProbe(u *url.URL) (TCPProbe, error) {
-	p := TCPProbe{&url.URL{Scheme: "tcp", Opaque: u.Opaque}}
-	if u.Opaque == "" {
-		p.target.Opaque = u.Host
+	p := TCPProbe{&url.URL{Scheme: "tcp", Host: u.Host}}
+	if u.Host == "" {
+		p.target.Host = u.Opaque
 	}
-	if _, _, err := net.SplitHostPort(p.target.Opaque); err != nil {
-		return TCPProbe{}, err
+	if port := p.target.Port(); port == "" {
+		return TCPProbe{}, ErrTCPPortMissing
 	}
 	return p, nil
 }
@@ -36,7 +40,7 @@ func (p TCPProbe) Check(ctx context.Context, r Reporter) {
 	var dialer net.Dialer
 
 	st := time.Now()
-	conn, err := dialer.DialContext(ctx, "tcp", p.target.Opaque)
+	conn, err := dialer.DialContext(ctx, "tcp", p.target.Host)
 	d := time.Now().Sub(st)
 
 	rec := store.Record{

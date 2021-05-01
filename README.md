@@ -98,7 +98,7 @@ examples:
 Connect to TCP and check the service listening or not.
 
 examples:
-- `tcp:example.com:3309`
+- `tcp://example.com:3309`
 
 #### dns
 

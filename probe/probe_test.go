@@ -32,8 +32,8 @@ func TestTargetURLNormalize(t *testing.T) {
 		{"http-head://example.com/foo/bar?hoge=fuga#piyo", url.URL{Scheme: "http-head", Host: "example.com", Path: "/foo/bar", RawQuery: "hoge=fuga", Fragment: "piyo"}},
 		{"https-options://example.com/foo/bar?hoge=fuga#piyo", url.URL{Scheme: "https-options", Host: "example.com", Path: "/foo/bar", RawQuery: "hoge=fuga", Fragment: "piyo"}},
 
-		{"tcp:example.com:80", url.URL{Scheme: "tcp", Opaque: "example.com:80"}},
-		{"tcp://example.com:80/foo/bar?hoge=fuga#piyo", url.URL{Scheme: "tcp", Opaque: "example.com:80"}},
+		{"tcp:example.com:80", url.URL{Scheme: "tcp", Host: "example.com:80"}},
+		{"tcp://example.com:80/foo/bar?hoge=fuga#piyo", url.URL{Scheme: "tcp", Host: "example.com:80"}},
 
 		{"dns:example.com", url.URL{Scheme: "dns", Opaque: "example.com"}},
 		{"dns://example.com:80/foo/bar?hoge=fuga#piyo", url.URL{Scheme: "dns", Opaque: "example.com"}},
