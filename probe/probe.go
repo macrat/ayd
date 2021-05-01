@@ -45,7 +45,7 @@ func NewFromURL(u *url.URL) (Probe, error) {
 	case "dummy":
 		return NewDummyProbe(u)
 	default:
-		return nil, ErrUnsupportedScheme
+		return NewPluginProbe(u)
 	}
 }
 

@@ -17,16 +17,27 @@ Easiest status monitoring service to check something service is dead or alive.
   * [TCP connect](#tcp)
   * [DNS resolve](#dns)
   * [execute external command (or script file)](#exec)
+  * [plugin](#plugin)
 - [view status page in browser, console, or program.](#status-page-and-endpoints)
 - [kick alert if target failure.](#alerting)
 
 ### Good at
-- Make a status page for temporary usage. (You can start it via one command! And, stop via just Ctrl-C!)
-- Make a status page for a minimal system. (Single binary server, single log file, there is no database!)
+- Make a status page for temporary usage.
+
+  You can start it via one command! And, stop via just Ctrl-C!
+
+- Make a status page for a minimal system.
+
+  Single binary server, single log file, there is no database!
 
 ### Not good at
-- Complex customization, extension. (There are nothing options for customizing.)
-- Investigate more detail. (This is just for check dead or alive.)
+- Complex customization, extension.
+
+  There is a few extension way, but extensibility is not the goal of this project.
+
+- Investigate more detail.
+
+  This is just for check dead or alive.
 
 
 ## Quick start
@@ -169,6 +180,35 @@ This output is reporting latency is `123.456ms`, status is `FAILURE`, and messag
 - `::status::`: Reports the status of service in `healthy`, `failure`, `aborted`, or `unknown`.
 
 Ayd uses the last value if found multiple reports in single output.
+
+#### plugin
+
+Plugin for check target is almost the same as [`exec:` target](#exec).
+The differences are below.
+
+|                                            |`exec: `    |plugin                    |
+|--------------------------------------------|------------|--------------------------|
+|scheme of URI                               |`exec:` only|anything                  |
+|executable file place                       |anywhere    |only in the PATH directory|
+|set argument and environment variable in URI|can         |can not                   |
+|receive raw target URI                      |can not     |can                       |
+
+Plugin is the "plugin".
+This is a good way to extend Ayd (you can use any URI!), but not good at writing a short script (you have to parse URI yourself).
+
+Plugin is an executable file in the PATH directory.
+Ayd looks for `ayd-XXX-probe` if found target with `XXX:` scheme.
+
+You can't use URI schemes that `ayd`, `alert`, and the scheme that is supported by Ayd itself.
+
+Plugin receives these values as the environment variable.
+
+|variable name|example                |description               |
+|-------------|-----------------------|--------------------------|
+|`ayd_url`    |`http://localhost:9000`|The URL of Ayd            |
+|`ayd_target` |`foobar:hello-world`   |The target URI to checking|
+
+You can use [the directives the same as exec](#extra-report-output-for-exec) in output of plugin.
 
 #### source
 

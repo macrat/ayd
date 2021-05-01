@@ -1,0 +1,4 @@
+#!/bin/sh
+
+echo "::status::FAILURE"
+echo "It should be failure because it has no permission"

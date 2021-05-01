@@ -68,18 +68,15 @@ func getStatusByMessage(message string, default_ store.Status) (replacedMessage 
 	return message, default_
 }
 
-func (p ExecuteProbe) Check(ctx context.Context, r Reporter) {
-	ctx, cancel := context.WithTimeout(ctx, 60*time.Minute)
-	defer cancel()
-
+func executeExternalCommand(ctx context.Context, r Reporter, target *url.URL, command, argument string, env []string) {
 	var cmd *exec.Cmd
-	if p.target.Fragment != "" {
-		cmd = exec.CommandContext(ctx, p.target.Opaque, p.target.Fragment)
+	if argument != "" {
+		cmd = exec.CommandContext(ctx, command, argument)
 	} else {
-		cmd = exec.CommandContext(ctx, p.target.Opaque)
+		cmd = exec.CommandContext(ctx, command)
 	}
 
-	cmd.Env = p.env
+	cmd.Env = env
 
 	st := time.Now()
 	stdout, err := cmd.CombinedOutput()
@@ -107,9 +104,16 @@ func (p ExecuteProbe) Check(ctx context.Context, r Reporter) {
 
 	r.Report(timeoutOr(ctx, store.Record{
 		CheckedAt: st,
-		Target:    p.target,
+		Target:    target,
 		Status:    status,
 		Message:   message,
 		Latency:   latency,
 	}))
+}
+
+func (p ExecuteProbe) Check(ctx context.Context, r Reporter) {
+	ctx, cancel := context.WithTimeout(ctx, 60*time.Minute)
+	defer cancel()
+
+	executeExternalCommand(ctx, r, p.target, p.target.Opaque, p.target.Fragment, p.env)
 }

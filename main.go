@@ -26,6 +26,7 @@ var (
 	storePath   = flag.String("o", "./ayd.log", "Path to log file. Log file is also use for restore status history.")
 	oneshot     = flag.Bool("1", false, "Check status only once and exit. Exit with 0 if all check passed, otherwise exit with code 1.")
 	alertURI    = flag.String("a", "", "The alert URI that the same format as target URI.")
+	externalURL = flag.String("u", "", "The external URL like \"http://example.com:9000\".")
 	showVersion = flag.Bool("v", false, "Show version and exit.")
 )
 
@@ -45,7 +46,15 @@ func Usage() {
 	})
 }
 
-func StartProbeServer(ctx context.Context, tasks []Task) {
+func SetupProbe(ctx context.Context, tasks []Task) {
+	if *externalURL != "" {
+		probe.ExternalURL = *externalURL
+	} else if *listenPort == 80 {
+		probe.ExternalURL = "http://localhost"
+	} else {
+		probe.ExternalURL = fmt.Sprintf("http://localhost:%d", listenPort)
+	}
+
 	for _, task := range tasks {
 		if task.Probe.Target().Scheme == "ping" {
 			if err := probe.StartPinger(ctx); err != nil {
@@ -101,7 +110,7 @@ func main() {
 		})
 	}
 
-	StartProbeServer(ctx, tasks)
+	SetupProbe(ctx, tasks)
 
 	if *oneshot {
 		os.Exit(RunOneshot(ctx, s, tasks))

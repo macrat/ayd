@@ -83,6 +83,13 @@ func TestTargetURLNormalize(t *testing.T) {
 			t.Errorf("%#v expected query %#v but go %#v", tt.Input, tt.Want.RawQuery, u.RawQuery)
 		}
 	}
+
+	t.Run("unknown:target", func(t *testing.T) {
+		_, err := probe.New("unknown:target")
+		if err != probe.ErrUnsupportedScheme {
+			t.Errorf("unexpected error: %v", err)
+		}
+	})
 }
 
 type ProbeTest struct {
