@@ -13,7 +13,7 @@ import (
 
 func RunServer(ctx context.Context, s *store.Store, tasks []Task) (exitCode int) {
 	listen := fmt.Sprintf("0.0.0.0:%d", *listenPort)
-	fmt.Printf("starts Ayd on http://%s\n", listen)
+	fmt.Fprintf(s.Console, "starts Ayd on http://%s\n", listen)
 
 	scheduler := cron.New()
 
@@ -23,7 +23,7 @@ func RunServer(ctx context.Context, s *store.Store, tasks []Task) (exitCode int)
 	}
 
 	for _, t := range tasks {
-		fmt.Printf("%s\t%s\n", t.Schedule, t.Probe.Target())
+		fmt.Fprintf(s.Console, "%s\t%s\n", t.Schedule, t.Probe.Target())
 
 		s.AddTarget(t.Probe.Target())
 
@@ -35,7 +35,7 @@ func RunServer(ctx context.Context, s *store.Store, tasks []Task) (exitCode int)
 
 		scheduler.Schedule(t.Schedule, job)
 	}
-	fmt.Println()
+	fmt.Fprintln(s.Console)
 
 	cronStopped := make(chan struct{})
 	httpStopped := make(chan struct{})

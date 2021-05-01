@@ -3,11 +3,14 @@ package main_test
 import (
 	"context"
 	"fmt"
+	"io"
+	"net/url"
 	"os"
 	"testing"
 	"time"
 
 	"github.com/macrat/ayd"
+	"github.com/macrat/ayd/probe"
 	"github.com/macrat/ayd/store"
 )
 
@@ -66,4 +69,52 @@ func TestRunServer(t *testing.T) {
 			}
 		})
 	}
+}
+
+func BenchmarkRunServer(b *testing.B) {
+	f, err := os.CreateTemp("", "ayd-test-*")
+	if err != nil {
+		b.Fatalf("failed to create log file: %s", err)
+	}
+	defer os.Remove(f.Name())
+	f.Close()
+
+	s, err := store.New(f.Name())
+	if err != nil {
+		b.Fatalf("failed to create store: %s", err)
+	}
+	s.Console = io.Discard
+	defer s.Close()
+
+	schedule, _ := main.ParseIntervalSchedule("10ms")
+	tasks := make([]main.Task, 1000)
+	for i := range tasks {
+		tasks[i].Schedule = schedule
+		tasks[i].Probe, _ = probe.NewDummyProbe(&url.URL{Scheme: "dummy", Fragment: fmt.Sprint(i)})
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+		main.RunServer(ctx, s, tasks)
+		cancel()
+	}
+	b.StopTimer()
+
+	done := 0
+	timeout := 0
+
+	for _, x := range s.ProbeHistory() {
+		for _, r := range x.Records {
+			if r.Status == store.STATUS_HEALTHY {
+				done++
+			} else {
+				timeout++
+			}
+		}
+	}
+
+	b.ReportMetric(float64(done)/float64(b.N), "done/op")
+	b.ReportMetric(float64(timeout)/float64(b.N), "timeout/op")
+	b.ReportMetric(1000*10-float64(done+timeout)/float64(b.N), "not-scheduled/op")
 }
