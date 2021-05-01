@@ -3,3 +3,5 @@
 2021-01-02T15:04:06Z	HEALTHY	234.567	http://a.example.com	hello world!
 2021-01-02T15:04:06Z	HEALTHY	54.321	http://b.example.com	this is healthy
 2021-01-02T15:04:07Z	HEALTHY	345.678	http://a.example.com	hello world!!
+2021-01-02T15:04:08Z	ABORTED	1.234	http://c.example.com	this is aborted
+2021-01-02T15:04:09Z	UNKNOWN	2.345	http://c.example.com	this is unknown
