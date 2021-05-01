@@ -2,6 +2,7 @@ package probe
 
 import (
 	"context"
+	"errors"
 	"net"
 	"net/url"
 	"strings"
@@ -10,16 +11,95 @@ import (
 	"github.com/macrat/ayd/store"
 )
 
+var (
+	ErrUnsupportedDNSType = errors.New("unsupported DNS type")
+)
+
+func dnsResolveAuto(r *net.Resolver, ctx context.Context, target string) (string, error) {
+	addrs, err := r.LookupHost(ctx, target)
+	return strings.Join(addrs, "\n"), err
+}
+
+func dnsResolveA(r *net.Resolver, ctx context.Context, target string) (string, error) {
+	ips, err := r.LookupIP(ctx, "ip4", target)
+	addrs := make([]string, len(ips))
+	for i, x := range ips {
+		addrs[i] = x.String()
+	}
+	return strings.Join(addrs, "\n"), err
+}
+
+func dnsResolveAAAA(r *net.Resolver, ctx context.Context, target string) (string, error) {
+	ips, err := r.LookupIP(ctx, "ip6", target)
+	addrs := make([]string, len(ips))
+	for i, x := range ips {
+		addrs[i] = x.String()
+	}
+	return strings.Join(addrs, "\n"), err
+}
+
+func dnsResolveCNAME(r *net.Resolver, ctx context.Context, target string) (string, error) {
+	return r.LookupCNAME(ctx, target)
+}
+
+func dnsResolveMX(r *net.Resolver, ctx context.Context, target string) (string, error) {
+	mxs, err := r.LookupMX(ctx, target)
+	addrs := make([]string, len(mxs))
+	for i, x := range mxs {
+		addrs[i] = x.Host
+	}
+	return strings.Join(addrs, "\n"), err
+}
+
+func dnsResolveNS(r *net.Resolver, ctx context.Context, target string) (string, error) {
+	nss, err := r.LookupNS(ctx, target)
+	addrs := make([]string, len(nss))
+	for i, x := range nss {
+		addrs[i] = x.Host
+	}
+	return strings.Join(addrs, "\n"), err
+}
+
+func dnsResolveTXT(r *net.Resolver, ctx context.Context, target string) (string, error) {
+	texts, err := r.LookupTXT(ctx, target)
+	return strings.Join(texts, "\n"), err
+}
+
 type DNSProbe struct {
-	target *url.URL
+	target  *url.URL
+	resolve func(r *net.Resolver, ctx context.Context, target string) (string, error)
 }
 
 func NewDNSProbe(u *url.URL) (DNSProbe, error) {
-	if u.Opaque != "" {
-		return DNSProbe{&url.URL{Scheme: "dns", Opaque: u.Opaque}}, nil
-	} else {
-		return DNSProbe{&url.URL{Scheme: "dns", Opaque: u.Hostname()}}, nil
+	p := DNSProbe{target: &url.URL{Scheme: "dns", Opaque: u.Opaque}}
+	if u.Opaque == "" {
+		p.target.Opaque = u.Hostname()
 	}
+	switch strings.ToUpper(u.Query().Get("type")) {
+	case "":
+		p.resolve = dnsResolveAuto
+	case "A":
+		p.target.RawQuery = url.Values{"type": {"A"}}.Encode()
+		p.resolve = dnsResolveA
+	case "AAAA":
+		p.target.RawQuery = url.Values{"type": {"AAAA"}}.Encode()
+		p.resolve = dnsResolveAAAA
+	case "CNAME":
+		p.target.RawQuery = url.Values{"type": {"CNAME"}}.Encode()
+		p.resolve = dnsResolveCNAME
+	case "MX":
+		p.target.RawQuery = url.Values{"type": {"MX"}}.Encode()
+		p.resolve = dnsResolveMX
+	case "NS":
+		p.target.RawQuery = url.Values{"type": {"NS"}}.Encode()
+		p.resolve = dnsResolveNS
+	case "TXT":
+		p.target.RawQuery = url.Values{"type": {"TXT"}}.Encode()
+		p.resolve = dnsResolveTXT
+	default:
+		return DNSProbe{}, ErrUnsupportedDNSType
+	}
+	return p, nil
 }
 
 func (p DNSProbe) Target() *url.URL {
@@ -27,27 +107,26 @@ func (p DNSProbe) Target() *url.URL {
 }
 
 func (p DNSProbe) Check(ctx context.Context, r Reporter) {
-	resolver := &net.Resolver{}
+	var resolver net.Resolver
 
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
 	st := time.Now()
-	addrs, err := resolver.LookupHost(ctx, p.target.Opaque)
+	msg, err := p.resolve(&resolver, ctx, p.target.Opaque)
 	d := time.Now().Sub(st)
 
 	rec := store.Record{
 		CheckedAt: st,
 		Target:    p.target,
+		Status:    store.STATUS_HEALTHY,
+		Message:   msg,
 		Latency:   d,
 	}
 
 	if err != nil {
 		rec.Status = store.STATUS_FAILURE
 		rec.Message = err.Error()
-	} else {
-		rec.Status = store.STATUS_HEALTHY
-		rec.Message = strings.Join(addrs, "\n")
 	}
 
 	r.Report(timeoutOr(ctx, rec))

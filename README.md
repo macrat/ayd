@@ -104,8 +104,12 @@ examples:
 
 Resolve hostname via DNS and check the host exists or not.
 
+You can specify record type as a `type` query.
+Supported type is `A`, `AAAA`, `CNAME`, `MX`, `NS`, and `TXT`.
+
 examples:
 - `dns:example.com`
+- `dns:example.com?type=AAAA`
 
 #### exec
 
