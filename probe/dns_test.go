@@ -10,7 +10,7 @@ func TestDNSProbe(t *testing.T) {
 	t.Parallel()
 
 	AssertProbe(t, []ProbeTest{
-		{"dns:localhost", store.STATUS_HEALTHY, `(127\.0\.0\.1|::1|127\.0\.0\.1, ::1|::1, 127\.0\.0\.1)`},
+		{"dns:localhost", store.STATUS_HEALTHY, `(127\.0\.0\.1|::1)` + "\n" + `(127\.0\.0\.1|::1)`},
 		{"dns:of-course-definitely-no-such-host", store.STATUS_FAILURE, `lookup of-course-definitely-no-such-host(:| ).+`},
 	})
 

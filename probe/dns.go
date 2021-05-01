@@ -47,7 +47,7 @@ func (p DNSProbe) Check(ctx context.Context, r Reporter) {
 		rec.Message = err.Error()
 	} else {
 		rec.Status = store.STATUS_HEALTHY
-		rec.Message = strings.Join(addrs, ", ")
+		rec.Message = strings.Join(addrs, "\n")
 	}
 
 	r.Report(timeoutOr(ctx, rec))
