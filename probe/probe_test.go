@@ -34,6 +34,8 @@ func TestTargetURLNormalize(t *testing.T) {
 
 		{"tcp:example.com:80", url.URL{Scheme: "tcp", Host: "example.com:80"}},
 		{"tcp://example.com:80/foo/bar?hoge=fuga#piyo", url.URL{Scheme: "tcp", Host: "example.com:80"}},
+		{"tcp4:example.com:80", url.URL{Scheme: "tcp4", Host: "example.com:80"}},
+		{"tcp6:example.com:80", url.URL{Scheme: "tcp6", Host: "example.com:80"}},
 
 		{"dns:example.com", url.URL{Scheme: "dns", Opaque: "example.com"}},
 		{"dns://example.com:80/foo/bar?hoge=fuga#piyo", url.URL{Scheme: "dns", Opaque: "example.com"}},

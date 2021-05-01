@@ -97,8 +97,12 @@ examples:
 
 Connect to TCP and check the service listening or not.
 
+`tcp://` will select IPv4 or IPv6 automatically. You can use `tcp4://` or `tcp6://` to choose IP protocol version.
+
 examples:
 - `tcp://example.com:3309`
+- `tcp4://127.0.0.1:3309`
+- `tcp6://[::1]:3309`
 
 #### dns
 

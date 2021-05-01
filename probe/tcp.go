@@ -19,7 +19,7 @@ type TCPProbe struct {
 }
 
 func NewTCPProbe(u *url.URL) (TCPProbe, error) {
-	p := TCPProbe{&url.URL{Scheme: "tcp", Host: u.Host}}
+	p := TCPProbe{&url.URL{Scheme: u.Scheme, Host: u.Host}}
 	if u.Host == "" {
 		p.target.Host = u.Opaque
 	}
@@ -40,7 +40,7 @@ func (p TCPProbe) Check(ctx context.Context, r Reporter) {
 	var dialer net.Dialer
 
 	st := time.Now()
-	conn, err := dialer.DialContext(ctx, "tcp", p.target.Host)
+	conn, err := dialer.DialContext(ctx, p.target.Scheme, p.target.Host)
 	d := time.Now().Sub(st)
 
 	rec := store.Record{
