@@ -15,13 +15,13 @@ var (
 	ErrUnsupportedDNSType = errors.New("unsupported DNS type")
 )
 
-func dnsResolveAuto(r *net.Resolver, ctx context.Context, target string) (string, error) {
+func dnsResolveAuto(ctx context.Context, r *net.Resolver, target string) (string, error) {
 	addrs, err := r.LookupHost(ctx, target)
 	return strings.Join(addrs, "\n"), err
 }
 
-func dnsResolveA(r *net.Resolver, ctx context.Context, target string) (string, error) {
-	ips, err := r.LookupIP(ctx, "ip4", target)
+func dnsResolveIP(ctx context.Context, r *net.Resolver, protocol, target string) (string, error) {
+	ips, err := r.LookupIP(ctx, protocol, target)
 	addrs := make([]string, len(ips))
 	for i, x := range ips {
 		addrs[i] = x.String()
@@ -29,20 +29,19 @@ func dnsResolveA(r *net.Resolver, ctx context.Context, target string) (string, e
 	return strings.Join(addrs, "\n"), err
 }
 
-func dnsResolveAAAA(r *net.Resolver, ctx context.Context, target string) (string, error) {
-	ips, err := r.LookupIP(ctx, "ip6", target)
-	addrs := make([]string, len(ips))
-	for i, x := range ips {
-		addrs[i] = x.String()
-	}
-	return strings.Join(addrs, "\n"), err
+func dnsResolveA(ctx context.Context, r *net.Resolver, target string) (string, error) {
+	return dnsResolveIP(ctx, r, "ip4", target)
 }
 
-func dnsResolveCNAME(r *net.Resolver, ctx context.Context, target string) (string, error) {
+func dnsResolveAAAA(ctx context.Context, r *net.Resolver, target string) (string, error) {
+	return dnsResolveIP(ctx, r, "ip6", target)
+}
+
+func dnsResolveCNAME(ctx context.Context, r *net.Resolver, target string) (string, error) {
 	return r.LookupCNAME(ctx, target)
 }
 
-func dnsResolveMX(r *net.Resolver, ctx context.Context, target string) (string, error) {
+func dnsResolveMX(ctx context.Context, r *net.Resolver, target string) (string, error) {
 	mxs, err := r.LookupMX(ctx, target)
 	addrs := make([]string, len(mxs))
 	for i, x := range mxs {
@@ -51,7 +50,7 @@ func dnsResolveMX(r *net.Resolver, ctx context.Context, target string) (string, 
 	return strings.Join(addrs, "\n"), err
 }
 
-func dnsResolveNS(r *net.Resolver, ctx context.Context, target string) (string, error) {
+func dnsResolveNS(ctx context.Context, r *net.Resolver, target string) (string, error) {
 	nss, err := r.LookupNS(ctx, target)
 	addrs := make([]string, len(nss))
 	for i, x := range nss {
@@ -60,14 +59,14 @@ func dnsResolveNS(r *net.Resolver, ctx context.Context, target string) (string, 
 	return strings.Join(addrs, "\n"), err
 }
 
-func dnsResolveTXT(r *net.Resolver, ctx context.Context, target string) (string, error) {
+func dnsResolveTXT(ctx context.Context, r *net.Resolver, target string) (string, error) {
 	texts, err := r.LookupTXT(ctx, target)
 	return strings.Join(texts, "\n"), err
 }
 
 type DNSProbe struct {
 	target  *url.URL
-	resolve func(r *net.Resolver, ctx context.Context, target string) (string, error)
+	resolve func(ctx context.Context, r *net.Resolver, target string) (string, error)
 }
 
 func NewDNSProbe(u *url.URL) (DNSProbe, error) {
@@ -113,7 +112,7 @@ func (p DNSProbe) Check(ctx context.Context, r Reporter) {
 	defer cancel()
 
 	st := time.Now()
-	msg, err := p.resolve(&resolver, ctx, p.target.Opaque)
+	msg, err := p.resolve(ctx, &resolver, p.target.Opaque)
 	d := time.Now().Sub(st)
 
 	rec := store.Record{
