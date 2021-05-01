@@ -10,10 +10,10 @@ func TestDNSProbe(t *testing.T) {
 	t.Parallel()
 
 	AssertProbe(t, []ProbeTest{
-		{"dns:localhost", store.STATUS_HEALTHY, `(127\.0\.0\.1|::1)` + "\n" + `(127\.0\.0\.1|::1)`},
+		{"dns:localhost", store.STATUS_HEALTHY, "(127\\.0\\.0\\.1|::1)(\n(127\\.0\\.0\\.1|::1))*"},
 
-		{"dns:localhost?type=AAAA", store.STATUS_HEALTHY, `::1`},
-		{"dns:localhost?type=A", store.STATUS_HEALTHY, `127.0.0.1`},
+		{"dns:localhost?type=AAAA", store.STATUS_HEALTHY, "::1(\n::1)*"},
+		{"dns:localhost?type=A", store.STATUS_HEALTHY, "127\\.0\\.0\\.1(\n127\\.0\\.0\\.1)*"},
 
 		{"dns:example.com?type=CNAME", store.STATUS_HEALTHY, `example.com.`},
 
