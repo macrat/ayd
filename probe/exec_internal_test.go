@@ -47,6 +47,7 @@ func TestGetStatusByMessage(t *testing.T) {
 	}{
 		{"::status::healthy", store.STATUS_UNKNOWN, "", store.STATUS_HEALTHY},
 		{"::status::Failure", store.STATUS_UNKNOWN, "", store.STATUS_FAILURE},
+		{"::status::aborted", store.STATUS_UNKNOWN, "", store.STATUS_ABORTED},
 		{"::status::UNKNOWN", store.STATUS_HEALTHY, "", store.STATUS_UNKNOWN},
 		{"::status::abcdefg", store.STATUS_UNKNOWN, "::status::abcdefg", store.STATUS_UNKNOWN},
 		{"hello\n::status::FAILURE\nworld", store.STATUS_UNKNOWN, "hello\nworld", store.STATUS_FAILURE},

@@ -58,17 +58,10 @@ func getLatencyByMessage(message string, default_ time.Duration) (replacedMessag
 }
 
 func getStatusByMessage(message string, default_ store.Status) (replacedMessage string, status store.Status) {
-	statusRe := regexp.MustCompile("(?m)^::status::((?i:healthy|failure|unknown))(?:\n|$)")
+	statusRe := regexp.MustCompile("(?m)^::status::((?i:healthy|failure|aborted|unknown))(?:\n|$)")
 
 	if m := statusRe.FindAllStringSubmatch(message, -1); m != nil {
-		switch strings.ToLower(m[len(m)-1][1]) {
-		case "healthy":
-			status = store.STATUS_HEALTHY
-		case "failure":
-			status = store.STATUS_FAILURE
-		case "unknown":
-			status = store.STATUS_UNKNOWN
-		}
+		status = store.ParseStatus(strings.ToUpper(m[len(m)-1][1]))
 		return strings.Trim(statusRe.ReplaceAllString(message, ""), "\n"), status
 	}
 

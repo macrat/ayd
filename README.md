@@ -166,7 +166,7 @@ hello world
 This output is reporting latency is `123.456ms`, status is `FAILURE`, and message is `hello world`.
 
 - `::latency::`: Reports the latency of service in milliseconds.
-- `::status::`: Reports the status of service in `healthy`, `failure`, or `unknown`.
+- `::status::`: Reports the status of service in `healthy`, `failure`, `aborted`, or `unknown`.
 
 Ayd uses the last value if found multiple reports in single output.
 
