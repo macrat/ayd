@@ -12,7 +12,7 @@ OPTIONS:
 
 INTERVALS:
   Specify execution schedule in interval (e.g. "2m" means "every 2 minutes")
-  or cron expression (e.g. "*/5 8-19 * * *" means "every 5 minutes from 8 p.m. to 7 a.m.").
+  or cron expression (e.g. "*/5 8-19 * *" means "every 5 minutes from 8 p.m. to 7 a.m.").
   Default interval is "5m" in if don't pass any interval.
 
 TARGETS:
@@ -33,7 +33,7 @@ TARGETS:
 
   tcp:
    Connect to TCP port.
-   e.g. tcp:example.com:3306
+   e.g. tcp://example.com:3306
 
   dns:
    Resolve name with DNS.
@@ -70,4 +70,7 @@ EXAMPLES:
    $ {{ .Command }} source:./list.txt
 
   Listen on http://0.0.0.0:8080 (and connect to example.com:3306 for check):
-   $ {{ .Command }} -p 8080 1m tcp:example.com:3306
+   $ {{ .Command }} -p 8080 1m tcp://example.com:3306
+
+SEEALSO:
+  https://github.com/macrat/ayd#readme
