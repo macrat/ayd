@@ -3,12 +3,12 @@ package main_test
 import (
 	"context"
 	"net/url"
-	"os"
 	"testing"
 
 	"github.com/macrat/ayd"
 	"github.com/macrat/ayd/probe"
 	"github.com/macrat/ayd/store"
+	"github.com/macrat/ayd/testutil"
 )
 
 type PanicProbe struct{}
@@ -22,17 +22,7 @@ func (p PanicProbe) Check(ctx context.Context, r probe.Reporter) {
 }
 
 func TestMakeJob(t *testing.T) {
-	f, err := os.CreateTemp("", "ayd-test-*")
-	if err != nil {
-		t.Fatalf("failed to create log file: %s", err)
-	}
-	defer os.Remove(f.Name())
-	f.Close()
-
-	s, err := store.New(f.Name())
-	if err != nil {
-		t.Fatalf("failed to create store: %s", err)
-	}
+	s := testutil.NewStore(t)
 	defer s.Close()
 
 	task := main.Task{Probe: PanicProbe{}}

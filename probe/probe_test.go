@@ -6,32 +6,13 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"regexp"
-	"sync"
 	"testing"
 	"time"
 
 	"github.com/macrat/ayd/probe"
 	"github.com/macrat/ayd/store"
+	"github.com/macrat/ayd/testutil"
 )
-
-type DummyReporter struct {
-	sync.Mutex
-
-	Records []store.Record
-}
-
-func (r *DummyReporter) Report(rec store.Record) {
-	r.Lock()
-	defer r.Unlock()
-
-	r.Records = append(r.Records, rec)
-}
-
-func RunCheck(ctx context.Context, probe probe.Probe) []store.Record {
-	reporter := &DummyReporter{}
-	probe.Check(ctx, reporter)
-	return reporter.Records
-}
 
 func TestTargetURLNormalize(t *testing.T) {
 	t.Parallel()
@@ -111,10 +92,7 @@ type ProbeTest struct {
 func AssertProbe(t *testing.T, tests []ProbeTest) {
 	for _, tt := range tests {
 		t.Run(tt.Target, func(t *testing.T) {
-			p, err := probe.New(tt.Target)
-			if err != nil {
-				t.Fatalf("failed to create probe: %s", err)
-			}
+			p := testutil.NewProbe(t, tt.Target)
 
 			if p.Target().String() != tt.Target {
 				t.Fatalf("got unexpected probe: %s", p.Target())
@@ -123,7 +101,7 @@ func AssertProbe(t *testing.T, tests []ProbeTest) {
 			ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 			defer cancel()
 
-			rs := RunCheck(ctx, p)
+			rs := testutil.RunCheck(ctx, p)
 
 			if len(rs) != 1 {
 				t.Fatalf("got unexpected number of results: %d", len(rs))
@@ -145,16 +123,13 @@ func AssertProbe(t *testing.T, tests []ProbeTest) {
 
 func AssertTimeout(t *testing.T, target string) {
 	t.Run("timeout", func(t *testing.T) {
-		p, err := probe.New(target)
-		if err != nil {
-			t.Fatalf("failed to get probe: %s", err)
-		}
+		p := testutil.NewProbe(t, target)
 
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Millisecond)
 		time.Sleep(10 * time.Millisecond)
 		defer cancel()
 
-		records := RunCheck(ctx, p)
+		records := testutil.RunCheck(ctx, p)
 		if len(records) != 1 {
 			t.Fatalf("unexpected number of records: %#v", records)
 		}
@@ -168,15 +143,12 @@ func AssertTimeout(t *testing.T, target string) {
 		}
 	})
 	t.Run("cancel", func(t *testing.T) {
-		p, err := probe.New(target)
-		if err != nil {
-			t.Fatalf("failed to get probe: %s", err)
-		}
+		p := testutil.NewProbe(t, target)
 
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel()
 
-		records := RunCheck(ctx, p)
+		records := testutil.RunCheck(ctx, p)
 		if len(records) != 1 {
 			t.Fatalf("unexpected number of records: %#v", records)
 		}

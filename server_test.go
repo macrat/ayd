@@ -3,15 +3,12 @@ package main_test
 import (
 	"context"
 	"fmt"
-	"io"
-	"net/url"
-	"os"
 	"testing"
 	"time"
 
 	"github.com/macrat/ayd"
-	"github.com/macrat/ayd/probe"
 	"github.com/macrat/ayd/store"
+	"github.com/macrat/ayd/testutil"
 )
 
 func TestRunServer(t *testing.T) {
@@ -30,17 +27,7 @@ func TestRunServer(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(fmt.Sprint(tt.Args), func(t *testing.T) {
-			f, err := os.CreateTemp("", "ayd-test-*")
-			if err != nil {
-				t.Fatalf("failed to create log file: %s", err)
-			}
-			defer os.Remove(f.Name())
-			f.Close()
-
-			s, err := store.New(f.Name())
-			if err != nil {
-				t.Fatalf("failed to create store: %s", err)
-			}
+			s := testutil.NewStore(t)
 			defer s.Close()
 
 			tasks, errs := main.ParseArgs(tt.Args)
@@ -72,25 +59,14 @@ func TestRunServer(t *testing.T) {
 }
 
 func BenchmarkRunServer(b *testing.B) {
-	f, err := os.CreateTemp("", "ayd-test-*")
-	if err != nil {
-		b.Fatalf("failed to create log file: %s", err)
-	}
-	defer os.Remove(f.Name())
-	f.Close()
-
-	s, err := store.New(f.Name())
-	if err != nil {
-		b.Fatalf("failed to create store: %s", err)
-	}
-	s.Console = io.Discard
+	s := testutil.NewStore(b)
 	defer s.Close()
 
 	schedule, _ := main.ParseIntervalSchedule("10ms")
 	tasks := make([]main.Task, 1000)
 	for i := range tasks {
 		tasks[i].Schedule = schedule
-		tasks[i].Probe, _ = probe.NewDummyProbe(&url.URL{Scheme: "dummy", Fragment: fmt.Sprint(i)})
+		tasks[i].Probe = testutil.NewProbe(b, fmt.Sprintf("dummy:#%d", i))
 	}
 
 	b.ResetTimer()

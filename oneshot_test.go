@@ -3,14 +3,12 @@ package main_test
 import (
 	"context"
 	"fmt"
-	"io"
-	"os"
 	"testing"
 	"time"
 
 	"github.com/macrat/ayd"
-	"github.com/macrat/ayd/probe"
 	"github.com/macrat/ayd/store"
+	"github.com/macrat/ayd/testutil"
 )
 
 func TestRunOneshot(t *testing.T) {
@@ -30,17 +28,7 @@ func TestRunOneshot(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(fmt.Sprint(tt.Args), func(t *testing.T) {
-			f, err := os.CreateTemp("", "ayd-test-*")
-			if err != nil {
-				t.Fatalf("failed to create log file: %s", err)
-			}
-			defer os.Remove(f.Name())
-			f.Close()
-
-			s, err := store.New(f.Name())
-			if err != nil {
-				t.Fatalf("failed to create store: %s", err)
-			}
+			s := testutil.NewStore(t)
 			defer s.Close()
 
 			tasks, errs := main.ParseArgs(tt.Args)
@@ -81,28 +69,16 @@ func BenchmarkRunOneshot(b *testing.B) {
 		b.Run(name, func(b *testing.B) {
 			for _, n := range []int{10, 25, 50, 75, 100, 250, 500, 750, 1000} {
 				b.Run(fmt.Sprintf("%dtargets", n), func(b *testing.B) {
-					f, err := os.CreateTemp("", "ayd-test-*")
-					if err != nil {
-						b.Fatalf("failed to create log file: %s", err)
-					}
-					defer os.Remove(f.Name())
-					f.Close()
-
-					s, err := store.New(f.Name())
-					if err != nil {
-						b.Fatalf("failed to create store: %s", err)
-					}
-					s.Console = io.Discard
+					s := testutil.NewStore(b)
 					defer s.Close()
 
 					tasks := make([]main.Task, n)
 					schedule, _ := main.ParseIntervalSchedule("1s")
 					for i := range tasks {
-						p, err := probe.New(fmt.Sprintf("dummy:random#benchmark-%d", i))
-						if err != nil {
-							b.Fatalf("failed to create probe: %s", err)
+						tasks[i] = main.Task{
+							Schedule: schedule,
+							Probe:    testutil.NewProbe(b, fmt.Sprintf("dummy:random#benchmark-%d", i)),
 						}
-						tasks[i] = main.Task{Schedule: schedule, Probe: p}
 					}
 
 					ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)

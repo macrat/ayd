@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/macrat/ayd/probe"
 	"github.com/macrat/ayd/store"
+	"github.com/macrat/ayd/testutil"
 )
 
 func TestDummyProbe(t *testing.T) {
@@ -22,14 +22,11 @@ func TestDummyProbe(t *testing.T) {
 	})
 
 	t.Run("dummy:random", func(t *testing.T) {
-		p, err := probe.New("dummy:random")
-		if err != nil {
-			t.Fatalf("failed to create probe: %s", err)
-		}
+		p := testutil.NewProbe(t, "dummy:random")
 
 		h, f, u := 0, 0, 0
 		for i := 0; i < 600; i++ {
-			rs := RunCheck(context.Background(), p)
+			rs := testutil.RunCheck(context.Background(), p)
 			for _, r := range rs {
 				switch r.Status {
 				case store.STATUS_HEALTHY:
@@ -56,13 +53,10 @@ func TestDummyProbe(t *testing.T) {
 	})
 
 	t.Run("dummy:healthy?latency=5s", func(t *testing.T) {
-		p, err := probe.New("dummy:healthy?latency=5s")
-		if err != nil {
-			t.Fatalf("failed to create probe: %s", err)
-		}
+		p := testutil.NewProbe(t, "dummy:healthy?latency=5s")
 
 		stime := time.Now()
-		rs := RunCheck(context.Background(), p)
+		rs := testutil.RunCheck(context.Background(), p)
 		latency := time.Now().Sub(stime)
 
 		if latency < 4800*time.Millisecond || 5200*time.Millisecond < latency {
@@ -77,16 +71,13 @@ func TestDummyProbe(t *testing.T) {
 	})
 
 	t.Run("dummy:healthy?latency=5m/timeout", func(t *testing.T) {
-		p, err := probe.New("dummy:healthy?latency=5m")
-		if err != nil {
-			t.Fatalf("failed to create probe: %s", err)
-		}
+		p := testutil.NewProbe(t, "dummy:healthy?latency=5m")
 
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 		defer cancel()
 
 		stime := time.Now()
-		rs := RunCheck(ctx, p)
+		rs := testutil.RunCheck(ctx, p)
 		latency := time.Now().Sub(stime)
 
 		if latency < 800*time.Millisecond || 1200*time.Millisecond < latency {

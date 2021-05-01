@@ -1,3 +1,6 @@
+ignore:
+  - testutil
+
 coverage:
   status:
     project: off

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/macrat/ayd/store"
+	"github.com/macrat/ayd/testutil"
 )
 
 func TestProbeHistoryMap(t *testing.T) {
@@ -96,6 +97,7 @@ func TestStore_restore(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create store: %s", err)
 	}
+	s1.Console = io.Discard
 	defer s1.Close()
 
 	records := []store.Record{
@@ -137,6 +139,7 @@ func TestStore_restore(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create store: %s", err)
 	}
+	s2.Console = io.Discard
 	defer s2.Close()
 
 	if err = s2.Restore(); err != nil {
@@ -173,17 +176,7 @@ func TestStore_restore(t *testing.T) {
 }
 
 func TestStore_AddTarget(t *testing.T) {
-	f, err := os.CreateTemp("", "ayd-test-*")
-	if err != nil {
-		t.Fatalf("failed to create log file: %s", err)
-	}
-	defer os.Remove(f.Name())
-	f.Close()
-
-	s, err := store.New(f.Name())
-	if err != nil {
-		t.Fatalf("failed to create store: %s", err)
-	}
+	s := testutil.NewStore(t)
 	defer s.Close()
 
 	if len(s.ProbeHistory()) != 0 {
@@ -225,17 +218,7 @@ func TestStore_AddTarget(t *testing.T) {
 }
 
 func TestStore_incident(t *testing.T) {
-	f, err := os.CreateTemp("", "ayd-test-*")
-	if err != nil {
-		t.Fatalf("failed to create log file: %s", err)
-	}
-	defer os.Remove(f.Name())
-	f.Close()
-
-	s, err := store.New(f.Name())
-	if err != nil {
-		t.Fatalf("failed to create store: %s", err)
-	}
+	s := testutil.NewStore(t)
 	defer s.Close()
 
 	lastIncident := ""
@@ -342,17 +325,7 @@ func TestStore_incident(t *testing.T) {
 }
 
 func TestStore_incident_len_limit(t *testing.T) {
-	f, err := os.CreateTemp("", "ayd-test-*")
-	if err != nil {
-		t.Fatalf("failed to create log file: %s", err)
-	}
-	defer os.Remove(f.Name())
-	f.Close()
-
-	s, err := store.New(f.Name())
-	if err != nil {
-		t.Fatalf("failed to create store: %s", err)
-	}
+	s := testutil.NewStore(t)
 	defer s.Close()
 
 	for i := 0; i < store.INCIDENT_HISTORY_LEN*2; i++ {
@@ -371,18 +344,7 @@ func TestStore_incident_len_limit(t *testing.T) {
 func BenchmarkStore_Append(b *testing.B) {
 	for _, status := range []store.Status{store.STATUS_HEALTHY, store.STATUS_FAILURE} {
 		b.Run(status.String(), func(b *testing.B) {
-			f, err := os.CreateTemp("", "ayd-test-*")
-			if err != nil {
-				b.Fatalf("failed to create log file: %s", err)
-			}
-			defer os.Remove(f.Name())
-			f.Close()
-
-			s, err := store.New(f.Name())
-			if err != nil {
-				b.Fatalf("failed to create store: %s", err)
-			}
-			s.Console = io.Discard
+			s := testutil.NewStore(b)
 			defer s.Close()
 
 			record := store.Record{

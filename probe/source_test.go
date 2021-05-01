@@ -11,6 +11,7 @@ import (
 
 	"github.com/macrat/ayd/probe"
 	"github.com/macrat/ayd/store"
+	"github.com/macrat/ayd/testutil"
 )
 
 func TestSource(t *testing.T) {
@@ -71,7 +72,7 @@ func TestSource(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
 
-			rs := RunCheck(ctx, p)
+			rs := testutil.RunCheck(ctx, p)
 
 			if len(rs) != len(tt.Records) {
 				t.Fatalf("unexpected number of records: %d\n%v", len(rs), rs)
