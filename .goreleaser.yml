@@ -15,13 +15,14 @@ builds:
       - '-X main.commit={{ .ShortCommit }}'
 
 archives:
-  - replacements:
+  - format: binary
+    replacements:
       386: i386
       amd64: x86_64
-    wrap_in_directory: true
     format_overrides:
       - goos: windows
         format: zip
+    files: []
 
 changelog:
   filters:
