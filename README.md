@@ -336,17 +336,17 @@ Please see more information in [the readme of ayd-mailto-alert](https://github.c
 
 #### Slack
 
-You can send an alert to Slack via [ayd-slack-alert](https://github.com/macrat/ayd-slack-alert).
+You can send an alert to Slack via [ayd-slack-alert](https://github.com/macrat/ayd-slack-alert) plugin.
 
 ![The screenshot of Ayd alert in the Slack. You can see service status, target URI, and reason to failure. And there is button to open Status Page.](./assets/slack-alert.jpg)
 
-Please download from [release page of ayd-slack-alert](https://github.com/macrat/ayd-slack-alert/releases) and use like below.
+This plugin can use like below.
 
 ``` shell
 $ export SLACK_WEBHOOK_URL="https://hooks.slack.com/services/......"
 $ export AYD_URL="http://ayd-external-url.example.com"
 
-$ ayd -a exec:ayd-slack-alert https://target.example.com
+$ ayd -a slack: https://target.example.com
 ```
 
 Please see more information in [the readme of ayd-slack-alert](https://github.com/macrat/ayd-slack-alert#readme).
