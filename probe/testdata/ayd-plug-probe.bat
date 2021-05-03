@@ -1,4 +1,4 @@
 @echo off
 
-echo ::status::HEALTHY::
-echo check: %1
+echo ::status::HEALTHY
+echo check %1
