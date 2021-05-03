@@ -114,6 +114,8 @@ func AssertProbe(t *testing.T, tests []ProbeTest) {
 					t.Fatalf("unexpected error on create probe: %s", err)
 				}
 				return
+			} else if tt.ParseErrorPattern != "" {
+				t.Fatal("expected error on create probe but got nil")
 			}
 
 			if p.Target().String() != tt.Target {

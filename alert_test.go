@@ -39,10 +39,13 @@ func TestAlert(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.Target, func(t *testing.T) {
 			alert, err := main.NewAlert(tt.Target)
-			if err != nil && err.Error() != tt.Error {
-				t.Fatalf("unexpected error: %s", err)
-			} else if tt.Error != "" {
+			if err != nil {
+				if err.Error() != tt.Error {
+					t.Fatalf("unexpected error: %s", err)
+				}
 				return
+			} else if tt.Error != "" {
+				t.Fatal("expected error but got nil")
 			}
 
 			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
