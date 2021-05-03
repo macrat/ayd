@@ -319,21 +319,20 @@ The 1st argument is the target URI of alert, and the 2nd argument is the target 
 
 #### e-mail (SMTP)
 
-If you want to send an email via SMTP as an alert, you can use [ayd-mail-alert](https://github.com/macrat/ayd-mail-alert).
+If you want to send an email via SMTP as an alert, you can use [ayd-mailto-alert](https://github.com/macrat/ayd-mailto-alert) plugin.
 
 ![The screenshot of Ayd alert in email. You can see service status, target URI, and reason to failure. And there is button to open Status Page.](./assets/email-alert.jpg)
 
-Please download from [release page of ayd-mail-alert](https://github.com/macrat/ayd-mail-alert/releases) and use like below.
+This plugin can use like below.
 
 ``` shell
 $ export SMTP_SERVER=smtp.example.com:465 SMTP_USERNAME=your-name SMTP_PASSWORD=your-password
-$ export AYD_MAIL_TO="your name <your-email@example.com>"
 $ export AYD_URL="http://ayd-external-url.example.com"
 
-$ ayd -a exec:ayd-mail-alert https://target.example.com
+$ ayd -a mailto:your-email@example.com https://target.example.com
 ```
 
-Please see more information in [the readme of ayd-mail-alert](https://github.com/macrat/ayd-mail-alert#readme).
+Please see more information in [the readme of ayd-mailto-alert](https://github.com/macrat/ayd-mailto-alert#readme).
 
 #### Slack
 
