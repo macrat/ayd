@@ -30,9 +30,9 @@ func TestAlert(t *testing.T) {
 		Message string
 		Error   string
 	}{
-		{filepath.Join("exec:.", "testdata", "ayd-foo-alert"), "foo FAILURE dummy:failure", ""},
-		{filepath.Join("exec:.", "testdata", "ayd-bar-probe"), "bar FAILURE dummy:failure", ""},
-		{"foo:", "foo FAILURE dummy:failure", ""},
+		{"exec:ayd-foo-alert", "   ", ""},
+		{"exec:ayd-bar-probe", "arg \nenv ayd_target=dummy:failure ayd_status=FAILURE ayd_checked_at=2001-02-03T16:05:06Z", ""},
+		{"foo:", "foo: dummy:failure FAILURE 2001-02-03T16:05:06Z", ""},
 		{"bar:", "", "unsupported scheme"},
 	}
 
@@ -51,7 +51,7 @@ func TestAlert(t *testing.T) {
 			i := &store.Incident{
 				Target:   &url.URL{Scheme: "dummy", Opaque: "failure"},
 				Status:   store.STATUS_FAILURE,
-				CausedAt: time.Now(),
+				CausedAt: time.Date(2001, 2, 3, 16, 5, 6, 0, time.UTC),
 			}
 
 			r := &testutil.DummyReporter{}
@@ -60,6 +60,10 @@ func TestAlert(t *testing.T) {
 
 			if len(r.Records) != 1 {
 				t.Fatalf("unexpected number of records: %d: %#v", len(r.Records), r.Records)
+			}
+
+			if r.Records[0].Target.String() != "alert:"+tt.Target {
+				t.Errorf("unexpected target URI: %s", r.Records[0].Target)
 			}
 
 			if r.Records[0].Status != store.STATUS_HEALTHY {

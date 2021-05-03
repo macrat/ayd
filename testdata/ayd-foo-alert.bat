@@ -1,3 +1,3 @@
 @echo off
 
-echo foo %ayd_status% %ayd_target%
+echo %1 %2 %3 %4

@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/url"
 	"os"
 	"os/exec"
@@ -25,7 +24,7 @@ func NewAlert(target string) (Alert, error) {
 		return nil, err
 	}
 
-	return &ProbeAlert{p.Target()}, nil
+	return ProbeAlert{p.Target()}, nil
 }
 
 type ProbeAlert struct {
@@ -41,11 +40,15 @@ func (a ProbeAlert) Trigger(ctx context.Context, incident *store.Incident, r pro
 	u := *a.target
 	u.RawQuery = qs.Encode()
 
+	reporter := AlertReporter{
+		&url.URL{Scheme: "alert", Opaque: a.target.String()},
+		r,
+	}
+
 	p, err := probe.WithoutPlugin(probe.NewFromURL(&u))
 	if err != nil {
-		r.Report(store.Record{
+		reporter.Report(store.Record{
 			CheckedAt: time.Now(),
-			Target:    &url.URL{Scheme: "alert", Opaque: a.target.String()},
 			Status:    store.STATUS_UNKNOWN,
 			Message:   err.Error(),
 		})
@@ -55,25 +58,22 @@ func (a ProbeAlert) Trigger(ctx context.Context, incident *store.Incident, r pro
 	ctx, cancel := context.WithTimeout(ctx, TASK_TIMEOUT)
 	defer cancel()
 
-	p.Check(ctx, AlertReporter{r})
+	p.Check(ctx, reporter)
 }
 
 type AlertReporter struct {
+	Target   *url.URL
 	Upstream probe.Reporter
 }
 
 func (r AlertReporter) Report(rec store.Record) {
-	rec.Target = &url.URL{
-		Scheme: "alert",
-		Opaque: rec.Target.String(),
-	}
+	rec.Target = r.Target
 	r.Upstream.Report(rec)
 }
 
 type PluginAlert struct {
 	target  *url.URL
 	command string
-	env     []string
 }
 
 func NewPluginAlert(target string) (PluginAlert, error) {
@@ -89,7 +89,6 @@ func NewPluginAlert(target string) (PluginAlert, error) {
 	p := PluginAlert{
 		target:  u,
 		command: "ayd-" + u.Scheme + "-alert",
-		env:     os.Environ(),
 	}
 
 	if _, err := exec.LookPath(p.command); errors.Unwrap(err) == exec.ErrNotFound {
@@ -108,14 +107,14 @@ func (a PluginAlert) Trigger(ctx context.Context, incident *store.Incident, r pr
 	probe.ExecuteExternalCommand(
 		ctx,
 		r,
-		incident.Target,
+		&url.URL{Scheme: "alert", Opaque: a.target.String()},
 		a.command,
-		"",
-		append(
-			a.env,
-			fmt.Sprintf("ayd_target=%s", incident.Target.String()),
-			fmt.Sprintf("ayd_checked_at=%s", incident.CausedAt.Format(time.RFC3339)),
-			fmt.Sprintf("ayd_status=%s", incident.Status.String()),
-		),
+		[]string{
+			a.target.String(),
+			incident.Target.String(),
+			incident.Status.String(),
+			incident.CausedAt.Format(time.RFC3339),
+		},
+		os.Environ(),
 	)
 }

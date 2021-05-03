@@ -203,11 +203,8 @@ In both cases, you can use your wanted scheme by changing `XXX`.
 
 You can't use URI schemes that `ayd`, `alert`, and the scheme that is supported by Ayd itself.
 
-Plugin receives these values as the environment variable.
-
-|variable name|example                |description               |
-|-------------|-----------------------|--------------------------|
-|`ayd_target` |`foobar:hello-world`   |The target URI to checking|
+Plugin receives target URI as argument of command.
+For example, target URI `foobar:hello-world` is going to executed as `ayd-foobar-probe foobar:hello-world`.
 
 You can use [the directives the same as exec](#extra-report-output-for-exec) in output of plugin.
 
@@ -298,7 +295,7 @@ Please consider using the log rotation tool if you have a plan to use it for a l
 ### Alerting
 
 Ayd can kick a URI when a target status checks failure.
-You may want to use [exec](#exec), [HTTP](#http), or [plugin](#plugin) for alerting.
+You may want to use [exec](#exec), [HTTP](#http), or plugin for alerting.
 (Even you can use ping, DNS, etc as alerting. but... it's useless in almost all cases)
 
 Ayd will kick alert at only the timing that incident caused, and it won't kick at the timing that continuing or resolved the incident.
@@ -314,8 +311,11 @@ In the above example, Ayd access `https://alert.example/alert` with the below qu
 |query name      |example                     |description                  |
 |----------------|----------------------------|-----------------------------|
 |`ayd_target`    |`https://target.example.com`|The alerting target URI      |
-|`ayd_checked_at`|`2001-02-03T16:05:06+09:00` |The checked timestamp        |
 |`ayd_status`    |`FAILURE` or `UNKNOWN`      |The status of target checking|
+|`ayd_checked_at`|`2001-02-03T16:05:06+09:00` |The checked timestamp        |
+
+For plugin, pass those values as arguments to plugin.
+The 1st argument is the target URI of alert, and the 2nd argument is the target URI that failured, the 3rd is `FAILURE` or `UNKNOWN`, the 4th is timestamp.
 
 #### e-mail (SMTP)
 

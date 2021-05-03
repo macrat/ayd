@@ -1,4 +1,4 @@
 #!/bin/sh
 
 echo "::status::HEALTHY"
-echo "check ${ayd_target}"
+echo "check ${1}"
