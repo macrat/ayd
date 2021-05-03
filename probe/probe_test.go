@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
+	"path/filepath"
 	"regexp"
 	"testing"
 	"time"
@@ -16,6 +18,12 @@ import (
 
 func TestTargetURLNormalize(t *testing.T) {
 	t.Parallel()
+
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("failed to get current directory: %s", err)
+	}
+	cwd = filepath.ToSlash(cwd)
 
 	tests := []struct {
 		Input string
@@ -40,12 +48,10 @@ func TestTargetURLNormalize(t *testing.T) {
 		{"dns:example.com", url.URL{Scheme: "dns", Opaque: "example.com"}},
 		{"dns://example.com:80/foo/bar?hoge=fuga#piyo", url.URL{Scheme: "dns", Opaque: "example.com"}},
 
-		{"exec:foo.sh", url.URL{Scheme: "exec", Opaque: "foo.sh"}},
-		{"exec:./foo.sh", url.URL{Scheme: "exec", Opaque: "./foo.sh"}},
-		{"exec:/foo/bar.sh", url.URL{Scheme: "exec", Opaque: "/foo/bar.sh"}},
-		{"exec:///foo/bar.sh", url.URL{Scheme: "exec", Opaque: "/foo/bar.sh"}},
-		{"exec:foo.sh?hoge=fuga#piyo", url.URL{Scheme: "exec", Opaque: "foo.sh", RawQuery: "hoge=fuga", Fragment: "piyo"}},
-		{"exec:/foo/bar.sh?hoge=fuga#piyo", url.URL{Scheme: "exec", Opaque: "/foo/bar.sh", RawQuery: "hoge=fuga", Fragment: "piyo"}},
+		{"exec:testdata/test.bat", url.URL{Scheme: "exec", Opaque: "testdata/test.bat"}},
+		{"exec:./testdata/test.bat", url.URL{Scheme: "exec", Opaque: "./testdata/test.bat"}},
+		{"exec:" + cwd + "/testdata/test.bat", url.URL{Scheme: "exec", Opaque: cwd + "/testdata/test.bat"}},
+		{"exec:testdata/test.bat?hoge=fuga#piyo", url.URL{Scheme: "exec", Opaque: "testdata/test.bat", RawQuery: "hoge=fuga", Fragment: "piyo"}},
 
 		{"source:./testdata/healthy-list.txt", url.URL{Scheme: "source", Opaque: "./testdata/healthy-list.txt"}},
 	}

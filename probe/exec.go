@@ -34,6 +34,10 @@ func NewExecuteProbe(u *url.URL) (ExecuteProbe, error) {
 		Fragment: u.Fragment,
 	}
 
+	if _, err := exec.LookPath(filepath.FromSlash(path)); errors.Unwrap(err) != nil {
+		return ExecuteProbe{}, err
+	}
+
 	p.env = os.Environ()
 	for k, v := range u.Query() {
 		p.env = append(p.env, k+"="+v[len(v)-1])
