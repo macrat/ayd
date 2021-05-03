@@ -21,7 +21,7 @@ func TestDNSProbe(t *testing.T) {
 
 		{"dns:example.com?type=NS", store.STATUS_HEALTHY, `[a-z]\.iana-servers\.net\.(` + "\n" + `[a-z]\.iana-servers\.net\.)*`},
 
-		{"dns:example.com?type=TXT", store.STATUS_HEALTHY, "v=spf1 -all\n[0-9a-z]{32}"},
+		{"dns:example.com?type=TXT", store.STATUS_HEALTHY, "(v=spf1 -all\n[0-9a-z]{32}|[0-9a-z]{32}\nv=spf1 -all)"},
 
 		{"dns:of-course-definitely-no-such-host", store.STATUS_FAILURE, `lookup of-course-definitely-no-such-host(:| ).+`},
 	})
