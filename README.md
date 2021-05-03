@@ -79,7 +79,7 @@ Ayd has these pages/endpoints.
 Ayd demands URI as targets.
 Please see below what you can use as a scheme (protocol).
 
-#### http / https
+#### http: / https:
 
 Fetch HTTP(S) page and check status code is 2xx or not.
 
@@ -94,7 +94,7 @@ examples:
 - `http-head://example.com/path/to/somewhere`
 - `https-options://example.com/abc?def=ghi`
 
-#### ping
+#### ping:
 
 Send ICMP echo request (a.k.a. ping command) and check the server is connected or not.
 
@@ -104,7 +104,7 @@ examples:
 - `ping:example.com`
 - `ping:192.168.1.1`
 
-#### tcp
+#### tcp:
 
 Connect to TCP and check the service listening or not.
 
@@ -115,7 +115,7 @@ examples:
 - `tcp4://127.0.0.1:3309`
 - `tcp6://[::1]:3309`
 
-#### dns
+#### dns:
 
 Resolve hostname via DNS and check the host exists or not.
 
@@ -126,7 +126,7 @@ examples:
 - `dns:example.com`
 - `dns:example.com?type=AAAA`
 
-#### exec
+#### exec:
 
 Execute external command and check return code is 0 or not.
 
@@ -181,9 +181,36 @@ This output is reporting latency is `123.456ms`, status is `FAILURE`, and messag
 
 Ayd uses the last value if found multiple reports in single output.
 
+#### source:
+
+This is a special scheme for load targets from a file.
+Load each line in the file as a target URI and check all targets.
+
+Source file is looks like below.
+
+```
+# servers
+ping:somehost.example.com
+ping:anotherhost.example.com
+ping:yet.anotherhost.example.com
+
+# services
+https://service1.example.com
+https://service2.example.com
+
+# you can also read another file
+source:./another-list.txt
+```
+
+The line that starts with `#` will ignore as a comment.
+
+examples:
+- `source:./targets.txt`
+- `source:/path/to/targets.txt`
+
 #### plugin
 
-Plugin for check target is almost the same as [`exec:` target](#exec).
+Plugin for check target is almost the same as [`exec:`](#exec).
 The differences are below.
 
 |                                            |`exec: `    |plugin                    |
@@ -203,21 +230,10 @@ In both cases, you can use your wanted scheme by changing `XXX`.
 
 You can't use URI schemes that `ayd`, `alert`, and the scheme that is supported by Ayd itself.
 
-Plugin receives target URI as argument of command.
+Plugin receives target URI as the first argument of the command.
 For example, target URI `foobar:hello-world` is going to executed as `ayd-foobar-probe foobar:hello-world`.
 
 You can use [the directives the same as exec](#extra-report-output-for-exec) in output of plugin.
-
-#### source
-
-This is a special scheme for load targets from a file.
-Load each line in the file as a target URI and check all targets.
-
-The line that starts with `#` will ignore as a comment.
-
-examples:
-- `source:./targets.txt`
-- `source:/path/to/targets.txt`
 
 
 ### Specify check interval/schedule
@@ -261,14 +277,19 @@ The log has these columns.
 
 2. Status of the record that `HEALTHY`, `FAILURE`, `ABORTED`, or `UNKNOWN`.
 
-   * HEALTHY means service seems working well.
-   * FAILURE means service seems failure or stopped.
-   * ABORTED means Ayd terminated during status checking. For example, this reported when terminated Ayd with Ctrl-C.
-   * UNKNOWN means Ayd is failed to status checking. For example, not found test script, failed to resolve service name, etc.
+   * `HEALTHY` means service seems working well.
+   * `FAILURE` means service seems failure or stopped.
+   * `ABORTED` means Ayd terminated during status checking. For example, this reported when terminated Ayd with Ctrl-C.
+   * `UNKNOWN` means Ayd is failed to status checking. For example, not found test script, failed to resolve service name, etc.
 
 3. Latency of the service in milliseconds.
 
+   Some probes like [ping:](#ping) reports average latency, and other probes reports total value..
+
 4. Target URI.
+
+   This URI is the same to passed one as argument, but normalized.
+   For example, `ping:somehost?hello=world` to be `ping:somehost` because [ping:](#ping) does not use query values.
 
 5. The detail of status, the reason for failure, or the output of the executed script.
 
@@ -276,8 +297,8 @@ For example, log lines look like below.
 
 ```
 2001-02-30T16:00:00+09:00	FAILURE	0.544	http://localhost	Get "http://localhost": dial tcp [::1]:80: connect: connection refused
-2001-02-30T16:05:00+09:00	UNKNOWN	0.000	ping:somehost	lookup somehost on 192.168.1.1:53: no such host
-2001-02-30T16:10:00+09:00	HEALTHY	0.375	ping:mikage	rtt(min/avg/max)=0.31/0.38/0.47 send/rcv=4/4
+2001-02-30T16:05:00+09:00	UNKNOWN	0.000	tcp:somehost:1234	lookup somehost on 192.168.1.1:53: no such host
+2001-02-30T16:10:00+09:00	HEALTHY	0.375	ping:anotherhost	rtt(min/avg/max)=0.31/0.38/0.47 send/rcv=4/4
 ```
 
 Ayd will save the log file in the current directory in default.
@@ -363,7 +384,7 @@ In default, Ayd uses port 9000.
 #### Use docker
 
 You can use [docker image](https://hub.docker.com/r/macrat/ayd) for execute Ayd.
-This image includes ayd, and alert sender for email and slack.
+This image includes ayd, and alert plugin for [email](https://github.com/macrat/ayd-mailto-alert) and [slack](https://github.com/macrat/ayd-slack-alert).
 
 ``` shell
 $ docker run --restart=always -v /var/log/ayd:/var/log/ayd macrat/ayd http://your-target.example.com
