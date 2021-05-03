@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -28,7 +29,7 @@ func NewExecuteProbe(u *url.URL) (ExecuteProbe, error) {
 	}
 	p.target = &url.URL{
 		Scheme:   "exec",
-		Opaque:   path,
+		Opaque:   filepath.ToSlash(path),
 		RawQuery: u.RawQuery,
 		Fragment: u.Fragment,
 	}
@@ -110,9 +111,11 @@ func (p ExecuteProbe) Check(ctx context.Context, r Reporter) {
 	ctx, cancel := context.WithTimeout(ctx, 60*time.Minute)
 	defer cancel()
 
+	command := filepath.FromSlash(p.target.Opaque)
+
 	if p.target.Fragment != "" {
-		ExecuteExternalCommand(ctx, r, p.target, p.target.Opaque, []string{p.target.Fragment}, p.env)
+		ExecuteExternalCommand(ctx, r, p.target, command, []string{p.target.Fragment}, p.env)
 	} else {
-		ExecuteExternalCommand(ctx, r, p.target, p.target.Opaque, nil, p.env)
+		ExecuteExternalCommand(ctx, r, p.target, command, nil, p.env)
 	}
 }
