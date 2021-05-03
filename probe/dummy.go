@@ -31,12 +31,14 @@ func NewDummyProbe(u *url.URL) (DummyProbe, error) {
 		p.status = store.STATUS_HEALTHY
 	case "failure":
 		p.status = store.STATUS_FAILURE
+	case "aborted":
+		p.status = store.STATUS_ABORTED
 	case "unknown":
 		p.status = store.STATUS_UNKNOWN
 	case "random":
 		p.random = true
 	default:
-		return DummyProbe{}, errors.New("opaque must healthy, failure, unknown, or random")
+		return DummyProbe{}, errors.New("opaque must healthy, failure, aborted, unknown, or random")
 	}
 
 	query := url.Values{}
