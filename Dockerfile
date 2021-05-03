@@ -14,9 +14,9 @@ WORKDIR /usr/src/ayd
 COPY ayd .
 RUN go build -ldflags="-s -w -X 'main.version=$VERSION' -X 'main.commit=$COMMIT'" -o /output/ayd
 
-WORKDIR /usr/src/ayd-mail-alert
-COPY ayd-mail-alert .
-RUN go build -ldflags="-s -w -X 'main.version=$VERSION' -X 'main.commit=$COMMIT'" -o /output/ayd-mail-alert
+WORKDIR /usr/src/ayd-mailto-alert
+COPY ayd-mailto-alert .
+RUN go build -ldflags="-s -w -X 'main.version=$VERSION' -X 'main.commit=$COMMIT'" -o /output/ayd-mailto-alert
 
 WORKDIR /usr/src/ayd-slack-alert
 COPY ayd-slack-alert .

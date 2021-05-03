@@ -1,9 +1,9 @@
 [submodule "ayd"]
 	path = ayd
 	url = https://github.com/macrat/ayd
-[submodule "ayd-mail-alert"]
-	path = ayd-mail-alert
-	url = https://github.com/macrat/ayd-mail-alert
+[submodule "ayd-mailto-alert"]
+	path = ayd-mailto-alert
+	url = https://github.com/macrat/ayd-mailto-alert.git
 [submodule "ayd-slack-alert"]
 	path = ayd-slack-alert
 	url = https://github.com/macrat/ayd-slack-alert

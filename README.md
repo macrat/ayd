@@ -2,7 +2,7 @@ Ayd? container image
 ====================
 
 The container image of [Ayd?](https://github.com/macrat/ayd).
-This image includes [Ayd?](https://github.com/macrat/ayd), [ayd-mail-alert](https://github.com/macrat/ayd-mail-alert), and [ayd-slack-alert](https://github.com/macrat/ayd-slack-alert).
+This image includes [Ayd?](https://github.com/macrat/ayd), [ayd-mailto-alert](https://github.com/macrat/ayd-mailto-alert), and [ayd-slack-alert](https://github.com/macrat/ayd-slack-alert).
 
 There is 3 variants of the base images.
 
@@ -38,21 +38,20 @@ $ docker run -p 9000:9000 -v ./ayd.log:/var/log/ayd/ayd.log macrat/ayd $YOUR_TAR
 
 ``` shell
 $ docker run -p 9000:9000 \
-    -e "smtp_server=$YOUR_SMTL_SERVER" \
+    -e "smtp_server=$YOUR_SMTP_SERVER" \
     -e "smtp_username=$YOUR_SMTP_USERNAME" \
     -e "smtp_password=$YOUR_SMTP_PASSWORD" \
-    -e "ayd_mail_to=$YOUR_EMAIL" \
-    macrat/ayd -a exec:ayd-mail-alert $YOUR_TARGETS
+    macrat/ayd -a mailto:your-email@example.com $YOUR_TARGETS
 ```
 
-seealso: [ayd-mail-alert](https://github.com/macrat/ayd-mail-alert)
+seealso: [ayd-mailto-alert](https://github.com/macrat/ayd-mailto-alert)
 
 ### Send alert to Slack
 
 ``` shell
 $ docker run -p 9000:9000 \
     -e "slack_webhook_url=$YOUR_SLACK_WEBHOOK_URL" \
-    macrat/ayd -a exec:ayd-slack-alert $YOUR_TARGETS
+    macrat/ayd -a slack: $YOUR_TARGETS
 ```
 
 seealso: [ayd-slack-alert](https://github.com/macrat/ayd-slack-alert)
