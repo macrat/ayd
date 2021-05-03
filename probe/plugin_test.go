@@ -25,8 +25,8 @@ func TestPluginProbe(t *testing.T) {
 	})
 
 	AssertProbe(t, []ProbeTest{
-		{"plug:", store.STATUS_HEALTHY, "check plug:"},
-		{"plug:hello-world", store.STATUS_HEALTHY, "check plug:hello-world"},
+		{"plug:", store.STATUS_HEALTHY, "check plug:", ""},
+		{"plug:hello-world", store.STATUS_HEALTHY, "check plug:hello-world", ""},
 	})
 
 	AssertTimeout(t, "plug:")

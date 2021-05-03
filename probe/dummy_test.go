@@ -13,12 +13,14 @@ func TestDummyProbe(t *testing.T) {
 	t.Parallel()
 
 	AssertProbe(t, []ProbeTest{
-		{"dummy:", store.STATUS_HEALTHY, ``},
-		{"dummy:healthy", store.STATUS_HEALTHY, ``},
-		{"dummy:failure", store.STATUS_FAILURE, ``},
-		{"dummy:unknown", store.STATUS_UNKNOWN, ``},
-		{"dummy:healthy?message=hello+world", store.STATUS_HEALTHY, `hello world`},
-		{"dummy:healthy#something-comment", store.STATUS_HEALTHY, ``},
+		{"dummy:", store.STATUS_HEALTHY, ``, ""},
+		{"dummy:healthy", store.STATUS_HEALTHY, ``, ""},
+		{"dummy:failure", store.STATUS_FAILURE, ``, ""},
+		{"dummy:unknown", store.STATUS_UNKNOWN, ``, ""},
+		{"dummy:healthy?message=hello+world", store.STATUS_HEALTHY, `hello world`, ""},
+		{"dummy:healthy#something-comment", store.STATUS_HEALTHY, ``, ""},
+
+		{"dummy:unknown-status", store.STATUS_UNKNOWN, ``, `opaque must healthy, failure, unknown, or random`},
 	})
 
 	t.Run("dummy:random", func(t *testing.T) {

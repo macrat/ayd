@@ -93,15 +93,22 @@ func TestTargetURLNormalize(t *testing.T) {
 }
 
 type ProbeTest struct {
-	Target         string
-	Status         store.Status
-	MessagePattern string
+	Target            string
+	Status            store.Status
+	MessagePattern    string
+	ParseErrorPattern string
 }
 
 func AssertProbe(t *testing.T, tests []ProbeTest) {
 	for _, tt := range tests {
 		t.Run(tt.Target, func(t *testing.T) {
-			p := testutil.NewProbe(t, tt.Target)
+			p, err := probe.New(tt.Target)
+			if err != nil {
+				if ok, _ := regexp.MatchString("^"+tt.ParseErrorPattern+"$", err.Error()); !ok {
+					t.Fatalf("unexpected error on create probe: %s", err)
+				}
+				return
+			}
 
 			if p.Target().String() != tt.Target {
 				t.Fatalf("got unexpected probe: %s", p.Target())
