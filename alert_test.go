@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/url"
 	"os"
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -20,7 +20,7 @@ func TestAlert(t *testing.T) {
 	}
 
 	origPath := os.Getenv("PATH")
-	os.Setenv("PATH", origPath+":"+path.Join(cwd, "testdata"))
+	os.Setenv("PATH", origPath+string(filepath.ListSeparator)+filepath.Join(cwd, "testdata"))
 	t.Cleanup(func() {
 		os.Setenv("PATH", origPath)
 	})
@@ -31,8 +31,8 @@ func TestAlert(t *testing.T) {
 		Message  string
 		Error    string
 	}{
-		{"exec:./testdata/ayd-foo-alert", "http://localhost:8000", "foo FAILURE dummy:failure", ""},
-		{"exec:./testdata/ayd-bar-probe", "http://localhost:8000", "bar FAILURE dummy:failure", ""},
+		{filepath.Join("exec:.", "testdata", "ayd-foo-alert"), "http://localhost:8000", "foo FAILURE dummy:failure", ""},
+		{filepath.Join("exec:.", "testdata", "ayd-bar-probe"), "http://localhost:8000", "bar FAILURE dummy:failure", ""},
 		{"foo:", "http://localhost:8000", "foo FAILURE dummy:failure", ""},
 		{"bar:", "http://localhost:8000", "", "unsupported scheme"},
 	}

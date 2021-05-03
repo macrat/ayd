@@ -2,7 +2,7 @@ package probe_test
 
 import (
 	"os"
-	"path"
+	"path/filepath"
 	"runtime"
 	"testing"
 
@@ -19,7 +19,7 @@ func TestPluginProbe(t *testing.T) {
 	}
 
 	origPath := os.Getenv("PATH")
-	os.Setenv("PATH", origPath+":"+path.Join(cwd, "testdata"))
+	os.Setenv("PATH", origPath+string(filepath.ListSeparator)+filepath.Join(cwd, "testdata"))
 	t.Cleanup(func() {
 		os.Setenv("PATH", origPath)
 	})
