@@ -207,7 +207,6 @@ Plugin receives these values as the environment variable.
 
 |variable name|example                |description               |
 |-------------|-----------------------|--------------------------|
-|`ayd_url`    |`http://localhost:9000`|The URL of Ayd            |
 |`ayd_target` |`foobar:hello-world`   |The target URI to checking|
 
 You can use [the directives the same as exec](#extra-report-output-for-exec) in output of plugin.
@@ -314,7 +313,6 @@ In the above example, Ayd access `https://alert.example/alert` with the below qu
 
 |query name      |example                     |description                  |
 |----------------|----------------------------|-----------------------------|
-|`ayd_url`       |`http://localhost:9000`     |The external URL of Ayd      |
 |`ayd_target`    |`https://target.example.com`|The alerting target URI      |
 |`ayd_checked_at`|`2001-02-03T16:05:06+09:00` |The checked timestamp        |
 |`ayd_status`    |`FAILURE` or `UNKNOWN`      |The status of target checking|
@@ -330,6 +328,7 @@ Please download from [release page of ayd-mail-alert](https://github.com/macrat/
 ``` shell
 $ export SMTP_SERVER=smtp.example.com:465 SMTP_USERNAME=your-name SMTP_PASSWORD=your-password
 $ export AYD_MAIL_TO="your name <your-email@example.com>"
+$ export AYD_URL="http://ayd-external-url.example.com"
 
 $ ayd -a exec:ayd-mail-alert https://target.example.com
 ```
@@ -346,6 +345,7 @@ Please download from [release page of ayd-slack-alert](https://github.com/macrat
 
 ``` shell
 $ export SLACK_WEBHOOK_URL="https://hooks.slack.com/services/......"
+$ export AYD_URL="http://ayd-external-url.example.com"
 
 $ ayd -a exec:ayd-slack-alert https://target.example.com
 ```

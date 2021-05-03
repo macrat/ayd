@@ -10,10 +10,6 @@ import (
 	"time"
 )
 
-var (
-	ExternalURL = "http://localhost:9000"
-)
-
 type PluginProbe struct {
 	target  *url.URL
 	command string
@@ -39,7 +35,6 @@ func NewPluginProbe(u *url.URL) (PluginProbe, error) {
 
 	p.env = append(
 		p.env,
-		fmt.Sprintf("ayd_url=%s", ExternalURL),
 		fmt.Sprintf("ayd_target=%s", u),
 	)
 

@@ -26,20 +26,19 @@ func TestAlert(t *testing.T) {
 	})
 
 	tests := []struct {
-		Target   string
-		External string
-		Message  string
-		Error    string
+		Target  string
+		Message string
+		Error   string
 	}{
-		{filepath.Join("exec:.", "testdata", "ayd-foo-alert"), "http://localhost:8000", "foo FAILURE dummy:failure", ""},
-		{filepath.Join("exec:.", "testdata", "ayd-bar-probe"), "http://localhost:8000", "bar FAILURE dummy:failure", ""},
-		{"foo:", "http://localhost:8000", "foo FAILURE dummy:failure", ""},
-		{"bar:", "http://localhost:8000", "", "unsupported scheme"},
+		{filepath.Join("exec:.", "testdata", "ayd-foo-alert"), "foo FAILURE dummy:failure", ""},
+		{filepath.Join("exec:.", "testdata", "ayd-bar-probe"), "bar FAILURE dummy:failure", ""},
+		{"foo:", "foo FAILURE dummy:failure", ""},
+		{"bar:", "", "unsupported scheme"},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.Target, func(t *testing.T) {
-			alert, err := main.NewAlert(tt.Target, tt.External)
+			alert, err := main.NewAlert(tt.Target)
 			if err != nil && err.Error() != tt.Error {
 				t.Fatalf("unexpected error: %s", err)
 			} else if tt.Error != "" {

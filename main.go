@@ -26,7 +26,6 @@ var (
 	storePath   = flag.String("o", "./ayd.log", "Path to log file. Log file is also use for restore status history.")
 	oneshot     = flag.Bool("1", false, "Check status only once and exit. Exit with 0 if all check passed, otherwise exit with code 1.")
 	alertURI    = flag.String("a", "", "The alert URI that the same format as target URI.")
-	externalURL = flag.String("u", "", "The external URL like \"http://example.com:9000\".")
 	showVersion = flag.Bool("v", false, "Show version and exit.")
 )
 
@@ -47,8 +46,6 @@ func Usage() {
 }
 
 func SetupProbe(ctx context.Context, tasks []Task) {
-	probe.ExternalURL = *externalURL
-
 	for _, task := range tasks {
 		if task.Probe.Target().Scheme == "ping" {
 			if err := probe.StartPinger(ctx); err != nil {
@@ -93,16 +90,8 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
 
-	if *externalURL == "" {
-		if *listenPort == 80 {
-			*externalURL = "http://localhost"
-		} else {
-			*externalURL = fmt.Sprintf("http://localhost:%d", listenPort)
-		}
-	}
-
 	if *alertURI != "" {
-		alert, err := NewAlert(*alertURI, *externalURL)
+		alert, err := NewAlert(*alertURI)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "Invalid alert target:", err)
 			os.Exit(2)

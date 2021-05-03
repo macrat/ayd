@@ -1,4 +1,4 @@
 #!/bin/sh
 
 echo "::status::HEALTHY"
-echo "${ayd_url} -> ${ayd_target}"
+echo "check ${ayd_target}"

@@ -17,25 +17,23 @@ type Alert interface {
 	Trigger(context.Context, *store.Incident, probe.Reporter)
 }
 
-func NewAlert(target, externalURL string) (Alert, error) {
+func NewAlert(target string) (Alert, error) {
 	p, err := probe.WithoutPlugin(probe.New(target))
 	if err == probe.ErrUnsupportedScheme {
-		return NewPluginAlert(target, externalURL)
+		return NewPluginAlert(target)
 	} else if err != nil {
 		return nil, err
 	}
 
-	return &ProbeAlert{p.Target(), externalURL}, nil
+	return &ProbeAlert{p.Target()}, nil
 }
 
 type ProbeAlert struct {
-	target   *url.URL
-	external string
+	target *url.URL
 }
 
 func (a ProbeAlert) Trigger(ctx context.Context, incident *store.Incident, r probe.Reporter) {
 	qs := a.target.Query()
-	qs.Set("ayd_url", a.external)
 	qs.Set("ayd_target", incident.Target.String())
 	qs.Set("ayd_checked_at", incident.CausedAt.Format(time.RFC3339))
 	qs.Set("ayd_status", incident.Status.String())
@@ -78,7 +76,7 @@ type PluginAlert struct {
 	env     []string
 }
 
-func NewPluginAlert(target, externalURL string) (PluginAlert, error) {
+func NewPluginAlert(target string) (PluginAlert, error) {
 	u, err := url.Parse(target)
 	if err != nil {
 		return PluginAlert{}, err
@@ -99,11 +97,6 @@ func NewPluginAlert(target, externalURL string) (PluginAlert, error) {
 	} else if err != nil {
 		return PluginAlert{}, err
 	}
-
-	p.env = append(
-		p.env,
-		fmt.Sprintf("ayd_url=%s", externalURL),
-	)
 
 	return p, nil
 }

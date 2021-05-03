@@ -9,7 +9,6 @@ OPTIONS:
   -a TARGET  The alert URI that the same format as target URI.
   -o FILE    Path to log file. Log file is also use for restore status history. (default "./ayd.log")
   -p PORT    Listen port of status page. (default 9000)
-  -u URL     The external URL like "http://example.com:9000".
 
 INTERVALS:
   Specify execution schedule in interval (e.g. "2m" means "every 2 minutes")
