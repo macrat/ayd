@@ -12,15 +12,17 @@ RUN mkdir /output
 
 WORKDIR /usr/src/ayd
 COPY ayd .
-RUN go build -ldflags="-s -w -X 'main.version=$VERSION' -X 'main.commit=$COMMIT'" -o /output/ayd
+RUN go build --trimpath -ldflags="-s -w -X 'main.version=$VERSION' -X 'main.commit=$COMMIT'" -o /output/ayd
 
 WORKDIR /usr/src/ayd-mailto-alert
 COPY ayd-mailto-alert .
-RUN go build -ldflags="-s -w -X 'main.version=$VERSION' -X 'main.commit=$COMMIT'" -o /output/ayd-mailto-alert
+RUN go build --trimpath -ldflags="-s -w -X 'main.version=$VERSION' -X 'main.commit=$COMMIT'" -o /output/ayd-mailto-alert
 
 WORKDIR /usr/src/ayd-slack-alert
 COPY ayd-slack-alert .
-RUN go build -ldflags="-s -w -X 'main.version=$VERSION' -X 'main.commit=$COMMIT'" -o /output/ayd-slack-alert
+RUN go build --trimpath -ldflags="-s -w -X 'main.version=$VERSION' -X 'main.commit=$COMMIT'" -o /output/ayd-slack-alert
+
+RUN apt update && apt install -y upx && upx --lzma /output/*
 
 
 FROM $BASE_IMAGE
