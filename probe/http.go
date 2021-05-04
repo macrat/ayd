@@ -25,11 +25,17 @@ var (
 	ErrRedirectLoopDetected = errors.New("redirect loop detected")
 )
 
+func checkHTTPRedirect(req *http.Request, via []*http.Request) error {
+	if len(via) > HTTP_REDIRECT_MAX {
+		return ErrRedirectLoopDetected
+	}
+	return nil
+}
+
 type HTTPProbe struct {
-	method string
-	target *url.URL
-	requrl *url.URL
-	client *http.Client
+	target  *url.URL
+	client  *http.Client
+	request *http.Request
 }
 
 func NewHTTPProbe(u *url.URL) (HTTPProbe, error) {
@@ -53,19 +59,19 @@ func NewHTTPProbe(u *url.URL) (HTTPProbe, error) {
 	}
 
 	return HTTPProbe{
-		method: method,
 		target: u,
-		requrl: requrl,
 		client: &http.Client{
 			Transport: &http.Transport{
 				DisableKeepAlives:     true,
 				ResponseHeaderTimeout: 10 * time.Minute,
 			},
-			CheckRedirect: func(req *http.Request, via []*http.Request) error {
-				if len(via) > HTTP_REDIRECT_MAX {
-					return ErrRedirectLoopDetected
-				}
-				return nil
+			CheckRedirect: checkHTTPRedirect,
+		},
+		request: &http.Request{
+			Method: method,
+			URL:    requrl,
+			Header: http.Header{
+				"User-Agent": {HTTPUserAgent},
 			},
 		},
 	}, nil
@@ -79,13 +85,7 @@ func (p HTTPProbe) Check(ctx context.Context, r Reporter) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
 	defer cancel()
 
-	req := (&http.Request{
-		Method: p.method,
-		URL:    p.requrl,
-		Header: http.Header{
-			"User-Agent": {HTTPUserAgent},
-		},
-	}).WithContext(ctx)
+	req := p.request.WithContext(ctx)
 
 	st := time.Now()
 	resp, err := p.client.Do(req)
