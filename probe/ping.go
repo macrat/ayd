@@ -69,16 +69,12 @@ func (p PingProbe) Check(ctx context.Context, r Reporter) {
 
 	startTime := time.Now()
 	result, err := ping.Ping(ctx, target, 4, 500*time.Millisecond)
+	d := time.Now().Sub(startTime)
 
-	status := store.STATUS_FAILURE
-	if result.Loss == 0 {
-		status = store.STATUS_HEALTHY
-	}
-
-	r.Report(timeoutOr(ctx, store.Record{
+	rec := store.Record{
 		CheckedAt: startTime,
 		Target:    p.target,
-		Status:    status,
+		Status:    store.STATUS_FAILURE,
 		Message: fmt.Sprintf(
 			"rtt(min/avg/max)=%.2f/%.2f/%.2f send/rcv=%d/%d",
 			float64(result.MinRTT.Microseconds())/1000,
@@ -88,5 +84,17 @@ func (p PingProbe) Check(ctx context.Context, r Reporter) {
 			result.Recv,
 		),
 		Latency: result.AvgRTT,
-	}))
+	}
+
+	if result.Loss == 0 {
+		rec.Status = store.STATUS_HEALTHY
+	}
+
+	if ctx.Err() == context.Canceled {
+		rec.Status = store.STATUS_ABORTED
+		rec.Message = "probe aborted"
+		rec.Latency = d
+	}
+
+	r.Report(rec)
 }

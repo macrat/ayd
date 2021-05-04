@@ -3,9 +3,11 @@ package probe_test
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/macrat/ayd/probe"
 	"github.com/macrat/ayd/store"
+	"github.com/macrat/ayd/testutil"
 )
 
 func TestPingProbe(t *testing.T) {
@@ -25,5 +27,40 @@ func TestPingProbe(t *testing.T) {
 		{"ping:of-course-definitely-no-such-host", store.STATUS_UNKNOWN, `.*`, ""},
 	})
 
-	AssertTimeout(t, "ping:localhost")
+	t.Run("timeout", func(t *testing.T) {
+		p := testutil.NewProbe(t, "ping:localhost")
+
+		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Millisecond)
+		time.Sleep(10 * time.Millisecond)
+		defer cancel()
+
+		records := testutil.RunCheck(ctx, p)
+		if len(records) != 1 {
+			t.Fatalf("unexpected number of records: %#v", records)
+		}
+
+		if records[0].Status != store.STATUS_FAILURE {
+			t.Errorf("unexpected status: %s", records[0].Status)
+		}
+	})
+
+	t.Run("cancel", func(t *testing.T) {
+		p := testutil.NewProbe(t, "ping:localhost")
+
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel()
+
+		records := testutil.RunCheck(ctx, p)
+		if len(records) != 1 {
+			t.Fatalf("unexpected number of records: %#v", records)
+		}
+
+		if records[0].Message != "probe aborted" {
+			t.Errorf("unexpected message: %s", records[0].Message)
+		}
+
+		if records[0].Status != store.STATUS_ABORTED {
+			t.Errorf("unexpected status: %s", records[0].Status)
+		}
+	})
 }
