@@ -189,8 +189,8 @@ footer span {
 
                     <h2>{{ if eq .Status "FAILURE" }}FAILURE{{ else }}UNKNOWN{{ end }}</h2>
                     <div class="target">{{ .Target }}</div>
-                    <div class="period"><time>{{ .CausedAt }}</time> - <time>continue</time></div>
-                    <pre class="message">{{ .Message }}</pre>
+                    <div class="period"><time>{{ .CausedAt }}</time> - <time>continue</time></div>{{ if .Message }}
+                    <pre class="message">{{ .Message }}</pre>{{ end }}
                 </section>{{ end }}{{ if not .CurrentIncidents }}
                 <div class="placeholder">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#healthy-icon" /></svg>
@@ -206,8 +206,8 @@ footer span {
 
                     <h2>{{ if eq .Status "FAILURE" }}FAILURE{{ else }}UNKNOWN{{ end }}</h2>
                     <div class="target">{{ .Target }}</div>
-                    <div class="period"><time>{{ .CausedAt }}</time> - <time>{{ .ResolvedAt }}</time></div>
-                    <pre class="message">{{ .Message }}</pre>
+                    <div class="period"><time>{{ .CausedAt }}</time> - <time>{{ .ResolvedAt }}</time></div>{{ if .Message }}
+                    <pre class="message">{{ .Message }}</pre>{{ end }}
                 </section>{{ end }}{{ if not .IncidentHistory }}
                 <div class="placeholder">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#healthy-icon" /></svg>
