@@ -135,6 +135,8 @@ func TestStore_restore(t *testing.T) {
 		s1.Report(r)
 	}
 
+	time.Sleep(100 * time.Millisecond) // wait for write
+
 	s2, err := store.New(f.Name())
 	if err != nil {
 		t.Fatalf("failed to create store: %s", err)

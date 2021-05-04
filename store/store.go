@@ -46,12 +46,11 @@ func (hs ProbeHistoryMap) Append(r Record) {
 type IncidentHandler func(*Incident)
 
 type Store struct {
-	sync.RWMutex
-
 	Path string
 
 	Console io.Writer
 
+	historyLock      sync.RWMutex
 	probeHistory     ProbeHistoryMap
 	currentIncidents map[string]*Incident
 	incidentHistory  []*Incident
@@ -59,33 +58,57 @@ type Store struct {
 	OnIncident    []IncidentHandler
 	IncidentCount int
 
+	writeCh   chan<- Record
 	lastError error
 }
 
 func New(path string) (*Store, error) {
+	ch := make(chan Record, 32)
+
 	store := &Store{
 		Path:             path,
 		Console:          os.Stdout,
 		probeHistory:     make(ProbeHistoryMap),
 		currentIncidents: make(map[string]*Incident),
+		writeCh:          ch,
 	}
 
 	if f, err := os.OpenFile(store.Path, os.O_WRONLY|os.O_APPEND|os.O_CREATE|os.O_SYNC, 0644); err != nil {
+		close(ch)
 		return nil, err
 	} else {
 		f.Close()
 	}
 
+	go store.writer(ch)
+
 	return store, nil
 }
 
+func (s *Store) writer(ch <-chan Record) {
+	for r := range ch {
+		msg := []byte(r.String() + "\n")
+
+		s.Console.Write(msg)
+
+		var f *os.File
+		f, s.lastError = os.OpenFile(s.Path, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
+		if s.lastError != nil {
+			continue
+		}
+		_, s.lastError = f.Write(msg)
+		f.Close()
+	}
+}
+
 func (s *Store) Close() error {
+	close(s.writeCh)
 	return nil
 }
 
 func (s *Store) ProbeHistory() []*ProbeHistory {
-	s.RLock()
-	defer s.RUnlock()
+	s.historyLock.RLock()
+	defer s.historyLock.RUnlock()
 
 	var targets []string
 	for t := range s.probeHistory {
@@ -102,8 +125,8 @@ func (s *Store) ProbeHistory() []*ProbeHistory {
 }
 
 func (s *Store) CurrentIncidents() []*Incident {
-	s.RLock()
-	defer s.RUnlock()
+	s.historyLock.RLock()
+	defer s.historyLock.RUnlock()
 
 	result := make([]*Incident, len(s.currentIncidents))
 
@@ -155,35 +178,23 @@ func (s *Store) setIncidentIfNeed(r Record, needCallback bool) {
 	}
 }
 
-func (s *Store) reportWithoutLock(r Record) {
+func (s *Store) Report(r Record) {
 	r = r.Sanitize()
 
-	msg := []byte(r.String() + "\n")
-	s.Console.Write(msg)
-
-	var f *os.File
-	f, s.lastError = os.OpenFile(s.Path, os.O_WRONLY|os.O_APPEND|os.O_CREATE|os.O_SYNC, 0644)
-	if s.lastError == nil {
-		_, s.lastError = f.Write(msg)
-	}
-	defer f.Close()
+	s.writeCh <- r
 
 	if r.Target.Scheme != "alert" {
+		s.historyLock.Lock()
+		defer s.historyLock.Unlock()
+
 		s.probeHistory.Append(r)
 		s.setIncidentIfNeed(r, true)
 	}
 }
 
-func (s *Store) Report(r Record) {
-	s.Lock()
-	defer s.Unlock()
-
-	s.reportWithoutLock(r)
-}
-
 func (s *Store) Restore() error {
-	s.Lock()
-	defer s.Unlock()
+	s.historyLock.Lock()
+	defer s.historyLock.Unlock()
 
 	f, err := os.OpenFile(s.Path, os.O_RDONLY|os.O_CREATE, 0644)
 	if err != nil {
@@ -211,8 +222,8 @@ func (s *Store) Restore() error {
 }
 
 func (s *Store) AddTarget(target *url.URL) {
-	s.Lock()
-	defer s.Unlock()
+	s.historyLock.Lock()
+	defer s.historyLock.Unlock()
 
 	if _, ok := s.probeHistory[target.String()]; !ok {
 		s.probeHistory[target.String()] = &ProbeHistory{
