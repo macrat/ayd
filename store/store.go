@@ -59,7 +59,6 @@ type Store struct {
 	OnIncident    []IncidentHandler
 	IncidentCount int
 
-	file      *os.File
 	lastError error
 }
 
@@ -71,17 +70,17 @@ func New(path string) (*Store, error) {
 		currentIncidents: make(map[string]*Incident),
 	}
 
-	var err error
-	store.file, err = os.OpenFile(store.Path, os.O_WRONLY|os.O_APPEND|os.O_CREATE|os.O_SYNC, 0644)
-	if err != nil {
+	if f, err := os.OpenFile(store.Path, os.O_WRONLY|os.O_APPEND|os.O_CREATE|os.O_SYNC, 0644); err != nil {
 		return nil, err
+	} else {
+		f.Close()
 	}
 
 	return store, nil
 }
 
 func (s *Store) Close() error {
-	return s.file.Close()
+	return nil
 }
 
 func (s *Store) ProbeHistory() []*ProbeHistory {
@@ -161,7 +160,13 @@ func (s *Store) reportWithoutLock(r Record) {
 
 	msg := []byte(r.String() + "\n")
 	s.Console.Write(msg)
-	_, s.lastError = s.file.Write(msg)
+
+	var f *os.File
+	f, s.lastError = os.OpenFile(s.Path, os.O_WRONLY|os.O_APPEND|os.O_CREATE|os.O_SYNC, 0644)
+	if s.lastError == nil {
+		_, s.lastError = f.Write(msg)
+	}
+	defer f.Close()
 
 	if r.Target.Scheme != "alert" {
 		s.probeHistory.Append(r)
