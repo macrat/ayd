@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"net/url"
+	"os"
 	"time"
 
 	"github.com/macrat/ayd/store"
@@ -19,6 +20,11 @@ var (
 func StartPinger(ctx context.Context) error {
 	pingerV4 = pinger.NewIPv4()
 	pingerV6 = pinger.NewIPv6()
+
+	if os.Getenv("AYD_PRIVILEGED") != "" {
+		pingerV4.SetPrivileged(true)
+		pingerV6.SetPrivileged(true)
+	}
 
 	if err := pingerV4.Start(ctx); err != nil {
 		return err

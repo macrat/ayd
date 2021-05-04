@@ -100,6 +100,10 @@ Send ICMP echo request (a.k.a. ping command) and check the server is connected o
 
 Ayd sends 4 packets in 2 seconds and expects all packets to return.
 
+In Linux or MacOS, Ayd use non-privileged ICMP in default. So, you can use ping even if rootless.
+But this way is not work on some platforms for instance docker container.
+Please set `yes` to `AYD_PRIVILEGED` environment variable to use privileged ICMP.
+
 examples:
 - `ping:example.com`
 - `ping:192.168.1.1`
