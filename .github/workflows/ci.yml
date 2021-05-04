@@ -44,6 +44,8 @@ jobs:
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
+      - name: Install upx
+        run: sudo apt install upx -y
       - uses: goreleaser/goreleaser-action@v2
         with:
           version: latest

@@ -13,6 +13,8 @@ builds:
       - '-s -w'
       - '-X main.version={{ .Version }}'
       - '-X main.commit={{ .ShortCommit }}'
+    hooks:
+      post: 'upx --ultra-brute {{ .Path }}'
 
 archives:
   - format: binary
