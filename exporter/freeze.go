@@ -9,8 +9,8 @@ import (
 type frozenRecord struct {
 	CheckedAt string  `json:"checked_at,omitempty"`
 	Status    string  `json:"status"`
-	Message   string  `json:"message,omitempty"`
-	Latency   float64 `json:"latency,omitempty"`
+	Message   string  `json:"message"`
+	Latency   float64 `json:"latency"`
 }
 
 type frozenProbeHistory struct {
