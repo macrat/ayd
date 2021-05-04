@@ -19,7 +19,7 @@ builds:
       post: 'upx --lzma {{ .Path }}'
 
 archives:
-  - format: binary
+  - format: tar.gz
     replacements:
       386: i386
       amd64: x86_64

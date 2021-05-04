@@ -44,7 +44,7 @@ Easiest status monitoring service to check something service is dead or alive.
 
 1. Download latest version from [release page](https://github.com/macrat/ayd/releases/).
 
-2. Place downloaded binary as **ayd** (or **ayd.exe**) to somewhere that registered to PATH.
+2. Extract downloaded package and put to somewhere that registered to PATH.
 
 3. Run the server.
 
