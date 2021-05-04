@@ -7,10 +7,11 @@ import (
 )
 
 type frozenRecord struct {
-	CheckedAt string  `json:"checked_at,omitempty"`
-	Status    string  `json:"status"`
-	Message   string  `json:"message"`
-	Latency   float64 `json:"latency"`
+	CheckedAt  string  `json:"checked_at,omitempty"`
+	Status     string  `json:"status"`
+	Message    string  `json:"message"`
+	Latency    float64 `json:"latency"`
+	LatencyStr string  `json:"-"`
 }
 
 type frozenProbeHistory struct {
@@ -30,10 +31,11 @@ func freezeProbeHistory(h *store.ProbeHistory) frozenProbeHistory {
 	}
 	for i, x := range h.Records {
 		hs[offset+i] = frozenRecord{
-			CheckedAt: x.CheckedAt.Format(time.RFC3339),
-			Status:    x.Status.String(),
-			Message:   x.Message,
-			Latency:   float64(x.Latency.Microseconds()) / 1000,
+			CheckedAt:  x.CheckedAt.Format(time.RFC3339),
+			Status:     x.Status.String(),
+			Message:    x.Message,
+			Latency:    float64(x.Latency.Microseconds()) / 1000,
+			LatencyStr: x.Latency.String(),
 		}
 	}
 
