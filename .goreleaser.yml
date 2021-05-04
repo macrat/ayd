@@ -16,7 +16,7 @@ builds:
       - '-X main.version={{ .Version }}'
       - '-X main.commit={{ .ShortCommit }}'
     hooks:
-      post: 'upx --ultra-brute {{ .Path }}'
+      post: 'upx --lzma {{ .Path }}'
 
 archives:
   - format: binary
