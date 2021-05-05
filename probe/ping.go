@@ -82,7 +82,7 @@ func (p PingProbe) Check(ctx context.Context, r Reporter) {
 		Target:    p.target,
 		Status:    store.STATUS_FAILURE,
 		Message: fmt.Sprintf(
-			"rtt(min/avg/max)=%.2f/%.2f/%.2f send/rcv=%d/%d",
+			"rtt(min/avg/max)=%.2f/%.2f/%.2f send/recv=%d/%d",
 			float64(result.MinRTT.Microseconds())/1000,
 			float64(result.AvgRTT.Microseconds())/1000,
 			float64(result.MaxRTT.Microseconds())/1000,
