@@ -1,6 +1,7 @@
 package probe
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"net/url"
@@ -13,6 +14,11 @@ import (
 	"time"
 
 	"github.com/macrat/ayd/store"
+)
+
+var (
+	executeLatencyRe = regexp.MustCompile("(?m)^::latency::([0-9]+(?:\\.[0-9]+)?)(?:\n|$)")
+	executeStatusRe  = regexp.MustCompile("(?m)^::status::((?i:healthy|failure|aborted|unknown))(?:\n|$)")
 )
 
 type ExecuteProbe struct {
@@ -51,11 +57,9 @@ func (p ExecuteProbe) Target() *url.URL {
 }
 
 func getLatencyByMessage(message string, default_ time.Duration) (replacedMessage string, latency time.Duration) {
-	latencyRe := regexp.MustCompile("(?m)^::latency::([0-9]+(?:\\.[0-9]+)?)(?:\n|$)")
-
-	if m := latencyRe.FindAllStringSubmatch(message, -1); m != nil {
+	if m := executeLatencyRe.FindAllStringSubmatch(message, -1); m != nil {
 		if l, err := strconv.ParseFloat(m[len(m)-1][1], 64); err == nil {
-			return strings.Trim(latencyRe.ReplaceAllString(message, ""), "\n"), time.Duration(l * float64(time.Millisecond))
+			return strings.Trim(executeLatencyRe.ReplaceAllString(message, ""), "\n"), time.Duration(l * float64(time.Millisecond))
 		}
 	}
 
@@ -63,27 +67,28 @@ func getLatencyByMessage(message string, default_ time.Duration) (replacedMessag
 }
 
 func getStatusByMessage(message string, default_ store.Status) (replacedMessage string, status store.Status) {
-	statusRe := regexp.MustCompile("(?m)^::status::((?i:healthy|failure|aborted|unknown))(?:\n|$)")
-
-	if m := statusRe.FindAllStringSubmatch(message, -1); m != nil {
+	if m := executeStatusRe.FindAllStringSubmatch(message, -1); m != nil {
 		status = store.ParseStatus(strings.ToUpper(m[len(m)-1][1]))
-		return strings.Trim(statusRe.ReplaceAllString(message, ""), "\n"), status
+		return strings.Trim(executeStatusRe.ReplaceAllString(message, ""), "\n"), status
 	}
 
 	return message, default_
 }
 
 func ExecuteExternalCommand(ctx context.Context, r Reporter, target *url.URL, command string, argument, env []string) {
+	output := &bytes.Buffer{}
+
 	cmd := exec.CommandContext(ctx, command, argument...)
-
 	cmd.Env = env
+	cmd.Stdout = output
+	cmd.Stderr = output
 
-	st := time.Now()
-	stdout, err := cmd.CombinedOutput()
-	latency := time.Now().Sub(st)
+	stime := time.Now()
+	err := cmd.Run()
+	latency := time.Now().Sub(stime)
 
 	status := store.STATUS_HEALTHY
-	message := strings.Trim(strings.ReplaceAll(strings.ReplaceAll(string(stdout), "\r\n", "\n"), "\r", "\n"), "\n")
+	message := strings.Trim(strings.ReplaceAll(strings.ReplaceAll(output.String(), "\r\n", "\n"), "\r", "\n"), "\n")
 
 	if err != nil {
 		status = store.STATUS_FAILURE
@@ -103,7 +108,7 @@ func ExecuteExternalCommand(ctx context.Context, r Reporter, target *url.URL, co
 	message, status = getStatusByMessage(message, status)
 
 	r.Report(timeoutOr(ctx, store.Record{
-		CheckedAt: st,
+		CheckedAt: stime,
 		Target:    target,
 		Status:    status,
 		Message:   message,
