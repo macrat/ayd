@@ -1,9 +1,12 @@
 package probe_test
 
 import (
+	"context"
 	"testing"
+	"time"
 
 	"github.com/macrat/ayd/store"
+	"github.com/macrat/ayd/testutil"
 )
 
 func TestDNSProbe(t *testing.T) {
@@ -29,4 +32,18 @@ func TestDNSProbe(t *testing.T) {
 	})
 
 	AssertTimeout(t, "dns:localhost")
+}
+
+func BenchmarkDNSProbe(b *testing.B) {
+	p := testutil.NewProbe(b, "dns:localhost")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+	defer cancel()
+
+	r := &testutil.DummyReporter{}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		p.Check(ctx, r)
+	}
 }

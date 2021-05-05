@@ -15,13 +15,13 @@ var (
 	ErrUnsupportedDNSType = errors.New("unsupported DNS type")
 )
 
-func dnsResolveAuto(ctx context.Context, r *net.Resolver, target string) (string, error) {
-	addrs, err := r.LookupHost(ctx, target)
+func dnsResolveAuto(ctx context.Context, target string) (string, error) {
+	addrs, err := net.DefaultResolver.LookupHost(ctx, target)
 	return strings.Join(addrs, "\n"), err
 }
 
-func dnsResolveIP(ctx context.Context, r *net.Resolver, protocol, target string) (string, error) {
-	ips, err := r.LookupIP(ctx, protocol, target)
+func dnsResolveIP(ctx context.Context, protocol, target string) (string, error) {
+	ips, err := net.DefaultResolver.LookupIP(ctx, protocol, target)
 	addrs := make([]string, len(ips))
 	for i, x := range ips {
 		addrs[i] = x.String()
@@ -29,20 +29,20 @@ func dnsResolveIP(ctx context.Context, r *net.Resolver, protocol, target string)
 	return strings.Join(addrs, "\n"), err
 }
 
-func dnsResolveA(ctx context.Context, r *net.Resolver, target string) (string, error) {
-	return dnsResolveIP(ctx, r, "ip4", target)
+func dnsResolveA(ctx context.Context, target string) (string, error) {
+	return dnsResolveIP(ctx, "ip4", target)
 }
 
-func dnsResolveAAAA(ctx context.Context, r *net.Resolver, target string) (string, error) {
-	return dnsResolveIP(ctx, r, "ip6", target)
+func dnsResolveAAAA(ctx context.Context, target string) (string, error) {
+	return dnsResolveIP(ctx, "ip6", target)
 }
 
-func dnsResolveCNAME(ctx context.Context, r *net.Resolver, target string) (string, error) {
-	return r.LookupCNAME(ctx, target)
+func dnsResolveCNAME(ctx context.Context, target string) (string, error) {
+	return net.DefaultResolver.LookupCNAME(ctx, target)
 }
 
-func dnsResolveMX(ctx context.Context, r *net.Resolver, target string) (string, error) {
-	mxs, err := r.LookupMX(ctx, target)
+func dnsResolveMX(ctx context.Context, target string) (string, error) {
+	mxs, err := net.DefaultResolver.LookupMX(ctx, target)
 	addrs := make([]string, len(mxs))
 	for i, x := range mxs {
 		addrs[i] = x.Host
@@ -50,8 +50,8 @@ func dnsResolveMX(ctx context.Context, r *net.Resolver, target string) (string, 
 	return strings.Join(addrs, "\n"), err
 }
 
-func dnsResolveNS(ctx context.Context, r *net.Resolver, target string) (string, error) {
-	nss, err := r.LookupNS(ctx, target)
+func dnsResolveNS(ctx context.Context, target string) (string, error) {
+	nss, err := net.DefaultResolver.LookupNS(ctx, target)
 	addrs := make([]string, len(nss))
 	for i, x := range nss {
 		addrs[i] = x.Host
@@ -59,14 +59,14 @@ func dnsResolveNS(ctx context.Context, r *net.Resolver, target string) (string, 
 	return strings.Join(addrs, "\n"), err
 }
 
-func dnsResolveTXT(ctx context.Context, r *net.Resolver, target string) (string, error) {
-	texts, err := r.LookupTXT(ctx, target)
+func dnsResolveTXT(ctx context.Context, target string) (string, error) {
+	texts, err := net.DefaultResolver.LookupTXT(ctx, target)
 	return strings.Join(texts, "\n"), err
 }
 
 type DNSProbe struct {
 	target  *url.URL
-	resolve func(ctx context.Context, r *net.Resolver, target string) (string, error)
+	resolve func(ctx context.Context, target string) (string, error)
 }
 
 func NewDNSProbe(u *url.URL) (DNSProbe, error) {
@@ -78,22 +78,22 @@ func NewDNSProbe(u *url.URL) (DNSProbe, error) {
 	case "":
 		p.resolve = dnsResolveAuto
 	case "A":
-		p.target.RawQuery = url.Values{"type": {"A"}}.Encode()
+		p.target.RawQuery = "type=A"
 		p.resolve = dnsResolveA
 	case "AAAA":
-		p.target.RawQuery = url.Values{"type": {"AAAA"}}.Encode()
+		p.target.RawQuery = "type=AAAA"
 		p.resolve = dnsResolveAAAA
 	case "CNAME":
-		p.target.RawQuery = url.Values{"type": {"CNAME"}}.Encode()
+		p.target.RawQuery = "type=CNAME"
 		p.resolve = dnsResolveCNAME
 	case "MX":
-		p.target.RawQuery = url.Values{"type": {"MX"}}.Encode()
+		p.target.RawQuery = "type=MX"
 		p.resolve = dnsResolveMX
 	case "NS":
-		p.target.RawQuery = url.Values{"type": {"NS"}}.Encode()
+		p.target.RawQuery = "type=NS"
 		p.resolve = dnsResolveNS
 	case "TXT":
-		p.target.RawQuery = url.Values{"type": {"TXT"}}.Encode()
+		p.target.RawQuery = "type=TXT"
 		p.resolve = dnsResolveTXT
 	default:
 		return DNSProbe{}, ErrUnsupportedDNSType
@@ -106,13 +106,11 @@ func (p DNSProbe) Target() *url.URL {
 }
 
 func (p DNSProbe) Check(ctx context.Context, r Reporter) {
-	var resolver net.Resolver
-
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
 	st := time.Now()
-	msg, err := p.resolve(ctx, &resolver, p.target.Opaque)
+	msg, err := p.resolve(ctx, p.target.Opaque)
 	d := time.Now().Sub(st)
 
 	rec := store.Record{
