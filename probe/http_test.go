@@ -1,10 +1,13 @@
 package probe_test
 
 import (
+	"context"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/macrat/ayd/store"
+	"github.com/macrat/ayd/testutil"
 )
 
 func TestHTTPProbe(t *testing.T) {
@@ -27,4 +30,21 @@ func TestHTTPProbe(t *testing.T) {
 	})
 
 	AssertTimeout(t, server.URL)
+}
+
+func BenchmarkHTTPProbe(b *testing.B) {
+	server := RunDummyHTTPServer()
+	defer server.Close()
+
+	p := testutil.NewProbe(b, server.URL+"/ok")
+
+	r := &testutil.DummyReporter{}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
+	defer cancel()
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		p.Check(ctx, r)
+	}
 }
