@@ -49,8 +49,6 @@ func NewHTTPProbe(u *url.URL) (HTTPProbe, error) {
 	if len(scheme) > 1 {
 		m := strings.ToUpper(scheme[1])
 		switch m {
-		case "":
-			method = "GET"
 		case "GET", "HEAD", "POST", "OPTIONS":
 			method = m
 		default:
