@@ -85,20 +85,17 @@ func isUnknownExecutionError(err error) bool {
 	return false
 }
 
-func ExecuteExternalCommand(ctx context.Context, r Reporter, target *url.URL, command string, argument, env []string) {
-	output := &bytes.Buffer{}
-
-	cmd := exec.CommandContext(ctx, command, argument...)
+func runExternalCommand(ctx context.Context, command string, args, env []string) (output *bytes.Buffer, status store.Status, err error) {
+	cmd := exec.CommandContext(ctx, command, args...)
 	cmd.Env = env
+
+	output = &bytes.Buffer{}
 	cmd.Stdout = output
 	cmd.Stderr = output
 
-	stime := time.Now()
-	err := cmd.Run()
-	latency := time.Now().Sub(stime)
+	err = cmd.Run()
 
-	status := store.STATUS_HEALTHY
-	message := strings.Trim(strings.ReplaceAll(strings.ReplaceAll(output.String(), "\r\n", "\n"), "\r", "\n"), "\n")
+	status = store.STATUS_HEALTHY
 
 	if err != nil {
 		status = store.STATUS_FAILURE
@@ -106,10 +103,28 @@ func ExecuteExternalCommand(ctx context.Context, r Reporter, target *url.URL, co
 		if isUnknownExecutionError(err) {
 			status = store.STATUS_UNKNOWN
 		}
+	}
 
-		if message == "" {
-			message = err.Error()
-		}
+	return
+}
+
+func (p ExecuteProbe) Check(ctx context.Context, r Reporter) {
+	ctx, cancel := context.WithTimeout(ctx, 60*time.Minute)
+	defer cancel()
+
+	var args []string
+	if p.target.Fragment != "" {
+		args = []string{p.target.Fragment}
+	}
+
+	stime := time.Now()
+	output, status, err := runExternalCommand(ctx, filepath.FromSlash(p.target.Opaque), args, p.env)
+	latency := time.Now().Sub(stime)
+
+	message := strings.Trim(strings.ReplaceAll(strings.ReplaceAll(output.String(), "\r\n", "\n"), "\r", "\n"), "\n")
+
+	if status != store.STATUS_HEALTHY && message == "" {
+		message = err.Error()
 	}
 
 	message, latency = getLatencyByMessage(message, latency)
@@ -117,22 +132,9 @@ func ExecuteExternalCommand(ctx context.Context, r Reporter, target *url.URL, co
 
 	r.Report(timeoutOr(ctx, store.Record{
 		CheckedAt: stime,
-		Target:    target,
+		Target:    p.target,
 		Status:    status,
 		Message:   message,
 		Latency:   latency,
 	}))
-}
-
-func (p ExecuteProbe) Check(ctx context.Context, r Reporter) {
-	ctx, cancel := context.WithTimeout(ctx, 60*time.Minute)
-	defer cancel()
-
-	command := filepath.FromSlash(p.target.Opaque)
-
-	if p.target.Fragment != "" {
-		ExecuteExternalCommand(ctx, r, p.target, command, []string{p.target.Fragment}, p.env)
-	} else {
-		ExecuteExternalCommand(ctx, r, p.target, command, nil, p.env)
-	}
 }

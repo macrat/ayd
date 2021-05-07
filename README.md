@@ -214,15 +214,16 @@ examples:
 
 #### plugin
 
-Plugin for check target is almost the same as [`exec:`](#exec).
-The differences are below.
+Plugin is a executable file named like `ayd-XXX-probe`.
+The differences to [`exec:`](#exec) are below.
 
-|                                            |`exec: `    |plugin                    |
-|--------------------------------------------|------------|--------------------------|
-|scheme of URI                               |`exec:` only|anything                  |
-|executable file place                       |anywhere    |only in the PATH directory|
-|set argument and environment variable in URI|can         |can not                   |
-|receive raw target URI                      |can not     |can                       |
+|                                                       |`exec: `    |plugin                    |
+|-------------------------------------------------------|------------|--------------------------|
+|scheme of URI                                          |`exec:` only|anything                  |
+|executable file place                                  |anywhere    |only in the PATH directory|
+|set argument and environment variable in URI           |can         |can not                   |
+|receive raw target URI                                 |can not     |can                       |
+|record about multiple targets like as [source](#source)|can not     |can                       |
 
 Plugin is the "plugin".
 This is a good way to extend Ayd (you can use any URI!), but not good at writing a short script (you have to parse URI yourself).
@@ -237,7 +238,7 @@ You can't use URI schemes that `ayd`, `alert`, and the scheme that is supported 
 Plugin receives target URI as the first argument of the command.
 For example, target URI `foobar:hello-world` is going to executed as `ayd-foobar-probe foobar:hello-world`.
 
-You can use [the directives the same as exec](#extra-report-output-for-exec) in output of plugin.
+The output of the plugin will parsed the same way to [log file](#log-file).
 
 
 ### Specify check interval/schedule

@@ -30,7 +30,7 @@ func TestAlert(t *testing.T) {
 		Message string
 		Error   string
 	}{
-		{"exec:ayd-foo-alert", "\"   \"", ""},
+		{"exec:ayd-foo-alert", "2001-02-03T16:05:06Z\tHEALTHY\t123.456\t\t\"   \"", ""},
 		{"exec:ayd-bar-probe", "arg \"\"\nenv ayd_target=dummy:failure ayd_status=FAILURE ayd_checked_at=2001-02-03T16:05:06Z", ""},
 		{"foo:", "\"foo: dummy:failure FAILURE 2001-02-03T16:05:06Z\"", ""},
 		{"bar:", "", "unsupported scheme"},

@@ -1,12 +1,17 @@
 package probe
 
 import (
+	"bufio"
 	"context"
 	"errors"
+	"fmt"
 	"net/url"
 	"os"
 	"os/exec"
+	"strings"
 	"time"
+
+	"github.com/macrat/ayd/store"
 )
 
 type PluginProbe struct {
@@ -37,9 +42,55 @@ func (p PluginProbe) Target() *url.URL {
 	return p.target
 }
 
-func (p PluginProbe) Check(ctx context.Context, r Reporter) {
+func ExecutePlugin(ctx context.Context, r Reporter, target *url.URL, command string, args, env []string) {
 	ctx, cancel := context.WithTimeout(ctx, 60*time.Minute)
 	defer cancel()
 
-	ExecuteExternalCommand(ctx, r, p.target, p.command, []string{p.target.String()}, os.Environ())
+	stime := time.Now()
+	output, status, err := runExternalCommand(ctx, command, args, env)
+	latency := time.Now().Sub(stime)
+
+	count := 0
+
+	scanner := bufio.NewScanner(output)
+	for scanner.Scan() {
+		text := strings.TrimSpace(scanner.Text())
+		if text == "" {
+			continue
+		}
+
+		rec, err := store.ParseRecord(text)
+		if err == nil {
+			count++
+			r.Report(rec)
+			continue
+		}
+
+		r.Report(store.Record{
+			CheckedAt: time.Now(),
+			Target:    &url.URL{Scheme: "ayd", Opaque: "probe:plugin:" + target.String()},
+			Status:    store.STATUS_FAILURE,
+			Message:   fmt.Sprintf("invalid record: %s: %#v", err, text),
+			Latency:   latency,
+		})
+	}
+
+	if err != nil || count == 0 {
+		msg := ""
+		if err != nil {
+			msg = err.Error()
+		}
+
+		r.Report(timeoutOr(ctx, store.Record{
+			CheckedAt: stime,
+			Target:    target,
+			Status:    status,
+			Message:   msg,
+			Latency:   latency,
+		}))
+	}
+}
+
+func (p PluginProbe) Check(ctx context.Context, r Reporter) {
+	ExecutePlugin(ctx, r, p.target, p.command, []string{p.target.String()}, os.Environ())
 }

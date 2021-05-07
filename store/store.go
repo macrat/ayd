@@ -183,7 +183,7 @@ func (s *Store) Report(r Record) {
 
 	s.writeCh <- r
 
-	if r.Target.Scheme != "alert" {
+	if r.Target.Scheme != "alert" && r.Target.Scheme != "ayd" {
 		s.historyLock.Lock()
 		defer s.historyLock.Unlock()
 
@@ -212,7 +212,7 @@ func (s *Store) Restore() error {
 			continue
 		}
 
-		if r.Target.Scheme != "alert" {
+		if r.Target.Scheme != "alert" && r.Target.Scheme != "ayd" {
 			s.probeHistory.Append(r)
 			s.setIncidentIfNeed(r, false)
 		}

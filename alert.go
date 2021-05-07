@@ -27,6 +27,16 @@ func NewAlert(target string) (Alert, error) {
 	return ProbeAlert{p.Target()}, nil
 }
 
+type ReplaceReporter struct {
+	Target   *url.URL
+	Upstream probe.Reporter
+}
+
+func (r ReplaceReporter) Report(rec store.Record) {
+	rec.Target = r.Target
+	r.Upstream.Report(rec)
+}
+
 type ProbeAlert struct {
 	target *url.URL
 }
@@ -40,7 +50,7 @@ func (a ProbeAlert) Trigger(ctx context.Context, incident *store.Incident, r pro
 	u := *a.target
 	u.RawQuery = qs.Encode()
 
-	reporter := AlertReporter{
+	reporter := ReplaceReporter{
 		&url.URL{Scheme: "alert", Opaque: a.target.String()},
 		r,
 	}
@@ -62,12 +72,16 @@ func (a ProbeAlert) Trigger(ctx context.Context, incident *store.Incident, r pro
 }
 
 type AlertReporter struct {
-	Target   *url.URL
 	Upstream probe.Reporter
 }
 
 func (r AlertReporter) Report(rec store.Record) {
-	rec.Target = r.Target
+	if rec.Target.Scheme != "alert" {
+		rec.Target = &url.URL{
+			Scheme: "alert",
+			Opaque: rec.Target.String(),
+		}
+	}
 	r.Upstream.Report(rec)
 }
 
@@ -104,10 +118,10 @@ func (a PluginAlert) Trigger(ctx context.Context, incident *store.Incident, r pr
 	ctx, cancel := context.WithTimeout(ctx, TASK_TIMEOUT)
 	defer cancel()
 
-	probe.ExecuteExternalCommand(
+	probe.ExecutePlugin(
 		ctx,
-		r,
-		&url.URL{Scheme: "alert", Opaque: a.target.String()},
+		AlertReporter{r},
+		a.target,
 		a.command,
 		[]string{
 			a.target.String(),

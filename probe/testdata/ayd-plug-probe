@@ -1,4 +1,9 @@
 #!/bin/sh
 
-echo "::status::HEALTHY"
-echo "check ${1}"
+if [ "$1" != "plug:empty" ]; then
+    echo -e "2001-02-03T16:05:06Z\tHEALTHY\t123.456\t${1}\tcheck ${1}"
+fi
+
+if [ "$1" = "plug:invalid-record" ]; then
+    echo "this is invalid"
+fi
