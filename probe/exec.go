@@ -75,6 +75,16 @@ func getStatusByMessage(message string, default_ store.Status) (replacedMessage 
 	return message, default_
 }
 
+func isUnknownExecutionError(err error) bool {
+	if e := errors.Unwrap(err); e != nil {
+		switch e.Error() {
+		case "no such file or directory", "permission denied", "executable file not found in $PATH", "file does not exist", "executable file not found in %PATH%":
+			return true
+		}
+	}
+	return false
+}
+
 func ExecuteExternalCommand(ctx context.Context, r Reporter, target *url.URL, command string, argument, env []string) {
 	output := &bytes.Buffer{}
 
@@ -92,11 +102,9 @@ func ExecuteExternalCommand(ctx context.Context, r Reporter, target *url.URL, co
 
 	if err != nil {
 		status = store.STATUS_FAILURE
-		if e := errors.Unwrap(err); e != nil {
-			switch e.Error() {
-			case "no such file or directory", "permission denied", "executable file not found in $PATH", "file does not exist", "executable file not found in %PATH%":
-				status = store.STATUS_UNKNOWN
-			}
+
+		if isUnknownExecutionError(err) {
+			status = store.STATUS_UNKNOWN
 		}
 
 		if message == "" {
