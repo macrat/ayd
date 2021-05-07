@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/macrat/ayd"
-	"github.com/macrat/ayd/store"
+	api "github.com/macrat/ayd/lib-ayd"
 	"github.com/macrat/ayd/testutil"
 )
 
@@ -51,9 +51,9 @@ func TestAlert(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 			defer cancel()
 
-			i := &store.Incident{
+			i := &api.Incident{
 				Target:   &url.URL{Scheme: "dummy", Opaque: "failure"},
-				Status:   store.STATUS_FAILURE,
+				Status:   api.StatusFailure,
 				CausedAt: time.Date(2001, 2, 3, 16, 5, 6, 0, time.UTC),
 			}
 
@@ -69,7 +69,7 @@ func TestAlert(t *testing.T) {
 				t.Errorf("unexpected target URI: %s", r.Records[0].Target)
 			}
 
-			if r.Records[0].Status != store.STATUS_HEALTHY {
+			if r.Records[0].Status != api.StatusHealthy {
 				t.Errorf("failed to trigger alert: %s", r.Records[0].Status)
 			}
 

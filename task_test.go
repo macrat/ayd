@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	"github.com/macrat/ayd"
+	api "github.com/macrat/ayd/lib-ayd"
 	"github.com/macrat/ayd/probe"
-	"github.com/macrat/ayd/store"
 	"github.com/macrat/ayd/testutil"
 )
 
@@ -36,7 +36,7 @@ func TestMakeJob(t *testing.T) {
 
 	r := history.Records[0]
 
-	if r.Status != store.STATUS_UNKNOWN {
+	if r.Status != api.StatusUnknown {
 		t.Errorf("unexpected status: %s", r.Status)
 	}
 	if r.Message != "panic: this always make panic" {

@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/macrat/ayd/store"
+	api "github.com/macrat/ayd/lib-ayd"
 )
 
 type invalidURIs []string
@@ -143,10 +143,10 @@ func (p SourceProbe) Check(ctx context.Context, r Reporter) {
 	probes, err := p.load(p.target.Opaque, nil)
 	if err != nil {
 		d := time.Now().Sub(stime)
-		r.Report(store.Record{
+		r.Report(api.Record{
 			CheckedAt: stime,
 			Target:    p.target,
-			Status:    store.STATUS_UNKNOWN,
+			Status:    api.StatusUnknown,
 			Message:   err.Error(),
 			Latency:   d,
 		})
@@ -169,10 +169,10 @@ func (p SourceProbe) Check(ctx context.Context, r Reporter) {
 	wg.Wait()
 
 	d := time.Now().Sub(stime)
-	r.Report(store.Record{
+	r.Report(api.Record{
 		CheckedAt: stime,
 		Target:    p.target,
-		Status:    store.STATUS_HEALTHY,
+		Status:    api.StatusHealthy,
 		Message:   fmt.Sprintf("checked %d targets", len(probes)),
 		Latency:   d,
 	})

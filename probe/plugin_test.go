@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
+	api "github.com/macrat/ayd/lib-ayd"
 	"github.com/macrat/ayd/probe"
-	"github.com/macrat/ayd/store"
 	"github.com/macrat/ayd/testutil"
 )
 
@@ -28,9 +28,9 @@ func TestPluginProbe(t *testing.T) {
 	})
 
 	AssertProbe(t, []ProbeTest{
-		{"plug:", store.STATUS_HEALTHY, "check plug:", ""},
-		{"plug:hello-world", store.STATUS_HEALTHY, "check plug:hello-world", ""},
-		{"plug:empty", store.STATUS_HEALTHY, "", ""},
+		{"plug:", api.StatusHealthy, "check plug:", ""},
+		{"plug:hello-world", api.StatusHealthy, "check plug:hello-world", ""},
+		{"plug:empty", api.StatusHealthy, "", ""},
 	})
 
 	AssertTimeout(t, "plug:")
@@ -66,7 +66,7 @@ func TestPluginProbe(t *testing.T) {
 		if rs[1].Target.String() != "ayd:probe:plugin:plug:invalid-record" {
 			t.Errorf("got a record of unexpected target: %s", rs[1].Target)
 		}
-		if rs[1].Status != store.STATUS_FAILURE {
+		if rs[1].Status != api.StatusFailure {
 			t.Errorf("got unexpected status: %s", rs[1].Status)
 		}
 		if rs[1].Message != "invalid record: unexpected column count: \"this is invalid\"" {

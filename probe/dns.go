@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/macrat/ayd/store"
+	api "github.com/macrat/ayd/lib-ayd"
 )
 
 var (
@@ -113,16 +113,16 @@ func (p DNSProbe) Check(ctx context.Context, r Reporter) {
 	msg, err := p.resolve(ctx, p.target.Opaque)
 	d := time.Now().Sub(st)
 
-	rec := store.Record{
+	rec := api.Record{
 		CheckedAt: st,
 		Target:    p.target,
-		Status:    store.STATUS_HEALTHY,
+		Status:    api.StatusHealthy,
 		Message:   msg,
 		Latency:   d,
 	}
 
 	if err != nil {
-		rec.Status = store.STATUS_FAILURE
+		rec.Status = api.StatusFailure
 		rec.Message = err.Error()
 	}
 

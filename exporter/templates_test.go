@@ -3,27 +3,28 @@ package exporter
 import (
 	"fmt"
 	"reflect"
-
 	"testing"
+
+	"github.com/macrat/ayd/store/freeze"
 )
 
 func TestInvertIncidents(t *testing.T) {
-	f := templateFuncs["invert_incidents"].(func([]frozenIncident) []frozenIncident)
+	f := templateFuncs["invert_incidents"].(func([]freeze.Incident) []freeze.Incident)
 
 	t.Run("no_incidents", func(t *testing.T) {
-		result := f([]frozenIncident{})
+		result := f([]freeze.Incident{})
 		if len(result) != 0 {
 			t.Fatalf("unexpected result length: %d", len(result))
 		}
 	})
 
 	t.Run("three_incidents", func(t *testing.T) {
-		input := []frozenIncident{
+		input := []freeze.Incident{
 			{Message: "foo"},
 			{Message: "bar"},
 			{Message: "baz"},
 		}
-		expect := []frozenIncident{
+		expect := []freeze.Incident{
 			{Message: "baz"},
 			{Message: "bar"},
 			{Message: "foo"},

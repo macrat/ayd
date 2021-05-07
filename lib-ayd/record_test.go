@@ -1,4 +1,4 @@
-package store_test
+package ayd_test
 
 import (
 	"net/url"
@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/macrat/ayd/store"
+	"github.com/macrat/ayd/lib-ayd"
 )
 
 func TestRecord(t *testing.T) {
@@ -14,35 +14,35 @@ func TestRecord(t *testing.T) {
 
 	tests := []struct {
 		String string
-		Record store.Record
+		Record ayd.Record
 		Error  string
 	}{
 		{
 			String: "2021-01-02T15:04:05+09:00\tHEALTHY\t123.456\tping:example.com\thello world",
-			Record: store.Record{
+			Record: ayd.Record{
 				CheckedAt: time.Date(2021, 1, 2, 15, 4, 5, 0, tokyo),
 				Target:    &url.URL{Scheme: "ping", Opaque: "example.com"},
-				Status:    store.STATUS_HEALTHY,
+				Status:    ayd.StatusHealthy,
 				Message:   "hello world",
 				Latency:   123456 * time.Microsecond,
 			},
 		},
 		{
 			String: "2021-01-02T15:04:05+09:00\tFAILURE\t123.456\texec:/path/to/file.sh\thello world",
-			Record: store.Record{
+			Record: ayd.Record{
 				CheckedAt: time.Date(2021, 1, 2, 15, 4, 5, 0, tokyo),
 				Target:    &url.URL{Scheme: "exec", Opaque: "/path/to/file.sh"},
-				Status:    store.STATUS_FAILURE,
+				Status:    ayd.StatusFailure,
 				Message:   "hello world",
 				Latency:   123456 * time.Microsecond,
 			},
 		},
 		{
 			String: "2021-01-02T15:04:05+09:00\tABORTED\t1234.567\tdummy:#hello\thello world",
-			Record: store.Record{
+			Record: ayd.Record{
 				CheckedAt: time.Date(2021, 1, 2, 15, 4, 5, 0, tokyo),
 				Target:    &url.URL{Scheme: "dummy", Fragment: "hello"},
-				Status:    store.STATUS_ABORTED,
+				Status:    ayd.StatusAborted,
 				Message:   "hello world",
 				Latency:   1234567 * time.Microsecond,
 			},
@@ -66,7 +66,7 @@ func TestRecord(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		r, err := store.ParseRecord(tt.String)
+		r, err := ayd.ParseRecord(tt.String)
 		if tt.Error != "" {
 			if err == nil || tt.Error != err.Error() {
 				t.Errorf("expected error when parse %#v\nexpected \"%s\" but got \"%s\"", tt.String, tt.Error, err)
@@ -105,10 +105,10 @@ func TestRecord(t *testing.T) {
 }
 
 func TestRecord_redact(t *testing.T) {
-	record := store.Record{
+	record := ayd.Record{
 		CheckedAt: time.Date(2021, 1, 2, 15, 4, 5, 0, time.UTC),
 		Target:    &url.URL{Scheme: "http", Path: "/path/to/file", User: url.UserPassword("MyName", "HideMe")},
-		Status:    store.STATUS_HEALTHY,
+		Status:    ayd.StatusHealthy,
 		Message:   "hello world",
 		Latency:   123456 * time.Microsecond,
 	}
@@ -122,51 +122,5 @@ func TestRecord_redact(t *testing.T) {
 	}
 	if strings.Contains(str, "HideMe") {
 		t.Errorf("record contains password\n%#v", str)
-	}
-}
-
-func TestUnescapeMessage(t *testing.T) {
-	tests := []struct {
-		Input  string
-		Output string
-	}{
-		{`hello world`, `hello world`},
-		{`"hello"world`, `"hello"world`},
-		{`hello\tworld`, "hello\tworld"},
-		{`hello\nworld`, "hello\nworld"},
-		{`hello\r\nworld`, "hello\\r\nworld"},
-		{`\\hello\\world\\\\\n`, "\\hello\\world\\\\\n"},
-		{`\n`, "\n"},
-		{``, ""},
-	}
-
-	for _, tt := range tests {
-		got := store.UnescapeMessage(tt.Input)
-		if got != tt.Output {
-			t.Errorf("%#v: unexpected result\nexpected: %#v\n but got: %#v", tt.Input, tt.Output, got)
-		}
-	}
-}
-
-func TestEscapeMessage(t *testing.T) {
-	tests := []struct {
-		Input  string
-		Output string
-	}{
-		{`hello world`, `hello world`},
-		{`"hello"world`, `"hello"world`},
-		{"hello\tworld", `hello\tworld`},
-		{"\thello\tworld\t", `\thello\tworld\t`},
-		{"\n\nhello\nworld\n", `\n\nhello\nworld\n`},
-		{`\n\t\\`, `\\n\\t\\\\`},
-		{"\n", `\n`},
-		{"", ``},
-	}
-
-	for _, tt := range tests {
-		got := store.EscapeMessage(tt.Input)
-		if got != tt.Output {
-			t.Errorf("%#v: unexpected result\nexpected: %#v\n but got: %#v", tt.Input, tt.Output, got)
-		}
 	}
 }

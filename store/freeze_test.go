@@ -1,4 +1,4 @@
-package exporter
+package store
 
 import (
 	"net/url"
@@ -6,15 +6,16 @@ import (
 	"testing"
 	"time"
 
-	"github.com/macrat/ayd/store"
+	api "github.com/macrat/ayd/lib-ayd"
+	"github.com/macrat/ayd/store/freeze"
 )
 
 func TestFreezeProbeHistory(t *testing.T) {
-	filledRecords := []*store.Record{}
-	for i := 0; i < store.PROBE_HISTORY_LEN-1; i++ {
-		filledRecords = append(filledRecords, &store.Record{
+	filledRecords := []*api.Record{}
+	for i := 0; i < PROBE_HISTORY_LEN-1; i++ {
+		filledRecords = append(filledRecords, &api.Record{
 			CheckedAt: time.Date(2021, time.January, 2, 15, 4, 5, 0, time.UTC),
-			Status:    store.STATUS_HEALTHY,
+			Status:    api.StatusHealthy,
 			Target:    &url.URL{Scheme: "ping", Opaque: "local"},
 			Message:   "filled",
 			Latency:   123456 * time.Microsecond,
@@ -23,33 +24,33 @@ func TestFreezeProbeHistory(t *testing.T) {
 
 	tests := []struct {
 		Name        string
-		Records     []*store.Record
+		Records     []*api.Record
 		Updated     string
 		Status      string
-		FirstRecord frozenRecord
-		LastRecord  frozenRecord
+		FirstRecord freeze.Record
+		LastRecord  freeze.Record
 	}{
 		{
 			Name:        "no-data",
-			Records:     []*store.Record{},
+			Records:     []*api.Record{},
 			Updated:     "",
 			Status:      "NO_DATA",
-			FirstRecord: frozenRecord{Status: "NO_DATA"},
-			LastRecord:  frozenRecord{Status: "NO_DATA"},
+			FirstRecord: freeze.Record{Status: "NO_DATA"},
+			LastRecord:  freeze.Record{Status: "NO_DATA"},
 		},
 		{
 			Name: "single-failure",
-			Records: []*store.Record{&store.Record{
+			Records: []*api.Record{&api.Record{
 				CheckedAt: time.Date(2021, time.January, 2, 20, 1, 2, 0, time.UTC),
 				Target:    &url.URL{Scheme: "ping", Opaque: "local"},
-				Status:    store.STATUS_FAILURE,
+				Status:    api.StatusFailure,
 				Message:   "this is failure",
 				Latency:   654321 * time.Microsecond,
 			}},
 			Updated:     "2021-01-02T20:01:02Z",
 			Status:      "FAILURE",
-			FirstRecord: frozenRecord{Status: "NO_DATA"},
-			LastRecord: frozenRecord{
+			FirstRecord: freeze.Record{Status: "NO_DATA"},
+			LastRecord: freeze.Record{
 				CheckedAt:  "2021-01-02T20:01:02Z",
 				Status:     "FAILURE",
 				Message:    "this is failure",
@@ -59,23 +60,23 @@ func TestFreezeProbeHistory(t *testing.T) {
 		},
 		{
 			Name: "filled-unknown",
-			Records: append(filledRecords, &store.Record{
+			Records: append(filledRecords, &api.Record{
 				CheckedAt: time.Date(2021, time.January, 2, 17, 4, 3, 0, time.UTC),
 				Target:    &url.URL{Scheme: "ping", Opaque: "local"},
-				Status:    store.STATUS_UNKNOWN,
+				Status:    api.StatusUnknown,
 				Message:   "this is unknown",
 				Latency:   123321 * time.Microsecond,
 			}),
 			Updated: "2021-01-02T17:04:03Z",
 			Status:  "UNKNOWN",
-			FirstRecord: frozenRecord{
+			FirstRecord: freeze.Record{
 				CheckedAt:  "2021-01-02T15:04:05Z",
 				Status:     "HEALTHY",
 				Message:    "filled",
 				Latency:    123.456,
 				LatencyStr: "123.456ms",
 			},
-			LastRecord: frozenRecord{
+			LastRecord: freeze.Record{
 				CheckedAt:  "2021-01-02T17:04:03Z",
 				Status:     "UNKNOWN",
 				Message:    "this is unknown",
@@ -88,7 +89,7 @@ func TestFreezeProbeHistory(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.Name, func(t *testing.T) {
-			hs := &store.ProbeHistory{
+			hs := &ProbeHistory{
 				Target:  &url.URL{Scheme: "ping", Opaque: "localhost"},
 				Records: tt.Records,
 			}
@@ -107,7 +108,7 @@ func TestFreezeProbeHistory(t *testing.T) {
 				t.Errorf("unexpected updated: %s", frozen.Updated)
 			}
 
-			if len(frozen.History) != store.PROBE_HISTORY_LEN {
+			if len(frozen.History) != PROBE_HISTORY_LEN {
 				t.Errorf("unexpected number of history: %d", len(frozen.History))
 			}
 
@@ -123,7 +124,7 @@ func TestFreezeProbeHistory(t *testing.T) {
 }
 
 func BenchmarkFreeze(b *testing.B) {
-	s, err := store.New("./testdata/test.log")
+	s, err := New("./testdata/test.log")
 	if err != nil {
 		b.Fatalf("failed to open store: %s", err)
 	}
@@ -134,6 +135,6 @@ func BenchmarkFreeze(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		freezeStatus(s)
+		s.Freeze()
 	}
 }

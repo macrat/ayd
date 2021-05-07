@@ -17,6 +17,6 @@ func TextExporter(s *store.Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain; charset=UTF-8")
 
-		tmpl.Execute(w, freezeStatus(s))
+		tmpl.Execute(w, s.Freeze())
 	}
 }

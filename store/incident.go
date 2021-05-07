@@ -1,20 +1,11 @@
 package store
 
 import (
-	"net/url"
-	"time"
+	api "github.com/macrat/ayd/lib-ayd"
 )
 
-type Incident struct {
-	Target     *url.URL
-	Status     Status
-	Message    string
-	CausedAt   time.Time
-	ResolvedAt time.Time
-}
-
-func NewIncident(r Record) *Incident {
-	return &Incident{
+func NewIncident(r api.Record) *api.Incident {
+	return &api.Incident{
 		Target:   r.Target,
 		Status:   r.Status,
 		Message:  r.Message,
@@ -22,15 +13,11 @@ func NewIncident(r Record) *Incident {
 	}
 }
 
-func (i *Incident) SameTarget(r Record) bool {
-	return i.Target.String() == r.Target.String()
-}
-
-func (i *Incident) IsContinued(r Record) bool {
+func IncidentIsContinued(i *api.Incident, r api.Record) bool {
 	return i.ResolvedAt.IsZero() && i.Status == r.Status && i.Message == r.Message
 }
 
-type byIncidentCaused []*Incident
+type byIncidentCaused []*api.Incident
 
 func (xs byIncidentCaused) Len() int {
 	return len(xs)

@@ -6,7 +6,10 @@ import (
 	"net/url"
 	"os"
 	"sort"
+	"strings"
 	"sync"
+
+	api "github.com/macrat/ayd/lib-ayd"
 )
 
 const (
@@ -17,12 +20,12 @@ const (
 
 type ProbeHistory struct {
 	Target  *url.URL
-	Records []*Record
+	Records []*api.Record
 }
 
 type ProbeHistoryMap map[string]*ProbeHistory
 
-func (hs ProbeHistoryMap) Append(r Record) {
+func (hs ProbeHistoryMap) Append(r api.Record) {
 	target := r.Target.String()
 
 	if h, ok := hs[target]; ok {
@@ -38,12 +41,12 @@ func (hs ProbeHistoryMap) Append(r Record) {
 	} else {
 		hs[target] = &ProbeHistory{
 			Target:  r.Target,
-			Records: []*Record{&r},
+			Records: []*api.Record{&r},
 		}
 	}
 }
 
-type IncidentHandler func(*Incident)
+type IncidentHandler func(*api.Incident)
 
 type Store struct {
 	Path string
@@ -52,24 +55,24 @@ type Store struct {
 
 	historyLock      sync.RWMutex
 	probeHistory     ProbeHistoryMap
-	currentIncidents map[string]*Incident
-	incidentHistory  []*Incident
+	currentIncidents map[string]*api.Incident
+	incidentHistory  []*api.Incident
 
 	OnIncident    []IncidentHandler
 	IncidentCount int
 
-	writeCh   chan<- Record
+	writeCh   chan<- api.Record
 	lastError error
 }
 
 func New(path string) (*Store, error) {
-	ch := make(chan Record, 32)
+	ch := make(chan api.Record, 32)
 
 	store := &Store{
 		Path:             path,
 		Console:          os.Stdout,
 		probeHistory:     make(ProbeHistoryMap),
-		currentIncidents: make(map[string]*Incident),
+		currentIncidents: make(map[string]*api.Incident),
 		writeCh:          ch,
 	}
 
@@ -85,7 +88,7 @@ func New(path string) (*Store, error) {
 	return store, nil
 }
 
-func (s *Store) writer(ch <-chan Record) {
+func (s *Store) writer(ch <-chan api.Record) {
 	for r := range ch {
 		msg := []byte(r.String() + "\n")
 
@@ -124,11 +127,11 @@ func (s *Store) ProbeHistory() []*ProbeHistory {
 	return result
 }
 
-func (s *Store) CurrentIncidents() []*Incident {
+func (s *Store) CurrentIncidents() []*api.Incident {
 	s.historyLock.RLock()
 	defer s.historyLock.RUnlock()
 
-	result := make([]*Incident, len(s.currentIncidents))
+	result := make([]*api.Incident, len(s.currentIncidents))
 
 	i := 0
 	for _, x := range s.currentIncidents {
@@ -141,18 +144,18 @@ func (s *Store) CurrentIncidents() []*Incident {
 	return result
 }
 
-func (s *Store) IncidentHistory() []*Incident {
+func (s *Store) IncidentHistory() []*api.Incident {
 	return s.incidentHistory
 }
 
-func (s *Store) setIncidentIfNeed(r Record, needCallback bool) {
-	if r.Status == STATUS_ABORTED {
+func (s *Store) setIncidentIfNeed(r api.Record, needCallback bool) {
+	if r.Status == api.StatusAborted {
 		return
 	}
 
 	target := r.Target.String()
 	if cur, ok := s.currentIncidents[target]; ok {
-		if cur.IsContinued(r) {
+		if IncidentIsContinued(cur, r) {
 			return
 		}
 
@@ -165,7 +168,7 @@ func (s *Store) setIncidentIfNeed(r Record, needCallback bool) {
 		}
 	}
 
-	if r.Status != STATUS_HEALTHY {
+	if r.Status != api.StatusHealthy {
 		incident := NewIncident(r)
 		s.currentIncidents[target] = incident
 
@@ -178,8 +181,8 @@ func (s *Store) setIncidentIfNeed(r Record, needCallback bool) {
 	}
 }
 
-func (s *Store) Report(r Record) {
-	r = r.Sanitize()
+func (s *Store) Report(r api.Record) {
+	r.Message = strings.Trim(r.Message, "\r\n")
 
 	s.writeCh <- r
 
@@ -207,7 +210,7 @@ func (s *Store) Restore() error {
 
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
-		r, err := ParseRecord(scanner.Text())
+		r, err := api.ParseRecord(scanner.Text())
 		if err != nil {
 			continue
 		}

@@ -10,6 +10,7 @@ import (
 	"text/template"
 	"time"
 
+	api "github.com/macrat/ayd/lib-ayd"
 	"github.com/macrat/ayd/probe"
 	"github.com/macrat/ayd/store"
 )
@@ -96,7 +97,7 @@ func main() {
 			fmt.Fprintln(os.Stderr, "Invalid alert target:", err)
 			os.Exit(2)
 		}
-		s.OnIncident = append(s.OnIncident, func(i *store.Incident) {
+		s.OnIncident = append(s.OnIncident, func(i *api.Incident) {
 			go alert.Trigger(ctx, i, s)
 		})
 	}

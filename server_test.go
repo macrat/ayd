@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/macrat/ayd"
-	"github.com/macrat/ayd/store"
+	api "github.com/macrat/ayd/lib-ayd"
 	"github.com/macrat/ayd/testutil"
 )
 
@@ -82,7 +82,7 @@ func BenchmarkRunServer(b *testing.B) {
 
 	for _, x := range s.ProbeHistory() {
 		for _, r := range x.Records {
-			if r.Status == store.STATUS_HEALTHY {
+			if r.Status == api.StatusHealthy {
 				done++
 			} else {
 				timeout++

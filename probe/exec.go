@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/macrat/ayd/store"
+	api "github.com/macrat/ayd/lib-ayd"
 )
 
 var (
@@ -66,9 +66,10 @@ func getLatencyByMessage(message string, default_ time.Duration) (replacedMessag
 	return message, default_
 }
 
-func getStatusByMessage(message string, default_ store.Status) (replacedMessage string, status store.Status) {
+func getStatusByMessage(message string, default_ api.Status) (replacedMessage string, status api.Status) {
 	if m := executeStatusRe.FindAllStringSubmatch(message, -1); m != nil {
-		status = store.ParseStatus(strings.ToUpper(m[len(m)-1][1]))
+		var status api.Status
+		status.UnmarshalText([]byte(strings.ToUpper(m[len(m)-1][1])))
 		return strings.Trim(executeStatusRe.ReplaceAllString(message, ""), "\n"), status
 	}
 
@@ -85,7 +86,7 @@ func isUnknownExecutionError(err error) bool {
 	return false
 }
 
-func runExternalCommand(ctx context.Context, command string, args, env []string) (output *bytes.Buffer, status store.Status, err error) {
+func runExternalCommand(ctx context.Context, command string, args, env []string) (output *bytes.Buffer, status api.Status, err error) {
 	cmd := exec.CommandContext(ctx, command, args...)
 	cmd.Env = env
 
@@ -95,13 +96,13 @@ func runExternalCommand(ctx context.Context, command string, args, env []string)
 
 	err = cmd.Run()
 
-	status = store.STATUS_HEALTHY
+	status = api.StatusHealthy
 
 	if err != nil {
-		status = store.STATUS_FAILURE
+		status = api.StatusFailure
 
 		if isUnknownExecutionError(err) {
-			status = store.STATUS_UNKNOWN
+			status = api.StatusUnknown
 		}
 	}
 
@@ -123,14 +124,14 @@ func (p ExecuteProbe) Check(ctx context.Context, r Reporter) {
 
 	message := strings.Trim(strings.ReplaceAll(strings.ReplaceAll(output.String(), "\r\n", "\n"), "\r", "\n"), "\n")
 
-	if status != store.STATUS_HEALTHY && message == "" {
+	if status != api.StatusHealthy && message == "" {
 		message = err.Error()
 	}
 
 	message, latency = getLatencyByMessage(message, latency)
 	message, status = getStatusByMessage(message, status)
 
-	r.Report(timeoutOr(ctx, store.Record{
+	r.Report(timeoutOr(ctx, api.Record{
 		CheckedAt: stime,
 		Target:    p.target,
 		Status:    status,

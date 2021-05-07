@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	api "github.com/macrat/ayd/lib-ayd"
 	"github.com/macrat/ayd/store"
 	"github.com/macrat/ayd/testutil"
 )
@@ -17,7 +18,7 @@ func TestProbeHistoryMap(t *testing.T) {
 	m := make(store.ProbeHistoryMap)
 
 	for i := 1; i <= 100; i++ {
-		m.Append(store.Record{
+		m.Append(api.Record{
 			CheckedAt: time.Now().Add(time.Duration(i) * time.Second),
 			Target:    &url.URL{Scheme: "dummy", Fragment: "append-test"},
 			Message:   fmt.Sprint(i),
@@ -33,7 +34,7 @@ func TestProbeHistoryMap(t *testing.T) {
 	}
 
 	for i := 1; i <= 10; i++ {
-		m.Append(store.Record{
+		m.Append(api.Record{
 			CheckedAt: time.Now().Add(time.Duration(i) * time.Second),
 			Target:    &url.URL{Scheme: "dummy", Fragment: "append-test-another"},
 			Message:   fmt.Sprint(i),
@@ -49,7 +50,7 @@ func TestProbeHistoryMap(t *testing.T) {
 	}
 
 	for i := 1; i <= 10; i++ {
-		m.Append(store.Record{
+		m.Append(api.Record{
 			CheckedAt: time.Now().Add(time.Duration(-i) * time.Second),
 			Target:    &url.URL{Scheme: "dummy", Fragment: "append-test-reverse"},
 			Message:   fmt.Sprint(i),
@@ -65,12 +66,12 @@ func TestProbeHistoryMap(t *testing.T) {
 	}
 
 	timestamp := time.Now()
-	m.Append(store.Record{
+	m.Append(api.Record{
 		CheckedAt: timestamp,
 		Target:    &url.URL{Scheme: "dummy", Fragment: "append-test-same-time"},
 		Message:   "first",
 	})
-	m.Append(store.Record{
+	m.Append(api.Record{
 		CheckedAt: timestamp,
 		Target:    &url.URL{Scheme: "dummy", Fragment: "append-test-same-time"},
 		Message:   "second",
@@ -100,32 +101,32 @@ func TestStore_restore(t *testing.T) {
 	s1.Console = io.Discard
 	defer s1.Close()
 
-	records := []store.Record{
-		store.Record{
+	records := []api.Record{
+		api.Record{
 			CheckedAt: time.Now().Add(30 * time.Second),
 			Target:    &url.URL{Scheme: "ping", Opaque: "restore-test"},
-			Status:    store.STATUS_UNKNOWN,
+			Status:    api.StatusUnknown,
 			Message:   "hello world",
 			Latency:   1 * time.Second,
 		},
-		store.Record{
+		api.Record{
 			CheckedAt: time.Now().Add(20 * time.Second),
 			Target:    &url.URL{Scheme: "exec", Opaque: "/usr/local/bin/test.sh"},
-			Status:    store.STATUS_HEALTHY,
+			Status:    api.StatusHealthy,
 			Message:   "foobar",
 			Latency:   123 * time.Millisecond,
 		},
-		store.Record{
+		api.Record{
 			CheckedAt: time.Now().Add(10 * time.Second),
 			Target:    &url.URL{Scheme: "http", Host: "test.local", Path: "/abc/def"},
-			Status:    store.STATUS_FAILURE,
+			Status:    api.StatusFailure,
 			Message:   "hoge",
 			Latency:   123 * time.Microsecond,
 		},
-		store.Record{
+		api.Record{
 			CheckedAt: time.Now(),
 			Target:    &url.URL{Scheme: "http", Host: "test.local", Path: "/abc/def"},
-			Status:    store.STATUS_HEALTHY,
+			Status:    api.StatusHealthy,
 			Message:   "hoge",
 			Latency:   123 * time.Microsecond,
 		},
@@ -170,7 +171,14 @@ func TestStore_restore(t *testing.T) {
 		}
 
 		for j := range ph1.Records {
-			if ph1.Records[j].Equals(*ph2.Records[j]) {
+			x := ph1.Records[j]
+			y := ph2.Records[j]
+			same := (x.CheckedAt == y.CheckedAt &&
+				x.Target.String() != y.Target.String() &&
+				x.Status == y.Status &&
+				x.Message == y.Message &&
+				x.Latency == y.Latency)
+			if same {
 				t.Errorf("%d %d: unexpected record", i, j)
 			}
 		}
@@ -185,10 +193,10 @@ func TestStore_AddTarget(t *testing.T) {
 		t.Fatalf("found unexpected probe history")
 	}
 
-	s.Report(store.Record{
+	s.Report(api.Record{
 		Target:  &url.URL{Scheme: "dummy", Fragment: "add-target-1"},
 		Message: "already exists history",
-		Status:  store.STATUS_HEALTHY,
+		Status:  api.StatusHealthy,
 	})
 	if len(s.ProbeHistory()) != 1 {
 		t.Fatalf("found unexpected probe history")
@@ -225,8 +233,8 @@ func TestStore_incident(t *testing.T) {
 
 	lastIncident := ""
 	s.OnIncident = []store.IncidentHandler{
-		func(s *string) func(*store.Incident) {
-			return func(i *store.Incident) {
+		func(s *string) func(*api.Incident) {
+			return func(i *api.Incident) {
 				*s = i.Message
 			}
 		}(&lastIncident),
@@ -239,7 +247,7 @@ func TestStore_incident(t *testing.T) {
 			}
 		}
 	}(&lastIncident)
-	assertIncidents := func(incidents []*store.Incident, target ...string) {
+	assertIncidents := func(incidents []*api.Incident, target ...string) {
 		t.Helper()
 
 		if len(incidents) != len(target) {
@@ -263,11 +271,11 @@ func TestStore_incident(t *testing.T) {
 	}
 
 	var offset time.Duration
-	appendRecord := func(fragment, message string, status store.Status) {
+	appendRecord := func(fragment, message string, status api.Status) {
 		t.Helper()
 		offset += 1 * time.Second
 
-		s.Report(store.Record{
+		s.Report(api.Record{
 			CheckedAt: time.Now().Add(offset),
 			Target:    &url.URL{Scheme: "dummy", Fragment: fragment},
 			Message:   message,
@@ -275,52 +283,52 @@ func TestStore_incident(t *testing.T) {
 		})
 	}
 
-	appendRecord("incident-test-1", "1-1", store.STATUS_HEALTHY)
+	appendRecord("incident-test-1", "1-1", api.StatusHealthy)
 	assertIncidents(s.CurrentIncidents())
 	assertIncidents(s.IncidentHistory())
 	assertLastIncident("")
 
-	appendRecord("incident-test-1", "1-2", store.STATUS_FAILURE)
+	appendRecord("incident-test-1", "1-2", api.StatusFailure)
 	assertIncidents(s.CurrentIncidents(), "dummy:#incident-test-1")
 	assertIncidents(s.IncidentHistory())
 	assertLastIncident("1-2")
 
-	appendRecord("incident-test-1", "1-2", store.STATUS_FAILURE)
+	appendRecord("incident-test-1", "1-2", api.StatusFailure)
 	assertIncidents(s.CurrentIncidents(), "dummy:#incident-test-1")
 	assertIncidents(s.IncidentHistory())
 	assertLastIncident("1-2")
 
-	appendRecord("incident-test-2", "2-1", store.STATUS_FAILURE)
+	appendRecord("incident-test-2", "2-1", api.StatusFailure)
 	assertIncidents(s.CurrentIncidents(), "dummy:#incident-test-1", "dummy:#incident-test-2")
 	assertIncidents(s.IncidentHistory())
 	assertLastIncident("2-1")
 
-	appendRecord("incident-test-1", "1-3", store.STATUS_FAILURE)
+	appendRecord("incident-test-1", "1-3", api.StatusFailure)
 	assertIncidents(s.CurrentIncidents(), "dummy:#incident-test-2", "dummy:#incident-test-1")
 	assertIncidents(s.IncidentHistory(), "dummy:#incident-test-1")
 	assertLastIncident("1-3")
 
-	appendRecord("incident-test-2", "2-1", store.STATUS_FAILURE)
+	appendRecord("incident-test-2", "2-1", api.StatusFailure)
 	assertIncidents(s.CurrentIncidents(), "dummy:#incident-test-2", "dummy:#incident-test-1")
 	assertIncidents(s.IncidentHistory(), "dummy:#incident-test-1")
 	assertLastIncident("1-3")
 
-	appendRecord("incident-test-2", "2-?", store.STATUS_ABORTED)
+	appendRecord("incident-test-2", "2-?", api.StatusAborted)
 	assertIncidents(s.CurrentIncidents(), "dummy:#incident-test-2", "dummy:#incident-test-1")
 	assertIncidents(s.IncidentHistory(), "dummy:#incident-test-1")
 	assertLastIncident("1-3")
 
-	appendRecord("incident-test-1", "1-4", store.STATUS_HEALTHY)
+	appendRecord("incident-test-1", "1-4", api.StatusHealthy)
 	assertIncidents(s.CurrentIncidents(), "dummy:#incident-test-2")
 	assertIncidents(s.IncidentHistory(), "dummy:#incident-test-1", "dummy:#incident-test-1")
 	assertLastIncident("1-3")
 
-	appendRecord("incident-test-2", "2-2", store.STATUS_HEALTHY)
+	appendRecord("incident-test-2", "2-2", api.StatusHealthy)
 	assertIncidents(s.CurrentIncidents())
 	assertIncidents(s.IncidentHistory(), "dummy:#incident-test-1", "dummy:#incident-test-1", "dummy:#incident-test-2")
 	assertLastIncident("1-3")
 
-	appendRecord("incident-test-2", "2-?", store.STATUS_ABORTED)
+	appendRecord("incident-test-2", "2-?", api.StatusAborted)
 	assertIncidents(s.CurrentIncidents())
 	assertIncidents(s.IncidentHistory(), "dummy:#incident-test-1", "dummy:#incident-test-1", "dummy:#incident-test-2")
 	assertLastIncident("1-3")
@@ -331,10 +339,10 @@ func TestStore_incident_len_limit(t *testing.T) {
 	defer s.Close()
 
 	for i := 0; i < store.INCIDENT_HISTORY_LEN*2; i++ {
-		s.Report(store.Record{
+		s.Report(api.Record{
 			Target:  &url.URL{Scheme: "dummy", Fragment: "history-limit-test"},
 			Message: fmt.Sprintf("incident-%d", i),
-			Status:  store.STATUS_FAILURE,
+			Status:  api.StatusFailure,
 		})
 	}
 
@@ -344,12 +352,12 @@ func TestStore_incident_len_limit(t *testing.T) {
 }
 
 func BenchmarkStore_Append(b *testing.B) {
-	for _, status := range []store.Status{store.STATUS_HEALTHY, store.STATUS_FAILURE} {
+	for _, status := range []api.Status{api.StatusHealthy, api.StatusFailure} {
 		b.Run(status.String(), func(b *testing.B) {
 			s := testutil.NewStore(b)
 			defer s.Close()
 
-			record := store.Record{
+			record := api.Record{
 				CheckedAt: time.Now(),
 				Target:    &url.URL{Scheme: "dummy", Fragment: "benchmark-append"},
 				Status:    status,

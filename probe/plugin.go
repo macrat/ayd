@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/macrat/ayd/store"
+	api "github.com/macrat/ayd/lib-ayd"
 )
 
 type PluginProbe struct {
@@ -59,17 +59,17 @@ func ExecutePlugin(ctx context.Context, r Reporter, target *url.URL, command str
 			continue
 		}
 
-		rec, err := store.ParseRecord(text)
+		rec, err := api.ParseRecord(text)
 		if err == nil {
 			count++
 			r.Report(rec)
 			continue
 		}
 
-		r.Report(store.Record{
+		r.Report(api.Record{
 			CheckedAt: time.Now(),
 			Target:    &url.URL{Scheme: "ayd", Opaque: "probe:plugin:" + target.String()},
-			Status:    store.STATUS_FAILURE,
+			Status:    api.StatusFailure,
 			Message:   fmt.Sprintf("invalid record: %s: %#v", err, text),
 			Latency:   latency,
 		})
@@ -81,7 +81,7 @@ func ExecutePlugin(ctx context.Context, r Reporter, target *url.URL, command str
 			msg = err.Error()
 		}
 
-		r.Report(timeoutOr(ctx, store.Record{
+		r.Report(timeoutOr(ctx, api.Record{
 			CheckedAt: stime,
 			Target:    target,
 			Status:    status,

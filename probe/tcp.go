@@ -7,7 +7,7 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/macrat/ayd/store"
+	api "github.com/macrat/ayd/lib-ayd"
 )
 
 var (
@@ -43,23 +43,23 @@ func (p TCPProbe) Check(ctx context.Context, r Reporter) {
 	conn, err := dialer.DialContext(ctx, p.target.Scheme, p.target.Host)
 	d := time.Now().Sub(st)
 
-	rec := store.Record{
+	rec := api.Record{
 		CheckedAt: st,
 		Target:    p.target,
 		Latency:   d,
 	}
 
 	if err != nil {
-		rec.Status = store.STATUS_FAILURE
+		rec.Status = api.StatusFailure
 		rec.Message = err.Error()
 		if _, ok := errors.Unwrap(err).(*net.AddrError); ok {
-			rec.Status = store.STATUS_UNKNOWN
+			rec.Status = api.StatusUnknown
 		}
 		if e, ok := errors.Unwrap(err).(*net.DNSError); ok && e.IsNotFound {
-			rec.Status = store.STATUS_UNKNOWN
+			rec.Status = api.StatusUnknown
 		}
 	} else {
-		rec.Status = store.STATUS_HEALTHY
+		rec.Status = api.StatusHealthy
 		rec.Message = conn.LocalAddr().String() + " -> " + conn.RemoteAddr().String()
 		conn.Close()
 	}

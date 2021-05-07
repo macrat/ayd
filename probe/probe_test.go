@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
+	api "github.com/macrat/ayd/lib-ayd"
 	"github.com/macrat/ayd/probe"
-	"github.com/macrat/ayd/store"
 	"github.com/macrat/ayd/testutil"
 )
 
@@ -100,7 +100,7 @@ func TestTargetURLNormalize(t *testing.T) {
 
 type ProbeTest struct {
 	Target            string
-	Status            store.Status
+	Status            api.Status
 	MessagePattern    string
 	ParseErrorPattern string
 }
@@ -162,7 +162,7 @@ func AssertTimeout(t *testing.T, target string) {
 			t.Errorf("unexpected message: %s", records[0].Message)
 		}
 
-		if records[0].Status != store.STATUS_UNKNOWN {
+		if records[0].Status != api.StatusUnknown {
 			t.Errorf("unexpected status: %s", records[0].Status)
 		}
 	})
@@ -181,7 +181,7 @@ func AssertTimeout(t *testing.T, target string) {
 			t.Errorf("unexpected message: %s", records[0].Message)
 		}
 
-		if records[0].Status != store.STATUS_ABORTED {
+		if records[0].Status != api.StatusAborted {
 			t.Errorf("unexpected status: %s", records[0].Status)
 		}
 	})

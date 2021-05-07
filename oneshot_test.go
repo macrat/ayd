@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/macrat/ayd"
-	"github.com/macrat/ayd/store"
+	api "github.com/macrat/ayd/lib-ayd"
 	"github.com/macrat/ayd/testutil"
 )
 
@@ -60,9 +60,9 @@ func TestRunOneshot(t *testing.T) {
 }
 
 func BenchmarkRunOneshot(b *testing.B) {
-	for _, status := range []store.Status{store.STATUS_UNKNOWN, store.STATUS_HEALTHY, store.STATUS_FAILURE} {
+	for _, status := range []api.Status{api.StatusUnknown, api.StatusHealthy, api.StatusFailure} {
 		name := status.String()
-		if status == store.STATUS_UNKNOWN {
+		if status == api.StatusUnknown {
 			name = "RANDOM"
 		}
 

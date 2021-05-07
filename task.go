@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	api "github.com/macrat/ayd/lib-ayd"
 	"github.com/macrat/ayd/probe"
 	"github.com/macrat/ayd/store"
 	"github.com/robfig/cron/v3"
@@ -19,10 +20,10 @@ func (t Task) MakeJob(baseContext context.Context, s *store.Store) cron.Job {
 	return cron.FuncJob(func() {
 		defer func() {
 			if err := recover(); err != nil {
-				s.Report(store.Record{
+				s.Report(api.Record{
 					CheckedAt: time.Now(),
 					Target:    t.Probe.Target(),
-					Status:    store.STATUS_UNKNOWN,
+					Status:    api.StatusUnknown,
 					Message:   fmt.Sprintf("panic: %s", err),
 				})
 			}

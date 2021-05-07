@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/macrat/ayd/store"
+	api "github.com/macrat/ayd/lib-ayd"
 	"github.com/macrat/ayd/testutil"
 )
 
@@ -13,15 +13,15 @@ func TestDummyProbe(t *testing.T) {
 	t.Parallel()
 
 	AssertProbe(t, []ProbeTest{
-		{"dummy:", store.STATUS_HEALTHY, ``, ""},
-		{"dummy:healthy", store.STATUS_HEALTHY, ``, ""},
-		{"dummy:failure", store.STATUS_FAILURE, ``, ""},
-		{"dummy:aborted", store.STATUS_ABORTED, ``, ""},
-		{"dummy:unknown", store.STATUS_UNKNOWN, ``, ""},
-		{"dummy:healthy?message=hello+world", store.STATUS_HEALTHY, `hello world`, ""},
-		{"dummy:healthy#something-comment", store.STATUS_HEALTHY, ``, ""},
+		{"dummy:", api.StatusHealthy, ``, ""},
+		{"dummy:healthy", api.StatusHealthy, ``, ""},
+		{"dummy:failure", api.StatusFailure, ``, ""},
+		{"dummy:aborted", api.StatusAborted, ``, ""},
+		{"dummy:unknown", api.StatusUnknown, ``, ""},
+		{"dummy:healthy?message=hello+world", api.StatusHealthy, `hello world`, ""},
+		{"dummy:healthy#something-comment", api.StatusHealthy, ``, ""},
 
-		{"dummy:unknown-status", store.STATUS_UNKNOWN, ``, `opaque must healthy, failure, aborted, unknown, or random`},
+		{"dummy:unknown-status", api.StatusUnknown, ``, `opaque must healthy, failure, aborted, unknown, or random`},
 	})
 
 	t.Run("dummy:random", func(t *testing.T) {
@@ -32,11 +32,11 @@ func TestDummyProbe(t *testing.T) {
 			rs := testutil.RunCheck(context.Background(), p)
 			for _, r := range rs {
 				switch r.Status {
-				case store.STATUS_HEALTHY:
+				case api.StatusHealthy:
 					h++
-				case store.STATUS_FAILURE:
+				case api.StatusFailure:
 					f++
-				case store.STATUS_UNKNOWN:
+				case api.StatusUnknown:
 					u++
 				}
 			}
@@ -91,7 +91,7 @@ func TestDummyProbe(t *testing.T) {
 			if r.Latency < 800*time.Millisecond || 1200*time.Millisecond < r.Latency {
 				t.Errorf("latency in record was out of expected range: %s", r.Latency)
 			}
-			if r.Status != store.STATUS_UNKNOWN {
+			if r.Status != api.StatusUnknown {
 				t.Errorf("unexpected status: %s", r.Status)
 			}
 			if r.Message != "probe timed out" {

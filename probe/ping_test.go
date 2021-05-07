@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
+	api "github.com/macrat/ayd/lib-ayd"
 	"github.com/macrat/ayd/probe"
-	"github.com/macrat/ayd/store"
 	"github.com/macrat/ayd/testutil"
 )
 
@@ -21,10 +21,10 @@ func TestPingProbe(t *testing.T) {
 	}
 
 	AssertProbe(t, []ProbeTest{
-		{"ping:localhost", store.STATUS_HEALTHY, `rtt\(min/avg/max\)=[0-9.]*/[0-9.]*/[0-9.]* send/recv=4/4`, ""},
-		{"ping:127.0.0.1", store.STATUS_HEALTHY, `rtt\(min/avg/max\)=[0-9.]*/[0-9.]*/[0-9.]* send/recv=4/4`, ""},
-		{"ping:::1", store.STATUS_HEALTHY, `rtt\(min/avg/max\)=[0-9.]*/[0-9.]*/[0-9.]* send/recv=4/4`, ""},
-		{"ping:of-course-definitely-no-such-host", store.STATUS_UNKNOWN, `.*`, ""},
+		{"ping:localhost", api.StatusHealthy, `rtt\(min/avg/max\)=[0-9.]*/[0-9.]*/[0-9.]* send/recv=4/4`, ""},
+		{"ping:127.0.0.1", api.StatusHealthy, `rtt\(min/avg/max\)=[0-9.]*/[0-9.]*/[0-9.]* send/recv=4/4`, ""},
+		{"ping:::1", api.StatusHealthy, `rtt\(min/avg/max\)=[0-9.]*/[0-9.]*/[0-9.]* send/recv=4/4`, ""},
+		{"ping:of-course-definitely-no-such-host", api.StatusUnknown, `.*`, ""},
 	})
 
 	t.Run("timeout", func(t *testing.T) {
@@ -39,7 +39,7 @@ func TestPingProbe(t *testing.T) {
 			t.Fatalf("unexpected number of records: %#v", records)
 		}
 
-		if records[0].Status != store.STATUS_FAILURE {
+		if records[0].Status != api.StatusFailure {
 			t.Errorf("unexpected status: %s", records[0].Status)
 		}
 	})
@@ -59,7 +59,7 @@ func TestPingProbe(t *testing.T) {
 			t.Errorf("unexpected message: %s", records[0].Message)
 		}
 
-		if records[0].Status != store.STATUS_ABORTED {
+		if records[0].Status != api.StatusAborted {
 			t.Errorf("unexpected status: %s", records[0].Status)
 		}
 	})

@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
+	api "github.com/macrat/ayd/lib-ayd"
 	"github.com/macrat/ayd/probe"
-	"github.com/macrat/ayd/store"
 	"github.com/macrat/ayd/testutil"
 )
 
@@ -19,36 +19,36 @@ func TestSource(t *testing.T) {
 
 	tests := []struct {
 		Target       string
-		Records      map[string]store.Status
+		Records      map[string]api.Status
 		ErrorPattern string
 	}{
-		{"source:./testdata/healthy-list.txt", map[string]store.Status{
-			"dummy:healthy#sub-list":             store.STATUS_HEALTHY,
-			"dummy:healthy#healthy-list":         store.STATUS_HEALTHY,
-			"source:./testdata/healthy-list.txt": store.STATUS_HEALTHY,
+		{"source:./testdata/healthy-list.txt", map[string]api.Status{
+			"dummy:healthy#sub-list":             api.StatusHealthy,
+			"dummy:healthy#healthy-list":         api.StatusHealthy,
+			"source:./testdata/healthy-list.txt": api.StatusHealthy,
 		}, ""},
-		{"source:testdata/healthy-list.txt", map[string]store.Status{
-			"dummy:healthy#sub-list":           store.STATUS_HEALTHY,
-			"dummy:healthy#healthy-list":       store.STATUS_HEALTHY,
-			"source:testdata/healthy-list.txt": store.STATUS_HEALTHY,
+		{"source:testdata/healthy-list.txt", map[string]api.Status{
+			"dummy:healthy#sub-list":           api.StatusHealthy,
+			"dummy:healthy#healthy-list":       api.StatusHealthy,
+			"source:testdata/healthy-list.txt": api.StatusHealthy,
 		}, ""},
-		{"source:./testdata/failure-list.txt", map[string]store.Status{
-			"dummy:healthy#sub-list":             store.STATUS_HEALTHY,
-			"dummy:healthy#failure-list":         store.STATUS_HEALTHY,
-			"dummy:failure":                      store.STATUS_FAILURE,
-			"source:./testdata/failure-list.txt": store.STATUS_HEALTHY,
+		{"source:./testdata/failure-list.txt", map[string]api.Status{
+			"dummy:healthy#sub-list":             api.StatusHealthy,
+			"dummy:healthy#failure-list":         api.StatusHealthy,
+			"dummy:failure":                      api.StatusFailure,
+			"source:./testdata/failure-list.txt": api.StatusHealthy,
 		}, ""},
-		{"source:./testdata/invalid-list.txt", map[string]store.Status{
-			"source:./testdata/invalid-list.txt": store.STATUS_UNKNOWN,
+		{"source:./testdata/invalid-list.txt", map[string]api.Status{
+			"source:./testdata/invalid-list.txt": api.StatusUnknown,
 		}, "Invalid URI: ::invalid host::, no-such-scheme:hello world, source:./testdata/no-such-list.txt"},
-		{"source:testdata/invalid-list.txt", map[string]store.Status{
-			"source:testdata/invalid-list.txt": store.STATUS_UNKNOWN,
+		{"source:testdata/invalid-list.txt", map[string]api.Status{
+			"source:testdata/invalid-list.txt": api.StatusUnknown,
 		}, "Invalid URI: ::invalid host::, no-such-scheme:hello world, source:./testdata/no-such-list.txt"},
-		{"source:./testdata/include-invalid-list.txt", map[string]store.Status{
-			"source:./testdata/include-invalid-list.txt": store.STATUS_UNKNOWN,
+		{"source:./testdata/include-invalid-list.txt", map[string]api.Status{
+			"source:./testdata/include-invalid-list.txt": api.StatusUnknown,
 		}, "Invalid URI: ::invalid host::, no-such-scheme:hello world, source:./testdata/no-such-list.txt"},
-		{"source:./testdata/no-such-list.txt", map[string]store.Status{
-			"source:./testdata/no-such-list.txt": store.STATUS_UNKNOWN,
+		{"source:./testdata/no-such-list.txt", map[string]api.Status{
+			"source:./testdata/no-such-list.txt": api.StatusUnknown,
 		}, `open \./testdata/no-such-list\.txt: (no such file or directory|The system cannot find the file specified\.)`},
 	}
 

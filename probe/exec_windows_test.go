@@ -6,22 +6,22 @@ import (
 	"net/url"
 	"testing"
 
+	api "github.com/macrat/ayd/lib-ayd"
 	"github.com/macrat/ayd/probe"
-	"github.com/macrat/ayd/store"
 )
 
 func TestExecuteProbe(t *testing.T) {
 	t.Parallel()
 
 	AssertProbe(t, []ProbeTest{
-		{`exec:./testdata/test.bat?message=hello&code=0`, store.STATUS_HEALTHY, "hello", ""},
-		{`exec:./testdata/test.bat?message=world&code=1`, store.STATUS_FAILURE, "world", ""},
-		{"exec:echo#%0Ahello%0Aworld%0A%0A", store.STATUS_HEALTHY, "hello\nworld", ""},
-		{"exec:./testdata/no-such-script", store.STATUS_UNKNOWN, ``, `exec: ".\\\\testdata\\\\no-such-script": file does not exist`},
-		{"exec:no-such-command", store.STATUS_UNKNOWN, ``, `exec: "no-such-command": executable file not found in %PATH%`},
-		{"exec:sleep#10", store.STATUS_UNKNOWN, `probe timed out`, ""},
-		{"exec:echo#::status::unknown", store.STATUS_UNKNOWN, ``, ""},
-		{"exec:echo#::status::failure", store.STATUS_FAILURE, ``, ""},
+		{`exec:./testdata/test.bat?message=hello&code=0`, api.StatusHealthy, "hello", ""},
+		{`exec:./testdata/test.bat?message=world&code=1`, api.StatusFailure, "world", ""},
+		{"exec:echo#%0Ahello%0Aworld%0A%0A", api.StatusHealthy, "hello\nworld", ""},
+		{"exec:./testdata/no-such-script", api.StatusUnknown, ``, `exec: ".\\\\testdata\\\\no-such-script": file does not exist`},
+		{"exec:no-such-command", api.StatusUnknown, ``, `exec: "no-such-command": executable file not found in %PATH%`},
+		{"exec:sleep#10", api.StatusUnknown, `probe timed out`, ""},
+		{"exec:echo#::status::unknown", api.StatusUnknown, ``, ""},
+		{"exec:echo#::status::failure", api.StatusFailure, ``, ""},
 	})
 
 	AssertTimeout(t, "exec:echo")

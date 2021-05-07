@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/macrat/ayd/store"
+	api "github.com/macrat/ayd/lib-ayd"
 )
 
 var (
@@ -89,21 +89,21 @@ func (p HTTPProbe) Check(ctx context.Context, r Reporter) {
 	resp, err := p.client.Do(req)
 	d := time.Now().Sub(st)
 
-	status := store.STATUS_FAILURE
+	status := api.StatusFailure
 	message := ""
 	if err != nil {
 		message = err.Error()
 		if e, ok := errors.Unwrap(errors.Unwrap(err)).(*net.DNSError); ok && e.IsNotFound {
-			status = store.STATUS_UNKNOWN
+			status = api.StatusUnknown
 		}
 	} else {
 		message = resp.Status
 		if 200 <= resp.StatusCode && resp.StatusCode <= 299 {
-			status = store.STATUS_HEALTHY
+			status = api.StatusHealthy
 		}
 	}
 
-	r.Report(timeoutOr(ctx, store.Record{
+	r.Report(timeoutOr(ctx, api.Record{
 		CheckedAt: st,
 		Target:    p.target,
 		Status:    status,

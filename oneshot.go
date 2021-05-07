@@ -5,6 +5,7 @@ import (
 	"sync"
 	"sync/atomic"
 
+	api "github.com/macrat/ayd/lib-ayd"
 	"github.com/macrat/ayd/store"
 )
 
@@ -12,11 +13,11 @@ func RunOneshot(ctx context.Context, s *store.Store, tasks []Task) (exitCode int
 	var failure atomic.Value
 	var unknown atomic.Value
 
-	s.OnIncident = append(s.OnIncident, func(i *store.Incident) {
+	s.OnIncident = append(s.OnIncident, func(i *api.Incident) {
 		switch i.Status {
-		case store.STATUS_FAILURE:
+		case api.StatusFailure:
 			failure.Store(true)
-		case store.STATUS_UNKNOWN:
+		case api.StatusUnknown:
 			unknown.Store(true)
 		}
 	})

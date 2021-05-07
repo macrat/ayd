@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/macrat/ayd/store"
+	api "github.com/macrat/ayd/lib-ayd"
 )
 
 func TestGetLatencyByMessage(t *testing.T) {
@@ -41,19 +41,19 @@ func TestGetLatencyByMessage(t *testing.T) {
 func TestGetStatusByMessage(t *testing.T) {
 	tests := []struct {
 		Input   string
-		Default store.Status
+		Default api.Status
 		Output  string
-		Status  store.Status
+		Status  api.Status
 	}{
-		{"::status::healthy", store.STATUS_UNKNOWN, "", store.STATUS_HEALTHY},
-		{"::status::Failure", store.STATUS_UNKNOWN, "", store.STATUS_FAILURE},
-		{"::status::aborted", store.STATUS_UNKNOWN, "", store.STATUS_ABORTED},
-		{"::status::UNKNOWN", store.STATUS_HEALTHY, "", store.STATUS_UNKNOWN},
-		{"::status::abcdefg", store.STATUS_UNKNOWN, "::status::abcdefg", store.STATUS_UNKNOWN},
-		{"hello\n::status::FAILURE\nworld", store.STATUS_UNKNOWN, "hello\nworld", store.STATUS_FAILURE},
-		{"abc\n::status::healthy\n::status::failure", store.STATUS_UNKNOWN, "abc", store.STATUS_FAILURE},
-		{"hello\nworld", store.STATUS_UNKNOWN, "hello\nworld", store.STATUS_UNKNOWN},
-		{"", store.STATUS_UNKNOWN, "", store.STATUS_UNKNOWN},
+		{"::status::healthy", api.StatusUnknown, "", api.StatusHealthy},
+		{"::status::Failure", api.StatusUnknown, "", api.StatusFailure},
+		{"::status::aborted", api.StatusUnknown, "", api.StatusAborted},
+		{"::status::UNKNOWN", api.StatusHealthy, "", api.StatusUnknown},
+		{"::status::abcdefg", api.StatusUnknown, "::status::abcdefg", api.StatusUnknown},
+		{"hello\n::status::FAILURE\nworld", api.StatusUnknown, "hello\nworld", api.StatusFailure},
+		{"abc\n::status::healthy\n::status::failure", api.StatusUnknown, "abc", api.StatusFailure},
+		{"hello\nworld", api.StatusUnknown, "hello\nworld", api.StatusUnknown},
+		{"", api.StatusUnknown, "", api.StatusUnknown},
 	}
 
 	for _, tt := range tests {

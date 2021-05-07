@@ -2,12 +2,14 @@ package exporter
 
 import (
 	"strings"
+
+	"github.com/macrat/ayd/store/freeze"
 )
 
 var (
 	templateFuncs = map[string]interface{}{
-		"invert_incidents": func(xs []frozenIncident) []frozenIncident {
-			rs := make([]frozenIncident, len(xs))
+		"invert_incidents": func(xs []freeze.Incident) []freeze.Incident {
+			rs := make([]freeze.Incident, len(xs))
 			for i, x := range xs {
 				rs[len(xs)-i-1] = x
 			}

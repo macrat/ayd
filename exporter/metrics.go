@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 
+	api "github.com/macrat/ayd/lib-ayd"
 	"github.com/macrat/ayd/store"
 )
 
@@ -15,7 +16,7 @@ func MetricsExporter(s *store.Store) http.HandlerFunc {
 				last := hs.Records[len(hs.Records)-1]
 
 				up := 0
-				if last.Status == store.STATUS_HEALTHY {
+				if last.Status == api.StatusHealthy {
 					up = 1
 				}
 				latency := last.Latency.Seconds()

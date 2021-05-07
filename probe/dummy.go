@@ -8,13 +8,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/macrat/ayd/store"
+	api "github.com/macrat/ayd/lib-ayd"
 )
 
 type DummyProbe struct {
 	target  *url.URL
 	random  bool
-	status  store.Status
+	status  api.Status
 	latency time.Duration
 	message string
 }
@@ -28,13 +28,13 @@ func NewDummyProbe(u *url.URL) (DummyProbe, error) {
 	p.target.Opaque = strings.ToLower(p.target.Opaque)
 	switch p.target.Opaque {
 	case "", "healthy":
-		p.status = store.STATUS_HEALTHY
+		p.status = api.StatusHealthy
 	case "failure":
-		p.status = store.STATUS_FAILURE
+		p.status = api.StatusFailure
 	case "aborted":
-		p.status = store.STATUS_ABORTED
+		p.status = api.StatusAborted
 	case "unknown":
-		p.status = store.STATUS_UNKNOWN
+		p.status = api.StatusUnknown
 	case "random":
 		p.random = true
 	default:
@@ -62,15 +62,15 @@ func NewDummyProbe(u *url.URL) (DummyProbe, error) {
 	return p, nil
 }
 
-func (p DummyProbe) Status() store.Status {
+func (p DummyProbe) Status() api.Status {
 	if !p.random {
 		return p.status
 	}
 
-	return []store.Status{
-		store.STATUS_HEALTHY,
-		store.STATUS_UNKNOWN,
-		store.STATUS_FAILURE,
+	return []api.Status{
+		api.StatusHealthy,
+		api.StatusUnknown,
+		api.StatusFailure,
 	}[rand.Intn(3)]
 }
 
@@ -81,7 +81,7 @@ func (p DummyProbe) Target() *url.URL {
 func (p DummyProbe) Check(ctx context.Context, r Reporter) {
 	stime := time.Now()
 
-	rec := store.Record{
+	rec := api.Record{
 		CheckedAt: stime,
 		Status:    p.Status(),
 		Target:    p.target,

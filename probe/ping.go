@@ -8,7 +8,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/macrat/ayd/store"
+	api "github.com/macrat/ayd/lib-ayd"
 	"github.com/macrat/go-parallel-pinger"
 )
 
@@ -59,10 +59,10 @@ func (p PingProbe) Check(ctx context.Context, r Reporter) {
 
 	target, err := net.ResolveIPAddr("ip", p.target.Opaque)
 	if err != nil {
-		r.Report(store.Record{
+		r.Report(api.Record{
 			CheckedAt: time.Now(),
 			Target:    p.target,
-			Status:    store.STATUS_UNKNOWN,
+			Status:    api.StatusUnknown,
 			Message:   err.Error(),
 		})
 		return
@@ -77,10 +77,10 @@ func (p PingProbe) Check(ctx context.Context, r Reporter) {
 	result, err := ping.Ping(ctx, target, 4, 500*time.Millisecond)
 	d := time.Now().Sub(startTime)
 
-	rec := store.Record{
+	rec := api.Record{
 		CheckedAt: startTime,
 		Target:    p.target,
-		Status:    store.STATUS_FAILURE,
+		Status:    api.StatusFailure,
 		Message: fmt.Sprintf(
 			"rtt(min/avg/max)=%.2f/%.2f/%.2f send/recv=%d/%d",
 			float64(result.MinRTT.Microseconds())/1000,
@@ -93,11 +93,11 @@ func (p PingProbe) Check(ctx context.Context, r Reporter) {
 	}
 
 	if result.Loss == 0 {
-		rec.Status = store.STATUS_HEALTHY
+		rec.Status = api.StatusHealthy
 	}
 
 	if ctx.Err() == context.Canceled {
-		rec.Status = store.STATUS_ABORTED
+		rec.Status = api.StatusAborted
 		rec.Message = "probe aborted"
 		rec.Latency = d
 	}

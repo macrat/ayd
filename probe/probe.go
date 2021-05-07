@@ -6,7 +6,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/macrat/ayd/store"
+	api "github.com/macrat/ayd/lib-ayd"
 )
 
 var (
@@ -16,7 +16,7 @@ var (
 )
 
 type Reporter interface {
-	Report(r store.Record)
+	Report(r api.Record)
 }
 
 type Probe interface {
@@ -74,13 +74,13 @@ func WithoutPlugin(p Probe, err error) (Probe, error) {
 	return p, nil
 }
 
-func timeoutOr(ctx context.Context, r store.Record) store.Record {
+func timeoutOr(ctx context.Context, r api.Record) api.Record {
 	switch ctx.Err() {
 	case context.Canceled:
-		r.Status = store.STATUS_ABORTED
+		r.Status = api.StatusAborted
 		r.Message = "probe aborted"
 	case context.DeadlineExceeded:
-		r.Status = store.STATUS_UNKNOWN
+		r.Status = api.StatusUnknown
 		r.Message = "probe timed out"
 	default:
 	}

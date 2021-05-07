@@ -8,12 +8,12 @@ import (
 	"os/exec"
 	"time"
 
+	api "github.com/macrat/ayd/lib-ayd"
 	"github.com/macrat/ayd/probe"
-	"github.com/macrat/ayd/store"
 )
 
 type Alert interface {
-	Trigger(context.Context, *store.Incident, probe.Reporter)
+	Trigger(context.Context, *api.Incident, probe.Reporter)
 }
 
 func NewAlert(target string) (Alert, error) {
@@ -32,7 +32,7 @@ type ReplaceReporter struct {
 	Upstream probe.Reporter
 }
 
-func (r ReplaceReporter) Report(rec store.Record) {
+func (r ReplaceReporter) Report(rec api.Record) {
 	rec.Target = r.Target
 	r.Upstream.Report(rec)
 }
@@ -41,7 +41,7 @@ type ProbeAlert struct {
 	target *url.URL
 }
 
-func (a ProbeAlert) Trigger(ctx context.Context, incident *store.Incident, r probe.Reporter) {
+func (a ProbeAlert) Trigger(ctx context.Context, incident *api.Incident, r probe.Reporter) {
 	qs := a.target.Query()
 	qs.Set("ayd_target", incident.Target.String())
 	qs.Set("ayd_checked_at", incident.CausedAt.Format(time.RFC3339))
@@ -57,9 +57,9 @@ func (a ProbeAlert) Trigger(ctx context.Context, incident *store.Incident, r pro
 
 	p, err := probe.WithoutPlugin(probe.NewFromURL(&u))
 	if err != nil {
-		reporter.Report(store.Record{
+		reporter.Report(api.Record{
 			CheckedAt: time.Now(),
-			Status:    store.STATUS_UNKNOWN,
+			Status:    api.StatusUnknown,
 			Message:   err.Error(),
 		})
 		return
@@ -75,7 +75,7 @@ type AlertReporter struct {
 	Upstream probe.Reporter
 }
 
-func (r AlertReporter) Report(rec store.Record) {
+func (r AlertReporter) Report(rec api.Record) {
 	if rec.Target.Scheme != "alert" {
 		rec.Target = &url.URL{
 			Scheme: "alert",
@@ -114,7 +114,7 @@ func NewPluginAlert(target string) (PluginAlert, error) {
 	return p, nil
 }
 
-func (a PluginAlert) Trigger(ctx context.Context, incident *store.Incident, r probe.Reporter) {
+func (a PluginAlert) Trigger(ctx context.Context, incident *api.Incident, r probe.Reporter) {
 	ctx, cancel := context.WithTimeout(ctx, TASK_TIMEOUT)
 	defer cancel()
 
