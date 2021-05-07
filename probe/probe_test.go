@@ -128,7 +128,7 @@ func AssertProbe(t *testing.T, tests []ProbeTest) {
 			rs := testutil.RunCheck(ctx, p)
 
 			if len(rs) != 1 {
-				t.Fatalf("got unexpected number of results: %d", len(rs))
+				t.Fatalf("got unexpected number of results: %d\n%v", len(rs), rs)
 			}
 
 			r := rs[0]

@@ -69,7 +69,7 @@ func TestPluginProbe(t *testing.T) {
 		if rs[1].Status != store.STATUS_FAILURE {
 			t.Errorf("got unexpected status: %s", rs[1].Status)
 		}
-		if rs[1].Message != "invalid record: \"this is invalid\"" {
+		if rs[1].Message != "invalid record: unexpected column count: \"this is invalid\"" {
 			t.Errorf("got unexpected message: %s", rs[1].Message)
 		}
 	})
