@@ -76,7 +76,7 @@ Ayd has these pages/endpoints.
 
 ### Specify target
 
-Ayd demands URI as targets.
+Ayd demands URL as targets.
 Please see below what you can use as a scheme (protocol).
 
 #### http: / https:
@@ -137,25 +137,25 @@ Execute external command and check return code is 0 or not.
 The command's stdout and stderr will be captured as a message of the status check record.
 You should keep output as short as possible because Ayd is not good at record a long message.
 
-You can specify the first argument as the fragment of URI like below.
+You can specify the first argument as the fragment of URL like below.
 
 ```
 exec:/path/to/command#this-is-argument
 ```
 
-Above target URI works the same as the below command in the shell.
+Above target URL works the same as the below command in the shell.
 
 ``` shell
 $ /path/to/command this-is-argument
 ```
 
-And, you can specify environment arguments as the query of URI like below.
+And, you can specify environment arguments as the query of URL like below.
 
 ```
 exec:/path/to/command?something=foobar&hello=world
 ```
 
-Above target URI works the same as the below command in the shell.
+Above target URL works the same as the below command in the shell.
 
 ```
 $ export something=foobar
@@ -188,7 +188,7 @@ Ayd uses the last value if found multiple reports in single output.
 #### source:
 
 This is a special scheme for load targets from a file.
-Load each line in the file as a target URI and check all targets.
+Load each line in the file as a target URL and check all targets.
 
 Source file is looks like below.
 
@@ -219,24 +219,24 @@ The differences to [`exec:`](#exec) are below.
 
 |                                                       |`exec: `    |plugin                    |
 |-------------------------------------------------------|------------|--------------------------|
-|scheme of URI                                          |`exec:` only|anything                  |
+|scheme of URL                                          |`exec:` only|anything                  |
 |executable file place                                  |anywhere    |only in the PATH directory|
-|set argument and environment variable in URI           |can         |can not                   |
-|receive raw target URI                                 |can not     |can                       |
+|set argument and environment variable in URL           |can         |can not                   |
+|receive raw target URL                                 |can not     |can                       |
 |record about multiple targets like as [source](#source)|can not     |can                       |
 
 Plugin is the "plugin".
-This is a good way to extend Ayd (you can use any URI!), but not good at writing a short script (you have to parse URI yourself).
+This is a good way to extend Ayd (you can use any URL!), but not good at writing a short script (you have to parse URL yourself).
 
 Plugin is an executable file in the PATH directory.
 Ayd looks for `ayd-XXX-probe` if found target with `XXX:` scheme.
 The file name to be `ayd-XXX-alert` if using as an [alert](#alerting).
 In both cases, you can use your wanted scheme by changing `XXX`.
 
-You can't use URI schemes that `ayd`, `alert`, and the scheme that is supported by Ayd itself.
+You can't use URL schemes that `ayd`, `alert`, and the scheme that is supported by Ayd itself.
 
-Plugin receives target URI as the first argument of the command.
-For example, target URI `foobar:hello-world` is going to executed as `ayd-foobar-probe foobar:hello-world`.
+Plugin receives target URL as the first argument of the command.
+For example, target URL `foobar:hello-world` is going to executed as `ayd-foobar-probe foobar:hello-world`.
 
 The output of the plugin will parsed the same way to [log file](#log-file).
 
@@ -291,9 +291,9 @@ The log has these columns.
 
    Some probes like [ping:](#ping) reports average latency, and other probes reports total value..
 
-4. Target URI.
+4. Target URL.
 
-   This URI is the same to passed one as argument, but normalized.
+   This URL is the same to passed one as argument, but normalized.
    For example, `ping:somehost?hello=world` to be `ping:somehost` because [ping:](#ping) does not use query values.
 
 5. The detail of status, the reason for failure, or the output of the executed script.
@@ -320,13 +320,13 @@ Please consider using the log rotation tool if you have a plan to use it for a l
 
 ### Alerting
 
-Ayd can kick a URI when a target status checks failure.
+Ayd can kick a URL when a target status checks failure.
 You may want to use [exec](#exec), [HTTP](#http), or plugin for alerting.
 (Even you can use ping, DNS, etc as alerting. but... it's useless in almost all cases)
 
 Ayd will kick alert at only the timing that incident caused, and it won't kick at the timing that continuing or resolved the incident.
 
-You can specify alerting URI like below.
+You can specify alerting URL like below.
 
 ``` shell
 $ ayd -a https://alert.example.com/alert https://target.example.com
@@ -336,18 +336,18 @@ In the above example, Ayd access `https://alert.example/alert` with the below qu
 
 |query name      |example                     |description                  |
 |----------------|----------------------------|-----------------------------|
-|`ayd_target`    |`https://target.example.com`|The alerting target URI      |
+|`ayd_target`    |`https://target.example.com`|The alerting target URL      |
 |`ayd_status`    |`FAILURE` or `UNKNOWN`      |The status of target checking|
 |`ayd_checked_at`|`2001-02-03T16:05:06+09:00` |The checked timestamp        |
 
 For plugin, pass those values as arguments to plugin.
-The 1st argument is the target URI of alert, and the 2nd argument is the target URI that failured, the 3rd is `FAILURE` or `UNKNOWN`, the 4th is timestamp.
+The 1st argument is the target URL of alert, and the 2nd argument is the target URL that failured, the 3rd is `FAILURE` or `UNKNOWN`, the 4th is timestamp.
 
 #### e-mail (SMTP)
 
 If you want to send an email via SMTP as an alert, you can use [ayd-mailto-alert](https://github.com/macrat/ayd-mailto-alert) plugin.
 
-![The screenshot of Ayd alert in email. You can see service status, target URI, and reason to failure. And there is button to open Status Page.](./assets/email-alert.jpg)
+![The screenshot of Ayd alert in email. You can see service status, target URL, and reason to failure. And there is button to open Status Page.](./assets/email-alert.jpg)
 
 This plugin can use like below.
 
@@ -364,7 +364,7 @@ Please see more information in [the readme of ayd-mailto-alert](https://github.c
 
 You can send an alert to Slack via [ayd-slack-alert](https://github.com/macrat/ayd-slack-alert) plugin.
 
-![The screenshot of Ayd alert in the Slack. You can see service status, target URI, and reason to failure. And there is button to open Status Page.](./assets/slack-alert.jpg)
+![The screenshot of Ayd alert in the Slack. You can see service status, target URL, and reason to failure. And there is button to open Status Page.](./assets/slack-alert.jpg)
 
 This plugin can use like below.
 

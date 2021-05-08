@@ -6,7 +6,7 @@ Usage:
 
 OPTIONS:
   -1	     Check status only once and exit. Exit with 0 if all check passed, otherwise exit with code 1.
-  -a TARGET  The alert URI that the same format as target URI.
+  -a TARGET  The alert URL that the same format as target URL.
   -o FILE    Path to log file. Log file is also use for restore status history. (default "./ayd.log")
   -p PORT    Listen port of status page. (default 9000)
 
@@ -17,7 +17,7 @@ INTERVALS:
 
 TARGETS:
   The target address for status checking.
-  Specify with URI format like "ping:example.com" or "https://example.com/foo/bar".
+  Specify with URL format like "ping:example.com" or "https://example.com/foo/bar".
 
   http, https:
    Send HTTP request, and check status code is 2xx or not.
@@ -46,7 +46,7 @@ TARGETS:
    e.g. exec:/path/to/script?something_variable=awesome-value#argument-for-script
 
   source:
-   Load a file, and test target URIs of each lines.
+   Load a file, and test target URLs of each lines.
    Lines in the file that starts with "#" will ignore as comments.
    e.g. source:/path/to/list.txt
 

@@ -13,14 +13,14 @@ import (
 	api "github.com/macrat/ayd/lib-ayd"
 )
 
-type invalidURIs []string
+type invalidURLs []string
 
-func (es invalidURIs) Error() string {
+func (es invalidURLs) Error() string {
 	var ss []string
 	for _, e := range es {
 		ss = append(ss, e)
 	}
-	return "Invalid URI: " + strings.Join(ss, ", ")
+	return "Invalid URL: " + strings.Join(ss, ", ")
 }
 
 type ignoreSet []string
@@ -95,7 +95,7 @@ func (p SourceProbe) load(path string, ignores ignoreSet) (map[string]Probe, err
 	defer f.Close()
 
 	probes := make(map[string]Probe)
-	var invalids invalidURIs
+	var invalids invalidURLs
 
 	scanner := &sourceScanner{Scanner: bufio.NewScanner(f)}
 	for scanner.Scan() {
@@ -112,7 +112,7 @@ func (p SourceProbe) load(path string, ignores ignoreSet) (map[string]Probe, err
 					for k, v := range ps {
 						probes[k] = v
 					}
-				} else if es, ok := err.(invalidURIs); ok {
+				} else if es, ok := err.(invalidURLs); ok {
 					invalids = append(invalids, es...)
 				} else {
 					invalids = append(invalids, scanner.Text)

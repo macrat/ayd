@@ -40,13 +40,13 @@ func TestSource(t *testing.T) {
 		}, ""},
 		{"source:./testdata/invalid-list.txt", map[string]api.Status{
 			"source:./testdata/invalid-list.txt": api.StatusUnknown,
-		}, "Invalid URI: ::invalid host::, no-such-scheme:hello world, source:./testdata/no-such-list.txt"},
+		}, "Invalid URL: ::invalid host::, no-such-scheme:hello world, source:./testdata/no-such-list.txt"},
 		{"source:testdata/invalid-list.txt", map[string]api.Status{
 			"source:testdata/invalid-list.txt": api.StatusUnknown,
-		}, "Invalid URI: ::invalid host::, no-such-scheme:hello world, source:./testdata/no-such-list.txt"},
+		}, "Invalid URL: ::invalid host::, no-such-scheme:hello world, source:./testdata/no-such-list.txt"},
 		{"source:./testdata/include-invalid-list.txt", map[string]api.Status{
 			"source:./testdata/include-invalid-list.txt": api.StatusUnknown,
-		}, "Invalid URI: ::invalid host::, no-such-scheme:hello world, source:./testdata/no-such-list.txt"},
+		}, "Invalid URL: ::invalid host::, no-such-scheme:hello world, source:./testdata/no-such-list.txt"},
 		{"source:./testdata/no-such-list.txt", map[string]api.Status{
 			"source:./testdata/no-such-list.txt": api.StatusUnknown,
 		}, `open \./testdata/no-such-list\.txt: (no such file or directory|The system cannot find the file specified\.)`},

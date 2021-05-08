@@ -66,7 +66,7 @@ func TestAlert(t *testing.T) {
 			}
 
 			if r.Records[0].Target.String() != "alert:"+tt.Target {
-				t.Errorf("unexpected target URI: %s", r.Records[0].Target)
+				t.Errorf("unexpected target URL: %s", r.Records[0].Target)
 			}
 
 			if r.Records[0].Status != api.StatusHealthy {

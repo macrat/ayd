@@ -26,7 +26,7 @@ var (
 	listenPort  = flag.Int("p", 9000, "Listen port of status page.")
 	storePath   = flag.String("o", "./ayd.log", "Path to log file. Log file is also use for restore status history.")
 	oneshot     = flag.Bool("1", false, "Check status only once and exit. Exit with 0 if all check passed, otherwise exit with code 1.")
-	alertURI    = flag.String("a", "", "The alert URI that the same format as target URI.")
+	alertURL    = flag.String("a", "", "The alert URL that the same format as target URL.")
 	showVersion = flag.Bool("v", false, "Show version and exit.")
 )
 
@@ -91,8 +91,8 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
 
-	if *alertURI != "" {
-		alert, err := NewAlert(*alertURI)
+	if *alertURL != "" {
+		alert, err := NewAlert(*alertURL)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "Invalid alert target:", err)
 			os.Exit(2)

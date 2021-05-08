@@ -10,8 +10,8 @@ import (
 )
 
 var (
-	ErrInvalidURI        = errors.New("invalid URI")
-	ErrMissingScheme     = errors.New("missing scheme in URI")
+	ErrInvalidURL        = errors.New("invalid URL")
+	ErrMissingScheme     = errors.New("missing scheme in URL")
 	ErrUnsupportedScheme = errors.New("unsupported scheme")
 )
 
@@ -52,7 +52,7 @@ func NewFromURL(u *url.URL) (Probe, error) {
 func New(rawURL string) (Probe, error) {
 	u, err := url.Parse(rawURL)
 	if err != nil {
-		return nil, ErrInvalidURI
+		return nil, ErrInvalidURL
 	}
 
 	if u.Scheme == "" {
