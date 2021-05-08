@@ -32,6 +32,8 @@ WORKDIR /var/log/ayd
 COPY --from=builder /output /usr/bin
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
+ENV AYD_PRIVILEGED yes
+
 EXPOSE 9000
 VOLUME /var/log/ayd
 
