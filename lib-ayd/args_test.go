@@ -58,17 +58,19 @@ func TestParseAlertPluginArgs(t *testing.T) {
 	tests := []struct {
 		Args      []string
 		Alert     string
-		Target    string
-		Status    string
 		CheckedAt string
+		Status    string
+		Target    string
+		Message   string
 		Error     string
 	}{
 		{
-			[]string{"./ayd-test-alert", "foo:bar", "bar:baz", "HEALTHY", "2001-02-03T16:05:06Z"},
+			[]string{"./ayd-test-alert", "foo:bar", "2001-02-03T16:05:06Z", "HEALTHY", "bar:baz", "foo bar"},
 			"foo:bar",
-			"bar:baz",
-			"HEALTHY",
 			"2001-02-03 16:05:06 +0000 UTC",
+			"HEALTHY",
+			"bar:baz",
+			"foo bar",
 			"",
 		},
 		{
@@ -77,18 +79,21 @@ func TestParseAlertPluginArgs(t *testing.T) {
 			"",
 			"",
 			"",
-			`invalid argument: should give just 4 argument`,
+			"",
+			`invalid argument: should give just 5 argument`,
 		},
 		{
-			[]string{"./ayd-test-alert", "foo:bar", "bar:baz", "HEALTHY", "2001-02-03T16:05:06Z", "extra argument"},
+			[]string{"./ayd-test-alert", "foo:bar", "2001-02-03T16:05:06Z", "HEALTHY", "bar:baz", "foo bar", "extra arg"},
 			"",
 			"",
 			"",
 			"",
-			`invalid argument: should give just 4 argument`,
+			"",
+			`invalid argument: should give just 5 argument`,
 		},
 		{
-			[]string{"./ayd-test-alert", "::invalid::", "bar:baz", "HEALTHY", "2001-02-03T16:05:06Z"},
+			[]string{"./ayd-test-alert", "::invalid::", "2001-02-03T16:05:06Z", "HEALTHY", "bar:baz", "foo bar"},
+			"",
 			"",
 			"",
 			"",
@@ -96,7 +101,8 @@ func TestParseAlertPluginArgs(t *testing.T) {
 			`invalid argument: invalid alert URL: parse "::invalid::": missing protocol scheme`,
 		},
 		{
-			[]string{"./ayd-test-alert", "foo:bar", "::invalid::", "HEALTHY", "2001-02-03T16:05:06Z"},
+			[]string{"./ayd-test-alert", "foo:bar", "2001-02-03T16:05:06Z", "HEALTHY", "::invalid::", "foo bar"},
+			"",
 			"",
 			"",
 			"",
@@ -104,7 +110,8 @@ func TestParseAlertPluginArgs(t *testing.T) {
 			`invalid argument: invalid target URL: parse "::invalid::": missing protocol scheme`,
 		},
 		{
-			[]string{"./ayd-test-alert", "foo:bar", "bar:baz", "HEALTHY", "this is not a time"},
+			[]string{"./ayd-test-alert", "foo:bar", "this is not a time", "HEALTHY", "bar:baz", "foo bar"},
+			"",
 			"",
 			"",
 			"",
@@ -129,16 +136,20 @@ func TestParseAlertPluginArgs(t *testing.T) {
 				t.Errorf("unexpected alert URL: %s", args.AlertURL)
 			}
 
-			if args.TargetURL.String() != tt.Target {
-				t.Errorf("unexpected target URL: %s", args.TargetURL)
+			if args.CheckedAt.String() != tt.CheckedAt {
+				t.Errorf("unexpected checked time: %s", args.CheckedAt)
 			}
 
 			if args.Status.String() != tt.Status {
 				t.Errorf("unexpected status: %s", args.Status)
 			}
 
-			if args.CheckedAt.String() != tt.CheckedAt {
-				t.Errorf("unexpected checked time: %s", args.CheckedAt)
+			if args.TargetURL.String() != tt.Target {
+				t.Errorf("unexpected target URL: %s", args.TargetURL)
+			}
+
+			if args.Message != tt.Message {
+				t.Errorf("unexpected message: %s", args.Message)
 			}
 		})
 	}

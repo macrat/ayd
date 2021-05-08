@@ -30,9 +30,9 @@ func TestAlert(t *testing.T) {
 		Message string
 		Error   string
 	}{
-		{"exec:ayd-foo-alert", "2001-02-03T16:05:06Z\tHEALTHY\t123.456\t\t\"   \"", ""},
-		{"exec:ayd-bar-probe", "arg \"\"\nenv ayd_target=dummy:failure ayd_status=FAILURE ayd_checked_at=2001-02-03T16:05:06Z", ""},
-		{"foo:", "\"foo: dummy:failure FAILURE 2001-02-03T16:05:06Z\"", ""},
+		{"exec:ayd-foo-alert", "2001-02-03T16:05:06Z\tHEALTHY\t123.456\t\t\"    \"", ""},
+		{"exec:ayd-bar-probe", "arg \"\"\nenv ayd_checked_at=2001-02-03T16:05:06Z ayd_status=FAILURE ayd_target=dummy:failure ayd_message=foobar", ""},
+		{"foo:", "\"foo: 2001-02-03T16:05:06Z FAILURE dummy:failure foobar\"", ""},
 		{"bar:", "", "unsupported scheme"},
 	}
 
@@ -55,6 +55,7 @@ func TestAlert(t *testing.T) {
 				Target:   &url.URL{Scheme: "dummy", Opaque: "failure"},
 				Status:   api.StatusFailure,
 				CausedAt: time.Date(2001, 2, 3, 16, 5, 6, 0, time.UTC),
+				Message:  "foobar",
 			}
 
 			r := &testutil.DummyReporter{}

@@ -42,15 +42,16 @@ func ParseProbePluginArgs() (ProbePluginArgs, error) {
 // AlertPluginArgs is arguments for alert plugin
 type AlertPluginArgs struct {
 	AlertURL  *url.URL
-	TargetURL *url.URL
-	Status    Status
 	CheckedAt time.Time
+	Status    Status
+	TargetURL *url.URL
+	Message   string
 }
 
 // ParseAlertPluginArgsFrom is parse arguments for alert plugin
 func ParseAlertPluginArgsFrom(args []string) (AlertPluginArgs, error) {
-	if len(args) != 5 {
-		return AlertPluginArgs{}, fmt.Errorf("%w: should give just 4 argument", ErrInvalidArgument)
+	if len(args) != 6 {
+		return AlertPluginArgs{}, fmt.Errorf("%w: should give just 5 argument", ErrInvalidArgument)
 	}
 
 	alertURL, err := url.Parse(args[1])
@@ -58,23 +59,24 @@ func ParseAlertPluginArgsFrom(args []string) (AlertPluginArgs, error) {
 		return AlertPluginArgs{}, fmt.Errorf("%w: invalid alert URL: %s", ErrInvalidArgument, err)
 	}
 
-	targetURL, err := url.Parse(args[2])
-	if err != nil {
-		return AlertPluginArgs{}, fmt.Errorf("%w: invalid target URL: %s", ErrInvalidArgument, err)
-	}
-
-	status := ParseStatus(strings.ToUpper(args[3]))
-
-	checkedAt, err := time.Parse(time.RFC3339, args[4])
+	checkedAt, err := time.Parse(time.RFC3339, args[2])
 	if err != nil {
 		return AlertPluginArgs{}, fmt.Errorf("%w: invalid checked time: %s", ErrInvalidArgument, err)
 	}
 
+	status := ParseStatus(strings.ToUpper(args[3]))
+
+	targetURL, err := url.Parse(args[4])
+	if err != nil {
+		return AlertPluginArgs{}, fmt.Errorf("%w: invalid target URL: %s", ErrInvalidArgument, err)
+	}
+
 	return AlertPluginArgs{
 		AlertURL:  alertURL,
-		TargetURL: targetURL,
-		Status:    status,
 		CheckedAt: checkedAt,
+		Status:    status,
+		TargetURL: targetURL,
+		Message:   args[5],
 	}, nil
 }
 

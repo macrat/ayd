@@ -334,14 +334,15 @@ $ ayd -a https://alert.example.com/alert https://target.example.com
 
 In the above example, Ayd access `https://alert.example/alert` with the below queries when `https://target.example.com` down.
 
-|query name      |example                     |description                  |
-|----------------|----------------------------|-----------------------------|
-|`ayd_target`    |`https://target.example.com`|The alerting target URL      |
-|`ayd_status`    |`FAILURE` or `UNKNOWN`      |The status of target checking|
-|`ayd_checked_at`|`2001-02-03T16:05:06+09:00` |The checked timestamp        |
+|query name      |example                     |description                          |
+|----------------|----------------------------|-------------------------------------|
+|`ayd_checked_at`|`2001-02-03T16:05:06+09:00` |The checked timestamp                |
+|`ayd_status`    |`FAILURE` or `UNKNOWN`      |The status of target checking        |
+|`ayd_target`    |`https://target.example.com`|The alerting target URL              |
+|`ayd_message`   |                            |The message of the record            |
 
 For plugin, pass those values as arguments to plugin.
-The 1st argument is the target URL of alert, and the 2nd argument is the target URL that failured, the 3rd is `FAILURE` or `UNKNOWN`, the 4th is timestamp.
+The 1st argument is the URL of alert, and 2nd or after arguments is the same as [log file](#log-file) order without latency (that is, timestamp in RFC3339 format, status, target URL, and message string).
 
 #### e-mail (SMTP)
 
