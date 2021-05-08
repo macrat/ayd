@@ -5,10 +5,12 @@ import (
 	"io"
 	"net/http"
 	"testing"
+
+	"github.com/macrat/ayd/testutil"
 )
 
 func TestJSONExporter(t *testing.T) {
-	srv := StartTestServer(t)
+	srv := testutil.StartTestServer(t)
 	defer srv.Close()
 
 	x := make(map[string]interface{})

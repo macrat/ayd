@@ -17,21 +17,28 @@ const (
 // Status is the status of target service
 type Status int8
 
+// ParseStatus is parse status string
+//
+// If passed unsupported status, it will returns StatusUnknown
+func ParseStatus(raw string) Status {
+	switch raw {
+	case "HEALTHY":
+		return StatusHealthy
+	case "FAILURE":
+		return StatusFailure
+	case "ABORTED":
+		return StatusAborted
+	default:
+		return StatusUnknown
+	}
+}
+
 // UnmarshalText is unmarshal text as status
 //
 // This function always returns nil.
 // This parses as StatusUnknown instead of returns error if unsupported status passed.
 func (s *Status) UnmarshalText(text []byte) error {
-	switch string(text) {
-	case "HEALTHY":
-		*s = StatusHealthy
-	case "FAILURE":
-		*s = StatusFailure
-	case "ABORTED":
-		*s = StatusAborted
-	default:
-		*s = StatusUnknown
-	}
+	*s = ParseStatus(string(text))
 	return nil
 }
 
