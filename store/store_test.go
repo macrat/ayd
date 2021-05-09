@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"os"
 	"regexp"
+	"runtime"
 	"strings"
 	"sync"
 	"testing"
@@ -119,6 +120,11 @@ func (b *Buffer) Line(n int) string {
 }
 
 func TestErrorLogging(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("can't do this test because file permission does not work on windows")
+		return
+	}
+
 	f, err := os.CreateTemp("", "ayd-test-*")
 	if err != nil {
 		t.Fatalf("failed to create log file: %s", err)
