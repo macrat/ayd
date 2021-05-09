@@ -8,6 +8,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -88,6 +89,35 @@ func TestProbeHistoryMap(t *testing.T) {
 	}
 }
 
+type Buffer struct {
+	sync.Mutex
+
+	buf *bytes.Buffer
+}
+
+func NewBuffer() *Buffer {
+	return &Buffer{
+		buf: &bytes.Buffer{},
+	}
+}
+
+func (b *Buffer) Write(p []byte) (n int, err error) {
+	b.Lock()
+	defer b.Unlock()
+	return b.buf.Write(p)
+}
+
+func (b *Buffer) String() string {
+	b.Lock()
+	defer b.Unlock()
+	return b.buf.String()
+}
+
+func (b *Buffer) Line(n int) string {
+	xs := strings.Split(strings.Trim(b.String(), "\r\n"), "\n")
+	return xs[(len(xs)+n)%len(xs)]
+}
+
 func TestErrorLogging(t *testing.T) {
 	f, err := os.CreateTemp("", "ayd-test-*")
 	if err != nil {
@@ -109,7 +139,7 @@ func TestErrorLogging(t *testing.T) {
 	if err != nil {
 		t.Errorf("failed to open store %s (with permission 600)", err)
 	}
-	buf := &bytes.Buffer{}
+	buf := NewBuffer()
 	s.Console = buf
 	defer s.Close()
 
@@ -123,8 +153,8 @@ func TestErrorLogging(t *testing.T) {
 
 	time.Sleep(10 * time.Millisecond)
 
-	if buf.String() != "2001-02-03T16:05:06Z\tHEALTHY\t42.000\tdummy:#logging-test\thello world\n" {
-		t.Errorf("unexpected log:\n%s", buf)
+	if buf.Line(0) != "2001-02-03T16:05:06Z\tHEALTHY\t42.000\tdummy:#logging-test\thello world" {
+		t.Errorf("unexpected log (line 0):\n%s", buf)
 	}
 
 	os.Chmod(f.Name(), 0000)
@@ -139,12 +169,14 @@ func TestErrorLogging(t *testing.T) {
 
 	time.Sleep(10 * time.Millisecond)
 
-	logs := strings.Split(buf.String(), "\n")
-	lastLog := logs[len(logs)-2]
-	if ok, err := regexp.MatchString("^[-+:TZ0-9]+\tFAILURE\t0.000\tayd:log\t[^\t]+$", lastLog); err != nil {
-		t.Errorf("failed to compare log: %s", err)
+	if buf.Line(-2) != "2001-02-03T16:05:07Z\tHEALTHY\t42.000\tdummy:#logging-test\tfoo bar" {
+		t.Errorf("unexpected log (line -2):\n%s", buf)
+	}
+
+	if ok, err := regexp.MatchString("^[-+:TZ0-9]+\tFAILURE\t0.000\tayd:log\t[^\t]+$", buf.Line(-1)); err != nil {
+		t.Errorf("failed to compare log (line -1): %s", err)
 	} else if !ok {
-		t.Errorf("unexpected log:\n%s", lastLog)
+		t.Errorf("unexpected log:\n%s", buf)
 	}
 }
 
