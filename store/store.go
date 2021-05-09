@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"time"
 
 	api "github.com/macrat/ayd/lib-ayd"
 )
@@ -88,6 +89,17 @@ func New(path string) (*Store, error) {
 	return store, nil
 }
 
+func (s *Store) handleError(err error) {
+	if err != nil {
+		s.Console.Write([]byte(api.Record{
+			CheckedAt: time.Now(),
+			Status:    api.StatusFailure,
+			Target:    &url.URL{Scheme: "ayd", Opaque: "log"},
+			Message:   err.Error(),
+		}.String() + "\n"))
+	}
+}
+
 func (s *Store) writer(ch <-chan api.Record) {
 	for r := range ch {
 		msg := []byte(r.String() + "\n")
@@ -97,10 +109,12 @@ func (s *Store) writer(ch <-chan api.Record) {
 		var f *os.File
 		f, s.lastError = os.OpenFile(s.Path, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
 		if s.lastError != nil {
+			s.handleError(s.lastError)
 			continue
 		}
 		_, s.lastError = f.Write(msg)
-		f.Close()
+		s.handleError(s.lastError)
+		s.handleError(f.Close())
 	}
 }
 

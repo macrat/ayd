@@ -1,10 +1,12 @@
 package store_test
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"net/url"
 	"os"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -83,6 +85,66 @@ func TestProbeHistoryMap(t *testing.T) {
 		t.Errorf("unexpected number of records: %d", len(hs.Records))
 	} else if hs.Records[len(hs.Records)-1].Message != "second" {
 		t.Errorf("unexpected message of latest record: %#v", hs.Records[len(hs.Records)-1])
+	}
+}
+
+func TestErrorLogging(t *testing.T) {
+	f, err := os.CreateTemp("", "ayd-test-*")
+	if err != nil {
+		t.Fatalf("failed to create log file: %s", err)
+	}
+	defer os.Remove(f.Name())
+	f.Close()
+
+	os.Chmod(f.Name(), 0000)
+
+	_, err = store.New(f.Name())
+	if err == nil {
+		t.Errorf("expected failed to open %s (with permission 000) but successed", f.Name())
+	}
+
+	os.Chmod(f.Name(), 0600)
+
+	s, err := store.New(f.Name())
+	if err != nil {
+		t.Errorf("failed to open store %s (with permission 600)", err)
+	}
+	buf := &bytes.Buffer{}
+	s.Console = buf
+	defer s.Close()
+
+	s.Report(api.Record{
+		CheckedAt: time.Date(2001, 2, 3, 16, 5, 6, 0, time.UTC),
+		Status:    api.StatusHealthy,
+		Latency:   42 * time.Millisecond,
+		Target:    &url.URL{Scheme: "dummy", Fragment: "logging-test"},
+		Message:   "hello world",
+	})
+
+	time.Sleep(10 * time.Millisecond)
+
+	if buf.String() != "2001-02-03T16:05:06Z\tHEALTHY\t42.000\tdummy:#logging-test\thello world\n" {
+		t.Errorf("unexpected log:\n%s", buf)
+	}
+
+	os.Chmod(f.Name(), 0000)
+
+	s.Report(api.Record{
+		CheckedAt: time.Date(2001, 2, 3, 16, 5, 7, 0, time.UTC),
+		Status:    api.StatusHealthy,
+		Latency:   42 * time.Millisecond,
+		Target:    &url.URL{Scheme: "dummy", Fragment: "logging-test"},
+		Message:   "foo bar",
+	})
+
+	time.Sleep(10 * time.Millisecond)
+
+	logs := strings.Split(buf.String(), "\n")
+	lastLog := logs[len(logs)-2]
+	if ok, err := regexp.MatchString("^[-+:TZ0-9]+\tFAILURE\t0.000\tayd:log\t[^\t]+$", lastLog); err != nil {
+		t.Errorf("failed to compare log: %s", err)
+	} else if !ok {
+		t.Errorf("unexpected log:\n%s", lastLog)
 	}
 }
 
