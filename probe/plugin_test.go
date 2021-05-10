@@ -66,7 +66,7 @@ func TestPluginProbe(t *testing.T) {
 		if rs[1].Target.String() != "ayd:probe:plugin:plug:invalid-record" {
 			t.Errorf("got a record of unexpected target: %s", rs[1].Target)
 		}
-		if rs[1].Status != api.StatusFailure {
+		if rs[1].Status != api.StatusUnknown {
 			t.Errorf("got unexpected status: %s", rs[1].Status)
 		}
 		if rs[1].Message != "invalid record: unexpected column count: \"this is invalid\"" {

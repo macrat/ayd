@@ -42,7 +42,7 @@ func (p PluginProbe) Target() *url.URL {
 	return p.target
 }
 
-func ExecutePlugin(ctx context.Context, r Reporter, target *url.URL, command string, args, env []string) {
+func ExecutePlugin(ctx context.Context, r Reporter, scope string, target *url.URL, command string, args, env []string) {
 	ctx, cancel := context.WithTimeout(ctx, 60*time.Minute)
 	defer cancel()
 
@@ -68,8 +68,8 @@ func ExecutePlugin(ctx context.Context, r Reporter, target *url.URL, command str
 
 		r.Report(api.Record{
 			CheckedAt: time.Now(),
-			Target:    &url.URL{Scheme: "ayd", Opaque: "probe:plugin:" + target.String()},
-			Status:    api.StatusFailure,
+			Target:    &url.URL{Scheme: "ayd", Opaque: scope + ":plugin:" + target.String()},
+			Status:    api.StatusUnknown,
 			Message:   fmt.Sprintf("invalid record: %s: %#v", err, text),
 			Latency:   latency,
 		})
@@ -92,5 +92,5 @@ func ExecutePlugin(ctx context.Context, r Reporter, target *url.URL, command str
 }
 
 func (p PluginProbe) Check(ctx context.Context, r Reporter) {
-	ExecutePlugin(ctx, r, p.target, p.command, []string{p.target.String()}, os.Environ())
+	ExecutePlugin(ctx, r, "probe", p.target, p.command, []string{p.target.String()}, os.Environ())
 }

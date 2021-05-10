@@ -33,7 +33,9 @@ type ReplaceReporter struct {
 }
 
 func (r ReplaceReporter) Report(rec api.Record) {
-	rec.Target = r.Target
+	if rec.Target.Scheme != "alert" && rec.Target.Scheme != "ayd" {
+		rec.Target = r.Target
+	}
 	r.Upstream.Report(rec)
 }
 
@@ -77,7 +79,7 @@ type AlertReporter struct {
 }
 
 func (r AlertReporter) Report(rec api.Record) {
-	if rec.Target.Scheme != "alert" {
+	if rec.Target.Scheme != "alert" && rec.Target.Scheme != "ayd" {
 		rec.Target = &url.URL{
 			Scheme: "alert",
 			Opaque: rec.Target.String(),
@@ -122,6 +124,7 @@ func (a PluginAlert) Trigger(ctx context.Context, incident *api.Incident, r prob
 	probe.ExecutePlugin(
 		ctx,
 		AlertReporter{r},
+		"alert",
 		a.target,
 		a.command,
 		[]string{
