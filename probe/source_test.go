@@ -120,3 +120,37 @@ func BenchmarkSource_load(b *testing.B) {
 		})
 	}
 }
+
+func BenchmarkSource(b *testing.B) {
+	for _, n := range []int{10, 25, 50, 75, 100, 250, 500, 750, 1000} {
+		b.Run(fmt.Sprint(n), func(b *testing.B) {
+			f, err := os.CreateTemp("", "ayd-test-*-list.txt")
+			if err != nil {
+				b.Fatalf("failed to create test file: %s", err)
+			}
+			defer f.Close()
+			defer os.Remove(f.Name())
+
+			for i := 0; i < n; i++ {
+				fmt.Fprintf(f, "dummy:healthy#%d\n", i)
+			}
+
+			target := &url.URL{Scheme: "source", Opaque: f.Name()}
+
+			p, err := probe.NewSourceProbe(target)
+			if err != nil {
+				b.Fatalf("failed to create probe: %s", err)
+			}
+
+			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
+			defer cancel()
+
+			r := &testutil.DummyReporter{}
+
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				p.Check(ctx, r)
+			}
+		})
+	}
+}
