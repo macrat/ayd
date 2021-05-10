@@ -16,6 +16,6 @@ func JSONExporter(s *store.Store) http.HandlerFunc {
 		enc := json.NewEncoder(w)
 		enc.SetIndent("", "  ")
 
-		enc.Encode(s.Freeze())
+		HandleError(s, "status.json", enc.Encode(s.Freeze()))
 	}
 }

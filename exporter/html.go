@@ -17,6 +17,6 @@ func HTMLExporter(s *store.Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 
-		tmpl.Execute(w, s.Freeze())
+		HandleError(s, "status.html", tmpl.Execute(w, s.Freeze()))
 	}
 }

@@ -3,7 +3,9 @@ package exporter
 import (
 	_ "embed"
 	"net/http"
+	"net/url"
 
+	api "github.com/macrat/ayd/lib-ayd"
 	"github.com/macrat/ayd/store"
 )
 
@@ -43,4 +45,14 @@ func New(s *store.Store) http.Handler {
 	})
 
 	return m
+}
+
+func HandleError(s *store.Store, scope string, err error) {
+	if err != nil {
+		s.Report(api.Record{
+			Target:  &url.URL{Scheme: "ayd", Opaque: "api:" + scope},
+			Status:  api.StatusFailure,
+			Message: err.Error(),
+		})
+	}
 }
