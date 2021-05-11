@@ -45,7 +45,7 @@ type ProbeAlert struct {
 
 func (a ProbeAlert) Trigger(ctx context.Context, incident *api.Incident, r probe.Reporter) {
 	qs := a.target.Query()
-	qs.Set("ayd_checked_at", incident.CausedAt.Format(time.RFC3339))
+	qs.Set("ayd_caused_at", incident.CausedAt.Format(time.RFC3339))
 	qs.Set("ayd_status", incident.Status.String())
 	qs.Set("ayd_target", incident.Target.String())
 	qs.Set("ayd_message", incident.Message)

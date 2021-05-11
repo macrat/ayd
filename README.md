@@ -324,7 +324,7 @@ Ayd can kick a URL when a target status checks failure.
 You may want to use [exec](#exec), [HTTP](#http), or plugin for alerting.
 (Even you can use ping, DNS, etc as alerting. but... it's useless in almost all cases)
 
-Ayd will kick alert at only the timing that incident caused, and it won't kick at the timing that continuing or resolved the incident.
+Ayd will kick alert at the timing that incident caused, resolved, or message changed.
 
 You can specify alerting URL like below.
 
@@ -334,12 +334,12 @@ $ ayd -a https://alert.example.com/alert https://target.example.com
 
 In the above example, Ayd access `https://alert.example/alert` with the below queries when `https://target.example.com` down.
 
-|query name      |example                     |description                          |
-|----------------|----------------------------|-------------------------------------|
-|`ayd_checked_at`|`2001-02-03T16:05:06+09:00` |The checked timestamp                |
-|`ayd_status`    |`FAILURE` or `UNKNOWN`      |The status of target checking        |
-|`ayd_target`    |`https://target.example.com`|The alerting target URL              |
-|`ayd_message`   |                            |The message of the record            |
+|query name     |example                        |description                            |
+|---------------|-------------------------------|---------------------------------------|
+|`ayd_caused_at`|`2001-02-03T16:05:06+09:00`    |The time of the first incident detected|
+|`ayd_status`   |`FAILURE`, `UNKNOWN`, `HEALTHY`|The status of target checking          |
+|`ayd_target`   |`https://target.example.com`   |The alerting target URL                |
+|`ayd_message`  |                               |The message of the incident            |
 
 For plugin, pass those values as arguments to plugin.
 The 1st argument is the URL of alert, and 2nd or after arguments is the same as [log file](#log-file) order without latency (that is, timestamp in RFC3339 format, status, target URL, and message string).

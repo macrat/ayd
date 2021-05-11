@@ -426,12 +426,12 @@ func TestStore_incident(t *testing.T) {
 	appendRecord("incident-test-2", "2-2", api.StatusHealthy)
 	assertIncidents(s.CurrentIncidents())
 	assertIncidents(s.IncidentHistory(), "dummy:#incident-test-1", "dummy:#incident-test-1", "dummy:#incident-test-2")
-	assertLastIncident("1-3")
+	assertLastIncident("2-1")
 
 	appendRecord("incident-test-2", "2-?", api.StatusAborted)
 	assertIncidents(s.CurrentIncidents())
 	assertIncidents(s.IncidentHistory(), "dummy:#incident-test-1", "dummy:#incident-test-1", "dummy:#incident-test-2")
-	assertLastIncident("1-3")
+	assertLastIncident("2-1")
 }
 
 func TestStore_incident_len_limit(t *testing.T) {

@@ -32,7 +32,7 @@ func TestAlert(t *testing.T) {
 		Error     string
 	}{
 		{"exec:ayd-foo-alert", "alert:exec:ayd-foo-alert", "2001-02-03T16:05:06Z\tHEALTHY\t123.456\t\t\"    \"", ""},
-		{"exec:ayd-bar-probe", "alert:exec:ayd-bar-probe", "arg \"\"\nenv ayd_checked_at=2001-02-03T16:05:06Z ayd_status=FAILURE ayd_target=dummy:failure ayd_message=foobar", ""},
+		{"exec:ayd-bar-probe", "alert:exec:ayd-bar-probe", "arg \"\"\nenv ayd_caused_at=2001-02-03T16:05:06Z ayd_status=FAILURE ayd_target=dummy:failure ayd_message=foobar", ""},
 		{"foo:", "alert:foo:", "\"foo: 2001-02-03T16:05:06Z FAILURE dummy:failure foobar\"", ""},
 		{"foo:hello-world", "alert:foo:hello-world", "\"foo:hello-world 2001-02-03T16:05:06Z FAILURE dummy:failure foobar\"", ""},
 		{"bar:", "", "", "unsupported scheme"},

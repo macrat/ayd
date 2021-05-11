@@ -180,6 +180,12 @@ func (s *Store) setIncidentIfNeed(r api.Record, needCallback bool) {
 		if len(s.incidentHistory) > INCIDENT_HISTORY_LEN {
 			s.incidentHistory = s.incidentHistory[1:]
 		}
+
+		if needCallback {
+			for _, cb := range s.OnIncident {
+				cb(cur)
+			}
+		}
 	}
 
 	if r.Status != api.StatusHealthy {
