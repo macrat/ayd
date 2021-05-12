@@ -88,6 +88,8 @@ The default method is GET.
 
 Ayd will Follow redirect maximum 10 times.
 
+HTTP will timeout in 10 minutes and report as failure.
+
 examples:
 - `http://example.com`
 - `https://example.com`
@@ -104,6 +106,8 @@ In Linux or MacOS, Ayd use non-privileged ICMP in default. So, you can use ping 
 But this way is not work on some platforms for instance docker container.
 Please set `yes` to `AYD_PRIVILEGED` environment variable to use privileged ICMP.
 
+Ping will timeout in 10 seconds and report as failure.
+
 examples:
 - `ping:example.com`
 - `ping:192.168.1.1`
@@ -113,6 +117,8 @@ examples:
 Connect to TCP and check the service listening or not.
 
 `tcp://` will select IPv4 or IPv6 automatically. You can use `tcp4://` or `tcp6://` to choose IP protocol version.
+
+TCP will timeout in 10 seconds and report as failure.
 
 examples:
 - `tcp://example.com:3309`
@@ -125,6 +131,8 @@ Resolve hostname via DNS and check the host exists or not.
 
 You can specify record type as a `type` query.
 Supported type is `A`, `AAAA`, `CNAME`, `MX`, `NS`, and `TXT`.
+
+DNS will timeout in 10 seconds and report as failure.
 
 examples:
 - `dns:example.com`
@@ -162,6 +170,8 @@ $ export something=foobar
 $ export hello=world
 $ /path/to/command
 ```
+
+Exec will timeout in 1 hour and report as failure.
 
 examples:
 - `exec:./check.exe`
@@ -239,6 +249,8 @@ Plugin receives target URL as the first argument of the command.
 For example, target URL `foobar:hello-world` is going to executed as `ayd-foobar-probe foobar:hello-world`.
 
 The output of the plugin will parsed the same way to [log file](#log-file).
+
+Plugin will timeout in 1 hour and report as failure.
 
 
 ### Specify check interval/schedule
