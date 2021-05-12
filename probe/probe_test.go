@@ -162,7 +162,7 @@ func AssertTimeout(t *testing.T, target string) {
 			t.Errorf("unexpected message: %s", records[0].Message)
 		}
 
-		if records[0].Status != api.StatusUnknown {
+		if records[0].Status != api.StatusFailure {
 			t.Errorf("unexpected status: %s", records[0].Status)
 		}
 	})

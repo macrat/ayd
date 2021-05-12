@@ -1,16 +1,19 @@
 package ayd
 
 const (
-	// StatusUnknown means UNKNOWN current status because failed to check the target status
+	// StatusUnknown means UNKNOWN current status because failed to check the target status.
+	// System administrator have to fix Ayd settings, or do something to target system when this status.
 	StatusUnknown Status = iota
 
-	// StatusHealthy means success to status check and the target is HEALTHY
+	// StatusHealthy means success to status check and the target is HEALTHY.
 	StatusHealthy
 
-	// StatusFailure means the target is in FAILURE, but status check is success
+	// StatusFailure means the target is in FAILURE, but status check is success.
+	// System administrator have to do something action to target system when this status.
 	StatusFailure
 
-	// StatusAborted means the status check ABORTED because stop Ayd server
+	// StatusAborted means the status check ABORTED because stop by system administrator or other system program like systemd.
+	// System administrator doesn't have to do something on this status.
 	StatusAborted
 )
 

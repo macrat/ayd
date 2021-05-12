@@ -80,7 +80,7 @@ func timeoutOr(ctx context.Context, r api.Record) api.Record {
 		r.Status = api.StatusAborted
 		r.Message = "probe aborted"
 	case context.DeadlineExceeded:
-		r.Status = api.StatusUnknown
+		r.Status = api.StatusFailure
 		r.Message = "probe timed out"
 	default:
 	}

@@ -19,7 +19,7 @@ func TestExecuteProbe(t *testing.T) {
 		{"exec:echo#%0Ahello%0Aworld%0A%0A", api.StatusHealthy, "hello\nworld", ""},
 		{"exec:./testdata/no-such-script", api.StatusUnknown, ``, `exec: ".\\\\testdata\\\\no-such-script": file does not exist`},
 		{"exec:no-such-command", api.StatusUnknown, ``, `exec: "no-such-command": executable file not found in %PATH%`},
-		{"exec:sleep#10", api.StatusUnknown, `probe timed out`, ""},
+		{"exec:sleep#10", api.StatusFailure, `probe timed out`, ""},
 		{"exec:echo#::status::unknown", api.StatusUnknown, ``, ""},
 		{"exec:echo#::status::failure", api.StatusFailure, ``, ""},
 	})

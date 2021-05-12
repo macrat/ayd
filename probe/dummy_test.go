@@ -91,7 +91,7 @@ func TestDummyProbe(t *testing.T) {
 			if r.Latency < 800*time.Millisecond || 1200*time.Millisecond < r.Latency {
 				t.Errorf("latency in record was out of expected range: %s", r.Latency)
 			}
-			if r.Status != api.StatusUnknown {
+			if r.Status != api.StatusFailure {
 				t.Errorf("unexpected status: %s", r.Status)
 			}
 			if r.Message != "probe timed out" {
