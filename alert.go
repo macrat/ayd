@@ -68,9 +68,6 @@ func (a ProbeAlert) Trigger(ctx context.Context, incident *api.Incident, r probe
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(ctx, TASK_TIMEOUT)
-	defer cancel()
-
 	p.Check(ctx, reporter)
 }
 
@@ -118,9 +115,6 @@ func NewPluginAlert(target string) (PluginAlert, error) {
 }
 
 func (a PluginAlert) Trigger(ctx context.Context, incident *api.Incident, r probe.Reporter) {
-	ctx, cancel := context.WithTimeout(ctx, TASK_TIMEOUT)
-	defer cancel()
-
 	probe.ExecutePlugin(
 		ctx,
 		AlertReporter{r},

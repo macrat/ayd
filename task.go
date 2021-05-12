@@ -16,7 +16,7 @@ type Task struct {
 	Probe    probe.Probe
 }
 
-func (t Task) MakeJob(baseContext context.Context, s *store.Store) cron.Job {
+func (t Task) MakeJob(ctx context.Context, s *store.Store) cron.Job {
 	return cron.FuncJob(func() {
 		defer func() {
 			if err := recover(); err != nil {
@@ -28,9 +28,6 @@ func (t Task) MakeJob(baseContext context.Context, s *store.Store) cron.Job {
 				})
 			}
 		}()
-
-		ctx, cancel := context.WithTimeout(baseContext, TASK_TIMEOUT)
-		defer cancel()
 
 		t.Probe.Check(ctx, s)
 	})

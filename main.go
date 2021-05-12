@@ -8,15 +8,10 @@ import (
 	"os"
 	"os/signal"
 	"text/template"
-	"time"
 
 	api "github.com/macrat/ayd/lib-ayd"
 	"github.com/macrat/ayd/probe"
 	"github.com/macrat/ayd/store"
-)
-
-const (
-	TASK_TIMEOUT = 1 * time.Hour
 )
 
 var (
