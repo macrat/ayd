@@ -6,35 +6,77 @@ import (
 	"net"
 	"net/url"
 	"os"
+	"sync"
 	"time"
 
 	api "github.com/macrat/ayd/lib-ayd"
 	"github.com/macrat/go-parallel-pinger"
 )
 
-var (
-	pingerV4 *pinger.Pinger = nil
-	pingerV6 *pinger.Pinger = nil
-)
+type pingerManagerStruct struct {
+	sync.Mutex
 
-func StartPinger(ctx context.Context) error {
-	pingerV4 = pinger.NewIPv4()
-	pingerV6 = pinger.NewIPv6()
+	v4   *pinger.Pinger
+	v6   *pinger.Pinger
+	stop func()
+}
+
+func (p *pingerManagerStruct) Start(ctx context.Context) error {
+	p.v4 = pinger.NewIPv4()
+	p.v6 = pinger.NewIPv6()
 
 	if os.Getenv("AYD_PRIVILEGED") != "" {
-		pingerV4.SetPrivileged(true)
-		pingerV6.SetPrivileged(true)
+		p.v4.SetPrivileged(true)
+		p.v6.SetPrivileged(true)
 	}
 
-	if err := pingerV4.Start(ctx); err != nil {
+	ctx, stop := context.WithCancel(ctx)
+	p.stop = stop
+
+	if err := p.v4.Start(ctx); err != nil {
+		p.v4 = nil
+		p.v6 = nil
+		stop()
 		return err
 	}
 
-	if err := pingerV6.Start(ctx); err != nil {
+	if err := p.v6.Start(ctx); err != nil {
+		p.v4 = nil
+		p.v6 = nil
+		stop()
 		return err
 	}
 
 	return nil
+}
+
+func (p *pingerManagerStruct) Stop() {
+	p.stop()
+}
+
+func (p *pingerManagerStruct) GetFor(target net.IP) (*pinger.Pinger, error) {
+	p.Lock()
+	defer p.Unlock()
+
+	if p.v4 == nil {
+		err := p.Start(context.Background()) // XXX: there is no way to stop pinger
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if target.To4() != nil {
+		return p.v4, nil
+	}
+	return p.v6, nil
+}
+
+var (
+	pingerManager = &pingerManagerStruct{}
+)
+
+func StartPinger(ctx context.Context) error {
+	return pingerManager.Start(ctx)
 }
 
 type PingProbe struct {
@@ -68,9 +110,15 @@ func (p PingProbe) Check(ctx context.Context, r Reporter) {
 		return
 	}
 
-	ping := pingerV4
-	if target.IP.To4() == nil {
-		ping = pingerV6
+	ping, err := pingerManager.GetFor(target.IP)
+	if err != nil {
+		r.Report(api.Record{
+			CheckedAt: time.Now(),
+			Target:    p.target,
+			Status:    api.StatusUnknown,
+			Message:   err.Error(),
+		})
+		return
 	}
 
 	startTime := time.Now()
