@@ -20,8 +20,8 @@
     },
     "StringFileInfo": {
         "Comments": "",
-        "CompanyName": "SHIDA Yuuma",
-        "FileDescription": "The easiest way to check service dead or alive",
+        "CompanyName": "",
+        "FileDescription": "Ayd? status check service",
         "FileVersion": "HEAD",
         "InternalName": "ayd",
         "LegalCopyright": "MIT License (c) 2021- SHIDA Yuuma",

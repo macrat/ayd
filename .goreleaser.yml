@@ -2,7 +2,7 @@ before:
   hooks:
     - 'go mod tidy'
     - 'go install github.com/josephspurrier/goversioninfo/cmd/goversioninfo@latest'
-    - 'goversioninfo -o="resource_windows.syso" -64 -ver-major="{{ .Major }}" -product-ver-major="{{ .Major }}" -ver-minor="{{ .Minor }}" -product-ver-minor="{{ .Minor }}" -ver-patch="{{ .Patch }}" -product-ver-patch="{{ .Patch }}" -product-version="{{ .Version }} ({{ .ShortCommit }})"'
+    - 'goversioninfo -o="resource_windows.syso" -64 -ver-major="{{ .Major }}" -product-ver-major="{{ .Major }}" -ver-minor="{{ .Minor }}" -product-ver-minor="{{ .Minor }}" -ver-patch="{{ .Patch }}" -product-ver-patch="{{ .Patch }}" -file-version="{{ .Version }} ({{ .ShortCommit }})" -product-version="{{ .Version }} ({{ .ShortCommit }})"'
 
 builds:
   - env:
