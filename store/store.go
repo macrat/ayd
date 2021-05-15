@@ -24,6 +24,40 @@ type ProbeHistory struct {
 	Records []*api.Record
 }
 
+type byLatestStatus []*ProbeHistory
+
+func (xs byLatestStatus) Len() int {
+	return len(xs)
+}
+
+func statusTier(p *ProbeHistory) int {
+	if len(p.Records) == 0 {
+		return 1
+	}
+	switch p.Records[len(p.Records)-1].Status {
+	case api.StatusFailure, api.StatusUnknown:
+		return 0
+	default:
+		return 1
+	}
+}
+
+func (xs byLatestStatus) Less(i, j int) bool {
+	iTier := statusTier(xs[i])
+	jTier := statusTier(xs[j])
+	if iTier < jTier {
+		return true
+	} else if iTier > jTier {
+		return false
+	}
+
+	return strings.Compare(xs[i].Target.String(), xs[j].Target.String()) < 0
+}
+
+func (xs byLatestStatus) Swap(i, j int) {
+	xs[i], xs[j] = xs[j], xs[i]
+}
+
 type ProbeHistoryMap map[string]*ProbeHistory
 
 func (hs ProbeHistoryMap) Append(r api.Record) {
@@ -127,16 +161,12 @@ func (s *Store) ProbeHistory() []*ProbeHistory {
 	s.historyLock.RLock()
 	defer s.historyLock.RUnlock()
 
-	var targets []string
-	for t := range s.probeHistory {
-		targets = append(targets, t)
-	}
-	sort.Strings(targets)
-
 	var result []*ProbeHistory
-	for _, t := range targets {
-		result = append(result, s.probeHistory[t])
+	for _, x := range s.probeHistory {
+		result = append(result, x)
 	}
+
+	sort.Sort(byLatestStatus(result))
 
 	return result
 }
