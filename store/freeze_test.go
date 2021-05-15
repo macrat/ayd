@@ -11,9 +11,9 @@ import (
 )
 
 func TestFreezeProbeHistory(t *testing.T) {
-	filledRecords := []*api.Record{}
+	filledRecords := []api.Record{}
 	for i := 0; i < PROBE_HISTORY_LEN-1; i++ {
-		filledRecords = append(filledRecords, &api.Record{
+		filledRecords = append(filledRecords, api.Record{
 			CheckedAt: time.Date(2021, time.January, 2, 15, 4, 5, 0, time.UTC),
 			Status:    api.StatusHealthy,
 			Target:    &url.URL{Scheme: "ping", Opaque: "local"},
@@ -24,7 +24,7 @@ func TestFreezeProbeHistory(t *testing.T) {
 
 	tests := []struct {
 		Name        string
-		Records     []*api.Record
+		Records     []api.Record
 		Updated     string
 		Status      string
 		FirstRecord freeze.Record
@@ -32,7 +32,7 @@ func TestFreezeProbeHistory(t *testing.T) {
 	}{
 		{
 			Name:        "no-data",
-			Records:     []*api.Record{},
+			Records:     []api.Record{},
 			Updated:     "",
 			Status:      "NO_DATA",
 			FirstRecord: freeze.Record{Status: "NO_DATA"},
@@ -40,7 +40,7 @@ func TestFreezeProbeHistory(t *testing.T) {
 		},
 		{
 			Name: "single-failure",
-			Records: []*api.Record{&api.Record{
+			Records: []api.Record{api.Record{
 				CheckedAt: time.Date(2021, time.January, 2, 20, 1, 2, 0, time.UTC),
 				Target:    &url.URL{Scheme: "ping", Opaque: "local"},
 				Status:    api.StatusFailure,
@@ -60,7 +60,7 @@ func TestFreezeProbeHistory(t *testing.T) {
 		},
 		{
 			Name: "filled-unknown",
-			Records: append(filledRecords, &api.Record{
+			Records: append(filledRecords, api.Record{
 				CheckedAt: time.Date(2021, time.January, 2, 17, 4, 3, 0, time.UTC),
 				Target:    &url.URL{Scheme: "ping", Opaque: "local"},
 				Status:    api.StatusUnknown,

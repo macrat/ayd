@@ -21,7 +21,7 @@ const (
 
 type ProbeHistory struct {
 	Target  *url.URL
-	Records []*api.Record
+	Records []api.Record
 }
 
 type byLatestStatus []*ProbeHistory
@@ -64,7 +64,7 @@ func (hs ProbeHistoryMap) Append(r api.Record) {
 	target := r.Target.String()
 
 	if h, ok := hs[target]; ok {
-		h.Records = append(h.Records, &r)
+		h.Records = append(h.Records, r)
 
 		for i := len(h.Records) - 1; i > 0 && h.Records[i-1].CheckedAt.After(h.Records[i].CheckedAt); i-- {
 			h.Records[i], h.Records[i-1] = h.Records[i-1], h.Records[i]
@@ -76,7 +76,7 @@ func (hs ProbeHistoryMap) Append(r api.Record) {
 	} else {
 		hs[target] = &ProbeHistory{
 			Target:  r.Target,
-			Records: []*api.Record{&r},
+			Records: []api.Record{r},
 		}
 	}
 }
