@@ -8,7 +8,7 @@ import (
 	"github.com/macrat/ayd/store"
 )
 
-func BenchmarkHTMLExporter(b *testing.B) {
+func BenchmarkStatusHTMLExporter(b *testing.B) {
 	s, err := store.New("./testdata/test.log")
 	if err != nil {
 		b.Fatalf("failed to open store: %s", err)
@@ -18,7 +18,7 @@ func BenchmarkHTMLExporter(b *testing.B) {
 		b.Fatalf("failed to restore store: %s", err)
 	}
 
-	h := exporter.HTMLExporter(s)
+	h := exporter.StatusHTMLExporter(s)
 
 	r := httptest.NewRequest("GET", "/status.html", nil)
 
@@ -28,7 +28,7 @@ func BenchmarkHTMLExporter(b *testing.B) {
 	}
 }
 
-func BenchmarkTextExporter(b *testing.B) {
+func BenchmarkStatusTextExporter(b *testing.B) {
 	s, err := store.New("./testdata/test.log")
 	if err != nil {
 		b.Fatalf("failed to open store: %s", err)
@@ -38,7 +38,7 @@ func BenchmarkTextExporter(b *testing.B) {
 		b.Fatalf("failed to restore store: %s", err)
 	}
 
-	h := exporter.TextExporter(s)
+	h := exporter.StatusTextExporter(s)
 
 	r := httptest.NewRequest("GET", "/status.txt", nil)
 
@@ -48,7 +48,7 @@ func BenchmarkTextExporter(b *testing.B) {
 	}
 }
 
-func BenchmarkJSONExporter(b *testing.B) {
+func BenchmarkStatusJSONExporter(b *testing.B) {
 	s, err := store.New("./testdata/test.log")
 	if err != nil {
 		b.Fatalf("failed to open store: %s", err)
@@ -58,7 +58,7 @@ func BenchmarkJSONExporter(b *testing.B) {
 		b.Fatalf("failed to restore store: %s", err)
 	}
 
-	h := exporter.JSONExporter(s)
+	h := exporter.StatusJSONExporter(s)
 
 	r := httptest.NewRequest("GET", "/status.json", nil)
 
@@ -78,7 +78,7 @@ func BenchmarkMetricsExporter(b *testing.B) {
 		b.Fatalf("failed to restore store: %s", err)
 	}
 
-	h := exporter.JSONExporter(s)
+	h := exporter.MetricsExporter(s)
 
 	r := httptest.NewRequest("GET", "/metrics", nil)
 

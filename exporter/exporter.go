@@ -28,9 +28,9 @@ func New(s *store.Store) http.Handler {
 		w.Write(faviconSvg)
 	})
 
-	m.HandleFunc("/status.txt", TextExporter(s))
-	m.HandleFunc("/status.html", HTMLExporter(s))
-	m.HandleFunc("/status.json", JSONExporter(s))
+	m.HandleFunc("/status.txt", StatusTextExporter(s))
+	m.HandleFunc("/status.html", StatusHTMLExporter(s))
+	m.HandleFunc("/status.json", StatusJSONExporter(s))
 
 	m.HandleFunc("/metrics", MetricsExporter(s))
 	m.HandleFunc("/healthz", HealthzExporter(s))
