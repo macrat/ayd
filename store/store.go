@@ -16,7 +16,7 @@ import (
 const (
 	PROBE_HISTORY_LEN    = 40
 	INCIDENT_HISTORY_LEN = 10
-	LOG_RESTORE_BYTES    = 1024 * 1024
+	LOG_RESTORE_BYTES    = 100 * 1024 * 1024
 )
 
 type ProbeHistory struct {
