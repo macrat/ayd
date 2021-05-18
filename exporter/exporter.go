@@ -32,6 +32,8 @@ func New(s *store.Store) http.Handler {
 	m.HandleFunc("/status.html", StatusHTMLExporter(s))
 	m.HandleFunc("/status.json", StatusJSONExporter(s))
 
+	m.HandleFunc("/log.tsv", LogTSVExporter(s))
+
 	m.HandleFunc("/metrics", MetricsExporter(s))
 	m.HandleFunc("/healthz", HealthzExporter(s))
 
