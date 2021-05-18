@@ -13,7 +13,6 @@ import (
 
 func RunServer(ctx context.Context, s *store.Store, tasks []Task) (exitCode int) {
 	listen := fmt.Sprintf("0.0.0.0:%d", *listenPort)
-	fmt.Fprintf(s.Console, "starts Ayd on http://%s\n", listen)
 
 	scheduler := cron.New()
 
@@ -21,6 +20,8 @@ func RunServer(ctx context.Context, s *store.Store, tasks []Task) (exitCode int)
 		fmt.Fprintf(os.Stderr, "failed to read log file: %s\n", err)
 		return 1
 	}
+
+	fmt.Fprintf(s.Console, "starts Ayd on http://%s\n", listen)
 
 	for _, t := range tasks {
 		fmt.Fprintf(s.Console, "%s\t%s\n", t.Schedule, t.Probe.Target())

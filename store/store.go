@@ -2,6 +2,7 @@ package store
 
 import (
 	"bufio"
+	"fmt"
 	"io"
 	"net/url"
 	"os"
@@ -254,7 +255,9 @@ func (s *Store) Restore() error {
 		return err
 	}
 	defer f.Close()
-	f.Seek(-LOG_RESTORE_BYTES, os.SEEK_END)
+	if ret, _ := f.Seek(-LOG_RESTORE_BYTES, os.SEEK_END); ret != 0 {
+		fmt.Fprint(os.Stderr, "WARNING: read only last 100MB from log file because it is too large\n\n")
+	}
 
 	s.probeHistory = make(ProbeHistoryMap)
 
