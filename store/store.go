@@ -17,7 +17,10 @@ import (
 const (
 	PROBE_HISTORY_LEN    = 40
 	INCIDENT_HISTORY_LEN = 10
-	LOG_RESTORE_BYTES    = 100 * 1024 * 1024
+)
+
+var (
+	LogRestoreBytes int64 = 100 * 1024 * 1024
 )
 
 type ProbeHistory struct {
@@ -255,7 +258,7 @@ func (s *Store) Restore() error {
 		return err
 	}
 	defer f.Close()
-	if ret, _ := f.Seek(-LOG_RESTORE_BYTES, os.SEEK_END); ret != 0 {
+	if ret, _ := f.Seek(-LogRestoreBytes, os.SEEK_END); ret != 0 {
 		fmt.Fprint(os.Stderr, "WARNING: read only last 100MB from log file because it is too large\n\n")
 	}
 

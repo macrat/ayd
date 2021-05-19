@@ -186,7 +186,7 @@ func TestErrorLogging(t *testing.T) {
 	}
 }
 
-func TestStore_restore(t *testing.T) {
+func TestStore_Restore(t *testing.T) {
 	f, err := os.CreateTemp("", "ayd-test-*")
 	if err != nil {
 		t.Fatalf("failed to create log file: %s", err)
@@ -282,6 +282,50 @@ func TestStore_restore(t *testing.T) {
 				t.Errorf("%d %d: unexpected record", i, j)
 			}
 		}
+	}
+}
+
+func TestStore_Restore_limitBorder(t *testing.T) {
+	f, err := os.CreateTemp("", "ayd-test-*")
+	if err != nil {
+		t.Fatalf("failed to create log file: %s", err)
+	}
+	defer os.Remove(f.Name())
+	defer f.Close()
+
+	rawRecord := append(
+		[]byte("2001-02-03T01:02:03Z\tHEALTHY\t0.123\tdummy:healthy\tshould be ignore because this is on the border\n"),
+		[]byte("2001-02-03T02:03:04Z\tHEALTHY\t0.123\tdummy:healthy\tfirst record\n")...,
+	)
+	f.Write(rawRecord)
+
+	f.Write(bytes.Repeat([]byte("X"), 1000-len(rawRecord)+1)) // padding for drop first line
+	store.LogRestoreBytes = 1000
+
+	f.Sync()
+
+	s, err := store.New(f.Name())
+	if err != nil {
+		t.Fatalf("failed to create store: %s", err)
+	}
+	s.Console = io.Discard
+	defer s.Close()
+
+	if err := s.Restore(); err != nil {
+		t.Fatalf("failed to restore log: %s", err)
+	}
+
+	hs := s.ProbeHistory()
+	if len(hs) != 1 {
+		t.Fatalf("unexpected number of targets: %d", len(hs))
+	}
+
+	if len(hs[0].Records) != 1 {
+		t.Fatalf("unexpected number of records: %d\n%#v", len(hs[0].Records), hs[0].Records)
+	}
+
+	if hs[0].Records[0].Message != "first record" {
+		t.Fatalf("unexpected first record's message: %s", hs[0].Records[0].Message)
 	}
 }
 
