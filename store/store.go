@@ -101,6 +101,7 @@ type Store struct {
 	IncidentCount int
 
 	writeCh   chan<- api.Record
+	errorLock sync.RWMutex
 	lastError error
 }
 
@@ -150,15 +151,20 @@ func (s *Store) writer(ch <-chan api.Record) {
 			continue
 		}
 
+		s.errorLock.Lock()
+
 		var f *os.File
 		f, s.lastError = os.OpenFile(s.Path, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
 		if s.lastError != nil {
 			s.handleError(s.lastError)
+			s.errorLock.Unlock()
 			continue
 		}
 		_, s.lastError = f.Write(msg)
 		s.handleError(s.lastError)
 		s.handleError(f.Close())
+
+		s.errorLock.Unlock()
 	}
 }
 
@@ -302,5 +308,7 @@ func (s *Store) AddTarget(target *url.URL) {
 }
 
 func (s *Store) Err() error {
+	s.errorLock.RLock()
+	defer s.errorLock.RUnlock()
 	return s.lastError
 }
