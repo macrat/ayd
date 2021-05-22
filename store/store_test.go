@@ -119,7 +119,7 @@ func (b *Buffer) Line(n int) string {
 	return xs[(len(xs)+n)%len(xs)]
 }
 
-func TestErrorLogging(t *testing.T) {
+func TestStore_errorLogging(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("can't do this test because file permission does not work on windows")
 		return
@@ -163,6 +163,10 @@ func TestErrorLogging(t *testing.T) {
 		t.Errorf("unexpected log (line 0):\n%s", buf)
 	}
 
+	if s.Err() != nil {
+		t.Errorf("unexpected last error value: %s", s.Err())
+	}
+
 	os.Chmod(f.Name(), 0000)
 
 	s.Report(api.Record{
@@ -183,6 +187,10 @@ func TestErrorLogging(t *testing.T) {
 		t.Errorf("failed to compare log (line -1): %s", err)
 	} else if !ok {
 		t.Errorf("unexpected log:\n%s", buf)
+	}
+
+	if s.Err() == nil {
+		t.Errorf("expected record last err but not recorded")
 	}
 }
 
