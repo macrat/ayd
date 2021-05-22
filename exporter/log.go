@@ -129,45 +129,54 @@ func NewLogScanner(s *store.Store, since, until time.Time) (LogScanner, error) {
 	return NewLogReader(s.Path, since, until)
 }
 
+func newLogScannerForExporter(s *store.Store, w http.ResponseWriter, r *http.Request) (scanner LogScanner, ok bool) {
+	until := time.Now()
+	since := until.Add(-7 * 14 * time.Hour)
+
+	var err error
+
+	qs := r.URL.Query()
+	if q := qs.Get("since"); q != "" {
+		since, err = time.Parse(time.RFC3339, q)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte("invalid `since` format\n"))
+			HandleError(s, "log.tsv", fmt.Errorf("invalid since format: %w", err))
+			return nil, false
+		}
+	}
+	if q := qs.Get("until"); q != "" {
+		until, err = time.Parse(time.RFC3339, q)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte("invalid `until` format\n"))
+			HandleError(s, "log.tsv", fmt.Errorf("invalid until format: %w", err))
+			return nil, false
+		}
+	}
+
+	scanner, err = NewLogScanner(s, since, until)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("internal server error\n"))
+		HandleError(s, "log.tsv", fmt.Errorf("failed to open log: %w", err))
+		return nil, false
+	}
+
+	return scanner, true
+}
+
 func LogTSVExporter(s *store.Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/tab-separated-values; charset=UTF-8")
 
-		until := time.Now()
-		since := until.Add(-7 * 14 * time.Hour)
-
-		var err error
-
-		qs := r.URL.Query()
-		if q := qs.Get("since"); q != "" {
-			since, err = time.Parse(time.RFC3339, q)
-			if err != nil {
-				w.WriteHeader(http.StatusInternalServerError)
-				w.Write([]byte("invalid `since` format\n"))
-				HandleError(s, "log.tsv", fmt.Errorf("invalid since format: %w", err))
-				return
-			}
-		}
-		if q := qs.Get("until"); q != "" {
-			until, err = time.Parse(time.RFC3339, q)
-			if err != nil {
-				w.WriteHeader(http.StatusInternalServerError)
-				w.Write([]byte("invalid `until` format\n"))
-				HandleError(s, "log.tsv", fmt.Errorf("invalid until format: %w", err))
-				return
-			}
-		}
-
-		reader, err := NewLogScanner(s, since, until)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte("internal server error\n"))
-			HandleError(s, "log.tsv", fmt.Errorf("failed to open log: %w", err))
+		scanner, ok := newLogScannerForExporter(s, w, r)
+		if !ok {
 			return
 		}
 
-		for reader.Scan() {
-			w.Write(reader.Bytes())
+		for scanner.Scan() {
+			w.Write(scanner.Bytes())
 		}
 	}
 }
