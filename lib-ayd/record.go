@@ -102,3 +102,14 @@ func (r Record) String() string {
 		escapeMessage(r.Message),
 	}, "\t")
 }
+
+// UnmarshalText is unmarshal from text
+func (r *Record) UnmarshalText(text []byte) (err error) {
+	*r, err = ParseRecord(string(text))
+	return
+}
+
+// MarshalText is marshal to text
+func (r Record) MarshalText() (text []byte, err error) {
+	return []byte(r.String()), nil
+}
