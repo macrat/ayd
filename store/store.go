@@ -100,9 +100,10 @@ type Store struct {
 	OnIncident    []IncidentHandler
 	IncidentCount int
 
-	writeCh   chan<- api.Record
-	errorLock sync.RWMutex
-	lastError error
+	writeCh       chan<- api.Record
+	writerStopped chan struct{}
+	errorLock     sync.RWMutex
+	lastError     error
 }
 
 func New(path string) (*Store, error) {
@@ -114,6 +115,7 @@ func New(path string) (*Store, error) {
 		probeHistory:     make(ProbeHistoryMap),
 		currentIncidents: make(map[string]*api.Incident),
 		writeCh:          ch,
+		writerStopped:    make(chan struct{}),
 	}
 
 	if store.Path != "" {
@@ -125,7 +127,7 @@ func New(path string) (*Store, error) {
 		}
 	}
 
-	go store.writer(ch)
+	go store.writer(ch, store.writerStopped)
 
 	return store, nil
 }
@@ -141,7 +143,7 @@ func (s *Store) handleError(err error) {
 	}
 }
 
-func (s *Store) writer(ch <-chan api.Record) {
+func (s *Store) writer(ch <-chan api.Record, stopped chan struct{}) {
 	for r := range ch {
 		msg := []byte(r.String() + "\n")
 
@@ -166,10 +168,13 @@ func (s *Store) writer(ch <-chan api.Record) {
 
 		s.errorLock.Unlock()
 	}
+
+	close(stopped)
 }
 
 func (s *Store) Close() error {
 	close(s.writeCh)
+	<-s.writerStopped
 	return nil
 }
 

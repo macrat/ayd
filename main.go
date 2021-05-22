@@ -53,13 +53,13 @@ func SetupProbe(ctx context.Context, tasks []Task) {
 	}
 }
 
-func main() {
+func RunAyd() int {
 	flag.Usage = Usage
 	flag.Parse()
 
 	if *showVersion {
 		fmt.Printf("Ayd? version %s (%s)\n", version, commit)
-		os.Exit(0)
+		return 0
 	}
 
 	tasks, errors := ParseArgs(flag.Args())
@@ -69,11 +69,11 @@ func main() {
 			fmt.Fprintln(os.Stderr, "", err)
 		}
 		fmt.Fprintf(os.Stderr, "\nPlease see `%s -h` for more information.\n", os.Args[0])
-		os.Exit(2)
+		return 2
 	}
 	if len(tasks) == 0 {
 		Usage()
-		os.Exit(0)
+		return 0
 	}
 
 	if *storePath == "-" {
@@ -82,7 +82,7 @@ func main() {
 	s, err := store.New(*storePath)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to open log file: %s\n", err)
-		os.Exit(1)
+		return 1
 	}
 	defer s.Close()
 
@@ -93,7 +93,7 @@ func main() {
 		alert, err := NewAlert(*alertURL)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "Invalid alert target:", err)
-			os.Exit(2)
+			return 2
 		}
 		s.OnIncident = append(s.OnIncident, func(i *api.Incident) {
 			go alert.Trigger(ctx, i, s)
@@ -103,8 +103,12 @@ func main() {
 	SetupProbe(ctx, tasks)
 
 	if *oneshot {
-		os.Exit(RunOneshot(ctx, s, tasks))
+		return RunOneshot(ctx, s, tasks)
 	} else {
-		os.Exit(RunServer(ctx, s, tasks))
+		return RunServer(ctx, s, tasks)
 	}
+}
+
+func main() {
+	os.Exit(RunAyd())
 }
