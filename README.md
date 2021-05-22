@@ -332,6 +332,9 @@ There is no feature to log rotate.
 Please consider using the log rotation tool if you have a plan to use it for a long time.
 (Ayd can handle the huge log, but it is not easy to investigate the huge log when trouble)
 
+Please use `-o -` option for disable writing log file if you don't use log file.
+This is not recommended for production use because Ayd can't restore last status when restore. But, this is may useful for [use Ayd as a parts of script file](#one-shot-mode).
+
 
 ### Alerting
 
