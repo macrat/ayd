@@ -90,3 +90,28 @@ func TestAlignCenter(t *testing.T) {
 		})
 	}
 }
+
+func TestFormatLatency(t *testing.T) {
+	f := templateFuncs["format_latency"].(func(float64) string)
+
+	tests := []struct {
+		Input  float64
+		Output string
+	}{
+		{0.000, "0s"},
+		{0.123, "123µs"},
+		{1000.0, "1s"},
+		{60 * 1000.0, "1m0s"},
+		{42 * 60 * 60 * 1000.0, "42h0m0s"},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(fmt.Sprintf("%f", tt.Input), func(t *testing.T) {
+			result := f(tt.Input)
+			if tt.Output != result {
+				t.Errorf("expected %#v\n but got %#v", tt.Output, result)
+			}
+		})
+	}
+}

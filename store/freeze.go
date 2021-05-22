@@ -17,11 +17,10 @@ func freezeProbeHistory(h *ProbeHistory) freeze.ProbeHistory {
 	}
 	for i, x := range h.Records {
 		hs[offset+i] = freeze.Record{
-			CheckedAt:  x.CheckedAt.Format(time.RFC3339),
-			Status:     x.Status.String(),
-			Message:    x.Message,
-			Latency:    float64(x.Latency.Microseconds()) / 1000,
-			LatencyStr: x.Latency.String(),
+			CheckedAt: x.CheckedAt.Format(time.RFC3339),
+			Status:    x.Status.String(),
+			Message:   x.Message,
+			Latency:   float64(x.Latency.Microseconds()) / 1000,
 		}
 	}
 

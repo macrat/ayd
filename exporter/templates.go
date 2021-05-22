@@ -2,6 +2,7 @@ package exporter
 
 import (
 	"strings"
+	"time"
 
 	"github.com/macrat/ayd/store/freeze"
 )
@@ -31,6 +32,9 @@ var (
 				return s
 			}
 			return strings.Repeat(" ", (width-len(s))/2) + s
+		},
+		"format_latency": func(latency float64) string {
+			return time.Duration(latency * float64(time.Millisecond)).String()
 		},
 	}
 )

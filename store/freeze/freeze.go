@@ -1,11 +1,10 @@
 package freeze
 
 type Record struct {
-	CheckedAt  string  `json:"checked_at,omitempty"`
-	Status     string  `json:"status"`
-	Message    string  `json:"message"`
-	Latency    float64 `json:"latency"`
-	LatencyStr string  `json:"-"`
+	CheckedAt string  `json:"checked_at,omitempty"`
+	Status    string  `json:"status"`
+	Message   string  `json:"message"`
+	Latency   float64 `json:"latency"`
 }
 
 type ProbeHistory struct {
