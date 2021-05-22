@@ -495,6 +495,37 @@ func TestStore_incident_len_limit(t *testing.T) {
 	}
 }
 
+func TestStore_Path_empty(t *testing.T) {
+	t.Parallel()
+
+	s1, err := store.New("")
+	if err != nil {
+		t.Fatalf("failed to create store")
+	}
+	defer s1.Close()
+
+	s1.Report(api.Record{
+		Target:  &url.URL{Scheme: "dummy", Fragment: "empty-path"},
+		Message: "hello world",
+		Status:  api.StatusHealthy,
+	})
+	if len(s1.ProbeHistory()) != 1 {
+		t.Errorf("unexpected number of probe history: %d", len(s1.ProbeHistory()))
+	}
+
+	time.Sleep(10 * time.Millisecond) // waiting for writer
+
+	s2, err := store.New("")
+	if err != nil {
+		t.Fatalf("failed to create store")
+	}
+	defer s2.Close()
+
+	if len(s2.ProbeHistory()) != 0 {
+		t.Errorf("unexpected number of probe history: %d", len(s2.ProbeHistory()))
+	}
+}
+
 func BenchmarkStore_Append(b *testing.B) {
 	for _, status := range []api.Status{api.StatusHealthy, api.StatusFailure} {
 		b.Run(status.String(), func(b *testing.B) {

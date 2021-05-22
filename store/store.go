@@ -115,11 +115,13 @@ func New(path string) (*Store, error) {
 		writeCh:          ch,
 	}
 
-	if f, err := os.OpenFile(store.Path, os.O_WRONLY|os.O_APPEND|os.O_CREATE|os.O_SYNC, 0644); err != nil {
-		close(ch)
-		return nil, err
-	} else {
-		f.Close()
+	if store.Path != "" {
+		if f, err := os.OpenFile(store.Path, os.O_WRONLY|os.O_APPEND|os.O_CREATE|os.O_SYNC, 0644); err != nil {
+			close(ch)
+			return nil, err
+		} else {
+			f.Close()
+		}
 	}
 
 	go store.writer(ch)
@@ -143,6 +145,10 @@ func (s *Store) writer(ch <-chan api.Record) {
 		msg := []byte(r.String() + "\n")
 
 		s.Console.Write(msg)
+
+		if s.Path == "" {
+			continue
+		}
 
 		var f *os.File
 		f, s.lastError = os.OpenFile(s.Path, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
@@ -250,6 +256,10 @@ func (s *Store) Report(r api.Record) {
 }
 
 func (s *Store) Restore() error {
+	if s.Path == "" {
+		return nil
+	}
+
 	s.historyLock.Lock()
 	defer s.historyLock.Unlock()
 

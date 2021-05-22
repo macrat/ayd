@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"sort"
 	"time"
 
 	api "github.com/macrat/ayd/lib-ayd"
@@ -64,6 +65,70 @@ func (r *LogReader) Record() api.Record {
 	return r.rec
 }
 
+type LogGenerator struct {
+	records []api.Record
+	index   int
+}
+
+func NewLogGenerator(s *store.Store, since, until time.Time) *LogGenerator {
+	g := &LogGenerator{index: -1}
+	for _, xs := range s.ProbeHistory() {
+		for _, x := range xs.Records {
+			if !x.CheckedAt.Before(since) && x.CheckedAt.Before(until) {
+				g.records = append(g.records, x)
+			}
+		}
+	}
+	sort.Sort(g)
+	return g
+}
+
+func (g LogGenerator) Len() int {
+	return len(g.records)
+}
+
+func (g LogGenerator) Less(i, j int) bool {
+	return g.records[i].CheckedAt.Before(g.records[j].CheckedAt)
+}
+
+func (g LogGenerator) Swap(i, j int) {
+	g.records[i], g.records[j] = g.records[j], g.records[i]
+}
+
+func (g *LogGenerator) Close() error {
+	return nil
+}
+
+func (g *LogGenerator) Scan() bool {
+	if g.index+1 >= len(g.records) {
+		return false
+	}
+	g.index++
+	return true
+}
+
+func (g *LogGenerator) Bytes() []byte {
+	return []byte(g.records[g.index].String() + "\n")
+}
+
+func (g *LogGenerator) Record() api.Record {
+	return g.records[g.index]
+}
+
+type LogScanner interface {
+	Close() error
+	Scan() bool
+	Bytes() []byte
+	Record() api.Record
+}
+
+func NewLogScanner(s *store.Store, since, until time.Time) (LogScanner, error) {
+	if s.Path == "" {
+		return NewLogGenerator(s, since, until), nil
+	}
+	return NewLogReader(s.Path, since, until)
+}
+
 func LogTSVExporter(s *store.Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/tab-separated-values; charset=UTF-8")
@@ -93,7 +158,7 @@ func LogTSVExporter(s *store.Store) http.HandlerFunc {
 			}
 		}
 
-		reader, err := NewLogReader(s.Path, since, until)
+		reader, err := NewLogScanner(s, since, until)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte("internal server error\n"))

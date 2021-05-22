@@ -19,7 +19,7 @@ var (
 	commit  = "UNKNOWN"
 
 	listenPort  = flag.Int("p", 9000, "Listen port of status page.")
-	storePath   = flag.String("o", "./ayd.log", "Path to log file. Log file is also use for restore status history.")
+	storePath   = flag.String("o", "./ayd.log", "Path to log file. Log file is also use for restore status history. Ayd won't create log file if set \"-\" or empty.")
 	oneshot     = flag.Bool("1", false, "Check status only once and exit. Exit with 0 if all check passed, otherwise exit with code 1.")
 	alertURL    = flag.String("a", "", "The alert URL that the same format as target URL.")
 	showVersion = flag.Bool("v", false, "Show version and exit.")
@@ -76,6 +76,9 @@ func main() {
 		os.Exit(0)
 	}
 
+	if *storePath == "-" {
+		*storePath = ""
+	}
 	s, err := store.New(*storePath)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to open log file: %s\n", err)

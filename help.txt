@@ -7,7 +7,7 @@ Usage:
 OPTIONS:
   -1	     Check status only once and exit. Exit with 0 if all check passed, otherwise exit with code 1.
   -a TARGET  The alert URL that the same format as target URL.
-  -o FILE    Path to log file. Log file is also use for restore status history. (default "./ayd.log")
+  -o FILE    Path to log file. Log file is also use for restore status history. Ayd won't create log file if set "-" or empty. (default "./ayd.log")
   -p PORT    Listen port of status page. (default 9000)
 
 INTERVALS:
