@@ -18,10 +18,13 @@ Easiest status monitoring service to check something service is dead or alive.
   * [DNS resolve](#dns)
   * [execute external command (or script file)](#exec)
   * [plugin](#plugin)
+
 - [view status page in browser, console, or program.](#status-page-and-endpoints)
+
 - [kick alert if target failure.](#alerting)
 
 ### Good at
+
 - Make a status page for temporary usage.
 
   You can start it via one command! And, stop via just Ctrl-C!
@@ -31,6 +34,7 @@ Easiest status monitoring service to check something service is dead or alive.
   Single binary server, single log file, there is no database!
 
 ### Not good at
+
 - Complex customization, extension.
 
   There is a few extension way, but extensibility is not the goal of this project.
@@ -46,7 +50,7 @@ Easiest status monitoring service to check something service is dead or alive.
 
 2. Extract downloaded package and put to somewhere that registered to PATH.
 
-3. Run the server.
+3. Run the server with [target URLs](#target-url) (and [schedule](#scheduling) if need) as arguments.
 
 ``` shell
 $ ayd https://your-service.example.com ping:another-host.example.com
@@ -56,10 +60,19 @@ $ ayd https://your-service.example.com ping:another-host.example.com
 
 - HTML page for browser: [http://localhost:9000/status.html](http://localhost:9000/status.html)
 - Plain text page for use in console: [http://localhost:9000/status.txt](http://localhost:9000/status.txt)
-- Json format for handling in program: [http://localhost:9000/status.json](http://localhost:9000/status.json)
+- JSON format for handling in program: [http://localhost:9000/status.json](http://localhost:9000/status.json)
 
 
 ## Usage detail
+
+- [Status page and endpoints](#status-page-and-endpoints)
+- [Target URL](#target-url)
+- [Scheduling](#scheduling)
+- [Log file](#log-file)
+- [Alerting](#alerting)
+- [Daemonize](#daemonize)
+- [Other options](#other-options)
+
 
 ### Status page and endpoints
 
@@ -74,7 +87,7 @@ Ayd has these pages/endpoints.
 |[/healthz](http://localhost:9000/healthz)        |Health status page for checking status of Ayd itself.               |
 
 
-### Specify target
+### Target URL
 
 Ayd demands URL as targets.
 Please see below what you can use as a scheme (protocol).
@@ -224,36 +237,17 @@ examples:
 
 #### plugin
 
-Plugin is a executable file named like `ayd-XXX-probe`.
-The differences to [`exec:`](#exec) are below.
+Plugin is a executable file named like `ayd-xxx-probe`, and installed to the PATH directory.
 
-|                                                       |`exec: `    |plugin                    |
-|-------------------------------------------------------|------------|--------------------------|
-|scheme of URL                                          |`exec:` only|anything                  |
-|executable file place                                  |anywhere    |only in the PATH directory|
-|set argument and environment variable in URL           |can         |can not                   |
-|receive raw target URL                                 |can not     |can                       |
-|record about multiple targets like as [source](#source)|can not     |can                       |
+You can use plugin via like `xxx:` scheme after installed it if plugin name is `ayd-xxx-probe`.
+Of course, you can change executable file name to change scheme name.
 
-Plugin is the "plugin".
-This is a good way to extend Ayd (you can use any URL!), but not good at writing a short script (you have to parse URL yourself).
+If you want to make your own plugin please read [make plugin](#make-plugin) section.
 
-Plugin is an executable file in the PATH directory.
-Ayd looks for `ayd-XXX-probe` if found target with `XXX:` scheme.
-The file name to be `ayd-XXX-alert` if using as an [alert](#alerting).
-In both cases, you can use your wanted scheme by changing `XXX`.
-
-You can't use URL schemes that `ayd`, `alert`, and the scheme that is supported by Ayd itself.
-
-Plugin receives target URL as the first argument of the command.
-For example, target URL `foobar:hello-world` is going to executed as `ayd-foobar-probe foobar:hello-world`.
-
-The output of the plugin will parsed the same way to [log file](#log-file).
-
-Plugin will timeout in 1 hour and report as failure.
+Plugin will timeout in maximum 1 hour and report as failure.
 
 
-### Specify check interval/schedule
+### Scheduling
 
 In default, Ayd will check targets every 5 minutes.
 
@@ -346,7 +340,7 @@ You may want to use [exec](#exec), [HTTP](#http), or plugin for alerting.
 
 Ayd will kick alert at the timing that incident caused, resolved, or message changed.
 
-You can specify alerting URL like below.
+You can specify alert URL like below.
 
 ``` shell
 $ ayd -a https://alert.example.com/alert https://target.example.com
@@ -361,8 +355,8 @@ In the above example, Ayd access `https://alert.example/alert` with the below qu
 |`ayd_target`   |`https://target.example.com`   |The alerting target URL                |
 |`ayd_message`  |                               |The message of the incident            |
 
-For plugin, pass those values as arguments to plugin.
-The 1st argument is the URL of alert, and 2nd or after arguments is the same as [log file](#log-file) order without latency (that is, timestamp in RFC3339 format, status, target URL, and message string).
+Alert plugin receives these as arguments.
+Please see [Alert plugin](#alert-plugin) section if you want make your own plugin.
 
 #### e-mail (SMTP)
 
@@ -397,12 +391,6 @@ $ ayd -a slack: https://target.example.com
 ```
 
 Please see more information in [the readme of ayd-slack-alert](https://github.com/macrat/ayd-slack-alert#readme).
-
-
-### Change listen port
-
-You can change the HTTP server listen port with `-p` option.
-In default, Ayd uses port 9000.
 
 
 ### Daemonize
@@ -453,7 +441,61 @@ $ sudo systemctl enable ayd
 ```
 
 
-### Check status just once
+### Make plugin
+
+Plugins in Ayd is a executable file named like `ayd-xxx-probe` or `ayd-xxx-alert`, and installed to the PATH directory.
+
+Ayd looks for `ayd-xxx-probe` as target URL or `ayd-xxx-alert` as alert URL, if URL have `xxx:`.
+You can change scheme via changing `xxx`, but you can't use URL schemes that `ayd`, `alert`, and the scheme that is supported by Ayd itself.
+
+The output of the plugin will parsed the same way to [log file](#log-file).
+
+The differences from plugin to [`exec:`](#exec) are below.
+
+|                                                       |`exec: `    |plugin                    |
+|-------------------------------------------------------|------------|--------------------------|
+|scheme of URL                                          |`exec:` only|anything                  |
+|executable file place                                  |anywhere    |only in the PATH directory|
+|set argument and environment variable in URL           |can         |can not                   |
+|receive raw target URL                                 |can not     |can                       |
+|record about multiple targets like as [source](#source)|can not     |can                       |
+
+#### Probe plugin
+
+Probe plugin receives target URL as the first argument of the command.
+
+For example, target URL `foobar:your-target` is means like below command.
+
+``` bash
+ayd-foobar-probe "foobar:your-target"
+```
+
+#### Alert plugin
+
+Alert plugin receives the URL of alert, and 2nd or after arguments is the same as [log file](#log-file) order but without latency.
+
+For example, alert URL `foobar:your-alert` is means like below command.
+
+``` bash
+ayd-foobar-alert                \
+    "foobar:your-alert"         \
+    "2001-02-30T16:05:06+09:00" \
+    "FAILURE"                   \
+    "1.234"                     \
+    "ping:your-target"          \
+    "this is message of the record"
+```
+
+The output of the probe plugin will parsed the same way to [log file](#log-file), but all target URL will add `alert:` prefix and won't not show in status page.
+
+### Other options
+
+#### Change listen port
+
+You can change the HTTP server listen port with `-p` option.
+In default, Ayd uses port 9000.
+
+#### One-shot mode
 
 If you want to use Ayd in a script, you may use `-1` option.
 Ayd will check status just once and exit when passed `-1` option.
