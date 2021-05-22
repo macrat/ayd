@@ -2,6 +2,7 @@ package exporter_test
 
 import (
 	"io"
+	"net/http"
 	"net/url"
 	"strings"
 	"testing"
@@ -10,6 +11,7 @@ import (
 	"github.com/macrat/ayd/exporter"
 	api "github.com/macrat/ayd/lib-ayd"
 	"github.com/macrat/ayd/store"
+	"github.com/macrat/ayd/testutil"
 )
 
 func TestLogScanner(t *testing.T) {
@@ -115,5 +117,16 @@ func TestLogScanner(t *testing.T) {
 				})
 			}
 		})
+	}
+}
+
+func TestLogTSVExporter(t *testing.T) {
+	srv := testutil.StartTestServer(t)
+	defer srv.Close()
+
+	if resp, err := srv.Client().Get(srv.URL + "/log.tsv?since=2021-01-01T00:00:00Z&until=2022-01-01T00:00:00Z"); err != nil {
+		t.Errorf("failed to get /log.tsv: %s", err)
+	} else if resp.StatusCode != http.StatusOK {
+		t.Errorf("unexpected status: %s", resp.Status)
 	}
 }

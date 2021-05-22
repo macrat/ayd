@@ -18,6 +18,9 @@ func StartTestServer(t testing.TB) *httptest.Server {
 	t.Cleanup(func() {
 		s.Close()
 	})
+	if err = s.Restore(); err != nil {
+		t.Fatalf("failed to restore: %s", err)
+	}
 
 	if err = s.Restore(); err != nil {
 		t.Fatalf("failed to restore: %s", err)
