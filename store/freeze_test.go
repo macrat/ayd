@@ -40,7 +40,7 @@ func TestFreezeProbeHistory(t *testing.T) {
 		},
 		{
 			Name: "single-failure",
-			Records: []api.Record{api.Record{
+			Records: []api.Record{{
 				CheckedAt: time.Date(2021, time.January, 2, 20, 1, 2, 0, time.UTC),
 				Target:    &url.URL{Scheme: "ping", Opaque: "local"},
 				Status:    api.StatusFailure,

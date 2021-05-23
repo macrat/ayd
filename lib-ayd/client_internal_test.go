@@ -122,13 +122,13 @@ func TestConvertProbeHistory(t *testing.T) {
 			Input: freeze.ProbeHistory{
 				Target: "foo:bar",
 				History: []freeze.Record{
-					freeze.Record{
+					{
 						CheckedAt: "2001-02-03T00:00:01Z",
 						Status:    "HEALTHY",
 						Message:   "foobar",
 						Latency:   123.456,
 					},
-					freeze.Record{
+					{
 						CheckedAt: "2001-02-03T00:00:02Z",
 						Status:    "UNKNOWN",
 						Message:   "foo bar",
@@ -159,10 +159,10 @@ func TestConvertProbeHistory(t *testing.T) {
 			Input: freeze.ProbeHistory{
 				Target: "foo:bar",
 				History: []freeze.Record{
-					freeze.Record{
+					{
 						Status: "NO_DATA",
 					},
-					freeze.Record{
+					{
 						CheckedAt: "2001-02-03T00:00:02Z",
 						Status:    "UNKNOWN",
 						Message:   "foo bar",
@@ -186,13 +186,13 @@ func TestConvertProbeHistory(t *testing.T) {
 			Input: freeze.ProbeHistory{
 				Target: "::invalid::",
 				History: []freeze.Record{
-					freeze.Record{
+					{
 						CheckedAt: "2001-02-03T00:00:01Z",
 						Status:    "HEALTHY",
 						Message:   "foobar",
 						Latency:   123.456,
 					},
-					freeze.Record{
+					{
 						CheckedAt: "2001-02-03T00:00:02Z",
 						Status:    "UNKNOWN",
 						Message:   "foo bar",
@@ -208,13 +208,13 @@ func TestConvertProbeHistory(t *testing.T) {
 			Input: freeze.ProbeHistory{
 				Target: "foo:bar",
 				History: []freeze.Record{
-					freeze.Record{
+					{
 						CheckedAt: "2001-02-03T00:00:01Z",
 						Status:    "HEALTHY",
 						Message:   "foobar",
 						Latency:   123.456,
 					},
-					freeze.Record{
+					{
 						CheckedAt: "this is not at timestamp",
 						Status:    "UNKNOWN",
 						Message:   "foo bar",
@@ -252,16 +252,16 @@ func TestConvertProbeHistory(t *testing.T) {
 var (
 	DummyResponse = Response{freeze.Status{
 		CurrentStatus: []freeze.ProbeHistory{
-			freeze.ProbeHistory{
+			{
 				Target: "foo:bar",
 				History: []freeze.Record{
-					freeze.Record{
+					{
 						CheckedAt: "2001-02-03T00:00:01Z",
 						Status:    "HEALTHY",
 						Message:   "foobar",
 						Latency:   123.456,
 					},
-					freeze.Record{
+					{
 						CheckedAt: "2001-02-03T00:00:02Z",
 						Status:    "UNKNOWN",
 						Message:   "foo bar",
@@ -269,10 +269,10 @@ var (
 					},
 				},
 			},
-			freeze.ProbeHistory{
+			{
 				Target: "hoge:fuga",
 				History: []freeze.Record{
-					freeze.Record{
+					{
 						CheckedAt: "2001-02-03T00:00:01Z",
 						Status:    "HEALTHY",
 						Message:   "hello world",
@@ -282,7 +282,7 @@ var (
 			},
 		},
 		CurrentIncidents: []freeze.Incident{
-			freeze.Incident{
+			{
 				Target:   "foo:bar",
 				Status:   "FAILURE",
 				Message:  "this is failure",
@@ -290,7 +290,7 @@ var (
 			},
 		},
 		IncidentHistory: []freeze.Incident{
-			freeze.Incident{
+			{
 				Target:     "foo:bar",
 				Status:     "FAILURE",
 				Message:    "this is also failure",

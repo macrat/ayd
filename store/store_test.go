@@ -210,28 +210,28 @@ func TestStore_Restore(t *testing.T) {
 	defer s1.Close()
 
 	records := []api.Record{
-		api.Record{
+		{
 			CheckedAt: time.Now().Add(30 * time.Second),
 			Target:    &url.URL{Scheme: "ping", Opaque: "restore-test"},
 			Status:    api.StatusUnknown,
 			Message:   "hello world",
 			Latency:   1 * time.Second,
 		},
-		api.Record{
+		{
 			CheckedAt: time.Now().Add(20 * time.Second),
 			Target:    &url.URL{Scheme: "exec", Opaque: "/usr/local/bin/test.sh"},
 			Status:    api.StatusHealthy,
 			Message:   "foobar",
 			Latency:   123 * time.Millisecond,
 		},
-		api.Record{
+		{
 			CheckedAt: time.Now().Add(10 * time.Second),
 			Target:    &url.URL{Scheme: "http", Host: "test.local", Path: "/abc/def"},
 			Status:    api.StatusFailure,
 			Message:   "hoge",
 			Latency:   123 * time.Microsecond,
 		},
-		api.Record{
+		{
 			CheckedAt: time.Now(),
 			Target:    &url.URL{Scheme: "http", Host: "test.local", Path: "/abc/def"},
 			Status:    api.StatusHealthy,

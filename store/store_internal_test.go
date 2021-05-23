@@ -11,39 +11,29 @@ import (
 
 func TestByLatestStatus(t *testing.T) {
 	xs := []*ProbeHistory{
-		&ProbeHistory{
+		{
 			&url.URL{Scheme: "a", Opaque: "1"},
 			[]api.Record{},
 		},
-		&ProbeHistory{
+		{
 			&url.URL{Scheme: "a", Opaque: "2"},
-			[]api.Record{
-				api.Record{Status: api.StatusHealthy},
-			},
+			[]api.Record{{Status: api.StatusHealthy}},
 		},
-		&ProbeHistory{
+		{
 			&url.URL{Scheme: "a", Opaque: "3"},
-			[]api.Record{
-				api.Record{Status: api.StatusHealthy},
-			},
+			[]api.Record{{Status: api.StatusHealthy}},
 		},
-		&ProbeHistory{
+		{
 			&url.URL{Scheme: "a", Opaque: "4"},
-			[]api.Record{
-				api.Record{Status: api.StatusFailure},
-			},
+			[]api.Record{{Status: api.StatusFailure}},
 		},
-		&ProbeHistory{
+		{
 			&url.URL{Scheme: "b", Opaque: "1"},
-			[]api.Record{
-				api.Record{Status: api.StatusUnknown},
-			},
+			[]api.Record{{Status: api.StatusUnknown}},
 		},
-		&ProbeHistory{
+		{
 			&url.URL{Scheme: "b", Opaque: "2"},
-			[]api.Record{
-				api.Record{Status: api.StatusAborted},
-			},
+			[]api.Record{{Status: api.StatusAborted}},
 		},
 	}
 
