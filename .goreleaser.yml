@@ -5,11 +5,11 @@ before:
     - 'goversioninfo -platform-specific -ver-major="{{ .Major }}" -product-ver-major="{{ .Major }}" -ver-minor="{{ .Minor }}" -product-ver-minor="{{ .Minor }}" -ver-patch="{{ .Patch }}" -product-ver-patch="{{ .Patch }}" -file-version="{{ .Version }} ({{ .ShortCommit }})" -product-version="{{ .Version }} ({{ .ShortCommit }})"'
 
 builds:
-  - env:
+  - id: with-upx
+    env:
       - CGO_ENABLED=0
     goos:
       - linux
-      - windows
       - darwin
     flags:
       - -trimpath
@@ -19,6 +19,17 @@ builds:
       - '-X main.commit={{ .ShortCommit }}'
     hooks:
       post: 'upx --lzma {{ .Path }}'
+  - id: without-upx
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - windows
+    flags:
+      - -trimpath
+    ldflags:
+      - '-s -w'
+      - '-X main.version={{ .Version }}'
+      - '-X main.commit={{ .ShortCommit }}'
 
 archives:
   - format: tar.gz
