@@ -114,7 +114,7 @@ examples:
 
 Send ICMP echo request (a.k.a. ping command) and check the server is connected or not.
 
-Ayd sends 4 packets in 2 seconds and expects all packets to return.
+Ayd sends 3 packets in 1 second and expects all packets to return.
 
 In Linux or MacOS, Ayd use non-privileged ICMP in default. So, you can use ping even if rootless.
 But this way is not work on some platforms for instance docker container.

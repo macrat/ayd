@@ -29,7 +29,7 @@ TARGETS:
    Supported method is GET, HEAD, POST, and OPTION. Default is GET method.
 
   ping:
-   Send 4 ICMP echo request in 2 seconds.
+   Send 3 ICMP echo request in 1 second.
    e.g. ping:example.com
 
   tcp:
