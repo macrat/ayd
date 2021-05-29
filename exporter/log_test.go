@@ -91,6 +91,23 @@ func TestLogScanner(t *testing.T) {
 				return exporter.NewLogGenerator(s, since, until)
 			},
 		},
+		{
+			"LogFilter",
+			func(since, until time.Time) exporter.LogScanner {
+				f := io.NopCloser(strings.NewReader(strings.Join([]string{
+					"2000-01-01T13:02:03Z\tHEALTHY\t0.123\tdummy:healthy#1\tfirst",
+					"2000-01-02T13:02:03Z\tHEALTHY\t0.123\tdummy:healthy#1\tsecond",
+					"2000-01-02T13:02:03Z\tFAILURE\t0.123\tdummy:failure\tanother",
+					"2000-01-03T13:02:03Z\tHEALTHY\t0.123\tdummy:healthy#2\tlast",
+					"2000-01-04T13:02:03Z\tFAILURE\t0.123\tdummy:failure\tanother",
+				}, "\n")))
+
+				return exporter.LogFilter{
+					exporter.NewLogReaderFromReader(f, since, until),
+					[]string{"dummy:healthy#1", "dummy:healthy#2"},
+				}
+			},
+		},
 	}
 
 	for _, scanner := range scanners {
@@ -124,7 +141,7 @@ func TestLogTSVExporter(t *testing.T) {
 	srv := testutil.StartTestServer(t)
 	defer srv.Close()
 
-	if resp, err := srv.Client().Get(srv.URL + "/log.tsv?since=2021-01-01T00:00:00Z&until=2022-01-01T00:00:00Z"); err != nil {
+	if resp, err := srv.Client().Get(srv.URL + "/log.tsv?since=2021-01-01T00:00:00Z&until=2022-01-01T00:00:00Z&target=http://a.example.com"); err != nil {
 		t.Errorf("failed to get /log.tsv: %s", err)
 	} else if resp.StatusCode != http.StatusOK {
 		t.Errorf("unexpected status: %s", resp.Status)

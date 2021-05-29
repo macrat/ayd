@@ -83,7 +83,7 @@ Ayd has these pages/endpoints.
 |[/status.html](http://localhost:9000/status.html)|Human friendly status page in HTML.|
 |[/status.txt](http://localhost:9000/status.txt)  |Human friendly status page in plain text.<br />You can use `/status.txt?charset=unicode` and `/status.txt?charset=ascii` for specify charset.|
 |[/status.json](http://localhost:9000/status.json)|Machine readable status page in JSON format.|
-|[/log.tsv](http://localhost:9000/log.tsv)        |Raw log file in TSV format.<br />You can change period via `since` and `until` query in RFC3339 format like `/log.tsv?since=2000-01-01T00:00:00Z&until=2001-01-01T00:00:00Z`.|
+|[/log.tsv](http://localhost:9000/log.tsv)        |Raw log file in TSV format.<br />You can change period via `since` and `until` query in RFC3339 format like `/log.tsv?since=2000-01-01T00:00:00Z&until=2001-01-01T00:00:00Z`.<br />And you can filter records by target URL using `target` query like `/log.tsv?target=http://example.com`|
 |[/metrics](http://localhost:9000/metrics)        |Minimal status page for use by [Prometheus](https://prometheus.io/).|
 |[/healthz](http://localhost:9000/healthz)        |Health status page for checking status of Ayd itself.|
 

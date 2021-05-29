@@ -166,6 +166,34 @@ func newLogScannerForExporter(s *store.Store, w http.ResponseWriter, r *http.Req
 	return scanner, true
 }
 
+type LogFilter struct {
+	Scanner LogScanner
+	Targets []string
+}
+
+func (f LogFilter) Close() error {
+	return f.Scanner.Close()
+}
+
+func (f LogFilter) Scan() bool {
+	for f.Scanner.Scan() {
+		for _, t := range f.Targets {
+			if f.Record().Target.String() == t {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func (f LogFilter) Bytes() []byte {
+	return f.Scanner.Bytes()
+}
+
+func (f LogFilter) Record() api.Record {
+	return f.Scanner.Record()
+}
+
 func LogTSVExporter(s *store.Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/tab-separated-values; charset=UTF-8")
@@ -173,6 +201,10 @@ func LogTSVExporter(s *store.Store) http.HandlerFunc {
 		scanner, ok := newLogScannerForExporter(s, w, r)
 		if !ok {
 			return
+		}
+
+		if targets, ok := r.URL.Query()["target"]; ok {
+			scanner = LogFilter{scanner, targets}
 		}
 
 		for scanner.Scan() {
