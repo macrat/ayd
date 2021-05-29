@@ -28,10 +28,12 @@ func New(s *store.Store) http.Handler {
 		w.Write(faviconSvg)
 	})
 
+	m.Handle("/status", http.RedirectHandler("/status.html", http.StatusMovedPermanently))
 	m.HandleFunc("/status.txt", StatusTextExporter(s))
 	m.HandleFunc("/status.html", StatusHTMLExporter(s))
 	m.HandleFunc("/status.json", StatusJSONExporter(s))
 
+	m.Handle("/log", http.RedirectHandler("/log.tsv", http.StatusMovedPermanently))
 	m.HandleFunc("/log.tsv", LogTSVExporter(s))
 
 	m.HandleFunc("/metrics", MetricsExporter(s))
