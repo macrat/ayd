@@ -1,5 +1,5 @@
-github.com/macrat/go-parallel-pinger v1.1.0 h1:yg7XGnV8I9dbIZagok5m1IbxpiYyiBwKHIuitWV+EB8=
-github.com/macrat/go-parallel-pinger v1.1.0/go.mod h1:Sb734FetI568lFoNWSXiTTk8TUoShrh+1ISP9+vs+Gg=
+github.com/macrat/go-parallel-pinger v1.1.1 h1:+HxEzo2pzM5kkRBKtxH311NEJHQt+nwaItuzKko4p8Q=
+github.com/macrat/go-parallel-pinger v1.1.1/go.mod h1:Sb734FetI568lFoNWSXiTTk8TUoShrh+1ISP9+vs+Gg=
 github.com/robfig/cron/v3 v3.0.1 h1:WdRxkvbJztn8LMz/QEvLN5sBU+xKpSqwwUO1Pjr4qDs=
 github.com/robfig/cron/v3 v3.0.1/go.mod h1:eQICP3HwyT7UooqI/z+Ov+PtYAWygg1TEWWzGIFLtro=
 golang.org/x/net v0.0.0-20210525063256-abc453219eb5 h1:wjuX4b5yYQnEQHzd+CBcrcC6OVR2J1CN6mUy0oSxIPo=
