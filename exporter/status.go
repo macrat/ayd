@@ -23,17 +23,30 @@ func StatusHTMLExporter(s *store.Store) http.HandlerFunc {
 	}
 }
 
-//go:embed templates/status.txt
-var statusTextTemplate string
+func StatusTextExporter(s *store.Store, template, charset string) http.HandlerFunc {
+	tmpl := textTemplate.Must(textTemplate.New("status.txt").Funcs(templateFuncs).Parse(template))
 
-func StatusTextExporter(s *store.Store) http.HandlerFunc {
-	tmpl := textTemplate.Must(textTemplate.New("status.txt").Funcs(templateFuncs).Parse(statusTextTemplate))
+	contentType := "text/plain; charset=" + charset
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "text/plain; charset=UTF-8")
+		w.Header().Set("Content-Type", contentType)
 
-		HandleError(s, "status.txt", tmpl.Execute(w, s.Freeze()))
+		HandleError(s, "status.txt:"+charset, tmpl.Execute(w, s.Freeze()))
 	}
+}
+
+//go:embed templates/status.unicode
+var statusUnicodeTextTemplate string
+
+func StatusUnicodeTextExporter(s *store.Store) http.HandlerFunc {
+	return StatusTextExporter(s, statusUnicodeTextTemplate, "UTF-8")
+}
+
+//go:embed templates/status.ascii
+var statusASCIITextTemplate string
+
+func StatusASCIITextExporter(s *store.Store) http.HandlerFunc {
+	return StatusTextExporter(s, statusASCIITextTemplate, "US-ASCII")
 }
 
 func StatusJSONExporter(s *store.Store) http.HandlerFunc {

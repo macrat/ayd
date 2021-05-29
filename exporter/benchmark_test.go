@@ -38,7 +38,7 @@ func BenchmarkStatusTextExporter(b *testing.B) {
 		b.Fatalf("failed to restore store: %s", err)
 	}
 
-	h := exporter.StatusTextExporter(s)
+	h := exporter.StatusUnicodeTextExporter(s)
 
 	r := httptest.NewRequest("GET", "/status.txt", nil)
 

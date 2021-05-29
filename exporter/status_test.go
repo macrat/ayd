@@ -26,12 +26,23 @@ func TestStatusHTMLExporter(t *testing.T) {
 	}
 }
 
-func TestStatusTextExporter(t *testing.T) {
+func TestStatusUnicodeTextExporter(t *testing.T) {
 	srv := testutil.StartTestServer(t)
 	defer srv.Close()
 
-	if resp, err := srv.Client().Get(srv.URL + "/status.txt"); err != nil {
-		t.Errorf("failed to get /status.txt: %s", err)
+	if resp, err := srv.Client().Get(srv.URL + "/status.unicode.txt"); err != nil {
+		t.Errorf("failed to get /status.unicode.txt: %s", err)
+	} else if resp.StatusCode != http.StatusOK {
+		t.Errorf("unexpected status: %s", resp.Status)
+	}
+}
+
+func TestStatusASCIITextExporter(t *testing.T) {
+	srv := testutil.StartTestServer(t)
+	defer srv.Close()
+
+	if resp, err := srv.Client().Get(srv.URL + "/status.ascii.txt"); err != nil {
+		t.Errorf("failed to get /status.ascii.txt: %s", err)
 	} else if resp.StatusCode != http.StatusOK {
 		t.Errorf("unexpected status: %s", resp.Status)
 	}
