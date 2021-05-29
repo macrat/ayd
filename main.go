@@ -62,6 +62,13 @@ func RunAyd() int {
 		return 0
 	}
 
+	if *oneshot && *alertURL != "" {
+		fmt.Fprintln(os.Stderr, "warning: -a option will ignored when use with -1 option")
+	}
+	if *oneshot && *listenPort != 9000 {
+		fmt.Fprintln(os.Stderr, "warning: -p option will ignored when use with -1 option")
+	}
+
 	tasks, errors := ParseArgs(flag.Args())
 	if errors != nil {
 		fmt.Fprintln(os.Stderr, "Invalid argument:")
