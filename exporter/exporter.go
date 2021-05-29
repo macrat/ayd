@@ -4,6 +4,7 @@ import (
 	_ "embed"
 	"net/http"
 	"net/url"
+	"time"
 
 	api "github.com/macrat/ayd/lib-ayd"
 	"github.com/macrat/ayd/store"
@@ -54,9 +55,10 @@ func New(s *store.Store) http.Handler {
 func HandleError(s *store.Store, scope string, err error) {
 	if err != nil {
 		s.Report(api.Record{
-			Target:  &url.URL{Scheme: "ayd", Opaque: "api:" + scope},
-			Status:  api.StatusFailure,
-			Message: err.Error(),
+			CheckedAt: time.Now(),
+			Target:    &url.URL{Scheme: "ayd", Opaque: "api:" + scope},
+			Status:    api.StatusFailure,
+			Message:   err.Error(),
 		})
 	}
 }
