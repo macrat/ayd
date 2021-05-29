@@ -123,6 +123,8 @@ func TestResourceLocker_goroutine_leak(t *testing.T) {
 		t.Errorf("number of goroutines is too increased: %d -> %d", before, after)
 	}
 
+	rl.Lock()
+	defer rl.Unlock()
 	if startCount != stopCount {
 		t.Errorf("miss match start count and stop count: stop=%d stop=%d", startCount, stopCount)
 	}
