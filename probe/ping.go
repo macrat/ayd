@@ -13,25 +13,97 @@ import (
 	"github.com/macrat/go-parallel-pinger"
 )
 
-type pingerManagerStruct struct {
+type ResourceLocker struct {
 	sync.Mutex
 
-	v4   *pinger.Pinger
-	v6   *pinger.Pinger
-	stop func()
+	doneSignal chan struct{}
+	count      int
 }
 
-func (p *pingerManagerStruct) Start(ctx context.Context) error {
-	p.v4 = pinger.NewIPv4()
-	p.v6 = pinger.NewIPv6()
+func NewResourceLocker() *ResourceLocker {
+	return &ResourceLocker{
+		doneSignal: make(chan struct{}, 1),
+	}
+}
 
-	if os.Getenv("AYD_PRIVILEGED") != "" {
-		p.v4.SetPrivileged(true)
-		p.v6.SetPrivileged(true)
+func (rl *ResourceLocker) Close() error {
+	close(rl.doneSignal)
+	return nil
+}
+
+func (rl *ResourceLocker) Start(prepareResource func() error) error {
+	rl.Lock()
+	defer rl.Unlock()
+
+	if rl.count == 0 {
+		err := prepareResource()
+		if err != nil {
+			return err
+		}
 	}
 
-	ctx, stop := context.WithCancel(ctx)
-	p.stop = stop
+	rl.count++
+
+	return nil
+}
+
+func (rl *ResourceLocker) Done() {
+	rl.Lock()
+	defer rl.Unlock()
+
+	if rl.count > 0 {
+		rl.count--
+	}
+
+	// skip send signal if already sent
+	select {
+	case rl.doneSignal <- struct{}{}:
+	default:
+	}
+}
+
+func (rl *ResourceLocker) Teardown(f func()) {
+	for range rl.doneSignal {
+		rl.Lock()
+		if rl.count == 0 {
+			f()
+			rl.Unlock()
+			return
+		}
+		rl.Unlock()
+	}
+
+	f()
+}
+
+type autoPingerStruct struct {
+	rl *ResourceLocker
+	v4 *pinger.Pinger
+	v6 *pinger.Pinger
+}
+
+func newAutoPinger() *autoPingerStruct {
+	return &autoPingerStruct{
+		rl: NewResourceLocker(),
+	}
+}
+
+func makePingers() (v4, v6 *pinger.Pinger) {
+	v4 = pinger.NewIPv4()
+	v6 = pinger.NewIPv6()
+
+	if os.Getenv("AYD_PRIVILEGED") != "" {
+		v4.SetPrivileged(true)
+		v6.SetPrivileged(true)
+	}
+
+	return v4, v6
+}
+
+func (p *autoPingerStruct) start() error {
+	p.v4, p.v6 = makePingers()
+
+	ctx, stop := context.WithCancel(context.Background())
 
 	if err := p.v4.Start(ctx); err != nil {
 		p.v4 = nil
@@ -47,22 +119,18 @@ func (p *pingerManagerStruct) Start(ctx context.Context) error {
 		return err
 	}
 
+	go p.rl.Teardown(func() {
+		stop()
+		p.v4 = nil
+		p.v6 = nil
+	})
+
 	return nil
 }
 
-func (p *pingerManagerStruct) Stop() {
-	p.stop()
-}
-
-func (p *pingerManagerStruct) GetFor(target net.IP) (*pinger.Pinger, error) {
-	p.Lock()
-	defer p.Unlock()
-
-	if p.v4 == nil {
-		err := p.Start(context.Background()) // XXX: there is no way to stop pinger
-		if err != nil {
-			return nil, err
-		}
+func (p *autoPingerStruct) getFor(target net.IP) (*pinger.Pinger, error) {
+	if err := p.rl.Start(p.start); err != nil {
+		return nil, err
 	}
 
 	if target.To4() != nil {
@@ -71,12 +139,31 @@ func (p *pingerManagerStruct) GetFor(target net.IP) (*pinger.Pinger, error) {
 	return p.v6, nil
 }
 
+func (p *autoPingerStruct) Ping(ctx context.Context, target *net.IPAddr) (startTime time.Time, duration time.Duration, result pinger.Result, err error) {
+	defer p.rl.Done()
+
+	ping, err := p.getFor(target.IP)
+	if err != nil {
+		return time.Now(), 0, pinger.Result{}, err
+	}
+
+	startTime = time.Now()
+	result, err = ping.Ping(ctx, target, 4, 500*time.Millisecond)
+	duration = time.Now().Sub(startTime)
+
+	return
+}
+
 var (
-	pingerManager = &pingerManagerStruct{}
+	autoPinger = newAutoPinger()
 )
 
-func StartPinger(ctx context.Context) error {
-	return pingerManager.Start(ctx)
+func CheckPingPermission() error {
+	ctx, stop := context.WithCancel(context.Background())
+	defer stop()
+
+	p, _ := makePingers()
+	return p.Start(ctx)
 }
 
 type PingProbe struct {
@@ -110,7 +197,7 @@ func (p PingProbe) Check(ctx context.Context, r Reporter) {
 		return
 	}
 
-	ping, err := pingerManager.GetFor(target.IP)
+	stime, d, result, err := autoPinger.Ping(ctx, target)
 	if err != nil {
 		r.Report(api.Record{
 			CheckedAt: time.Now(),
@@ -121,12 +208,8 @@ func (p PingProbe) Check(ctx context.Context, r Reporter) {
 		return
 	}
 
-	startTime := time.Now()
-	result, err := ping.Ping(ctx, target, 4, 500*time.Millisecond)
-	d := time.Now().Sub(startTime)
-
 	rec := api.Record{
-		CheckedAt: startTime,
+		CheckedAt: stime,
 		Target:    p.target,
 		Status:    api.StatusFailure,
 		Message: fmt.Sprintf(
