@@ -3,8 +3,11 @@ package exporter
 import (
 	_ "embed"
 	"encoding/json"
+	"fmt"
 	htmlTemplate "html/template"
+	"io"
 	"net/http"
+	"strings"
 	textTemplate "text/template"
 
 	"github.com/macrat/ayd/store"
@@ -23,30 +26,40 @@ func StatusHTMLExporter(s *store.Store) http.HandlerFunc {
 	}
 }
 
-func StatusTextExporter(s *store.Store, template, charset string) http.HandlerFunc {
-	tmpl := textTemplate.Must(textTemplate.New("status.txt").Funcs(templateFuncs).Parse(template))
-
-	contentType := "text/plain; charset=" + charset
-
-	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", contentType)
-
-		HandleError(s, "status.txt:"+charset, tmpl.Execute(w, s.Freeze()))
-	}
-}
-
 //go:embed templates/status.unicode
 var statusUnicodeTextTemplate string
-
-func StatusUnicodeTextExporter(s *store.Store) http.HandlerFunc {
-	return StatusTextExporter(s, statusUnicodeTextTemplate, "UTF-8")
-}
 
 //go:embed templates/status.ascii
 var statusASCIITextTemplate string
 
-func StatusASCIITextExporter(s *store.Store) http.HandlerFunc {
-	return StatusTextExporter(s, statusASCIITextTemplate, "US-ASCII")
+func StatusTextExporter(s *store.Store) http.HandlerFunc {
+	unicode := textTemplate.Must(textTemplate.New("status.unicode").Funcs(templateFuncs).Parse(statusUnicodeTextTemplate))
+	ascii := textTemplate.Must(textTemplate.New("status.ascii").Funcs(templateFuncs).Parse(statusASCIITextTemplate))
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		var execute func(io.Writer, interface{}) error
+
+		charset := r.URL.Query().Get("charset")
+		switch strings.ToLower(charset) {
+		case "", "unicode", "utf", "utf8":
+			charset = "unicode"
+			execute = unicode.Execute
+		case "ascii", "us-ascii", "usascii":
+			charset = "ascii"
+			execute = ascii.Execute
+		default:
+			w.Header().Set("Content-Type", "text/plain")
+			w.WriteHeader(http.StatusBadRequest)
+			_, err := fmt.Fprintln(w, "error: unsupported charset:", charset)
+			HandleError(s, "status.txt", err)
+			return
+		}
+
+		contentType := "text/plain; charset=" + charset
+		w.Header().Set("Content-Type", contentType)
+
+		HandleError(s, "status.txt:"+charset, execute(w, s.Freeze()))
+	}
 }
 
 func StatusJSONExporter(s *store.Store) http.HandlerFunc {
