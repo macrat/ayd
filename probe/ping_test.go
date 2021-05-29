@@ -2,6 +2,7 @@ package probe_test
 
 import (
 	"context"
+	"runtime"
 	"testing"
 	"time"
 
@@ -12,7 +13,6 @@ import (
 
 func TestResourceLocker(t *testing.T) {
 	rl := probe.NewResourceLocker()
-	defer rl.Close()
 
 	startCount := 0
 	stopCount := 0
@@ -61,7 +61,6 @@ func TestResourceLocker(t *testing.T) {
 
 func TestResourceLocker_flooding(t *testing.T) {
 	rl := probe.NewResourceLocker()
-	defer rl.Close()
 
 	startCount := 0
 	stopCount := 0
@@ -96,9 +95,41 @@ func TestResourceLocker_flooding(t *testing.T) {
 	}
 }
 
+func TestResourceLocker_goroutine_leak(t *testing.T) {
+	rl := probe.NewResourceLocker()
+
+	startCount := 0
+	stopCount := 0
+
+	start := func() {
+		rl.Start(func() error {
+			startCount++
+			go rl.Teardown(func() {
+				stopCount++
+			})
+			return nil
+		})
+	}
+
+	before := runtime.NumGoroutine()
+	for i := 0; i < 100000; i++ {
+		start()
+		rl.Done()
+	}
+	time.Sleep(10 * time.Millisecond)
+	after := runtime.NumGoroutine()
+
+	if before+10 < after {
+		t.Errorf("number of goroutines is too increased: %d -> %d", before, after)
+	}
+
+	if startCount != stopCount {
+		t.Errorf("miss match start count and stop count: stop=%d stop=%d", startCount, stopCount)
+	}
+}
+
 func BenchmarkResourceLocker_Start(b *testing.B) {
 	rl := probe.NewResourceLocker()
-	defer rl.Close()
 
 	starter := func() error {
 		go rl.Teardown(func() {
@@ -113,7 +144,6 @@ func BenchmarkResourceLocker_Start(b *testing.B) {
 
 func BenchmarkResourceLocker_Done(b *testing.B) {
 	rl := probe.NewResourceLocker()
-	defer rl.Close()
 
 	starter := func() error {
 		go rl.Teardown(func() {

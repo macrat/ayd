@@ -16,19 +16,14 @@ import (
 type ResourceLocker struct {
 	sync.Mutex
 
-	doneSignal chan struct{}
+	doneSignal *sync.Cond
 	count      int
 }
 
 func NewResourceLocker() *ResourceLocker {
-	return &ResourceLocker{
-		doneSignal: make(chan struct{}, 1),
-	}
-}
-
-func (rl *ResourceLocker) Close() error {
-	close(rl.doneSignal)
-	return nil
+	rl := &ResourceLocker{}
+	rl.doneSignal = sync.NewCond(rl)
+	return rl
 }
 
 func (rl *ResourceLocker) Start(prepareResource func() error) error {
@@ -55,22 +50,15 @@ func (rl *ResourceLocker) Done() {
 		rl.count--
 	}
 
-	// skip send signal if already sent
-	select {
-	case rl.doneSignal <- struct{}{}:
-	default:
-	}
+	rl.doneSignal.Broadcast()
 }
 
 func (rl *ResourceLocker) Teardown(f func()) {
-	for range rl.doneSignal {
-		rl.Lock()
-		if rl.count == 0 {
-			f()
-			rl.Unlock()
-			return
-		}
-		rl.Unlock()
+	rl.Lock()
+	defer rl.Unlock()
+
+	for rl.count > 0 {
+		rl.doneSignal.Wait()
 	}
 
 	f()
@@ -106,16 +94,16 @@ func (p *autoPingerStruct) start() error {
 	ctx, stop := context.WithCancel(context.Background())
 
 	if err := p.v4.Start(ctx); err != nil {
+		stop()
 		p.v4 = nil
 		p.v6 = nil
-		stop()
 		return err
 	}
 
 	if err := p.v6.Start(ctx); err != nil {
+		stop()
 		p.v4 = nil
 		p.v6 = nil
-		stop()
 		return err
 	}
 
