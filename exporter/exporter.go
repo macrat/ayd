@@ -8,6 +8,7 @@ import (
 
 	api "github.com/macrat/ayd/lib-ayd"
 	"github.com/macrat/ayd/store"
+	"github.com/NYTimes/gziphandler"
 )
 
 //go:embed static/favicon.ico
@@ -49,7 +50,7 @@ func New(s *store.Store) http.Handler {
 		}
 	})
 
-	return m
+	return gziphandler.GzipHandler(m)
 }
 
 func HandleError(s *store.Store, scope string, err error) {
