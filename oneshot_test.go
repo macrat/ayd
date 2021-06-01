@@ -23,7 +23,7 @@ func TestRunOneshot(t *testing.T) {
 		{[]string{"dummy:#with-interval", "10m", "dummy:healthy"}, 2, 0},
 		{[]string{"dummy:#single-target"}, 1, 0},
 		{[]string{"dummy:?latency=10ms"}, 1, 0},
-		{[]string{"dummy:?latency=200ms"}, 1, 1},
+		{[]string{"dummy:?latency=1s"}, 1, 1},
 	}
 
 	for _, tt := range tests {
