@@ -11,17 +11,32 @@ import (
 	"github.com/robfig/cron/v3"
 )
 
-func RunServer(ctx context.Context, s *store.Store, tasks []Task) (exitCode int) {
+func RunServer(ctx context.Context, s *store.Store, tasks []Task, certFile, keyFile string) (exitCode int) {
+	protocol := "http"
+	if certFile != "" {
+		protocol = "https"
+		if _, err := os.Stat(certFile); os.IsNotExist(err) {
+			fmt.Fprintf(os.Stderr, "error: certificate file is not exists: %s\n", certFile)
+			return 2
+		}
+		if _, err := os.Stat(keyFile); os.IsNotExist(err) {
+			fmt.Fprintf(os.Stderr, "error: key file is not exists: %s\n", keyFile)
+			return 2
+		}
+	}
+
+	ctx, cancel := context.WithCancel(ctx)
+
 	listen := fmt.Sprintf("0.0.0.0:%d", *listenPort)
 
 	scheduler := cron.New()
 
 	if err := s.Restore(); err != nil {
-		fmt.Fprintf(os.Stderr, "failed to read log file: %s\n", err)
+		fmt.Fprintf(os.Stderr, "error: failed to read log file: %s\n", err)
 		return 1
 	}
 
-	fmt.Fprintf(s.Console, "starts Ayd on http://%s\n", listen)
+	fmt.Fprintf(s.Console, "starts Ayd on %s://%s\n", protocol, listen)
 
 	for _, t := range tasks {
 		fmt.Fprintf(s.Console, "%s\t%s\n", t.Schedule, t.Probe.Target())
@@ -57,10 +72,18 @@ func RunServer(ctx context.Context, s *store.Store, tasks []Task) (exitCode int)
 		}
 		close(httpStopped)
 	}()
-	if err := srv.ListenAndServe(); err != http.ErrServerClosed {
+
+	var err error
+	if protocol == "https" {
+		err = srv.ListenAndServeTLS(certFile, keyFile)
+	} else {
+		err = srv.ListenAndServe()
+	}
+	if err != http.ErrServerClosed {
 		fmt.Fprintln(os.Stderr, err)
 		exitCode = 1
 	}
+	cancel()
 
 	<-cronStopped
 	<-httpStopped

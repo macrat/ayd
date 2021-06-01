@@ -499,6 +499,14 @@ The output of the probe plugin will parsed the same way to [log file](#log-file)
 You can change the HTTP server listen port with `-p` option.
 In default, Ayd uses port 9000.
 
+#### Use HTTPS
+
+You can set cert certificate file and key file via `-c` option and `-k` option.
+
+``` shell
+$ ayd -c ./your-certificate.crt -k ./your-certificate.key ping:localhost
+```
+
 #### One-shot mode
 
 If you want to use Ayd in a script, you may use `-1` option.

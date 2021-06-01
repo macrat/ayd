@@ -9,6 +9,8 @@ OPTIONS:
   -a URL   The alert URL that the same format as target URL.
   -o FILE  Path to log file. Log file is also use for restore status history. Ayd won't create log file if set "-" or empty. (default "./ayd.log")
   -p PORT  Listen port of status page. (default 9000)
+  -c FILE  Path to certificate file for HTTPS. -k option is also required if use this.
+  -k FILE  Path to key file for HTTPS. -c option is also required if use this.
   -v       Show Ayd version and exit.
 
 INTERVALS:

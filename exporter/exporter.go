@@ -6,9 +6,9 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/NYTimes/gziphandler"
 	api "github.com/macrat/ayd/lib-ayd"
 	"github.com/macrat/ayd/store"
-	"github.com/NYTimes/gziphandler"
 )
 
 //go:embed static/favicon.ico

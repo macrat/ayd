@@ -22,6 +22,8 @@ var (
 	storePath   = flag.String("o", "./ayd.log", "Path to log file. Log file is also use for restore status history. Ayd won't create log file if set \"-\" or empty.")
 	oneshot     = flag.Bool("1", false, "Check status only once and exit. Exit with 0 if all check passed, otherwise exit with code 1.")
 	alertURL    = flag.String("a", "", "The alert URL that the same format as target URL.")
+	certPath    = flag.String("c", "", "Path to certificate file for HTTPS. -k option is also required if use this.")
+	keyPath     = flag.String("k", "", "Path to key file for HTTPS. -c option is also required if use this.")
 	showVersion = flag.Bool("v", false, "Show version and exit.")
 )
 
@@ -62,11 +64,22 @@ func RunAyd() int {
 		return 0
 	}
 
-	if *oneshot && *alertURL != "" {
-		fmt.Fprintln(os.Stderr, "warning: -a option will ignored when use with -1 option")
-	}
-	if *oneshot && *listenPort != 9000 {
-		fmt.Fprintln(os.Stderr, "warning: -p option will ignored when use with -1 option")
+	if *oneshot {
+		if *alertURL != "" {
+			fmt.Fprintln(os.Stderr, "warning: -a option will ignored when use with -1 option")
+		}
+		if *listenPort != 9000 {
+			fmt.Fprintln(os.Stderr, "warning: -p option will ignored when use with -1 option")
+		}
+		if *certPath != "" || *keyPath != "" {
+			fmt.Fprintln(os.Stderr, "warning: -c and -k option will ignored when use with -1 option")
+		}
+	} else {
+		if *certPath != "" && *keyPath == "" || *certPath == "" && *keyPath != "" {
+			fmt.Fprintln(os.Stderr, "Invalid argument:")
+			fmt.Fprintln(os.Stderr, " You can't use only -k option or only -c option. Please set both of them if you want to use HTTPS.")
+			return 2
+		}
 	}
 
 	tasks, errors := ParseArgs(flag.Args())
@@ -88,7 +101,7 @@ func RunAyd() int {
 	}
 	s, err := store.New(*storePath)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to open log file: %s\n", err)
+		fmt.Fprintf(os.Stderr, "error: failed to open log file: %s\n", err)
 		return 1
 	}
 	defer s.Close()
@@ -112,7 +125,7 @@ func RunAyd() int {
 	if *oneshot {
 		return RunOneshot(ctx, s, tasks)
 	} else {
-		return RunServer(ctx, s, tasks)
+		return RunServer(ctx, s, tasks, *certPath, *keyPath)
 	}
 }
 
