@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"sync"
 
 	"github.com/macrat/ayd/exporter"
 	"github.com/macrat/ayd/store"
@@ -53,15 +54,15 @@ func RunServer(ctx context.Context, s *store.Store, tasks []Task, certFile, keyF
 	}
 	fmt.Fprintln(s.Console)
 
-	cronStopped := make(chan struct{})
-	httpStopped := make(chan struct{})
+	wg := &sync.WaitGroup{}
+	wg.Add(2)
 
 	scheduler.Start()
 	defer scheduler.Stop()
 	go func() {
 		<-ctx.Done()
 		<-scheduler.Stop().Done()
-		close(cronStopped)
+		wg.Done()
 	}()
 
 	srv := &http.Server{Addr: listen, Handler: exporter.New(s)}
@@ -70,7 +71,7 @@ func RunServer(ctx context.Context, s *store.Store, tasks []Task, certFile, keyF
 		if err := srv.Shutdown(context.Background()); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 		}
-		close(httpStopped)
+		wg.Done()
 	}()
 
 	var err error
@@ -85,8 +86,7 @@ func RunServer(ctx context.Context, s *store.Store, tasks []Task, certFile, keyF
 	}
 	cancel()
 
-	<-cronStopped
-	<-httpStopped
+	wg.Wait()
 
 	return exitCode
 }
