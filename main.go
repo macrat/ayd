@@ -22,6 +22,7 @@ var (
 	storePath   = flag.String("o", "./ayd.log", "Path to log file. Log file is also use for restore status history. Ayd won't create log file if set \"-\" or empty.")
 	oneshot     = flag.Bool("1", false, "Check status only once and exit. Exit with 0 if all check passed, otherwise exit with code 1.")
 	alertURL    = flag.String("a", "", "The alert URL that the same format as target URL.")
+	userinfo    = flag.String("u", "", "Username and password for HTTP endpoint.")
 	certPath    = flag.String("c", "", "Path to certificate file for HTTPS. -k option is also required if use this.")
 	keyPath     = flag.String("k", "", "Path to key file for HTTPS. -c option is also required if use this.")
 	showVersion = flag.Bool("v", false, "Show version and exit.")

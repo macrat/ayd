@@ -507,6 +507,21 @@ You can set cert certificate file and key file via `-c` option and `-k` option.
 $ ayd -c ./your-certificate.crt -k ./your-certificate.key ping:localhost
 ```
 
+#### Enable authentication for status pages
+
+Ayd has very simple authentication mechanism using Basic Authentication.
+You can use it like below.
+
+``` shell
+$ ayd -u user:p@ssword ping:localhost
+```
+
+For above example, you can access status page using `user` as username and `p@ssword` as password.
+
+This is not very secure because you have to write password to argument. (Attacker can peek arguments of other process easily if you have access to server terminal)
+But, this is very easy to setup, and work against end user who don't know how to attack at least.
+If you want to more secure option, please consider use reverse proxy like Nginx.
+
 #### One-shot mode
 
 If you want to use Ayd in a script, you may use `-1` option.

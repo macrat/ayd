@@ -65,7 +65,7 @@ func RunServer(ctx context.Context, s *store.Store, tasks []Task, certFile, keyF
 		wg.Done()
 	}()
 
-	srv := &http.Server{Addr: listen, Handler: exporter.New(s)}
+	srv := &http.Server{Addr: listen, Handler: exporter.NewBasicAuth(exporter.New(s), *userinfo)}
 	go func() {
 		<-ctx.Done()
 		if err := srv.Shutdown(context.Background()); err != nil {
