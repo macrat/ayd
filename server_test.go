@@ -3,6 +3,8 @@ package main_test
 import (
 	"context"
 	"fmt"
+	"os"
+	"runtime"
 	"sync"
 	"testing"
 	"time"
@@ -125,6 +127,29 @@ func TestRunServer_tls_error(t *testing.T) {
 				t.Errorf("unexpected return code: %d", code)
 			}
 		})
+	}
+}
+
+func TestRunServer_permissionError(t *testing.T) {
+	if runtime.GOOS != "linux" && runtime.GOOS != "darwin" {
+		t.Skip("permission test only works on *nix OS")
+	}
+
+	s := testutil.NewStore(t)
+	defer s.Close()
+	os.Chmod(s.Path, 0200)
+
+	tasks, errs := main.ParseArgs([]string{"dummy:"})
+	if errs != nil {
+		t.Fatalf("failed to parse argument:\n%s", errs)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	defer cancel()
+
+	code := main.RunServer(ctx, s, tasks, "", "")
+	if code != 1 {
+		t.Errorf("unexpected return code: %d", code)
 	}
 }
 
