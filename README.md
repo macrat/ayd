@@ -507,6 +507,8 @@ You can set cert certificate file and key file via `-c` option and `-k` option.
 $ ayd -c ./your-certificate.crt -k ./your-certificate.key ping:localhost
 ```
 
+This option is also enable HTTP/2.
+
 #### Enable authentication for status pages
 
 Ayd has very simple authentication mechanism using Basic Authentication.
