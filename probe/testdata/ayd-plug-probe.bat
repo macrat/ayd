@@ -9,4 +9,4 @@ if "%1" == "plug:invalid-record" (
 )
 
 REM test empty line
-echo
+echo.
