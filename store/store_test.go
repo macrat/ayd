@@ -293,6 +293,47 @@ func TestStore_Restore(t *testing.T) {
 	}
 }
 
+func TestStore_Restore_disableLog(t *testing.T) {
+	s, err := store.New("")
+	if err != nil {
+		t.Fatalf("failed to create store: %s", err)
+	}
+	defer s.Close()
+
+	if err = s.Restore(); err != nil {
+		t.Fatalf("failed to restore: %s", err)
+	}
+}
+
+func TestStore_Restore_permission(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("can't do this test because file permission does not work on windows")
+		return
+	}
+
+	f, err := os.CreateTemp("", "ayd-test-*")
+	if err != nil {
+		t.Fatalf("failed to create log file: %s", err)
+	}
+	defer os.Remove(f.Name())
+	defer f.Close()
+
+	s, err := store.New(f.Name())
+	if err != nil {
+		t.Fatalf("failed to create store: %s", err)
+	}
+	defer s.Close()
+
+	os.Chmod(f.Name(), 0000)
+
+	err = s.Restore()
+	if err == nil {
+		t.Fatalf("expected error but got nil")
+	} else if !os.IsPermission(err) {
+		t.Fatalf("unexpected error: %s", err)
+	}
+}
+
 func TestStore_Restore_limitBorder(t *testing.T) {
 	f, err := os.CreateTemp("", "ayd-test-*")
 	if err != nil {

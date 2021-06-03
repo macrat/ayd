@@ -36,6 +36,10 @@ func TestAlert(t *testing.T) {
 		{"foo:", "alert:foo:", "\"foo: 2001-02-03T16:05:06Z FAILURE dummy:failure foobar\"", ""},
 		{"foo:hello-world", "alert:foo:hello-world", "\"foo:hello-world 2001-02-03T16:05:06Z FAILURE dummy:failure foobar\"", ""},
 		{"bar:", "", "", "unsupported scheme"},
+		{"::", "", "", "invalid URL"},
+		{"ayd:test:internal-url", "", "", "unsupported scheme"},
+		{"alert:", "", "", "unsupported scheme"},
+		{"of-course-no-such-plugin:", "", "", "unsupported scheme"},
 	}
 
 	for _, tt := range tests {

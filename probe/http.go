@@ -42,7 +42,7 @@ func NewHTTPProbe(u *url.URL) (HTTPProbe, error) {
 	ucopy := *u
 	requrl := &ucopy
 
-	scheme := strings.Split(requrl.Scheme, "-")
+	scheme := strings.SplitN(requrl.Scheme, "-", 2)
 	requrl.Scheme = scheme[0]
 
 	var method string

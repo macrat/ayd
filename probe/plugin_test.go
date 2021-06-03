@@ -13,9 +13,7 @@ import (
 	"github.com/macrat/ayd/testutil"
 )
 
-func TestPluginProbe(t *testing.T) {
-	t.Parallel()
-
+func PreparePluginPath(t *testing.T) {
 	cwd, err := os.Getwd()
 	if err != nil {
 		t.Fatalf("failed to get current path: %s", err)
@@ -26,11 +24,18 @@ func TestPluginProbe(t *testing.T) {
 	t.Cleanup(func() {
 		os.Setenv("PATH", origPath)
 	})
+}
+
+func TestPluginProbe(t *testing.T) {
+	t.Parallel()
+	PreparePluginPath(t)
 
 	AssertProbe(t, []ProbeTest{
 		{"plug:", api.StatusHealthy, "check plug:", ""},
 		{"plug:hello-world", api.StatusHealthy, "check plug:hello-world", ""},
 		{"plug:empty", api.StatusHealthy, "", ""},
+		{"ayd:test", api.StatusUnknown, "", "unsupported scheme"},
+		{"alert:test", api.StatusUnknown, "", "unsupported scheme"},
 	})
 
 	AssertTimeout(t, "plug:")
@@ -73,4 +78,32 @@ func TestPluginProbe(t *testing.T) {
 			t.Errorf("got unexpected message: %s", rs[1].Message)
 		}
 	})
+}
+
+func TestWithoutPlugin(t *testing.T) {
+	PreparePluginPath(t)
+
+	tests := []struct {
+		URL                string
+		NewError           error
+		WithoutPluginError error
+	}{
+		{"dummy:healthy", nil, nil},
+		{"plug:test", nil, probe.ErrUnsupportedScheme},
+		{"::", probe.ErrInvalidURL, probe.ErrInvalidURL},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.URL, func(t *testing.T) {
+			p, err := probe.New(tt.URL)
+			if err != tt.NewError {
+				t.Fatalf("probe.New: unexpected error: %s", err)
+			}
+
+			_, err = probe.WithoutPlugin(p, err)
+			if err != tt.WithoutPluginError {
+				t.Fatalf("probe.WithoutPlugin: unexpected error: %s", err)
+			}
+		})
+	}
 }

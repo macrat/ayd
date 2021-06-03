@@ -7,6 +7,7 @@ import (
 	"time"
 
 	api "github.com/macrat/ayd/lib-ayd"
+	"github.com/macrat/ayd/probe"
 	"github.com/macrat/ayd/testutil"
 )
 
@@ -30,6 +31,18 @@ func TestHTTPProbe(t *testing.T) {
 	})
 
 	AssertTimeout(t, server.URL)
+
+	for _, tt := range []string{"unknown-method", ""} {
+		u := "http-" + tt + "://localhost"
+		t.Run(u, func(t *testing.T) {
+			_, err := probe.New(u)
+			if err == nil {
+				t.Errorf("expected error but got nil")
+			} else if err.Error() != `HTTP "`+strings.ToUpper(tt)+`" method is not supported. Please use GET, HEAD, POST, or OPTIONS.` {
+				t.Errorf("unexpected error: %s", err)
+			}
+		})
+	}
 }
 
 func BenchmarkHTTPProbe(b *testing.B) {

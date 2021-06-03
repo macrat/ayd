@@ -13,9 +13,15 @@ import (
 func TestExecuteProbe(t *testing.T) {
 	t.Parallel()
 
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("failed to get current path: %s", err)
+	}
+
 	AssertProbe(t, []ProbeTest{
 		{`exec:./testdata/test.bat?message=hello&code=0`, api.StatusHealthy, "hello", ""},
 		{`exec:./testdata/test.bat?message=world&code=1`, api.StatusFailure, "world", ""},
+		{"exec:" + path.Join(cwd, "testdata/test.bat") + "?message=hello&code=0", api.StatusHealthy, "hello", ""},
 		{"exec:echo#%0Ahello%0Aworld%0A%0A", api.StatusHealthy, "hello\nworld", ""},
 		{"exec:./testdata/no-such-script", api.StatusUnknown, ``, `exec: ".\\\\testdata\\\\no-such-script": file does not exist`},
 		{"exec:no-such-command", api.StatusUnknown, ``, `exec: "no-such-command": executable file not found in %PATH%`},

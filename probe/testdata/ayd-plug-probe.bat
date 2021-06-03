@@ -7,3 +7,6 @@ if not "%1" == "plug:empty" (
 if "%1" == "plug:invalid-record" (
     echo this is invalid
 )
+
+REM test empty line
+echo

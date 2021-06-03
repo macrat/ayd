@@ -96,6 +96,20 @@ func TestTargetURLNormalize(t *testing.T) {
 			t.Errorf("unexpected error: %v", err)
 		}
 	})
+
+	t.Run("abc", func(t *testing.T) {
+		_, err := probe.New("abc")
+		if err != probe.ErrMissingScheme {
+			t.Errorf("unexpected error: %v", err)
+		}
+	})
+
+	t.Run("::", func(t *testing.T) {
+		_, err := probe.New("::")
+		if err != probe.ErrInvalidURL {
+			t.Errorf("unexpected error: %v", err)
+		}
+	})
 }
 
 type ProbeTest struct {

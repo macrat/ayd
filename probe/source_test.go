@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"path"
 	"regexp"
 	"testing"
 	"time"
@@ -16,6 +17,11 @@ import (
 
 func TestSource(t *testing.T) {
 	t.Parallel()
+
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("failed to get current path: %s", err)
+	}
 
 	tests := []struct {
 		Target       string
@@ -50,6 +56,10 @@ func TestSource(t *testing.T) {
 		{"source:./testdata/no-such-list.txt", map[string]api.Status{
 			"source:./testdata/no-such-list.txt": api.StatusUnknown,
 		}, `open \./testdata/no-such-list\.txt: (no such file or directory|The system cannot find the file specified\.)`},
+		{"source:" + path.Join(cwd, "testdata/sub-list.txt"), map[string]api.Status{
+			"dummy:healthy#sub-list":                            api.StatusHealthy,
+			"source:" + path.Join(cwd, "testdata/sub-list.txt"): api.StatusHealthy,
+		}, ""},
 	}
 
 	for _, tt := range tests {

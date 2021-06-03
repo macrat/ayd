@@ -3,6 +3,8 @@
 package probe_test
 
 import (
+	"os"
+	"path"
 	"testing"
 
 	api "github.com/macrat/ayd/lib-ayd"
@@ -11,9 +13,15 @@ import (
 func TestExecuteProbe(t *testing.T) {
 	t.Parallel()
 
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("failed to get current path: %s", err)
+	}
+
 	AssertProbe(t, []ProbeTest{
 		{"exec:./testdata/test.sh?message=hello&code=0", api.StatusHealthy, "hello", ""},
 		{"exec:./testdata/test.sh?message=world&code=1", api.StatusFailure, "world", ""},
+		{"exec:" + path.Join(cwd, "testdata/test.sh") + "?message=hello&code=0", api.StatusHealthy, "hello", ""},
 		{"exec:echo#%0Ahello%0Aworld%0A%0A", api.StatusHealthy, "hello\nworld", ""},
 		{"exec:./testdata/no-such-script", api.StatusUnknown, ``, `exec: "./testdata/no-such-script": stat ./testdata/no-such-script: no such file or directory`},
 		{"exec:./testdata/no-permission.sh", api.StatusUnknown, ``, `exec: "./testdata/no-permission.sh": permission denied`},

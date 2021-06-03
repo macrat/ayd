@@ -7,3 +7,6 @@ fi
 if [ "$1" = "plug:invalid-record" ]; then
     echo "this is invalid"
 fi
+
+# test empty line
+echo

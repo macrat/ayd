@@ -22,6 +22,9 @@ func TestDummyProbe(t *testing.T) {
 		{"dummy:healthy#something-comment", api.StatusHealthy, ``, ""},
 
 		{"dummy:unknown-status", api.StatusUnknown, ``, `opaque must healthy, failure, aborted, unknown, or random`},
+		{"dummy:?latency=1ms", api.StatusHealthy, ``, ""},
+		{"dummy:?latency=1", api.StatusUnknown, ``, `time: missing unit in duration "1"`},
+		{"dummy:?latency=1kb", api.StatusUnknown, ``, `time: unknown unit "kb" in duration "1kb"`},
 	})
 
 	t.Run("dummy:random", func(t *testing.T) {
