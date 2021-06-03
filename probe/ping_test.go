@@ -82,7 +82,7 @@ func TestResourceLocker_flooding(t *testing.T) {
 		rl.Done()
 	}
 
-	time.Sleep(10 * time.Millisecond) // wait for teardown goroutine
+	time.Sleep(100 * time.Millisecond) // wait for teardown goroutine
 	rl.Lock()
 	defer rl.Unlock()
 
@@ -111,12 +111,12 @@ func TestResourceLocker_goroutine_leak(t *testing.T) {
 		})
 	}
 
-	before := runtime.NumGoroutine()
+	before := runtime.NumGoroutine() // wait for teardown goroutine
 	for i := 0; i < 100000; i++ {
 		start()
 		rl.Done()
 	}
-	time.Sleep(10 * time.Millisecond)
+	time.Sleep(100 * time.Millisecond)
 	after := runtime.NumGoroutine()
 
 	if before+10 < after {
