@@ -7,6 +7,7 @@ import (
 	"os"
 	"path"
 	"testing"
+	"strings"
 
 	api "github.com/macrat/ayd/lib-ayd"
 	"github.com/macrat/ayd/probe"
@@ -19,6 +20,7 @@ func TestExecuteProbe(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to get current path: %s", err)
 	}
+	cwd = strings.ReplaceAll(cwd, "\\", "/")
 
 	AssertProbe(t, []ProbeTest{
 		{`exec:./testdata/test.bat?message=hello&code=0`, api.StatusHealthy, "hello", ""},
