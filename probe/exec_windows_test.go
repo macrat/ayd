@@ -4,6 +4,8 @@ package probe_test
 
 import (
 	"net/url"
+	"os"
+	"path"
 	"testing"
 
 	api "github.com/macrat/ayd/lib-ayd"
