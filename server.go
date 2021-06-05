@@ -54,20 +54,21 @@ func RunServer(ctx context.Context, s *store.Store, tasks []Task, certFile, keyF
 	}
 	fmt.Fprintln(s.Console)
 
-	wg := &sync.WaitGroup{}
-	wg.Add(2)
-
 	scheduler.Start()
 	defer scheduler.Stop()
-	go func() {
-		<-ctx.Done()
-		<-scheduler.Stop().Done()
-		wg.Done()
-	}()
 
 	srv := &http.Server{Addr: listen, Handler: exporter.NewBasicAuth(exporter.New(s), *userinfo)}
+
+	wg := &sync.WaitGroup{}
+	wg.Add(2)
 	go func() {
 		<-ctx.Done()
+
+		go func() {
+			<-scheduler.Stop().Done()
+			wg.Done()
+		}()
+
 		if err := srv.Shutdown(context.Background()); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 		}
