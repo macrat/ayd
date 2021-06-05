@@ -4,10 +4,13 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/macrat/ayd/exporter"
+	api "github.com/macrat/ayd/lib-ayd"
 	"github.com/macrat/ayd/store"
 	"github.com/robfig/cron/v3"
 )
@@ -70,7 +73,12 @@ func RunServer(ctx context.Context, s *store.Store, tasks []Task, certFile, keyF
 		}()
 
 		if err := srv.Shutdown(context.Background()); err != nil {
-			fmt.Fprintln(os.Stderr, err)
+			s.Report(api.Record{
+				CheckedAt: time.Now(),
+				Target:    &url.URL{Scheme: "ayd", Opaque: "server"},
+				Status:    api.StatusFailure,
+				Message:   err.Error(),
+			})
 		}
 		wg.Done()
 	}()
@@ -82,7 +90,12 @@ func RunServer(ctx context.Context, s *store.Store, tasks []Task, certFile, keyF
 		err = srv.ListenAndServe()
 	}
 	if err != http.ErrServerClosed {
-		fmt.Fprintln(os.Stderr, err)
+		s.Report(api.Record{
+			CheckedAt: time.Now(),
+			Target:    &url.URL{Scheme: "ayd", Opaque: "server"},
+			Status:    api.StatusFailure,
+			Message:   err.Error(),
+		})
 		exitCode = 1
 	}
 	cancel()
