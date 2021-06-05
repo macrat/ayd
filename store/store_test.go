@@ -575,6 +575,29 @@ func TestStore_Path_empty(t *testing.T) {
 	}
 }
 
+func TestStore_ReportInternalError(t *testing.T) {
+	t.Parallel()
+
+	buf := &bytes.Buffer{}
+
+	s, err := store.New("")
+	if err != nil {
+		t.Fatalf("failed to create store")
+	}
+	s.Console = buf
+	defer s.Close()
+
+	s.ReportInternalError("test", "hello world")
+
+	time.Sleep(10 * time.Millisecond) // waiting for writer
+
+	if ok, err := regexp.MatchString("^[-+:ZT0-9]+\tFAILURE\t[.0-9]+\tayd:test\thello world\n$", buf.String()); err != nil {
+		t.Fatalf("failed to match log: %s", err)
+	} else if !ok {
+		t.Errorf("unexpected error:\n%s", buf.String())
+	}
+}
+
 func BenchmarkStore_Append(b *testing.B) {
 	for _, status := range []api.Status{api.StatusHealthy, api.StatusFailure} {
 		b.Run(status.String(), func(b *testing.B) {
