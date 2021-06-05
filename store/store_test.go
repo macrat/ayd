@@ -585,11 +585,14 @@ func TestStore_ReportInternalError(t *testing.T) {
 		t.Fatalf("failed to create store")
 	}
 	s.Console = buf
-	defer s.Close()
 
 	s.ReportInternalError("test", "hello world")
 
-	time.Sleep(10 * time.Millisecond) // waiting for writer
+	time.Sleep(10 * time.Millisecond) // wait for writer
+
+	s.Close()
+
+	time.Sleep(10 * time.Millisecond) // wait for close
 
 	if ok, err := regexp.MatchString("^[-+:ZT0-9]+\tFAILURE\t[.0-9]+\tayd:test\thello world\n$", buf.String()); err != nil {
 		t.Fatalf("failed to match log: %s", err)
