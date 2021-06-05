@@ -3,11 +3,8 @@ package exporter
 import (
 	_ "embed"
 	"net/http"
-	"net/url"
-	"time"
 
 	"github.com/NYTimes/gziphandler"
-	api "github.com/macrat/ayd/lib-ayd"
 	"github.com/macrat/ayd/store"
 )
 
@@ -55,11 +52,6 @@ func New(s *store.Store) http.Handler {
 
 func HandleError(s *store.Store, scope string, err error) {
 	if err != nil {
-		s.Report(api.Record{
-			CheckedAt: time.Now(),
-			Target:    &url.URL{Scheme: "ayd", Opaque: "api:" + scope},
-			Status:    api.StatusFailure,
-			Message:   err.Error(),
-		})
+		s.ReportInternalError("api:"+scope, err.Error())
 	}
 }

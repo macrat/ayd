@@ -132,6 +132,15 @@ func New(path string) (*Store, error) {
 	return store, nil
 }
 
+func (s *Store) ReportInternalError(scope, message string) {
+	s.Report(api.Record{
+		CheckedAt: time.Now(),
+		Status:    api.StatusFailure,
+		Target:    &url.URL{Scheme: "ayd", Opaque: scope},
+		Message:   message,
+	})
+}
+
 func (s *Store) handleError(err error) {
 	if err != nil {
 		s.Console.Write([]byte(api.Record{
