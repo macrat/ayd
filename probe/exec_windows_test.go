@@ -6,8 +6,8 @@ import (
 	"net/url"
 	"os"
 	"path"
-	"testing"
 	"strings"
+	"testing"
 
 	api "github.com/macrat/ayd/lib-ayd"
 	"github.com/macrat/ayd/probe"
