@@ -247,6 +247,12 @@ If you want to make your own plugin please read [make plugin](#make-plugin) sect
 
 Plugin will timeout in maximum 1 hour and report as failure.
 
+##### plugin list
+
+- [FTP / FTPS](https://github.com/macrat/ayd-ftp-probe#readme)
+- [SMB (samba)](https://github.com/macrat/ayd-smb-probe#readme)
+- or, you can [make your plugin](#make-plugin) yourself.
+
 
 ### Scheduling
 
