@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/url"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -76,11 +77,19 @@ func newAutoPinger() *autoPingerStruct {
 	}
 }
 
+func getAydPrivilegedEnv() bool {
+	switch strings.ToLower(os.Getenv("AYD_PRIVILEGED")) {
+	case "", "0", "no", "false":
+		return false
+	}
+	return true
+}
+
 func makePingers() (v4, v6 *pinger.Pinger) {
 	v4 = pinger.NewIPv4()
 	v6 = pinger.NewIPv6()
 
-	if os.Getenv("AYD_PRIVILEGED") != "" {
+	if getAydPrivilegedEnv() {
 		v4.SetPrivileged(true)
 		v6.SetPrivileged(true)
 	}

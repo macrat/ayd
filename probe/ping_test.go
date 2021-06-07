@@ -212,7 +212,7 @@ func TestPingProbe(t *testing.T) {
 	})
 }
 
-func TestCheckPingPermission_privileged(t *testing.T) {
+func TestCheckPingPermission_privilegedEnv(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("unprivileged mode is not supported on windows")
 	}
@@ -222,14 +222,32 @@ func TestCheckPingPermission_privileged(t *testing.T) {
 		os.Setenv("AYD_PRIVILEGED", privileged)
 	})
 
-	os.Setenv("AYD_PRIVILEGED", "1")
-	if err := probe.CheckPingPermission(); err == nil {
-		t.Errorf("expected error but got nil")
+	tests := []struct {
+		Env  string
+		Fail bool
+	}{
+		{"1", true},
+		{"0", false},
+		{"yes", true},
+		{"no", false},
+		{"true", true},
+		{"false", false},
+		{"TRUE", true},
+		{"False", false},
 	}
 
-	os.Setenv("AYD_PRIVILEGED", "")
-	if err := probe.CheckPingPermission(); err != nil {
-		t.Errorf("expected nil but got error: %s", err)
+	for _, tt := range tests {
+		t.Run("AYD_PRIVILEGED="+tt.Env, func(t *testing.T) {
+			os.Setenv("AYD_PRIVILEGED", tt.Env)
+			err := probe.CheckPingPermission()
+
+			if tt.Fail && err == nil {
+				t.Errorf("expected error but got nil")
+			}
+			if !tt.Fail && err != nil {
+				t.Errorf("expected nil but got error: %s", err)
+			}
+		})
 	}
 }
 
