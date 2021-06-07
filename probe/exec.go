@@ -40,7 +40,7 @@ func NewExecuteProbe(u *url.URL) (ExecuteProbe, error) {
 		Fragment: u.Fragment,
 	}
 
-	if _, err := exec.LookPath(filepath.FromSlash(path)); errors.Unwrap(err) != nil {
+	if _, err := exec.LookPath(filepath.FromSlash(path)); err != nil {
 		return ExecuteProbe{}, err
 	}
 
