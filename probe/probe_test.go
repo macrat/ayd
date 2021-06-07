@@ -163,9 +163,9 @@ func AssertTimeout(t *testing.T, target string) {
 	t.Run("timeout", func(t *testing.T) {
 		p := testutil.NewProbe(t, target)
 
-		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Millisecond)
-		time.Sleep(10 * time.Millisecond)
+		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Nanosecond)
 		defer cancel()
+		time.Sleep(10 * time.Millisecond)
 
 		records := testutil.RunCheck(ctx, p)
 		if len(records) != 1 {
