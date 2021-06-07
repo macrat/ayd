@@ -2,6 +2,7 @@ package probe_test
 
 import (
 	"context"
+	"os"
 	"runtime"
 	"testing"
 	"time"
@@ -209,6 +210,27 @@ func TestPingProbe(t *testing.T) {
 			t.Errorf("unexpected status: %s", records[0].Status)
 		}
 	})
+}
+
+func TestCheckPingPermission_privileged(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("unprivileged mode is not supported on windows")
+	}
+
+	privileged := os.Getenv("AYD_PRIVILEGED")
+	t.Cleanup(func() {
+		os.Setenv("AYD_PRIVILEGED", privileged)
+	})
+
+	os.Setenv("AYD_PRIVILEGED", "1")
+	if err := probe.CheckPingPermission(); err == nil {
+		t.Errorf("expected error but got nil")
+	}
+
+	os.Setenv("AYD_PRIVILEGED", "")
+	if err := probe.CheckPingPermission(); err != nil {
+		t.Errorf("expected nil but got error: %s", err)
+	}
 }
 
 func BenchmarkPingProbe(b *testing.B) {
