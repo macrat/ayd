@@ -18,9 +18,9 @@ func TestDNSProbe(t *testing.T) {
 		{"dns:localhost?type=AAAA", api.StatusHealthy, "::1(\n::1)*", ""},
 		{"dns:localhost?type=A", api.StatusHealthy, "127\\.0\\.0\\.1(\n127\\.0\\.0\\.1)*", ""},
 
-		{"dns:example.com?type=CNAME", api.StatusHealthy, `example.com.`, ""},
+		{"dns:example.com?type=CNAME", api.StatusHealthy, `example\.com\.`, ""},
 
-		{"dns:example.com?type=MX", api.StatusHealthy, `.`, ""},
+		{"dns:google.com?type=MX", api.StatusHealthy, "[a-z0-9.\n]+", ""},
 
 		{"dns:example.com?type=NS", api.StatusHealthy, `[a-z]\.iana-servers\.net\.(` + "\n" + `[a-z]\.iana-servers\.net\.)*`, ""},
 
