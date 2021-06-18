@@ -130,29 +130,33 @@ func NewLogScanner(s *store.Store, since, until time.Time) (LogScanner, error) {
 }
 
 func newLogScannerForExporter(s *store.Store, w http.ResponseWriter, r *http.Request) (scanner LogScanner, ok bool) {
-	until := time.Now()
-	since := until.Add(-7 * 14 * time.Hour)
-
-	var err error
-
 	qs := r.URL.Query()
-	if q := qs.Get("since"); q != "" {
-		since, err = time.Parse(time.RFC3339, q)
+
+	getTimeQuery := func(name string, default_ time.Time) (time.Time, error) {
+		q := qs.Get(name)
+		if q == "" {
+			return default_, nil
+		}
+
+		t, err := time.Parse(time.RFC3339, q)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte("invalid `since` format\n"))
-			HandleError(s, "log.tsv", fmt.Errorf("invalid since format: %w", err))
-			return nil, false
+			fmt.Fprintf(w, "invalid `%s` format\n", name)
+			return default_, fmt.Errorf("invalid %s format: %w", name, err)
 		}
+		return t, nil
 	}
-	if q := qs.Get("until"); q != "" {
-		until, err = time.Parse(time.RFC3339, q)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte("invalid `until` format\n"))
-			HandleError(s, "log.tsv", fmt.Errorf("invalid until format: %w", err))
-			return nil, false
-		}
+
+	since, err := getTimeQuery("since", time.Now().Add(-7*14*time.Hour))
+	if err != nil {
+		HandleError(s, "log.tsv", err)
+		return nil, false
+	}
+
+	until, err := getTimeQuery("until", time.Now())
+	if err != nil {
+		HandleError(s, "log.tsv", err)
+		return nil, false
 	}
 
 	scanner, err = NewLogScanner(s, since, until)
