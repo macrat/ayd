@@ -45,6 +45,18 @@ func TestLogScanner(t *testing.T) {
 			time.Date(2000, 1, 1, 13, 2, 4, 0, time.UTC),
 			time.Date(2000, 1, 3, 13, 2, 3, 0, time.UTC),
 		},
+		{
+			"no_match",
+			[]string{},
+			time.Date(2000, 2, 1, 13, 2, 3, 0, time.UTC),
+			time.Date(2000, 2, 1, 13, 2, 3, 0, time.UTC),
+		},
+		{
+			"reverse",
+			[]string{},
+			time.Date(2000, 2, 1, 13, 2, 3, 0, time.UTC),
+			time.Date(2000, 1, 1, 13, 2, 3, 0, time.UTC),
+		},
 	}
 
 	scanners := []struct {
