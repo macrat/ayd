@@ -140,7 +140,7 @@ func newLogScannerForExporter(s *store.Store, w http.ResponseWriter, r *http.Req
 
 		t, err := time.Parse(time.RFC3339, q)
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
+			w.WriteHeader(http.StatusBadRequest)
 			fmt.Fprintf(w, "invalid `%s` format\n", name)
 			return default_, fmt.Errorf("invalid %s format: %w", name, err)
 		}
