@@ -206,6 +206,7 @@ func LogTSVExporter(s *store.Store) http.HandlerFunc {
 		if !ok {
 			return
 		}
+		defer scanner.Close()
 
 		if targets, ok := r.URL.Query()["target"]; ok {
 			scanner = LogFilter{scanner, targets}
