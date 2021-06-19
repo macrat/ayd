@@ -18,11 +18,13 @@ func CopyFile(t testing.TB, source string) (dest string) {
 	if err != nil {
 		t.Fatalf("failed to open source file: %s", err)
 	}
+	defer srcFile.Close()
 
 	dstFile, err := os.Create(dest)
 	if err != nil {
 		t.Fatalf("failed to open dest file: %s", err)
 	}
+	defer dstFile.Close()
 
 	_, err = io.Copy(dstFile, srcFile)
 	if err != nil {
