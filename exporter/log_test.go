@@ -4,6 +4,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -150,12 +151,87 @@ func TestLogScanner(t *testing.T) {
 }
 
 func TestLogTSVExporter(t *testing.T) {
-	srv := testutil.StartTestServer(t)
-	defer srv.Close()
+	tests := []struct {
+		Name       string
+		Query      string
+		StatusCode int
+		Pattern    string
+	}{
+		{
+			"without-query",
+			"",
+			http.StatusOK,
+			"",
+		},
+		{
+			"fetch-all",
+			"?since=2021-01-01T00:00:00Z&until=2022-01-01T00:00:00Z&target=http://a.example.com",
+			http.StatusOK,
+			"(.*\n){3}",
+		},
+		{
+			"drop-with-time-range",
+			"?since=2021-01-02T15:04:06Z&until=2021-01-02T15:04:07Z&target=http://a.example.com",
+			http.StatusOK,
+			"2021-01-02T15:04:06Z\t.*\n",
+		},
+		{
+			"drop-all-with-time-range",
+			"?since=2001-01-01T00:00:00Z&until=2002-01-01T00:00:00Z&target=http://a.example.com",
+			http.StatusOK,
+			"",
+		},
+		{
+			"drop-with-target",
+			"?since=2021-01-01T00:00:00Z&until=2022-01-01T00:00:00Z&target=http://b.example.com",
+			http.StatusOK,
+			"(.*\n){2}",
+		},
+		{
+			"drop-all-with-target",
+			"?since=2021-01-01T00:00:00Z&until=2022-01-01T00:00:00Z&target=http://no-such.example.com",
+			http.StatusOK,
+			"",
+		},
+		{
+			"invalid-since",
+			"?since=invalid-since&until=2022-01-01T00:00:00Z",
+			http.StatusBadRequest,
+			"invalid `since` format\n",
+		},
+		{
+			"invalid-since",
+			"?since=2021-01-01T00:00:00Z&until=invalid-until",
+			http.StatusBadRequest,
+			"invalid `until` format\n",
+		},
+	}
 
-	if resp, err := srv.Client().Get(srv.URL + "/log.tsv?since=2021-01-01T00:00:00Z&until=2022-01-01T00:00:00Z&target=http://a.example.com"); err != nil {
-		t.Errorf("failed to get /log.tsv: %s", err)
-	} else if resp.StatusCode != http.StatusOK {
-		t.Errorf("unexpected status: %s", resp.Status)
+	for _, tt := range tests {
+		t.Run(tt.Name, func(t *testing.T) {
+			srv := testutil.StartTestServer(t)
+			defer srv.Close()
+
+			resp, err := srv.Client().Get(srv.URL + "/log.tsv" + tt.Query)
+			if err != nil {
+				t.Fatalf("failed to get /log.tsv: %s", err)
+			}
+			defer resp.Body.Close()
+
+			if resp.StatusCode != tt.StatusCode {
+				t.Errorf("unexpected status: %s", resp.Status)
+			}
+
+			body, err := io.ReadAll(resp.Body)
+			if err != nil {
+				t.Fatalf("failed to read body: %s", err)
+			}
+
+			if ok, err := regexp.Match("^"+tt.Pattern+"$", body); err != nil {
+				t.Errorf("failed to check body: %s", err)
+			} else if !ok {
+				t.Errorf("body must match to %#v but got:\n%s", tt.Pattern, string(body))
+			}
+		})
 	}
 }
