@@ -65,8 +65,8 @@ func StatusTextExporter(s *store.Store) http.HandlerFunc {
 func StatusJSONExporter(s *store.Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-		w.Header().Set("Access-Controll-Allow-Origin", "*")
-		w.Header().Set("Access-Controll-Allow-Methods", "GET")
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET")
 
 		enc := json.NewEncoder(w)
 		enc.SetIndent("", "  ")
