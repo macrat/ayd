@@ -250,6 +250,7 @@ Plugin will timeout in maximum 1 hour and report as failure.
 
 - [FTP / FTPS](https://github.com/macrat/ayd-ftp-probe#readme)
 - [SMB (samba)](https://github.com/macrat/ayd-smb-probe#readme)
+- [NTP](https://github.com/macrat/ayd-ntp-probe#readme)
 - or, you can [make your plugin](#make-plugin) yourself.
 
 
