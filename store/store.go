@@ -55,7 +55,7 @@ func (xs byLatestStatus) Less(i, j int) bool {
 		return false
 	}
 
-	return strings.Compare(xs[i].Target.String(), xs[j].Target.String()) < 0
+	return strings.Compare(xs[i].Target.Redacted(), xs[j].Target.Redacted()) < 0
 }
 
 func (xs byLatestStatus) Swap(i, j int) {
@@ -65,7 +65,7 @@ func (xs byLatestStatus) Swap(i, j int) {
 type ProbeHistoryMap map[string]*ProbeHistory
 
 func (hs ProbeHistoryMap) Append(r api.Record) {
-	target := r.Target.String()
+	target := r.Target.Redacted()
 
 	if h, ok := hs[target]; ok {
 		h.Records = append(h.Records, r)
@@ -227,7 +227,7 @@ func (s *Store) setIncidentIfNeed(r api.Record, needCallback bool) {
 		return
 	}
 
-	target := r.Target.String()
+	target := r.Target.Redacted()
 	if cur, ok := s.currentIncidents[target]; ok {
 		if IncidentIsContinued(cur, r) {
 			return
@@ -314,8 +314,8 @@ func (s *Store) AddTarget(target *url.URL) {
 	s.historyLock.Lock()
 	defer s.historyLock.Unlock()
 
-	if _, ok := s.probeHistory[target.String()]; !ok {
-		s.probeHistory[target.String()] = &ProbeHistory{
+	if _, ok := s.probeHistory[target.Redacted()]; !ok {
+		s.probeHistory[target.Redacted()] = &ProbeHistory{
 			Target: target,
 		}
 	}

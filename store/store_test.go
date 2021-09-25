@@ -464,66 +464,66 @@ func TestStore_incident(t *testing.T) {
 	}
 
 	var offset time.Duration
-	appendRecord := func(fragment, message string, status api.Status) {
+	appendRecord := func(path, password, message string, status api.Status) {
 		t.Helper()
 		offset += 1 * time.Second
 
 		s.Report(api.Record{
 			CheckedAt: time.Now().Add(offset),
-			Target:    &url.URL{Scheme: "dummy", Fragment: fragment},
+			Target:    &url.URL{Scheme: "dummy", User: url.UserPassword("test", password), Path: path},
 			Message:   message,
 			Status:    status,
 		})
 	}
 
-	appendRecord("incident-test-1", "1-1", api.StatusHealthy)
+	appendRecord("incident-test-1", "a", "1-1", api.StatusHealthy)
 	assertIncidents(s.CurrentIncidents())
 	assertIncidents(s.IncidentHistory())
 	assertLastIncident("")
 
-	appendRecord("incident-test-1", "1-2", api.StatusFailure)
-	assertIncidents(s.CurrentIncidents(), "dummy:#incident-test-1")
+	appendRecord("incident-test-1", "b", "1-2", api.StatusFailure)
+	assertIncidents(s.CurrentIncidents(), "dummy://test:b@incident-test-1")
 	assertIncidents(s.IncidentHistory())
 	assertLastIncident("1-2")
 
-	appendRecord("incident-test-1", "1-2", api.StatusFailure)
-	assertIncidents(s.CurrentIncidents(), "dummy:#incident-test-1")
+	appendRecord("incident-test-1", "c", "1-2", api.StatusFailure)
+	assertIncidents(s.CurrentIncidents(), "dummy://test:b@incident-test-1")
 	assertIncidents(s.IncidentHistory())
 	assertLastIncident("1-2")
 
-	appendRecord("incident-test-2", "2-1", api.StatusFailure)
-	assertIncidents(s.CurrentIncidents(), "dummy:#incident-test-1", "dummy:#incident-test-2")
+	appendRecord("incident-test-2", "d", "2-1", api.StatusFailure)
+	assertIncidents(s.CurrentIncidents(), "dummy://test:b@incident-test-1", "dummy://test:d@incident-test-2")
 	assertIncidents(s.IncidentHistory())
 	assertLastIncident("2-1")
 
-	appendRecord("incident-test-1", "1-3", api.StatusFailure)
-	assertIncidents(s.CurrentIncidents(), "dummy:#incident-test-2", "dummy:#incident-test-1")
-	assertIncidents(s.IncidentHistory(), "dummy:#incident-test-1")
+	appendRecord("incident-test-1", "e", "1-3", api.StatusFailure)
+	assertIncidents(s.CurrentIncidents(), "dummy://test:d@incident-test-2", "dummy://test:e@incident-test-1")
+	assertIncidents(s.IncidentHistory(), "dummy://test:b@incident-test-1")
 	assertLastIncident("1-3")
 
-	appendRecord("incident-test-2", "2-1", api.StatusFailure)
-	assertIncidents(s.CurrentIncidents(), "dummy:#incident-test-2", "dummy:#incident-test-1")
-	assertIncidents(s.IncidentHistory(), "dummy:#incident-test-1")
+	appendRecord("incident-test-2", "f", "2-1", api.StatusFailure)
+	assertIncidents(s.CurrentIncidents(), "dummy://test:d@incident-test-2", "dummy://test:e@incident-test-1")
+	assertIncidents(s.IncidentHistory(), "dummy://test:b@incident-test-1")
 	assertLastIncident("1-3")
 
-	appendRecord("incident-test-2", "2-?", api.StatusAborted)
-	assertIncidents(s.CurrentIncidents(), "dummy:#incident-test-2", "dummy:#incident-test-1")
-	assertIncidents(s.IncidentHistory(), "dummy:#incident-test-1")
+	appendRecord("incident-test-2", "g", "2-?", api.StatusAborted)
+	assertIncidents(s.CurrentIncidents(), "dummy://test:d@incident-test-2", "dummy://test:e@incident-test-1")
+	assertIncidents(s.IncidentHistory(), "dummy://test:b@incident-test-1")
 	assertLastIncident("1-3")
 
-	appendRecord("incident-test-1", "1-4", api.StatusHealthy)
-	assertIncidents(s.CurrentIncidents(), "dummy:#incident-test-2")
-	assertIncidents(s.IncidentHistory(), "dummy:#incident-test-1", "dummy:#incident-test-1")
+	appendRecord("incident-test-1", "h", "1-4", api.StatusHealthy)
+	assertIncidents(s.CurrentIncidents(), "dummy://test:d@incident-test-2")
+	assertIncidents(s.IncidentHistory(), "dummy://test:b@incident-test-1", "dummy://test:e@incident-test-1")
 	assertLastIncident("1-3")
 
-	appendRecord("incident-test-2", "2-2", api.StatusHealthy)
+	appendRecord("incident-test-2", "i", "2-2", api.StatusHealthy)
 	assertIncidents(s.CurrentIncidents())
-	assertIncidents(s.IncidentHistory(), "dummy:#incident-test-1", "dummy:#incident-test-1", "dummy:#incident-test-2")
+	assertIncidents(s.IncidentHistory(), "dummy://test:b@incident-test-1", "dummy://test:e@incident-test-1", "dummy://test:d@incident-test-2")
 	assertLastIncident("2-1")
 
-	appendRecord("incident-test-2", "2-?", api.StatusAborted)
+	appendRecord("incident-test-2", "j", "2-?", api.StatusAborted)
 	assertIncidents(s.CurrentIncidents())
-	assertIncidents(s.IncidentHistory(), "dummy:#incident-test-1", "dummy:#incident-test-1", "dummy:#incident-test-2")
+	assertIncidents(s.IncidentHistory(), "dummy://test:b@incident-test-1", "dummy://test:e@incident-test-1", "dummy://test:d@incident-test-2")
 	assertLastIncident("2-1")
 }
 
