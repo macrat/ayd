@@ -28,6 +28,7 @@ func TestHTTPProbe(t *testing.T) {
 		{strings.Replace(server.URL, "http", "http-head", 1) + "/only/head", api.StatusHealthy, `200 OK`, ""},
 		{strings.Replace(server.URL, "http", "http-options", 1) + "/only/options", api.StatusHealthy, `200 OK`, ""},
 		{server.URL + "/slow-page", api.StatusFailure, `probe timed out`, ""},
+		{"http://localhost:54321", api.StatusFailure, `(127\.0\.0\.1|\[::1\]):54321: connection refused`, ""},
 	})
 
 	AssertTimeout(t, server.URL)

@@ -96,6 +96,9 @@ func (p HTTPProbe) Check(ctx context.Context, r Reporter) {
 		if e, ok := errors.Unwrap(errors.Unwrap(err)).(*net.DNSError); ok && e.IsNotFound {
 			status = api.StatusUnknown
 		}
+		if e, ok := errors.Unwrap(err).(*net.OpError); ok && e.Op == "dial" {
+			message = fmt.Sprintf("%s: connection refused", e.Addr)
+		}
 	} else {
 		message = resp.Status
 		if 200 <= resp.StatusCode && resp.StatusCode <= 299 {
