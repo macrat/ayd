@@ -40,7 +40,7 @@ func RunServer(ctx context.Context, s *store.Store, tasks []Task, certFile, keyF
 	fmt.Fprintf(s.Console, "starts Ayd on %s://%s\n", protocol, listen)
 
 	for _, t := range tasks {
-		fmt.Fprintf(s.Console, "%s\t%s\n", t.Schedule, t.Probe.Target())
+		fmt.Fprintf(s.Console, "%s\t%s\n", t.Schedule, t.Probe.Target().Redacted())
 
 		s.AddTarget(t.Probe.Target())
 
