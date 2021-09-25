@@ -267,6 +267,10 @@ func (s *Store) Report(r api.Record) {
 	s.writeCh <- r
 
 	if r.Target.Scheme != "alert" && r.Target.Scheme != "ayd" {
+		if _, ok := r.Target.User.Password(); ok {
+			r.Target.User = url.UserPassword(r.Target.User.Username(), "xxxxx")
+		}
+
 		s.historyLock.Lock()
 		defer s.historyLock.Unlock()
 
@@ -302,6 +306,10 @@ func (s *Store) Restore() error {
 		}
 
 		if r.Target.Scheme != "alert" && r.Target.Scheme != "ayd" {
+			if _, ok := r.Target.User.Password(); ok {
+				r.Target.User = url.UserPassword(r.Target.User.Username(), "xxxxx")
+			}
+
 			s.probeHistory.Append(r)
 			s.setIncidentIfNeed(r, false)
 		}

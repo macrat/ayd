@@ -293,6 +293,29 @@ func TestStore_Restore(t *testing.T) {
 	}
 }
 
+func TestStore_Restore_removePassword(t *testing.T) {
+	s, err := store.New("./testdata/with-password.log")
+	if err != nil {
+		t.Fatalf("failed to create store: %s", err)
+	}
+	s.Console = io.Discard
+	defer s.Close()
+
+	if err = s.Restore(); err != nil {
+		t.Fatalf("failed to restore: %s", err)
+	}
+
+	hs := s.ProbeHistory()
+
+	if len(hs) != 1 {
+		t.Fatalf("unexpected number of history: %d", len(hs))
+	}
+
+	if hs[0].Target.String() != "http://hoge:xxxxx@example.com" {
+		t.Fatalf("unexpected target in history: %s", hs[0].Target)
+	}
+}
+
 func TestStore_Restore_disableLog(t *testing.T) {
 	s, err := store.New("")
 	if err != nil {
@@ -482,48 +505,48 @@ func TestStore_incident(t *testing.T) {
 	assertLastIncident("")
 
 	appendRecord("incident-test-1", "b", "1-2", api.StatusFailure)
-	assertIncidents(s.CurrentIncidents(), "dummy://test:b@incident-test-1")
+	assertIncidents(s.CurrentIncidents(), "dummy://test:xxxxx@incident-test-1")
 	assertIncidents(s.IncidentHistory())
 	assertLastIncident("1-2")
 
 	appendRecord("incident-test-1", "c", "1-2", api.StatusFailure)
-	assertIncidents(s.CurrentIncidents(), "dummy://test:b@incident-test-1")
+	assertIncidents(s.CurrentIncidents(), "dummy://test:xxxxx@incident-test-1")
 	assertIncidents(s.IncidentHistory())
 	assertLastIncident("1-2")
 
 	appendRecord("incident-test-2", "d", "2-1", api.StatusFailure)
-	assertIncidents(s.CurrentIncidents(), "dummy://test:b@incident-test-1", "dummy://test:d@incident-test-2")
+	assertIncidents(s.CurrentIncidents(), "dummy://test:xxxxx@incident-test-1", "dummy://test:xxxxx@incident-test-2")
 	assertIncidents(s.IncidentHistory())
 	assertLastIncident("2-1")
 
 	appendRecord("incident-test-1", "e", "1-3", api.StatusFailure)
-	assertIncidents(s.CurrentIncidents(), "dummy://test:d@incident-test-2", "dummy://test:e@incident-test-1")
-	assertIncidents(s.IncidentHistory(), "dummy://test:b@incident-test-1")
+	assertIncidents(s.CurrentIncidents(), "dummy://test:xxxxx@incident-test-2", "dummy://test:xxxxx@incident-test-1")
+	assertIncidents(s.IncidentHistory(), "dummy://test:xxxxx@incident-test-1")
 	assertLastIncident("1-3")
 
 	appendRecord("incident-test-2", "f", "2-1", api.StatusFailure)
-	assertIncidents(s.CurrentIncidents(), "dummy://test:d@incident-test-2", "dummy://test:e@incident-test-1")
-	assertIncidents(s.IncidentHistory(), "dummy://test:b@incident-test-1")
+	assertIncidents(s.CurrentIncidents(), "dummy://test:xxxxx@incident-test-2", "dummy://test:xxxxx@incident-test-1")
+	assertIncidents(s.IncidentHistory(), "dummy://test:xxxxx@incident-test-1")
 	assertLastIncident("1-3")
 
 	appendRecord("incident-test-2", "g", "2-?", api.StatusAborted)
-	assertIncidents(s.CurrentIncidents(), "dummy://test:d@incident-test-2", "dummy://test:e@incident-test-1")
-	assertIncidents(s.IncidentHistory(), "dummy://test:b@incident-test-1")
+	assertIncidents(s.CurrentIncidents(), "dummy://test:xxxxx@incident-test-2", "dummy://test:xxxxx@incident-test-1")
+	assertIncidents(s.IncidentHistory(), "dummy://test:xxxxx@incident-test-1")
 	assertLastIncident("1-3")
 
 	appendRecord("incident-test-1", "h", "1-4", api.StatusHealthy)
-	assertIncidents(s.CurrentIncidents(), "dummy://test:d@incident-test-2")
-	assertIncidents(s.IncidentHistory(), "dummy://test:b@incident-test-1", "dummy://test:e@incident-test-1")
+	assertIncidents(s.CurrentIncidents(), "dummy://test:xxxxx@incident-test-2")
+	assertIncidents(s.IncidentHistory(), "dummy://test:xxxxx@incident-test-1", "dummy://test:xxxxx@incident-test-1")
 	assertLastIncident("1-3")
 
 	appendRecord("incident-test-2", "i", "2-2", api.StatusHealthy)
 	assertIncidents(s.CurrentIncidents())
-	assertIncidents(s.IncidentHistory(), "dummy://test:b@incident-test-1", "dummy://test:e@incident-test-1", "dummy://test:d@incident-test-2")
+	assertIncidents(s.IncidentHistory(), "dummy://test:xxxxx@incident-test-1", "dummy://test:xxxxx@incident-test-1", "dummy://test:xxxxx@incident-test-2")
 	assertLastIncident("2-1")
 
 	appendRecord("incident-test-2", "j", "2-?", api.StatusAborted)
 	assertIncidents(s.CurrentIncidents())
-	assertIncidents(s.IncidentHistory(), "dummy://test:b@incident-test-1", "dummy://test:e@incident-test-1", "dummy://test:d@incident-test-2")
+	assertIncidents(s.IncidentHistory(), "dummy://test:xxxxx@incident-test-1", "dummy://test:xxxxx@incident-test-1", "dummy://test:xxxxx@incident-test-2")
 	assertLastIncident("2-1")
 }
 
