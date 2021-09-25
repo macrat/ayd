@@ -262,15 +262,14 @@ func (s *Store) setIncidentIfNeed(r api.Record, needCallback bool) {
 }
 
 func (s *Store) Report(r api.Record) {
+	if _, ok := r.Target.User.Password(); ok {
+		r.Target.User = url.UserPassword(r.Target.User.Username(), "xxxxx")
+	}
 	r.Message = strings.Trim(r.Message, "\r\n")
 
 	s.writeCh <- r
 
 	if r.Target.Scheme != "alert" && r.Target.Scheme != "ayd" {
-		if _, ok := r.Target.User.Password(); ok {
-			r.Target.User = url.UserPassword(r.Target.User.Username(), "xxxxx")
-		}
-
 		s.historyLock.Lock()
 		defer s.historyLock.Unlock()
 
@@ -305,11 +304,11 @@ func (s *Store) Restore() error {
 			continue
 		}
 
-		if r.Target.Scheme != "alert" && r.Target.Scheme != "ayd" {
-			if _, ok := r.Target.User.Password(); ok {
-				r.Target.User = url.UserPassword(r.Target.User.Username(), "xxxxx")
-			}
+		if _, ok := r.Target.User.Password(); ok {
+			r.Target.User = url.UserPassword(r.Target.User.Username(), "xxxxx")
+		}
 
+		if r.Target.Scheme != "alert" && r.Target.Scheme != "ayd" {
 			s.probeHistory.Append(r)
 			s.setIncidentIfNeed(r, false)
 		}
