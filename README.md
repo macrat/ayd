@@ -4,7 +4,6 @@
 [![Code Climate maintainability](https://img.shields.io/codeclimate/maintainability-percentage/macrat/ayd)](https://codeclimate.com/github/macrat/ayd)
 [![Codecov Test Coverage](https://img.shields.io/codecov/c/gh/macrat/ayd)](https://app.codecov.io/gh/macrat/ayd/)
 [![Docker Build Status](https://img.shields.io/github/workflow/status/macrat/ayd-docker/build?color=blue&label=docker%20build&logoColor=white)](https://hub.docker.com/r/macrat/ayd)
-[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fmacrat%2Fayd.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fmacrat%2Fayd?ref=badge_shield)
 
 Easiest status monitoring service to check something service is dead or alive.
 
@@ -538,8 +537,3 @@ Ayd will check status just once and exit when passed `-1` option.
 Exit status code is 0 if all targets are healthy.
 If some targets are unhealthy, the status code will 1.
 And, if your arguments are wrong (or can't resolve hostnames, or exec scripts not found), the status code will 2.
-
-
-## License
-
-[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fmacrat%2Fayd.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fmacrat%2Fayd?ref=badge_large)
