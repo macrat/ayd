@@ -6,6 +6,6 @@ require (
 	github.com/NYTimes/gziphandler v1.1.1
 	github.com/macrat/go-parallel-pinger v1.1.2
 	github.com/robfig/cron/v3 v3.0.1
-	golang.org/x/net v0.0.0-20210614182718-04defd469f4e // indirect
-	golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c // indirect
+	golang.org/x/net v0.0.0-20210924151903-3ad01bbaa167 // indirect
+	golang.org/x/sys v0.0.0-20210925032602-92d5a993a665 // indirect
 )
