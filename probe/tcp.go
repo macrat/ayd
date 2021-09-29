@@ -60,7 +60,7 @@ func (p TCPProbe) Check(ctx context.Context, r Reporter) {
 		}
 	} else {
 		rec.Status = api.StatusHealthy
-		rec.Message = conn.LocalAddr().String() + " -> " + conn.RemoteAddr().String()
+		rec.Message = "source=" + conn.LocalAddr().String() + " target=" + conn.RemoteAddr().String()
 		conn.Close()
 	}
 
