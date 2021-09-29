@@ -173,7 +173,7 @@ func (p SourceProbe) Check(ctx context.Context, r Reporter) {
 		CheckedAt: stime,
 		Target:    p.target,
 		Status:    api.StatusHealthy,
-		Message:   fmt.Sprintf("checked %d targets", len(probes)),
+		Message:   fmt.Sprintf("target_count=%d", len(probes)),
 		Latency:   d,
 	})
 }
