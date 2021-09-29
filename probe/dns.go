@@ -17,7 +17,7 @@ var (
 
 func dnsResolveAuto(ctx context.Context, target string) (string, error) {
 	addrs, err := net.DefaultResolver.LookupHost(ctx, target)
-	return strings.Join(addrs, "\n"), err
+	return "ip=" + strings.Join(addrs, ","), err
 }
 
 func dnsResolveIP(ctx context.Context, protocol, target string) (string, error) {
@@ -26,7 +26,7 @@ func dnsResolveIP(ctx context.Context, protocol, target string) (string, error) 
 	for i, x := range ips {
 		addrs[i] = x.String()
 	}
-	return strings.Join(addrs, "\n"), err
+	return "ip=" + strings.Join(addrs, ","), err
 }
 
 func dnsResolveA(ctx context.Context, target string) (string, error) {
@@ -38,7 +38,8 @@ func dnsResolveAAAA(ctx context.Context, target string) (string, error) {
 }
 
 func dnsResolveCNAME(ctx context.Context, target string) (string, error) {
-	return net.DefaultResolver.LookupCNAME(ctx, target)
+	host, err := net.DefaultResolver.LookupCNAME(ctx, target)
+	return "hostname=" + host, err
 }
 
 func dnsResolveMX(ctx context.Context, target string) (string, error) {
@@ -47,7 +48,7 @@ func dnsResolveMX(ctx context.Context, target string) (string, error) {
 	for i, x := range mxs {
 		addrs[i] = x.Host
 	}
-	return strings.Join(addrs, "\n"), err
+	return "mx=" + strings.Join(addrs, ","), err
 }
 
 func dnsResolveNS(ctx context.Context, target string) (string, error) {
@@ -56,7 +57,7 @@ func dnsResolveNS(ctx context.Context, target string) (string, error) {
 	for i, x := range nss {
 		addrs[i] = x.Host
 	}
-	return strings.Join(addrs, "\n"), err
+	return "ns=" + strings.Join(addrs, ","), err
 }
 
 func dnsResolveTXT(ctx context.Context, target string) (string, error) {
