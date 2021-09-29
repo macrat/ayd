@@ -54,6 +54,10 @@ func TestTargetURLNormalize(t *testing.T) {
 		{"dns://example.com:53/foo/bar?hoge=fuga#piyo", url.URL{Scheme: "dns", Host: "example.com:53", Path: "/foo", Fragment: "piyo"}},
 		{"dns:example.com#piyo", url.URL{Scheme: "dns", Opaque: "example.com", Fragment: "piyo"}},
 
+		{"dns:example.com?type=a&hoge=fuga", url.URL{Scheme: "dns", Opaque: "example.com", RawQuery: "type=A"}},
+		{"dns-aaaa:example.com", url.URL{Scheme: "dns", Opaque: "example.com", RawQuery: "type=AAAA"}},
+		{"dns-cname:example.com?type=TXT", url.URL{Scheme: "dns", Opaque: "example.com", RawQuery: "type=CNAME"}},
+
 		{"exec:testdata/test.bat", url.URL{Scheme: "exec", Opaque: "testdata/test.bat"}},
 		{"exec:./testdata/test.bat", url.URL{Scheme: "exec", Opaque: "./testdata/test.bat"}},
 		{"exec:" + cwd + "/testdata/test.bat", url.URL{Scheme: "exec", Opaque: cwd + "/testdata/test.bat"}},

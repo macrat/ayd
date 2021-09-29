@@ -111,6 +111,10 @@ func NewDNSProbe(u *url.URL) (DNSProbe, error) {
 		}
 	}
 
+	if scheme := strings.SplitN(u.Scheme, "-", 2); len(scheme) > 1 && len(scheme[1]) > 0 {
+		u.RawQuery = "type=" + scheme[1]
+	}
+
 	resolve := newDNSResolver(p.target.Host)
 
 	switch strings.ToUpper(u.Query().Get("type")) {

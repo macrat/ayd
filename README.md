@@ -144,7 +144,7 @@ examples:
 
 Resolve hostname via DNS and check the host exists or not.
 
-You can specify record type as a `type` query like `dns:example.com?type=A`.
+You can specify record type as a `type` query like `dns:example.com?type=A`, or as a scheme like `dns-cname:example.com`.
 Supported type is `A`, `AAAA`, `CNAME`, `MX`, `NS`, and `TXT`.
 
 You also can specify the DNS server as a host name of URL like `dns://8.8.8.8/example.com`.
@@ -154,6 +154,7 @@ DNS will timeout in 10 seconds and report as failure.
 examples:
 - `dns:example.com`
 - `dns:example.com?type=AAAA`
+- `dns-cname:example.com`
 - `dns://8.8.8.8/example.com`
 
 #### exec:

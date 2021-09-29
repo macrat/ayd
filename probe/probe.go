@@ -29,6 +29,10 @@ func NewFromURL(u *url.URL) (Probe, error) {
 		return NewHTTPProbe(u)
 	}
 
+	if strings.HasPrefix(u.Scheme, "dns-") {
+		return NewDNSProbe(u)
+	}
+
 	switch u.Scheme {
 	case "http", "https":
 		return NewHTTPProbe(u)
