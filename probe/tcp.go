@@ -19,7 +19,7 @@ type TCPProbe struct {
 }
 
 func NewTCPProbe(u *url.URL) (TCPProbe, error) {
-	p := TCPProbe{&url.URL{Scheme: u.Scheme, Host: u.Host}}
+	p := TCPProbe{&url.URL{Scheme: u.Scheme, Host: u.Host, Fragment: u.Fragment}}
 	if u.Host == "" {
 		p.target.Host = u.Opaque
 	}

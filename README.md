@@ -124,6 +124,7 @@ Ping will timeout in 10 seconds and report as failure.
 examples:
 - `ping:example.com`
 - `ping:192.168.1.1`
+- `ping:192.168.1.10#my-server`
 
 #### tcp:
 
@@ -137,6 +138,7 @@ examples:
 - `tcp://example.com:3309`
 - `tcp4://127.0.0.1:3309`
 - `tcp6://[::1]:3309`
+- `tcp://192.168.1.10:80#my-server`
 
 #### dns:
 

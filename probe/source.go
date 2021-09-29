@@ -36,9 +36,9 @@ func (is ignoreSet) Has(s string) bool {
 
 func normalizeSourceURL(u *url.URL) *url.URL {
 	if u.Opaque == "" {
-		return &url.URL{Scheme: "source", Opaque: u.Path}
+		return &url.URL{Scheme: "source", Opaque: u.Path, Fragment: u.Fragment}
 	} else {
-		return &url.URL{Scheme: "source", Opaque: u.Opaque}
+		return &url.URL{Scheme: "source", Opaque: u.Opaque, Fragment: u.Fragment}
 	}
 }
 

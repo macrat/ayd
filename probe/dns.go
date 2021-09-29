@@ -70,7 +70,7 @@ type DNSProbe struct {
 }
 
 func NewDNSProbe(u *url.URL) (DNSProbe, error) {
-	p := DNSProbe{target: &url.URL{Scheme: "dns", Opaque: u.Opaque}}
+	p := DNSProbe{target: &url.URL{Scheme: "dns", Opaque: u.Opaque, Fragment: u.Fragment}}
 	if u.Opaque == "" {
 		p.target.Opaque = u.Hostname()
 	}
