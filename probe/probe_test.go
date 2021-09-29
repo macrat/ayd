@@ -48,7 +48,10 @@ func TestTargetURLNormalize(t *testing.T) {
 		{"tcp:example.com:80#hello", url.URL{Scheme: "tcp", Host: "example.com:80", Fragment: "hello"}},
 
 		{"dns:example.com", url.URL{Scheme: "dns", Opaque: "example.com"}},
-		{"dns://example.com:80/foo/bar?hoge=fuga#piyo", url.URL{Scheme: "dns", Opaque: "example.com", Fragment: "piyo"}},
+		{"dns:///example.com", url.URL{Scheme: "dns", Opaque: "example.com"}},
+		{"dns://8.8.8.8/example.com", url.URL{Scheme: "dns", Host: "8.8.8.8", Path: "/example.com"}},
+		{"dns://8.8.8.8:53/example.com", url.URL{Scheme: "dns", Host: "8.8.8.8:53", Path: "/example.com"}},
+		{"dns://example.com:53/foo/bar?hoge=fuga#piyo", url.URL{Scheme: "dns", Host: "example.com:53", Path: "/foo", Fragment: "piyo"}},
 		{"dns:example.com#piyo", url.URL{Scheme: "dns", Opaque: "example.com", Fragment: "piyo"}},
 
 		{"exec:testdata/test.bat", url.URL{Scheme: "exec", Opaque: "testdata/test.bat"}},

@@ -15,13 +15,33 @@ var (
 	ErrUnsupportedDNSType = errors.New("unsupported DNS type")
 )
 
-func dnsResolveAuto(ctx context.Context, target string) (string, error) {
-	addrs, err := net.DefaultResolver.LookupHost(ctx, target)
+type dnsResolver struct {
+	Resolver *net.Resolver
+}
+
+func newDNSResolver(server string) dnsResolver {
+	if server == "" {
+		return dnsResolver{net.DefaultResolver}
+	} else {
+		_, _, err := net.SplitHostPort(server)
+		if err != nil {
+			server += ":53"
+		}
+		return dnsResolver{&net.Resolver{
+			Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
+				return (&net.Dialer{}).DialContext(ctx, network, address)
+			},
+		}}
+	}
+}
+
+func (r dnsResolver) auto(ctx context.Context, target string) (string, error) {
+	addrs, err := r.Resolver.LookupHost(ctx, target)
 	return "ip=" + strings.Join(addrs, ","), err
 }
 
-func dnsResolveIP(ctx context.Context, protocol, target string) (string, error) {
-	ips, err := net.DefaultResolver.LookupIP(ctx, protocol, target)
+func (r dnsResolver) ip(ctx context.Context, protocol, target string) (string, error) {
+	ips, err := r.Resolver.LookupIP(ctx, protocol, target)
 	addrs := make([]string, len(ips))
 	for i, x := range ips {
 		addrs[i] = x.String()
@@ -29,21 +49,21 @@ func dnsResolveIP(ctx context.Context, protocol, target string) (string, error) 
 	return "ip=" + strings.Join(addrs, ","), err
 }
 
-func dnsResolveA(ctx context.Context, target string) (string, error) {
-	return dnsResolveIP(ctx, "ip4", target)
+func (r dnsResolver) a(ctx context.Context, target string) (string, error) {
+	return r.ip(ctx, "ip4", target)
 }
 
-func dnsResolveAAAA(ctx context.Context, target string) (string, error) {
-	return dnsResolveIP(ctx, "ip6", target)
+func (r dnsResolver) aaaa(ctx context.Context, target string) (string, error) {
+	return r.ip(ctx, "ip6", target)
 }
 
-func dnsResolveCNAME(ctx context.Context, target string) (string, error) {
-	host, err := net.DefaultResolver.LookupCNAME(ctx, target)
+func (r dnsResolver) cname(ctx context.Context, target string) (string, error) {
+	host, err := r.Resolver.LookupCNAME(ctx, target)
 	return "hostname=" + host, err
 }
 
-func dnsResolveMX(ctx context.Context, target string) (string, error) {
-	mxs, err := net.DefaultResolver.LookupMX(ctx, target)
+func (r dnsResolver) mx(ctx context.Context, target string) (string, error) {
+	mxs, err := r.Resolver.LookupMX(ctx, target)
 	addrs := make([]string, len(mxs))
 	for i, x := range mxs {
 		addrs[i] = x.Host
@@ -51,8 +71,8 @@ func dnsResolveMX(ctx context.Context, target string) (string, error) {
 	return "mx=" + strings.Join(addrs, ","), err
 }
 
-func dnsResolveNS(ctx context.Context, target string) (string, error) {
-	nss, err := net.DefaultResolver.LookupNS(ctx, target)
+func (r dnsResolver) ns(ctx context.Context, target string) (string, error) {
+	nss, err := r.Resolver.LookupNS(ctx, target)
 	addrs := make([]string, len(nss))
 	for i, x := range nss {
 		addrs[i] = x.Host
@@ -60,42 +80,60 @@ func dnsResolveNS(ctx context.Context, target string) (string, error) {
 	return "ns=" + strings.Join(addrs, ","), err
 }
 
-func dnsResolveTXT(ctx context.Context, target string) (string, error) {
-	texts, err := net.DefaultResolver.LookupTXT(ctx, target)
+func (r dnsResolver) txt(ctx context.Context, target string) (string, error) {
+	texts, err := r.Resolver.LookupTXT(ctx, target)
 	return strings.Join(texts, "\n"), err
 }
 
 type DNSProbe struct {
-	target  *url.URL
-	resolve func(ctx context.Context, target string) (string, error)
+	target   *url.URL
+	hostname string
+	resolve  func(ctx context.Context, target string) (string, error)
 }
 
 func NewDNSProbe(u *url.URL) (DNSProbe, error) {
-	p := DNSProbe{target: &url.URL{Scheme: "dns", Opaque: u.Opaque, Fragment: u.Fragment}}
-	if u.Opaque == "" {
-		p.target.Opaque = u.Hostname()
+	p := DNSProbe{
+		target: &url.URL{
+			Scheme:   "dns",
+			Opaque:   u.Opaque,
+			Fragment: u.Fragment,
+		},
+		hostname: u.Opaque,
 	}
+	if u.Opaque == "" {
+		p.target.Host = u.Host
+		p.hostname = strings.SplitN(strings.TrimLeft(u.Path, "/"), "/", 2)[0]
+		p.target.Path = "/" + p.hostname
+
+		if p.target.Host == "" {
+			p.target.Opaque = p.hostname
+			p.target.Path = ""
+		}
+	}
+
+	resolve := newDNSResolver(p.target.Host)
+
 	switch strings.ToUpper(u.Query().Get("type")) {
 	case "":
-		p.resolve = dnsResolveAuto
+		p.resolve = resolve.auto
 	case "A":
 		p.target.RawQuery = "type=A"
-		p.resolve = dnsResolveA
+		p.resolve = resolve.a
 	case "AAAA":
 		p.target.RawQuery = "type=AAAA"
-		p.resolve = dnsResolveAAAA
+		p.resolve = resolve.aaaa
 	case "CNAME":
 		p.target.RawQuery = "type=CNAME"
-		p.resolve = dnsResolveCNAME
+		p.resolve = resolve.cname
 	case "MX":
 		p.target.RawQuery = "type=MX"
-		p.resolve = dnsResolveMX
+		p.resolve = resolve.mx
 	case "NS":
 		p.target.RawQuery = "type=NS"
-		p.resolve = dnsResolveNS
+		p.resolve = resolve.ns
 	case "TXT":
 		p.target.RawQuery = "type=TXT"
-		p.resolve = dnsResolveTXT
+		p.resolve = resolve.txt
 	default:
 		return DNSProbe{}, ErrUnsupportedDNSType
 	}
@@ -111,7 +149,7 @@ func (p DNSProbe) Check(ctx context.Context, r Reporter) {
 	defer cancel()
 
 	st := time.Now()
-	msg, err := p.resolve(ctx, p.target.Opaque)
+	msg, err := p.resolve(ctx, p.hostname)
 	d := time.Now().Sub(st)
 
 	rec := api.Record{
@@ -123,6 +161,10 @@ func (p DNSProbe) Check(ctx context.Context, r Reporter) {
 	}
 
 	if err != nil {
+		if e, ok := err.(*net.DNSError); ok && p.target.Host != "" {
+			e.Server = p.target.Host
+		}
+
 		rec.Status = api.StatusFailure
 		rec.Message = err.Error()
 	}

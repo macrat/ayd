@@ -42,6 +42,7 @@ TARGETS:
   dns:
    Resolve name with DNS.
    e.g. dns:example.com
+        dns://8.8.8.8/example.com
 
   exec:
    Execute external command.
