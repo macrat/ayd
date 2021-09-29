@@ -100,7 +100,7 @@ func (p HTTPProbe) Check(ctx context.Context, r Reporter) {
 			message = fmt.Sprintf("%s: connection refused", e.Addr)
 		}
 	} else {
-		message = resp.Status
+		message = fmt.Sprintf("proto=%s length=%d status=%s", resp.Proto, resp.ContentLength, strings.ReplaceAll(resp.Status, " ", "_"))
 		if 200 <= resp.StatusCode && resp.StatusCode <= 299 {
 			status = api.StatusHealthy
 		}
