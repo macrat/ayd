@@ -32,6 +32,7 @@ func TestTargetURLNormalize(t *testing.T) {
 		{"ping:example.com", url.URL{Scheme: "ping", Opaque: "example.com"}},
 		{"ping://example.com:123/foo/bar?hoge=fuga#piyo", url.URL{Scheme: "ping", Opaque: "example.com", Fragment: "piyo"}},
 		{"ping:example.com#piyo", url.URL{Scheme: "ping", Opaque: "example.com", Fragment: "piyo"}},
+		{"ping-abc:example.com", url.URL{Scheme: "ping", Opaque: "example.com"}},
 
 		{"http://example.com/foo/bar?hoge=fuga#piyo", url.URL{Scheme: "http", Host: "example.com", Path: "/foo/bar", RawQuery: "hoge=fuga", Fragment: "piyo"}},
 		{"https://example.com/foo/bar?hoge=fuga#piyo", url.URL{Scheme: "https", Host: "example.com", Path: "/foo/bar", RawQuery: "hoge=fuga", Fragment: "piyo"}},
@@ -46,6 +47,7 @@ func TestTargetURLNormalize(t *testing.T) {
 		{"tcp4:example.com:80", url.URL{Scheme: "tcp4", Host: "example.com:80"}},
 		{"tcp6:example.com:80", url.URL{Scheme: "tcp6", Host: "example.com:80"}},
 		{"tcp:example.com:80#hello", url.URL{Scheme: "tcp", Host: "example.com:80", Fragment: "hello"}},
+		{"tcp-abc:example.com:80", url.URL{Scheme: "tcp", Host: "example.com:80"}},
 
 		{"dns:example.com", url.URL{Scheme: "dns", Opaque: "example.com"}},
 		{"dns:///example.com", url.URL{Scheme: "dns", Opaque: "example.com"}},
@@ -62,9 +64,11 @@ func TestTargetURLNormalize(t *testing.T) {
 		{"exec:./testdata/test.bat", url.URL{Scheme: "exec", Opaque: "./testdata/test.bat"}},
 		{"exec:" + cwd + "/testdata/test.bat", url.URL{Scheme: "exec", Opaque: cwd + "/testdata/test.bat"}},
 		{"exec:testdata/test.bat?hoge=fuga#piyo", url.URL{Scheme: "exec", Opaque: "testdata/test.bat", RawQuery: "hoge=fuga", Fragment: "piyo"}},
+		{"exec-abc:testdata/test.bat", url.URL{Scheme: "exec", Opaque: "testdata/test.bat"}},
 
 		{"source:./testdata/healthy-list.txt", url.URL{Scheme: "source", Opaque: "./testdata/healthy-list.txt"}},
 		{"source:./testdata/healthy-list.txt#hello", url.URL{Scheme: "source", Opaque: "./testdata/healthy-list.txt", Fragment: "hello"}},
+		{"source-abc:./testdata/healthy-list.txt", url.URL{Scheme: "source", Opaque: "./testdata/healthy-list.txt"}},
 	}
 
 	for _, tt := range tests {

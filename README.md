@@ -351,7 +351,7 @@ This is not recommended for production use because Ayd can't restore last status
 ### Alerting
 
 Ayd can kick a URL when a target status checks failure.
-You may want to use [exec](#exec), [HTTP](#http), or plugin for alerting.
+You may want to use [exec](#exec), [HTTP](#http--https), or plugin for alerting.
 (Even you can use ping, DNS, etc as alerting. but... it's useless in almost all cases)
 
 Ayd will kick alert at the timing that incident caused, resolved, or message changed.
@@ -461,8 +461,9 @@ $ sudo systemctl enable ayd
 
 Plugins in Ayd is a executable file named like `ayd-xxx-probe` or `ayd-xxx-alert`, and installed to the PATH directory.
 
-Ayd looks for `ayd-xxx-probe` as target URL or `ayd-xxx-alert` as alert URL, if URL have `xxx:`.
+Ayd looks for `ayd-xxx-probe` as target URL or `ayd-xxx-alert` as alert URL, if URL have `xxx:`, `xxx-yyy:`, or `xxx+yyy:`.
 You can change scheme via changing `xxx`, but you can't use URL schemes that `ayd`, `alert`, and the scheme that is supported by Ayd itself.
+And you can use `yyy` part to change plugin behavior, the same as [http:](#http--https) or [dns:](#dns).
 
 The output of the plugin will parsed the same way to [log file](#log-file).
 

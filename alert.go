@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"strings"
 	"time"
 
 	api "github.com/macrat/ayd/lib-ayd"
@@ -33,7 +34,10 @@ type ReplaceReporter struct {
 }
 
 func (r ReplaceReporter) Report(rec api.Record) {
-	if rec.Target.Scheme != "alert" && rec.Target.Scheme != "ayd" {
+	scheme := strings.SplitN(rec.Target.Scheme, "-", 2)[0]
+	scheme = strings.SplitN(scheme, "+", 2)[0]
+
+	if scheme != "alert" && scheme != "ayd" {
 		rec.Target = r.Target
 	}
 	r.Upstream.Report(rec)
@@ -76,7 +80,10 @@ type AlertReporter struct {
 }
 
 func (r AlertReporter) Report(rec api.Record) {
-	if rec.Target.Scheme != "alert" && rec.Target.Scheme != "ayd" {
+	scheme := strings.SplitN(rec.Target.Scheme, "-", 2)[0]
+	scheme = strings.SplitN(scheme, "+", 2)[0]
+
+	if scheme != "alert" && scheme != "ayd" {
 		rec.Target = &url.URL{
 			Scheme: "alert",
 			Opaque: rec.Target.String(),
@@ -96,13 +103,16 @@ func NewPluginAlert(target string) (PluginAlert, error) {
 		return PluginAlert{}, err
 	}
 
-	if u.Scheme == "ayd" || u.Scheme == "alert" {
+	scheme := strings.SplitN(u.Scheme, "-", 2)[0]
+	scheme = strings.SplitN(scheme, "+", 2)[0]
+
+	if scheme == "ayd" || scheme == "alert" {
 		return PluginAlert{}, probe.ErrUnsupportedScheme
 	}
 
 	p := PluginAlert{
 		target:  u,
-		command: "ayd-" + u.Scheme + "-alert",
+		command: "ayd-" + scheme + "-alert",
 	}
 
 	if _, err := exec.LookPath(p.command); errors.Unwrap(err) == exec.ErrNotFound {

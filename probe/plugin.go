@@ -20,13 +20,16 @@ type PluginProbe struct {
 }
 
 func NewPluginProbe(u *url.URL) (PluginProbe, error) {
-	if u.Scheme == "ayd" || u.Scheme == "alert" {
+	scheme := strings.SplitN(u.Scheme, "-", 2)[0]
+	scheme = strings.SplitN(scheme, "+", 2)[0]
+
+	if scheme == "ayd" || scheme == "alert" {
 		return PluginProbe{}, ErrUnsupportedScheme
 	}
 
 	p := PluginProbe{
 		target:  u,
-		command: "ayd-" + u.Scheme + "-probe",
+		command: "ayd-" + scheme + "-probe",
 	}
 
 	if _, err := exec.LookPath(p.command); errors.Unwrap(err) == exec.ErrNotFound {

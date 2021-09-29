@@ -25,15 +25,10 @@ type Probe interface {
 }
 
 func NewFromURL(u *url.URL) (Probe, error) {
-	if strings.HasPrefix(u.Scheme, "http-") || strings.HasPrefix(u.Scheme, "https-") {
-		return NewHTTPProbe(u)
-	}
+	scheme := strings.SplitN(u.Scheme, "-", 2)[0]
+	scheme = strings.SplitN(scheme, "+", 2)[0]
 
-	if strings.HasPrefix(u.Scheme, "dns-") {
-		return NewDNSProbe(u)
-	}
-
-	switch u.Scheme {
+	switch scheme {
 	case "http", "https":
 		return NewHTTPProbe(u)
 	case "ping":

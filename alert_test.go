@@ -35,10 +35,12 @@ func TestAlert(t *testing.T) {
 		{"exec:ayd-bar-probe", "alert:exec:ayd-bar-probe", "arg \"\"\nenv ayd_caused_at=2001-02-03T16:05:06Z ayd_status=FAILURE ayd_target=dummy:failure ayd_message=foobar", ""},
 		{"foo:", "alert:foo:", "\"foo: 2001-02-03T16:05:06Z FAILURE dummy:failure foobar\"", ""},
 		{"foo:hello-world", "alert:foo:hello-world", "\"foo:hello-world 2001-02-03T16:05:06Z FAILURE dummy:failure foobar\"", ""},
+		{"foo-bar:hello-world", "alert:foo-bar:hello-world", "\"foo-bar:hello-world 2001-02-03T16:05:06Z FAILURE dummy:failure foobar\"", ""},
 		{"bar:", "", "", "unsupported scheme"},
 		{"::", "", "", "invalid URL"},
 		{"ayd:test:internal-url", "", "", "unsupported scheme"},
 		{"alert:", "", "", "unsupported scheme"},
+		{"alert-abc:", "", "", "unsupported scheme"},
 		{"of-course-no-such-plugin:", "", "", "unsupported scheme"},
 	}
 
