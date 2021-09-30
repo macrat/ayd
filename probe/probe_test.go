@@ -76,10 +76,13 @@ func TestTargetURLNormalize(t *testing.T) {
 		{"source:./testdata/healthy-list.txt#hello", url.URL{Scheme: "source", Opaque: "./testdata/healthy-list.txt", Fragment: "hello"}, nil},
 		{"source-abc:./testdata/healthy-list.txt", url.URL{}, probe.ErrUnsupportedScheme},
 		{"source+abc:./testdata/healthy-list.txt", url.URL{}, probe.ErrUnsupportedScheme},
+
 		{"source-" + server.URL + "/source", url.URL{}, probe.ErrUnsupportedScheme},
 		{"source+" + server.URL + "/source", url.URL{Scheme: "source+http", Host: strings.Replace(server.URL, "http://", "", 1), Path: "/source"}, nil},
 		{"source+" + server.URL + "/error", url.URL{}, probe.ErrInvalidSource},
 		{"source+https://of-course-no-such-host/source", url.URL{}, probe.ErrInvalidSource},
+
+		{"source+exec:./testdata/listing-script", url.URL{Scheme: "source+exec", Opaque: "./testdata/listing-script"}, nil},
 	}
 
 	for _, tt := range tests {

@@ -253,6 +253,15 @@ For example, Ayd will execute everything even if HTTP server responses `exec:rm#
 examples:
 - `source+https://example.com/targets.txt`
 
+##### source+exec:
+
+`source+exec:` is another variant of `source:`.
+It is execute script as the same way as [`exec:`](#exec) and load the output as a source file.
+
+examples:
+- `source+exec:./make-targets-list.exe`
+- `source+exec:/usr/local/bin/targets.sh`
+
 #### plugin
 
 Plugin is a executable file named like `ayd-xxx-probe`, and installed to the PATH directory.

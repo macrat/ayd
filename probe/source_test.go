@@ -3,10 +3,13 @@ package probe_test
 import (
 	"context"
 	"fmt"
+	"io"
+	"io/fs"
 	"net/url"
 	"os"
 	"path"
 	"regexp"
+	"runtime"
 	"testing"
 	"time"
 
@@ -67,10 +70,28 @@ func TestSource(t *testing.T) {
 			"dummy:healthy#sub-list":                            api.StatusHealthy,
 			"source:" + path.Join(cwd, "testdata/sub-list.txt"): api.StatusHealthy,
 		}, ""},
+
 		{"source+" + server.URL + "/source", map[string]api.Status{
 			"dummy:healthy":                    api.StatusHealthy,
 			"ping:localhost":                   api.StatusHealthy,
 			"source+" + server.URL + "/source": api.StatusHealthy,
+		}, ""},
+
+		{"source+exec:./testdata/listing-script?message=abc", map[string]api.Status{
+			"dummy:healthy#hello": api.StatusHealthy,
+			"dummy:healthy#world": api.StatusHealthy,
+			"dummy:healthy#abc":   api.StatusHealthy,
+			"source+exec:./testdata/listing-script?message=abc": api.StatusHealthy,
+		}, ""},
+		{"source+exec:" + path.Join(cwd, "testdata/listing-script?message=def"), map[string]api.Status{
+			"dummy:healthy#hello": api.StatusHealthy,
+			"dummy:healthy#world": api.StatusHealthy,
+			"dummy:healthy#def":   api.StatusHealthy,
+			"source+exec:" + path.Join(cwd, "testdata/listing-script?message=def"): api.StatusHealthy,
+		}, ""},
+		{"source+exec:echo#dummy:healthy#foobar", map[string]api.Status{
+			"dummy:healthy#foobar":                    api.StatusHealthy,
+			"source+exec:echo#dummy:healthy%23foobar": api.StatusHealthy,
 		}, ""},
 	}
 
@@ -114,6 +135,84 @@ func TestSource(t *testing.T) {
 				t.Errorf("missing record of %s", target)
 			}
 		})
+	}
+}
+
+func TestSource_stderr(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+
+	copyFile := func(source, dest string, permission fs.FileMode) {
+		s, err := os.Open(source)
+		if err != nil {
+			t.Fatalf("failed to open test file: %s", err)
+		}
+		defer s.Close()
+
+		d, err := os.Create(dest)
+		if err != nil {
+			t.Fatalf("failed to create test file: %s", err)
+		}
+		defer d.Close()
+
+		_, err = io.Copy(d, s)
+		if err != nil {
+			t.Fatalf("failed to copy file: %s", err)
+		}
+
+		if err := d.Chmod(permission); err != nil {
+			t.Fatalf("failed to set permission of test file: %s", err)
+		}
+	}
+
+	copyFile("./testdata/write-stdout", dir+"/list", 0766)
+	copyFile("./testdata/write-stdout.bat", dir+"/list.bat", 0766)
+
+	p, err := probe.New("source+exec:" + dir + "/list")
+	if err != nil {
+		t.Fatalf("failed to create probe: %s", err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	rs := testutil.RunCheck(ctx, p)
+
+	if len(rs) != 2 {
+		t.Fatalf("unexpected number of records: %d\n%v", len(rs), rs)
+	}
+
+	for _, r := range rs {
+		if r.Status != api.StatusHealthy {
+			t.Fatalf("unexpected status:\n%s", r)
+		}
+	}
+
+	copyFile("./testdata/write-stderr", dir+"/list", 0766)
+	copyFile("./testdata/write-stderr.bat", dir+"/list.bat", 0766)
+
+	rs = testutil.RunCheck(ctx, p)
+
+	if len(rs) != 1 {
+		t.Fatalf("unexpected number of records: %d\n%v", len(rs), rs)
+	}
+
+	if rs[0].Status != api.StatusUnknown {
+		t.Fatalf("unexpected status:\n%s", rs[0])
+	}
+
+	if runtime.GOOS == "linux" || runtime.GOOS == "darwin" {
+		copyFile("./testdata/write-stdout", dir+"/list", 0000)
+
+		rs = testutil.RunCheck(ctx, p)
+
+		if len(rs) != 1 {
+			t.Fatalf("unexpected number of records: %d\n%v", len(rs), rs)
+		}
+
+		if rs[0].Status != api.StatusUnknown {
+			t.Fatalf("unexpected status:\n%s", rs[0])
+		}
 	}
 }
 

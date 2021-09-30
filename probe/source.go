@@ -2,6 +2,7 @@ package probe
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -9,6 +10,8 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -42,13 +45,26 @@ func (is ignoreSet) Has(s string) bool {
 }
 
 func normalizeSourceURL(u *url.URL) *url.URL {
-	if u.Scheme == "source+http" || u.Scheme == "source+https" {
+	switch u.Scheme {
+	case "source+http", "source+https":
 		return u
-	}
-	if u.Opaque == "" {
-		return &url.URL{Scheme: "source", Opaque: u.Path, Fragment: u.Fragment}
-	} else {
-		return &url.URL{Scheme: "source", Opaque: u.Opaque, Fragment: u.Fragment}
+	case "source+exec":
+		path := u.Opaque
+		if u.Opaque == "" {
+			path = u.Path
+		}
+		return &url.URL{
+			Scheme:   "source+exec",
+			Opaque:   filepath.ToSlash(path),
+			RawQuery: u.RawQuery,
+			Fragment: u.Fragment,
+		}
+	default:
+		if u.Opaque == "" {
+			return &url.URL{Scheme: "source", Opaque: u.Path, Fragment: u.Fragment}
+		} else {
+			return &url.URL{Scheme: "source", Opaque: u.Opaque, Fragment: u.Fragment}
+		}
 	}
 }
 
@@ -75,9 +91,13 @@ func (s *sourceScanner) URL() (*url.URL, error) {
 	if err != nil {
 		return nil, err
 	}
-	if u.Scheme == "source" {
+
+	scheme := strings.SplitN(u.Scheme, "-", 2)[0]
+	scheme = strings.SplitN(scheme, "+", 2)[0]
+	if scheme == "source" {
 		return normalizeSourceURL(u), nil
 	}
+
 	return u, nil
 }
 
@@ -92,7 +112,7 @@ func NewSourceProbe(u *url.URL) (SourceProbe, error) {
 	scheme := strings.SplitN(u.Scheme, "+", 2)
 	if len(scheme) > 1 {
 		switch scheme[1] {
-		case "http", "https", "":
+		case "http", "https", "exec", "":
 			break
 		default:
 			return SourceProbe{}, ErrUnsupportedScheme
@@ -103,7 +123,10 @@ func NewSourceProbe(u *url.URL) (SourceProbe, error) {
 		target: normalizeSourceURL(u),
 	}
 
-	err := s.load(nil, make(map[string]Probe))
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+	defer cancel()
+
+	err := s.load(ctx, nil, make(map[string]Probe))
 	if err != nil {
 		err = fmt.Errorf("%w: %s", ErrInvalidSource, err)
 	}
@@ -115,7 +138,7 @@ func (p SourceProbe) Target() *url.URL {
 	return p.target
 }
 
-func (p SourceProbe) open() (io.ReadCloser, error) {
+func (p SourceProbe) open(ctx context.Context) (io.ReadCloser, error) {
 	switch p.target.Scheme {
 	case "source+http", "source+https":
 		resp, err := http.Get(p.target.String()[len("source+"):])
@@ -126,13 +149,37 @@ func (p SourceProbe) open() (io.ReadCloser, error) {
 			return nil, fmt.Errorf("%w: failed to fetch", ErrInvalidURL)
 		}
 		return resp.Body, nil
+	case "source+exec":
+		var args []string
+		if p.target.Fragment != "" {
+			args = []string{p.target.Fragment}
+		}
+
+		cmd := exec.CommandContext(ctx, filepath.FromSlash(p.target.Opaque), args...)
+		cmd.Env = getExecuteEnvByURL(p.target)
+
+		stdout := &bytes.Buffer{}
+		cmd.Stdout = stdout
+		stderr := &bytes.Buffer{}
+		cmd.Stderr = stderr
+
+		err := cmd.Run()
+		if err != nil {
+			return nil, fmt.Errorf("%s: failed to execute: %s", ErrInvalidURL, err)
+		}
+
+		if stderr.Len() != 0 {
+			return nil, fmt.Errorf("%w: failed to execute: %s", ErrInvalidURL, stderr.String())
+		}
+
+		return io.NopCloser(bytes.NewReader(stdout.Bytes())), nil
 	default:
 		return os.Open(p.target.Opaque)
 	}
 }
 
-func (p SourceProbe) load(ignores ignoreSet, out map[string]Probe) error {
-	f, err := p.open()
+func (p SourceProbe) load(ctx context.Context, ignores ignoreSet, out map[string]Probe) error {
+	f, err := p.open(ctx)
 	if err != nil {
 		return err
 	}
@@ -156,7 +203,7 @@ func (p SourceProbe) load(ignores ignoreSet, out map[string]Probe) error {
 				out[probe.Target().String()] = probe
 			}
 		} else if !ignores.Has(target.String()) {
-			err := SourceProbe{target}.load(append(ignores, p.target.String()), out)
+			err := SourceProbe{target}.load(ctx, append(ignores, p.target.String()), out)
 			if es, ok := err.(invalidURLs); ok {
 				invalids = append(invalids, es...)
 			} else if err != nil {
@@ -176,7 +223,7 @@ func (p SourceProbe) Check(ctx context.Context, r Reporter) {
 	stime := time.Now()
 
 	probes := make(map[string]Probe)
-	if err := p.load(nil, probes); err != nil {
+	if err := p.load(ctx, nil, probes); err != nil {
 		d := time.Now().Sub(stime)
 		r.Report(api.Record{
 			CheckedAt: stime,
