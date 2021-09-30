@@ -139,9 +139,6 @@ func (p SourceProbe) Target() *url.URL {
 }
 
 func (p SourceProbe) open(ctx context.Context) (io.ReadCloser, error) {
-	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
-	defer cancel()
-
 	switch p.target.Scheme {
 	case "source+http", "source+https":
 		u := *p.target
@@ -191,6 +188,9 @@ func (p SourceProbe) open(ctx context.Context) (io.ReadCloser, error) {
 }
 
 func (p SourceProbe) load(ctx context.Context, ignores ignoreSet, out map[string]Probe) error {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
+	defer cancel()
+
 	f, err := p.open(ctx)
 	if err != nil {
 		return err
@@ -222,6 +222,12 @@ func (p SourceProbe) load(ctx context.Context, ignores ignoreSet, out map[string
 				invalids = append(invalids, scanner.Text)
 			}
 		}
+
+		select {
+		case <-ctx.Done():
+			return errors.New("context cancelled")
+		default:
+		}
 	}
 
 	if len(invalids) > 0 {
@@ -232,6 +238,9 @@ func (p SourceProbe) load(ctx context.Context, ignores ignoreSet, out map[string
 }
 
 func (p SourceProbe) Check(ctx context.Context, r Reporter) {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
 	stime := time.Now()
 
 	probes := make(map[string]Probe)
@@ -255,9 +264,6 @@ func (p SourceProbe) Check(ctx context.Context, r Reporter) {
 		Message:   fmt.Sprintf("target_count=%d", len(probes)),
 		Latency:   d,
 	})
-
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
 
 	wg := &sync.WaitGroup{}
 
