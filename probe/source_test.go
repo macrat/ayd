@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"path/filepath"
 	"regexp"
 	"runtime"
 	"testing"
@@ -90,7 +91,7 @@ func TestSource(t *testing.T) {
 			"dummy:healthy#hello": api.StatusHealthy,
 			"dummy:healthy#world": api.StatusHealthy,
 			"dummy:healthy#def":   api.StatusHealthy,
-			"source+exec:" + path.Join(cwd, "testdata/listing-script?message=def"): api.StatusHealthy,
+			"source+exec:" + filepath.ToSlash(path.Join(cwd, "testdata/listing-script?message=def")): api.StatusHealthy,
 		}, ""},
 		{"source+exec:echo#dummy:healthy#foobar", map[string]api.Status{
 			"dummy:healthy#foobar":                    api.StatusHealthy,
