@@ -51,16 +51,16 @@ func TestSource(t *testing.T) {
 			"source:./testdata/failure-list.txt": api.StatusHealthy,
 		}, ""},
 		{"source:./testdata/invalid-list.txt", map[string]api.Status{
-			"source:./testdata/invalid-list.txt": api.StatusUnknown,
+			"source:./testdata/invalid-list.txt": api.StatusFailure,
 		}, "invalid source: invalid URL: ::invalid host::, no-such-scheme:hello world, source:./testdata/no-such-list.txt"},
 		{"source:testdata/invalid-list.txt", map[string]api.Status{
-			"source:testdata/invalid-list.txt": api.StatusUnknown,
+			"source:testdata/invalid-list.txt": api.StatusFailure,
 		}, "invalid source: invalid URL: ::invalid host::, no-such-scheme:hello world, source:./testdata/no-such-list.txt"},
 		{"source:./testdata/include-invalid-list.txt", map[string]api.Status{
-			"source:./testdata/include-invalid-list.txt": api.StatusUnknown,
+			"source:./testdata/include-invalid-list.txt": api.StatusFailure,
 		}, "invalid source: invalid URL: ::invalid host::, no-such-scheme:hello world, source:./testdata/no-such-list.txt"},
 		{"source:./testdata/no-such-list.txt", map[string]api.Status{
-			"source:./testdata/no-such-list.txt": api.StatusUnknown,
+			"source:./testdata/no-such-list.txt": api.StatusFailure,
 		}, `invalid source: open \./testdata/no-such-list\.txt: (no such file or directory|The system cannot find the file specified\.)`},
 		{"source:" + path.Join(cwd, "testdata/sub-list.txt"), map[string]api.Status{
 			"dummy:healthy#sub-list":                            api.StatusHealthy,
@@ -200,7 +200,7 @@ func TestSource_stderr(t *testing.T) {
 		t.Fatalf("unexpected number of records: %d\n%v", len(rs), rs)
 	}
 
-	if rs[0].Status != api.StatusUnknown {
+	if rs[0].Status != api.StatusFailure {
 		t.Fatalf("unexpected status:\n%s", rs[0])
 	}
 
@@ -213,7 +213,7 @@ func TestSource_stderr(t *testing.T) {
 			t.Fatalf("unexpected number of records: %d\n%v", len(rs), rs)
 		}
 
-		if rs[0].Status != api.StatusUnknown {
+		if rs[0].Status != api.StatusFailure {
 			t.Fatalf("unexpected status:\n%s", rs[0])
 		}
 	}

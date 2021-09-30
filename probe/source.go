@@ -240,12 +240,21 @@ func (p SourceProbe) Check(ctx context.Context, r Reporter) {
 		r.Report(timeoutOr(ctx, api.Record{
 			CheckedAt: stime,
 			Target:    p.target,
-			Status:    api.StatusUnknown,
+			Status:    api.StatusFailure,
 			Message:   err.Error(),
 			Latency:   d,
 		}))
 		return
 	}
+
+	d := time.Now().Sub(stime)
+	r.Report(api.Record{
+		CheckedAt: stime,
+		Target:    p.target,
+		Status:    api.StatusHealthy,
+		Message:   fmt.Sprintf("target_count=%d", len(probes)),
+		Latency:   d,
+	})
 
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -261,13 +270,4 @@ func (p SourceProbe) Check(ctx context.Context, r Reporter) {
 		}(p)
 	}
 	wg.Wait()
-
-	d := time.Now().Sub(stime)
-	r.Report(api.Record{
-		CheckedAt: stime,
-		Target:    p.target,
-		Status:    api.StatusHealthy,
-		Message:   fmt.Sprintf("target_count=%d", len(probes)),
-		Latency:   d,
-	})
 }
