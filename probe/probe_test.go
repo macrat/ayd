@@ -280,7 +280,12 @@ func RunDummyHTTPServer() *httptest.Server {
 	})
 	mux.HandleFunc("/source", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("ping:localhost\ndummy:healthy"))
+		w.Write([]byte("dummy:healthy#1\ndummy:healthy#2"))
+	})
+	mux.HandleFunc("/source/slow", func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(2 * time.Second)
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("dummy:healthy#1\ndummy:healthy#2"))
 	})
 
 	return httptest.NewServer(mux)

@@ -139,16 +139,28 @@ func (p SourceProbe) Target() *url.URL {
 }
 
 func (p SourceProbe) open(ctx context.Context) (io.ReadCloser, error) {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
+	defer cancel()
+
 	switch p.target.Scheme {
 	case "source+http", "source+https":
-		resp, err := http.Get(p.target.String()[len("source+"):])
-		if err != nil {
+		u := *p.target
+		u.Scheme = u.Scheme[len("source+"):]
+		resp, err := httpClient.Do((&http.Request{
+			Method: "GET",
+			URL:    &u,
+			Header: http.Header{
+				"User-Agent": {HTTPUserAgent},
+			},
+		}).WithContext(ctx))
+		switch {
+		case err != nil:
 			return nil, err
-		}
-		if resp.StatusCode != http.StatusOK {
+		case resp.StatusCode != http.StatusOK:
 			return nil, fmt.Errorf("%w: failed to fetch", ErrInvalidURL)
+		default:
+			return resp.Body, nil
 		}
-		return resp.Body, nil
 	case "source+exec":
 		var args []string
 		if p.target.Fragment != "" {
@@ -225,13 +237,13 @@ func (p SourceProbe) Check(ctx context.Context, r Reporter) {
 	probes := make(map[string]Probe)
 	if err := p.load(ctx, nil, probes); err != nil {
 		d := time.Now().Sub(stime)
-		r.Report(api.Record{
+		r.Report(timeoutOr(ctx, api.Record{
 			CheckedAt: stime,
 			Target:    p.target,
 			Status:    api.StatusUnknown,
 			Message:   err.Error(),
 			Latency:   d,
-		})
+		}))
 		return
 	}
 

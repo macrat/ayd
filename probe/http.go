@@ -23,6 +23,13 @@ const (
 
 var (
 	ErrRedirectLoopDetected = errors.New("redirect loop detected")
+	httpClient              = &http.Client{
+		Transport: &http.Transport{
+			DisableKeepAlives:     true,
+			ResponseHeaderTimeout: 10 * time.Minute,
+		},
+		CheckRedirect: checkHTTPRedirect,
+	}
 )
 
 func checkHTTPRedirect(req *http.Request, via []*http.Request) error {
@@ -58,13 +65,7 @@ func NewHTTPProbe(u *url.URL) (HTTPProbe, error) {
 
 	return HTTPProbe{
 		target: u,
-		client: &http.Client{
-			Transport: &http.Transport{
-				DisableKeepAlives:     true,
-				ResponseHeaderTimeout: 10 * time.Minute,
-			},
-			CheckRedirect: checkHTTPRedirect,
-		},
+		client: httpClient,
 		request: &http.Request{
 			Method: method,
 			URL:    requrl,

@@ -72,9 +72,12 @@ func TestSource(t *testing.T) {
 		}, ""},
 
 		{"source+" + server.URL + "/source", map[string]api.Status{
-			"dummy:healthy":                    api.StatusHealthy,
-			"ping:localhost":                   api.StatusHealthy,
+			"dummy:healthy#1":                  api.StatusHealthy,
+			"dummy:healthy#2":                  api.StatusHealthy,
 			"source+" + server.URL + "/source": api.StatusHealthy,
+		}, ""},
+		{"source+" + server.URL + "/source/slow", map[string]api.Status{
+			"source+" + server.URL + "/source/slow": api.StatusFailure,
 		}, ""},
 
 		{"source+exec:./testdata/listing-script?message=abc", map[string]api.Status{
@@ -110,7 +113,7 @@ func TestSource(t *testing.T) {
 				}
 			}
 
-			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 			defer cancel()
 
 			rs := testutil.RunCheck(ctx, p)
