@@ -3,8 +3,10 @@ package probe
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"net/url"
 	"os"
 	"strings"
@@ -14,6 +16,10 @@ import (
 	api "github.com/macrat/ayd/lib-ayd"
 )
 
+var (
+	ErrInvalidSource = errors.New("invalid source")
+)
+
 type invalidURLs []string
 
 func (es invalidURLs) Error() string {
@@ -21,7 +27,7 @@ func (es invalidURLs) Error() string {
 	for _, e := range es {
 		ss = append(ss, e)
 	}
-	return "Invalid URL: " + strings.Join(ss, ", ")
+	return "invalid URL: " + strings.Join(ss, ", ")
 }
 
 type ignoreSet []string
@@ -36,6 +42,9 @@ func (is ignoreSet) Has(s string) bool {
 }
 
 func normalizeSourceURL(u *url.URL) *url.URL {
+	if u.Scheme == "source+http" || u.Scheme == "source+https" {
+		return u
+	}
 	if u.Opaque == "" {
 		return &url.URL{Scheme: "source", Opaque: u.Path, Fragment: u.Fragment}
 	} else {
@@ -77,10 +86,28 @@ type SourceProbe struct {
 }
 
 func NewSourceProbe(u *url.URL) (SourceProbe, error) {
+	if strings.Contains(u.Scheme, "-") {
+		return SourceProbe{}, ErrUnsupportedScheme
+	}
+	scheme := strings.SplitN(u.Scheme, "+", 2)
+	if len(scheme) > 1 {
+		switch scheme[1] {
+		case "http", "https", "":
+			break
+		default:
+			return SourceProbe{}, ErrUnsupportedScheme
+		}
+	}
+
 	s := SourceProbe{
 		target: normalizeSourceURL(u),
 	}
+
 	err := s.load(nil, make(map[string]Probe))
+	if err != nil {
+		err = fmt.Errorf("%w: %s", ErrInvalidSource, err)
+	}
+
 	return s, err
 }
 
@@ -89,7 +116,19 @@ func (p SourceProbe) Target() *url.URL {
 }
 
 func (p SourceProbe) open() (io.ReadCloser, error) {
-	return os.Open(p.target.Opaque)
+	switch p.target.Scheme {
+	case "source+http", "source+https":
+		resp, err := http.Get(p.target.String()[len("source+"):])
+		if err != nil {
+			return nil, err
+		}
+		if resp.StatusCode != http.StatusOK {
+			return nil, fmt.Errorf("%w: failed to fetch", ErrInvalidURL)
+		}
+		return resp.Body, nil
+	default:
+		return os.Open(p.target.Opaque)
+	}
 }
 
 func (p SourceProbe) load(ignores ignoreSet, out map[string]Probe) error {

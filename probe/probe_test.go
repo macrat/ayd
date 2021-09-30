@@ -2,12 +2,14 @@ package probe_test
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"testing"
 	"time"
 
@@ -25,56 +27,70 @@ func TestTargetURLNormalize(t *testing.T) {
 	}
 	cwd = filepath.ToSlash(cwd)
 
+	server := RunDummyHTTPServer()
+	defer server.Close()
+
 	tests := []struct {
 		Input string
 		Want  url.URL
+		Error error
 	}{
-		{"ping:example.com", url.URL{Scheme: "ping", Opaque: "example.com"}},
-		{"ping://example.com:123/foo/bar?hoge=fuga#piyo", url.URL{Scheme: "ping", Opaque: "example.com", Fragment: "piyo"}},
-		{"ping:example.com#piyo", url.URL{Scheme: "ping", Opaque: "example.com", Fragment: "piyo"}},
-		{"ping-abc:example.com", url.URL{Scheme: "ping", Opaque: "example.com"}},
+		{"ping:example.com", url.URL{Scheme: "ping", Opaque: "example.com"}, nil},
+		{"ping://example.com:123/foo/bar?hoge=fuga#piyo", url.URL{Scheme: "ping", Opaque: "example.com", Fragment: "piyo"}, nil},
+		{"ping:example.com#piyo", url.URL{Scheme: "ping", Opaque: "example.com", Fragment: "piyo"}, nil},
+		{"ping-abc:example.com", url.URL{Scheme: "ping", Opaque: "example.com"}, nil},
 
-		{"http://example.com/foo/bar?hoge=fuga#piyo", url.URL{Scheme: "http", Host: "example.com", Path: "/foo/bar", RawQuery: "hoge=fuga", Fragment: "piyo"}},
-		{"https://example.com/foo/bar?hoge=fuga#piyo", url.URL{Scheme: "https", Host: "example.com", Path: "/foo/bar", RawQuery: "hoge=fuga", Fragment: "piyo"}},
+		{"http://example.com/foo/bar?hoge=fuga#piyo", url.URL{Scheme: "http", Host: "example.com", Path: "/foo/bar", RawQuery: "hoge=fuga", Fragment: "piyo"}, nil},
+		{"https://example.com/foo/bar?hoge=fuga#piyo", url.URL{Scheme: "https", Host: "example.com", Path: "/foo/bar", RawQuery: "hoge=fuga", Fragment: "piyo"}, nil},
 
-		{"http-get://example.com/foo/bar?hoge=fuga#piyo", url.URL{Scheme: "http-get", Host: "example.com", Path: "/foo/bar", RawQuery: "hoge=fuga", Fragment: "piyo"}},
-		{"https-post://example.com/foo/bar?hoge=fuga#piyo", url.URL{Scheme: "https-post", Host: "example.com", Path: "/foo/bar", RawQuery: "hoge=fuga", Fragment: "piyo"}},
-		{"http-head://example.com/foo/bar?hoge=fuga#piyo", url.URL{Scheme: "http-head", Host: "example.com", Path: "/foo/bar", RawQuery: "hoge=fuga", Fragment: "piyo"}},
-		{"https-options://example.com/foo/bar?hoge=fuga#piyo", url.URL{Scheme: "https-options", Host: "example.com", Path: "/foo/bar", RawQuery: "hoge=fuga", Fragment: "piyo"}},
+		{"http-get://example.com/foo/bar?hoge=fuga#piyo", url.URL{Scheme: "http-get", Host: "example.com", Path: "/foo/bar", RawQuery: "hoge=fuga", Fragment: "piyo"}, nil},
+		{"https-post://example.com/foo/bar?hoge=fuga#piyo", url.URL{Scheme: "https-post", Host: "example.com", Path: "/foo/bar", RawQuery: "hoge=fuga", Fragment: "piyo"}, nil},
+		{"http-head://example.com/foo/bar?hoge=fuga#piyo", url.URL{Scheme: "http-head", Host: "example.com", Path: "/foo/bar", RawQuery: "hoge=fuga", Fragment: "piyo"}, nil},
+		{"https-options://example.com/foo/bar?hoge=fuga#piyo", url.URL{Scheme: "https-options", Host: "example.com", Path: "/foo/bar", RawQuery: "hoge=fuga", Fragment: "piyo"}, nil},
 
-		{"tcp:example.com:80", url.URL{Scheme: "tcp", Host: "example.com:80"}},
-		{"tcp://example.com:80/foo/bar?hoge=fuga#piyo", url.URL{Scheme: "tcp", Host: "example.com:80", Fragment: "piyo"}},
-		{"tcp4:example.com:80", url.URL{Scheme: "tcp4", Host: "example.com:80"}},
-		{"tcp6:example.com:80", url.URL{Scheme: "tcp6", Host: "example.com:80"}},
-		{"tcp:example.com:80#hello", url.URL{Scheme: "tcp", Host: "example.com:80", Fragment: "hello"}},
-		{"tcp-abc:example.com:80", url.URL{Scheme: "tcp", Host: "example.com:80"}},
+		{"tcp:example.com:80", url.URL{Scheme: "tcp", Host: "example.com:80"}, nil},
+		{"tcp://example.com:80/foo/bar?hoge=fuga#piyo", url.URL{Scheme: "tcp", Host: "example.com:80", Fragment: "piyo"}, nil},
+		{"tcp4:example.com:80", url.URL{Scheme: "tcp4", Host: "example.com:80"}, nil},
+		{"tcp6:example.com:80", url.URL{Scheme: "tcp6", Host: "example.com:80"}, nil},
+		{"tcp:example.com:80#hello", url.URL{Scheme: "tcp", Host: "example.com:80", Fragment: "hello"}, nil},
+		{"tcp-abc:example.com:80", url.URL{Scheme: "tcp", Host: "example.com:80"}, nil},
 
-		{"dns:example.com", url.URL{Scheme: "dns", Opaque: "example.com"}},
-		{"dns:///example.com", url.URL{Scheme: "dns", Opaque: "example.com"}},
-		{"dns://8.8.8.8/example.com", url.URL{Scheme: "dns", Host: "8.8.8.8", Path: "/example.com"}},
-		{"dns://8.8.8.8:53/example.com", url.URL{Scheme: "dns", Host: "8.8.8.8:53", Path: "/example.com"}},
-		{"dns://example.com:53/foo/bar?hoge=fuga#piyo", url.URL{Scheme: "dns", Host: "example.com:53", Path: "/foo", Fragment: "piyo"}},
-		{"dns:example.com#piyo", url.URL{Scheme: "dns", Opaque: "example.com", Fragment: "piyo"}},
+		{"dns:example.com", url.URL{Scheme: "dns", Opaque: "example.com"}, nil},
+		{"dns:///example.com", url.URL{Scheme: "dns", Opaque: "example.com"}, nil},
+		{"dns://8.8.8.8/example.com", url.URL{Scheme: "dns", Host: "8.8.8.8", Path: "/example.com"}, nil},
+		{"dns://8.8.8.8:53/example.com", url.URL{Scheme: "dns", Host: "8.8.8.8:53", Path: "/example.com"}, nil},
+		{"dns://example.com:53/foo/bar?hoge=fuga#piyo", url.URL{Scheme: "dns", Host: "example.com:53", Path: "/foo", Fragment: "piyo"}, nil},
+		{"dns:example.com#piyo", url.URL{Scheme: "dns", Opaque: "example.com", Fragment: "piyo"}, nil},
 
-		{"dns:example.com?type=a&hoge=fuga", url.URL{Scheme: "dns", Opaque: "example.com", RawQuery: "type=A"}},
-		{"dns-aaaa:example.com", url.URL{Scheme: "dns", Opaque: "example.com", RawQuery: "type=AAAA"}},
-		{"dns-cname:example.com?type=TXT", url.URL{Scheme: "dns", Opaque: "example.com", RawQuery: "type=CNAME"}},
+		{"dns:example.com?type=a&hoge=fuga", url.URL{Scheme: "dns", Opaque: "example.com", RawQuery: "type=A"}, nil},
+		{"dns-aaaa:example.com", url.URL{Scheme: "dns", Opaque: "example.com", RawQuery: "type=AAAA"}, nil},
+		{"dns-cname:example.com?type=TXT", url.URL{Scheme: "dns", Opaque: "example.com", RawQuery: "type=CNAME"}, nil},
 
-		{"exec:testdata/test.bat", url.URL{Scheme: "exec", Opaque: "testdata/test.bat"}},
-		{"exec:./testdata/test.bat", url.URL{Scheme: "exec", Opaque: "./testdata/test.bat"}},
-		{"exec:" + cwd + "/testdata/test.bat", url.URL{Scheme: "exec", Opaque: cwd + "/testdata/test.bat"}},
-		{"exec:testdata/test.bat?hoge=fuga#piyo", url.URL{Scheme: "exec", Opaque: "testdata/test.bat", RawQuery: "hoge=fuga", Fragment: "piyo"}},
-		{"exec-abc:testdata/test.bat", url.URL{Scheme: "exec", Opaque: "testdata/test.bat"}},
+		{"exec:testdata/test.bat", url.URL{Scheme: "exec", Opaque: "testdata/test.bat"}, nil},
+		{"exec:./testdata/test.bat", url.URL{Scheme: "exec", Opaque: "./testdata/test.bat"}, nil},
+		{"exec:" + cwd + "/testdata/test.bat", url.URL{Scheme: "exec", Opaque: cwd + "/testdata/test.bat"}, nil},
+		{"exec:testdata/test.bat?hoge=fuga#piyo", url.URL{Scheme: "exec", Opaque: "testdata/test.bat", RawQuery: "hoge=fuga", Fragment: "piyo"}, nil},
+		{"exec-abc:testdata/test.bat", url.URL{Scheme: "exec", Opaque: "testdata/test.bat"}, nil},
 
-		{"source:./testdata/healthy-list.txt", url.URL{Scheme: "source", Opaque: "./testdata/healthy-list.txt"}},
-		{"source:./testdata/healthy-list.txt#hello", url.URL{Scheme: "source", Opaque: "./testdata/healthy-list.txt", Fragment: "hello"}},
-		{"source-abc:./testdata/healthy-list.txt", url.URL{Scheme: "source", Opaque: "./testdata/healthy-list.txt"}},
+		{"source:./testdata/healthy-list.txt", url.URL{Scheme: "source", Opaque: "./testdata/healthy-list.txt"}, nil},
+		{"source:./testdata/healthy-list.txt#hello", url.URL{Scheme: "source", Opaque: "./testdata/healthy-list.txt", Fragment: "hello"}, nil},
+		{"source-abc:./testdata/healthy-list.txt", url.URL{}, probe.ErrUnsupportedScheme},
+		{"source+abc:./testdata/healthy-list.txt", url.URL{}, probe.ErrUnsupportedScheme},
+		{"source-" + server.URL + "/source", url.URL{}, probe.ErrUnsupportedScheme},
+		{"source+" + server.URL + "/source", url.URL{Scheme: "source+http", Host: strings.Replace(server.URL, "http://", "", 1), Path: "/source"}, nil},
+		{"source+" + server.URL + "/error", url.URL{}, probe.ErrInvalidSource},
+		{"source+https://of-course-no-such-host/source", url.URL{}, probe.ErrInvalidSource},
 	}
 
 	for _, tt := range tests {
 		p, err := probe.New(tt.Input)
 		if err != nil {
-			t.Errorf("%#v: failed to parse: %#s", tt.Input, err)
+			if err != tt.Error && errors.Unwrap(err) != tt.Error {
+				t.Errorf("%#v: failed to parse: %#s", tt.Input, err)
+			}
+			continue
+		} else if tt.Error != nil {
+			t.Errorf("%#v: expected error %#v but got nil", tt.Input, tt.Error)
 			continue
 		}
 
@@ -258,6 +274,10 @@ func RunDummyHTTPServer() *httptest.Server {
 	mux.HandleFunc("/slow-page", func(w http.ResponseWriter, r *http.Request) {
 		time.Sleep(5 * time.Second)
 		w.Write([]byte("OK"))
+	})
+	mux.HandleFunc("/source", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("ping:localhost\ndummy:healthy"))
 	})
 
 	return httptest.NewServer(mux)

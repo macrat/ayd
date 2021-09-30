@@ -55,6 +55,9 @@ TARGETS:
    Lines in the file that starts with "#" will ignore as comments.
    e.g. source:/path/to/list.txt
 
+   You can load source over HTTP by "source"http" or "source+https".
+   e.g. source+https://example.com/list.txt
+
 EXAMPLES:
   Send ping to example.com in default interval(5m):
    $ {{ .Command }} ping:example.com

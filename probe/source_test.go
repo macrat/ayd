@@ -23,6 +23,9 @@ func TestSource(t *testing.T) {
 		t.Fatalf("failed to get current path: %s", err)
 	}
 
+	server := RunDummyHTTPServer()
+	defer server.Close()
+
 	tests := []struct {
 		Target       string
 		Records      map[string]api.Status
@@ -46,27 +49,34 @@ func TestSource(t *testing.T) {
 		}, ""},
 		{"source:./testdata/invalid-list.txt", map[string]api.Status{
 			"source:./testdata/invalid-list.txt": api.StatusUnknown,
-		}, "Invalid URL: ::invalid host::, no-such-scheme:hello world, source:./testdata/no-such-list.txt"},
+		}, "invalid source: invalid URL: ::invalid host::, no-such-scheme:hello world, source:./testdata/no-such-list.txt"},
 		{"source:testdata/invalid-list.txt", map[string]api.Status{
 			"source:testdata/invalid-list.txt": api.StatusUnknown,
-		}, "Invalid URL: ::invalid host::, no-such-scheme:hello world, source:./testdata/no-such-list.txt"},
+		}, "invalid source: invalid URL: ::invalid host::, no-such-scheme:hello world, source:./testdata/no-such-list.txt"},
 		{"source:./testdata/include-invalid-list.txt", map[string]api.Status{
 			"source:./testdata/include-invalid-list.txt": api.StatusUnknown,
-		}, "Invalid URL: ::invalid host::, no-such-scheme:hello world, source:./testdata/no-such-list.txt"},
+		}, "invalid source: invalid URL: ::invalid host::, no-such-scheme:hello world, source:./testdata/no-such-list.txt"},
 		{"source:./testdata/no-such-list.txt", map[string]api.Status{
 			"source:./testdata/no-such-list.txt": api.StatusUnknown,
-		}, `open \./testdata/no-such-list\.txt: (no such file or directory|The system cannot find the file specified\.)`},
+		}, `invalid source: open \./testdata/no-such-list\.txt: (no such file or directory|The system cannot find the file specified\.)`},
 		{"source:" + path.Join(cwd, "testdata/sub-list.txt"), map[string]api.Status{
 			"dummy:healthy#sub-list":                            api.StatusHealthy,
 			"source:" + path.Join(cwd, "testdata/sub-list.txt"): api.StatusHealthy,
+		}, ""},
+		{"source:" + path.Join(cwd, "testdata/sub-list.txt"), map[string]api.Status{
+			"dummy:healthy#sub-list":                            api.StatusHealthy,
+			"source:" + path.Join(cwd, "testdata/sub-list.txt"): api.StatusHealthy,
+		}, ""},
+		{"source+" + server.URL + "/source", map[string]api.Status{
+			"dummy:healthy":                    api.StatusHealthy,
+			"ping:localhost":                   api.StatusHealthy,
+			"source+" + server.URL + "/source": api.StatusHealthy,
 		}, ""},
 	}
 
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.Target, func(t *testing.T) {
-			t.Parallel()
-
 			p, err := probe.New(tt.Target)
 			if err != nil && tt.ErrorPattern == "" {
 				t.Fatalf("failed to create probe: %s", err)

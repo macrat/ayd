@@ -241,6 +241,18 @@ examples:
 - `source:./targets.txt`
 - `source:/path/to/targets.txt`
 
+##### source+http: / source+https:
+
+`source+http:` and `source+https:` is variants of `source:`.
+These fetch HTTP(S) and load the response as a source file.
+
+__WARNING:__
+Please don't use it if you can't completely trust the HTTP server because this scheme can be a backdoor of your server.
+For example, Ayd will execute everything even if HTTP server responses `exec:rm#/your/important/directory`
+
+examples:
+- `source+https://example.com/targets.txt`
+
 #### plugin
 
 Plugin is a executable file named like `ayd-xxx-probe`, and installed to the PATH directory.
