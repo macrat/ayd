@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"io"
 	"net/url"
 	"os"
 	"strings"
@@ -79,7 +80,7 @@ func NewSourceProbe(u *url.URL) (SourceProbe, error) {
 	s := SourceProbe{
 		target: normalizeSourceURL(u),
 	}
-	_, err := s.load(s.target.Opaque, nil)
+	err := s.load(nil, make(map[string]Probe))
 	return s, err
 }
 
@@ -87,14 +88,17 @@ func (p SourceProbe) Target() *url.URL {
 	return p.target
 }
 
-func (p SourceProbe) load(path string, ignores ignoreSet) (map[string]Probe, error) {
-	f, err := os.Open(path)
+func (p SourceProbe) open() (io.ReadCloser, error) {
+	return os.Open(p.target.Opaque)
+}
+
+func (p SourceProbe) load(ignores ignoreSet, out map[string]Probe) error {
+	f, err := p.open()
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer f.Close()
 
-	probes := make(map[string]Probe)
 	var invalids invalidURLs
 
 	scanner := &sourceScanner{Scanner: bufio.NewScanner(f)}
@@ -105,43 +109,35 @@ func (p SourceProbe) load(path string, ignores ignoreSet) (map[string]Probe, err
 			continue
 		}
 
-		if target.Scheme == "source" {
-			if !ignores.Has(target.Opaque) {
-				ps, err := p.load(target.Opaque, append(ignores, path))
-				if err == nil {
-					for k, v := range ps {
-						probes[k] = v
-					}
-				} else if es, ok := err.(invalidURLs); ok {
-					invalids = append(invalids, es...)
-				} else {
-					invalids = append(invalids, scanner.Text)
-				}
+		if target.Scheme != "source" {
+			probe, err := NewFromURL(target)
+			if err != nil {
+				invalids = append(invalids, scanner.Text)
+			} else {
+				out[probe.Target().String()] = probe
 			}
-
-			continue
-		}
-
-		probe, err := NewFromURL(target)
-		if err != nil {
-			invalids = append(invalids, scanner.Text)
-		} else {
-			probes[probe.Target().String()] = probe
+		} else if !ignores.Has(target.String()) {
+			err := SourceProbe{target}.load(append(ignores, p.target.String()), out)
+			if es, ok := err.(invalidURLs); ok {
+				invalids = append(invalids, es...)
+			} else if err != nil {
+				invalids = append(invalids, scanner.Text)
+			}
 		}
 	}
 
 	if len(invalids) > 0 {
-		return nil, invalids
+		return invalids
 	}
 
-	return probes, nil
+	return nil
 }
 
 func (p SourceProbe) Check(ctx context.Context, r Reporter) {
 	stime := time.Now()
 
-	probes, err := p.load(p.target.Opaque, nil)
-	if err != nil {
+	probes := make(map[string]Probe)
+	if err := p.load(nil, probes); err != nil {
 		d := time.Now().Sub(stime)
 		r.Report(api.Record{
 			CheckedAt: stime,
