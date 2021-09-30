@@ -21,6 +21,14 @@ var (
 	executeStatusRe  = regexp.MustCompile("(?m)^::status::((?i:healthy|failure|aborted|unknown))(?:\n|$)")
 )
 
+func getExecuteEnvByURL(u *url.URL) []string {
+	env := os.Environ()
+	for k, v := range u.Query() {
+		env = append(env, k+"="+v[len(v)-1])
+	}
+	return env
+}
+
 type ExecuteProbe struct {
 	target *url.URL
 	env    []string
@@ -44,10 +52,7 @@ func NewExecuteProbe(u *url.URL) (ExecuteProbe, error) {
 		return ExecuteProbe{}, err
 	}
 
-	p.env = os.Environ()
-	for k, v := range u.Query() {
-		p.env = append(p.env, k+"="+v[len(v)-1])
-	}
+	p.env = getExecuteEnvByURL(u)
 
 	return p, nil
 }
