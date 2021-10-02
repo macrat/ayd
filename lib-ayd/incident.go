@@ -1,6 +1,7 @@
 package ayd
 
 import (
+	"encoding/json"
 	"net/url"
 	"time"
 )
@@ -18,4 +19,47 @@ type Incident struct {
 
 	// ResolvedAt is the earliest time that detected the target back to healthy status
 	ResolvedAt time.Time
+}
+
+type jsonIncident struct {
+	Target     string    `json:"target"`
+	Status     Status    `json:"status"`
+	Message    string    `json:"message"`
+	CausedAt   time.Time `json:"caused_at"`
+	ResolvedAt time.Time `json:"resolved_at,omitempty"`
+}
+
+// UnmarshalJSON implements the json.Unmarshaler interface.
+func (i *Incident) UnmarshalJSON(data []byte) error {
+	var ji jsonIncident
+
+	if err := json.Unmarshal(data, &ji); err != nil {
+		return err
+	}
+
+	target, err := url.Parse(ji.Target)
+	if err != nil {
+		return err
+	}
+
+	*i = Incident{
+		Target:     target,
+		Status:     ji.Status,
+		Message:    ji.Message,
+		CausedAt:   ji.CausedAt,
+		ResolvedAt: ji.ResolvedAt,
+	}
+
+	return nil
+}
+
+// MarshalJSON implements the json.Marshaler interface.
+func (i Incident) MarshalJSON() ([]byte, error) {
+	return json.Marshal(jsonIncident{
+		Target:     i.Target.String(),
+		Status:     i.Status,
+		Message:    i.Message,
+		CausedAt:   i.CausedAt,
+		ResolvedAt: i.ResolvedAt,
+	})
 }
