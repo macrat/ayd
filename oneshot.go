@@ -5,8 +5,8 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"github.com/macrat/ayd/internal/store"
 	api "github.com/macrat/ayd/lib-ayd"
-	"github.com/macrat/ayd/store"
 )
 
 func RunOneshot(ctx context.Context, s *store.Store, tasks []Task) (exitCode int) {

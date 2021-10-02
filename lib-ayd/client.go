@@ -9,7 +9,7 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/macrat/ayd/store/freeze"
+	"github.com/macrat/ayd/internal/store/freeze"
 )
 
 var (

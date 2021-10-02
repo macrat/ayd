@@ -5,8 +5,8 @@ import (
 	"net/url"
 	"testing"
 
+	"github.com/macrat/ayd/internal/testutil"
 	"github.com/macrat/ayd/lib-ayd"
-	"github.com/macrat/ayd/testutil"
 )
 
 func ExampleFetch() {

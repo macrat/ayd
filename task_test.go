@@ -6,9 +6,9 @@ import (
 	"testing"
 
 	"github.com/macrat/ayd"
+	"github.com/macrat/ayd/internal/probe"
+	"github.com/macrat/ayd/internal/testutil"
 	api "github.com/macrat/ayd/lib-ayd"
-	"github.com/macrat/ayd/probe"
-	"github.com/macrat/ayd/testutil"
 )
 
 type PanicProbe struct{}

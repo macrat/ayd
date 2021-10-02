@@ -7,8 +7,8 @@ import (
 	"os"
 	"sync"
 
-	"github.com/macrat/ayd/exporter"
-	"github.com/macrat/ayd/store"
+	"github.com/macrat/ayd/internal/exporter"
+	"github.com/macrat/ayd/internal/store"
 	"github.com/robfig/cron/v3"
 )
 

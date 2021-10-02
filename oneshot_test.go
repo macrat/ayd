@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/macrat/ayd"
+	"github.com/macrat/ayd/internal/testutil"
 	api "github.com/macrat/ayd/lib-ayd"
-	"github.com/macrat/ayd/testutil"
 )
 
 func TestRunOneshot(t *testing.T) {

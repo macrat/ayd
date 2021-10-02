@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/macrat/ayd/store/freeze"
+	"github.com/macrat/ayd/internal/store/freeze"
 )
 
 func TestConvertIncident(t *testing.T) {

@@ -9,9 +9,10 @@ import (
 	"os/signal"
 	"text/template"
 
+	"github.com/macrat/ayd/internal/alert"
+	"github.com/macrat/ayd/internal/probe"
+	"github.com/macrat/ayd/internal/store"
 	api "github.com/macrat/ayd/lib-ayd"
-	"github.com/macrat/ayd/probe"
-	"github.com/macrat/ayd/store"
 )
 
 var (
@@ -111,7 +112,7 @@ func RunAyd() int {
 	defer stop()
 
 	if *alertURL != "" {
-		alert, err := NewAlert(*alertURL)
+		alert, err := alert.New(*alertURL)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "Invalid alert target:", err)
 			return 2

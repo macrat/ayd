@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/macrat/ayd/internal/probe"
+	"github.com/macrat/ayd/internal/store"
 	api "github.com/macrat/ayd/lib-ayd"
-	"github.com/macrat/ayd/probe"
-	"github.com/macrat/ayd/store"
 	"github.com/robfig/cron/v3"
 )
 
