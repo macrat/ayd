@@ -1,6 +1,7 @@
 package ayd_test
 
 import (
+	"encoding/json"
 	"net/url"
 	"strings"
 	"testing"
@@ -123,4 +124,45 @@ func TestRecord_redact(t *testing.T) {
 	if strings.Contains(str, "HideMe") {
 		t.Errorf("record contains password\n%#v", str)
 	}
+}
+
+func TestRecord_json(t *testing.T) {
+	t.Run("marshal-and-unmarshal", func(t *testing.T) {
+		r1 := ayd.Record{
+			CheckedAt: time.Date(2021, 1, 2, 15, 4, 5, 0, time.UTC),
+			Status:    ayd.StatusHealthy,
+			Latency:   123456 * time.Microsecond,
+			Target:    &url.URL{Scheme: "dummy", Opaque: "healthy", Fragment: "hello-world"},
+			Message:   "this is test",
+		}
+
+		j, err := json.Marshal(r1)
+		if err != nil {
+			t.Fatalf("failed to marshal: %s", err)
+		}
+
+		var r2 ayd.Record
+		err = json.Unmarshal(j, &r2)
+		if err != nil {
+			t.Fatalf("failed to unmarshal: %s", err)
+		}
+
+		if r1.String() != r2.String() {
+			t.Fatalf("source and output is not same\nsource: %s\noutput: %s", r1, r2)
+		}
+	})
+
+	t.Run("unmarshal", func(t *testing.T) {
+		source := `{"checked_at":"2021-01-02T15:04:05+09:00", "status":"HEALTHY", "latency":123.456, "target":"dummy:healthy#hello-world", "message":"this is test"}`
+		expect := "2021-01-02T15:04:05+09:00\tHEALTHY\t123.456\tdummy:healthy#hello-world\tthis is test"
+
+		var r ayd.Record
+		if err := json.Unmarshal([]byte(source), &r); err != nil {
+			t.Fatalf("failed to unmarshal: %s", err)
+		}
+
+		if r.String() != expect {
+			t.Fatalf("unexpected unmarshalled result\nexpected: %s\n but got: %s", expect, r)
+		}
+	})
 }
