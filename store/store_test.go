@@ -260,6 +260,15 @@ func TestStore_Restore(t *testing.T) {
 	hs1 := s1.ProbeHistory()
 	hs2 := s2.ProbeHistory()
 
+	if len(hs2) != 0 {
+		t.Errorf("unexpected history length: %d (histories should hidden yet)", len(hs2))
+	}
+
+	for _, x := range hs1 {
+		s2.AddTarget(x.Target)
+	}
+	hs2 = s2.ProbeHistory()
+
 	if len(hs1) != len(hs2) {
 		t.Fatalf("unexpected history length: %d", len(s2.ProbeHistory()))
 	}
@@ -304,6 +313,8 @@ func TestStore_Restore_removePassword(t *testing.T) {
 	if err = s.Restore(); err != nil {
 		t.Fatalf("failed to restore: %s", err)
 	}
+
+	s.AddTarget(&url.URL{Scheme: "http", User: url.UserPassword("hoge", "xxxxx"), Host: "example.com"})
 
 	hs := s.ProbeHistory()
 
@@ -386,6 +397,8 @@ func TestStore_Restore_limitBorder(t *testing.T) {
 	if err := s.Restore(); err != nil {
 		t.Fatalf("failed to restore log: %s", err)
 	}
+
+	s.AddTarget(&url.URL{Scheme: "dummy", Opaque: "healthy"})
 
 	hs := s.ProbeHistory()
 	if len(hs) != 1 {

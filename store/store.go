@@ -26,6 +26,7 @@ var (
 type ProbeHistory struct {
 	Target  *url.URL
 	Records []api.Record
+	shown   bool
 }
 
 type byLatestStatus []*ProbeHistory
@@ -83,6 +84,12 @@ func (hs ProbeHistoryMap) Append(r api.Record) {
 			Records: []api.Record{r},
 		}
 	}
+
+	hs[target].shown = true
+}
+
+func (hs ProbeHistoryMap) isShown(target *url.URL) bool {
+	return hs[target.Redacted()].shown
 }
 
 type IncidentHandler func(*api.Incident)
@@ -193,7 +200,9 @@ func (s *Store) ProbeHistory() []*ProbeHistory {
 
 	var result []*ProbeHistory
 	for _, x := range s.probeHistory {
-		result = append(result, x)
+		if x.shown {
+			result = append(result, x)
+		}
 	}
 
 	sort.Sort(byLatestStatus(result))
@@ -205,12 +214,12 @@ func (s *Store) CurrentIncidents() []*api.Incident {
 	s.historyLock.RLock()
 	defer s.historyLock.RUnlock()
 
-	result := make([]*api.Incident, len(s.currentIncidents))
+	result := make([]*api.Incident, 0, len(s.currentIncidents))
 
-	i := 0
 	for _, x := range s.currentIncidents {
-		result[i] = x
-		i++
+		if s.probeHistory.isShown(x.Target) {
+			result = append(result, x)
+		}
 	}
 
 	sort.Sort(byIncidentCaused(result))
@@ -314,6 +323,10 @@ func (s *Store) Restore() error {
 		}
 	}
 
+	for k := range s.probeHistory {
+		s.probeHistory[k].shown = false
+	}
+
 	return nil
 }
 
@@ -321,11 +334,14 @@ func (s *Store) AddTarget(target *url.URL) {
 	s.historyLock.Lock()
 	defer s.historyLock.Unlock()
 
-	if _, ok := s.probeHistory[target.Redacted()]; !ok {
-		s.probeHistory[target.Redacted()] = &ProbeHistory{
+	t := target.Redacted()
+
+	if _, ok := s.probeHistory[t]; !ok {
+		s.probeHistory[t] = &ProbeHistory{
 			Target: target,
 		}
 	}
+	s.probeHistory[t].shown = true
 }
 
 func (s *Store) Err() error {

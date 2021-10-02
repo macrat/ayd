@@ -14,26 +14,32 @@ func TestByLatestStatus(t *testing.T) {
 		{
 			&url.URL{Scheme: "a", Opaque: "1"},
 			[]api.Record{},
+			true,
 		},
 		{
 			&url.URL{Scheme: "a", Opaque: "2"},
 			[]api.Record{{Status: api.StatusHealthy}},
+			true,
 		},
 		{
 			&url.URL{Scheme: "a", Opaque: "3"},
 			[]api.Record{{Status: api.StatusHealthy}},
+			true,
 		},
 		{
 			&url.URL{Scheme: "a", Opaque: "4"},
 			[]api.Record{{Status: api.StatusFailure}},
+			true,
 		},
 		{
 			&url.URL{Scheme: "b", Opaque: "1"},
 			[]api.Record{{Status: api.StatusUnknown}},
+			true,
 		},
 		{
 			&url.URL{Scheme: "b", Opaque: "2"},
 			[]api.Record{{Status: api.StatusAborted}},
+			true,
 		},
 	}
 
