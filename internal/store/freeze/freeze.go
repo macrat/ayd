@@ -3,8 +3,9 @@ package freeze
 type Record struct {
 	CheckedAt string  `json:"checked_at,omitempty"`
 	Status    string  `json:"status"`
-	Message   string  `json:"message"`
 	Latency   float64 `json:"latency"`
+	Target    string  `json:"target"`
+	Message   string  `json:"message"`
 }
 
 type ProbeHistory struct {
