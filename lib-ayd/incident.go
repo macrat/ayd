@@ -22,11 +22,11 @@ type Incident struct {
 }
 
 type jsonIncident struct {
-	Target     string    `json:"target"`
-	Status     Status    `json:"status"`
-	Message    string    `json:"message"`
-	CausedAt   time.Time `json:"caused_at"`
-	ResolvedAt time.Time `json:"resolved_at,omitempty"`
+	Target     string `json:"target"`
+	Status     Status `json:"status"`
+	Message    string `json:"message"`
+	CausedAt   string `json:"caused_at"`
+	ResolvedAt string `json:"resolved_at,omitempty"`
 }
 
 // UnmarshalJSON implements the json.Unmarshaler interface.
@@ -42,12 +42,25 @@ func (i *Incident) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
+	causedAt, err := time.Parse(time.RFC3339, ji.CausedAt)
+	if err != nil {
+		return err
+	}
+
+	var resolvedAt time.Time
+	if ji.ResolvedAt != "" {
+		resolvedAt, err = time.Parse(time.RFC3339, ji.ResolvedAt)
+		if err != nil {
+			return err
+		}
+	}
+
 	*i = Incident{
 		Target:     target,
 		Status:     ji.Status,
 		Message:    ji.Message,
-		CausedAt:   ji.CausedAt,
-		ResolvedAt: ji.ResolvedAt,
+		CausedAt:   causedAt,
+		ResolvedAt: resolvedAt,
 	}
 
 	return nil
@@ -55,11 +68,16 @@ func (i *Incident) UnmarshalJSON(data []byte) error {
 
 // MarshalJSON implements the json.Marshaler interface.
 func (i Incident) MarshalJSON() ([]byte, error) {
+	var resolvedAt string
+	if !i.ResolvedAt.IsZero() {
+		resolvedAt = i.ResolvedAt.Format(time.RFC3339)
+	}
+
 	return json.Marshal(jsonIncident{
 		Target:     i.Target.String(),
 		Status:     i.Status,
 		Message:    i.Message,
-		CausedAt:   i.CausedAt,
-		ResolvedAt: i.ResolvedAt,
+		CausedAt:   i.CausedAt.Format(time.RFC3339),
+		ResolvedAt: resolvedAt,
 	})
 }

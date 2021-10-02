@@ -116,11 +116,11 @@ func (r Record) MarshalText() (text []byte, err error) {
 }
 
 type jsonRecord struct {
-	CheckedAt time.Time `json:"checked_at"`
-	Status    Status    `json:"status"`
-	Latency   float64   `json:"latency"`
-	Target    string    `json:"target"`
-	Message   string    `json:"message"`
+	CheckedAt string  `json:"checked_at"`
+	Status    Status  `json:"status"`
+	Latency   float64 `json:"latency"`
+	Target    string  `json:"target"`
+	Message   string  `json:"message"`
 }
 
 // UnmarshalJSON implements the json.Unmarshaler interface.
@@ -131,13 +131,18 @@ func (r *Record) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
+	checkedAt, err := time.Parse(time.RFC3339, jr.CheckedAt)
+	if err != nil {
+		return err
+	}
+
 	target, err := url.Parse(jr.Target)
 	if err != nil {
 		return err
 	}
 
 	*r = Record{
-		CheckedAt: jr.CheckedAt,
+		CheckedAt: checkedAt,
 		Status:    jr.Status,
 		Target:    target,
 		Latency:   time.Duration(jr.Latency * float64(time.Millisecond)),
@@ -150,7 +155,7 @@ func (r *Record) UnmarshalJSON(data []byte) error {
 // MarshalJSON implements the json.Marshaler interface.
 func (r Record) MarshalJSON() ([]byte, error) {
 	return json.Marshal(jsonRecord{
-		CheckedAt: r.CheckedAt,
+		CheckedAt: r.CheckedAt.Format(time.RFC3339),
 		Status:    r.Status,
 		Latency:   float64(r.Latency.Microseconds()) / 1000,
 		Target:    r.Target.String(),

@@ -37,8 +37,8 @@ func TestIncident(t *testing.T) {
 			Target:     &url.URL{Scheme: "dummy", Opaque: "failure", Fragment: "hello-world"},
 			Status:     ayd.StatusFailure,
 			Message:    "it's incident",
-			CausedAt:   time.Date(2001, 1, 2, 15, 4, 5, 6, time.UTC),
-			ResolvedAt: time.Date(2021, 6, 5, 16, 3, 2, 1, time.Local),
+			CausedAt:   time.Date(2001, 1, 2, 15, 4, 5, 0, time.UTC),
+			ResolvedAt: time.Date(2021, 6, 5, 16, 3, 2, 0, time.Local),
 		}
 
 		j, err := json.Marshal(i1)
