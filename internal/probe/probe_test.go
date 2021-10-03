@@ -170,7 +170,7 @@ func AssertProbe(t *testing.T, tests []ProbeTest) {
 				t.Fatalf("got unexpected probe: %s", p.Target())
 			}
 
-			ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
 
 			rs := testutil.RunCheck(ctx, p)
@@ -275,7 +275,7 @@ func RunDummyHTTPServer() *httptest.Server {
 		}
 	})
 	mux.HandleFunc("/slow-page", func(w http.ResponseWriter, r *http.Request) {
-		time.Sleep(5 * time.Second)
+		time.Sleep(10 * time.Second)
 		w.Write([]byte("OK"))
 	})
 	mux.HandleFunc("/source", func(w http.ResponseWriter, r *http.Request) {
@@ -283,7 +283,7 @@ func RunDummyHTTPServer() *httptest.Server {
 		w.Write([]byte("dummy:healthy#1\ndummy:healthy#2"))
 	})
 	mux.HandleFunc("/source/slow", func(w http.ResponseWriter, r *http.Request) {
-		time.Sleep(2 * time.Second)
+		time.Sleep(10 * time.Second)
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("dummy:healthy#1\ndummy:healthy#2"))
 	})
