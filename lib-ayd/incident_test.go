@@ -38,7 +38,7 @@ func TestIncident(t *testing.T) {
 			Status:     ayd.StatusFailure,
 			Message:    "it's incident",
 			CausedAt:   time.Date(2001, 1, 2, 15, 4, 5, 0, time.UTC),
-			ResolvedAt: time.Date(2021, 6, 5, 16, 3, 2, 0, time.Local),
+			ResolvedAt: time.Date(2021, 6, 5, 16, 3, 2, 0, time.UTC),
 		}
 
 		j, err := json.Marshal(i1)
