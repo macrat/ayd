@@ -94,11 +94,15 @@ func (p HTTPProbe) Check(ctx context.Context, r Reporter) {
 	message := ""
 	if err != nil {
 		message = err.Error()
-		if e, ok := errors.Unwrap(errors.Unwrap(err)).(*net.DNSError); ok && e.IsNotFound {
+
+		dnsErr := &net.DNSError{}
+		if errors.As(err, &dnsErr) && dnsErr.IsNotFound {
 			status = api.StatusUnknown
 		}
-		if e, ok := errors.Unwrap(err).(*net.OpError); ok && e.Op == "dial" {
-			message = fmt.Sprintf("%s: connection refused", e.Addr)
+
+		opErr := &net.OpError{}
+		if errors.As(err, &opErr) && opErr.Op == "dial" {
+			message = fmt.Sprintf("%s: connection refused", opErr.Addr)
 		}
 	} else {
 		message = fmt.Sprintf("proto=%s length=%d status=%s", resp.Proto, resp.ContentLength, strings.ReplaceAll(resp.Status, " ", "_"))

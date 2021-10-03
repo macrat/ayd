@@ -174,7 +174,7 @@ func (p SourceProbe) open(ctx context.Context) (io.ReadCloser, error) {
 
 		err := cmd.Run()
 		if err != nil {
-			return nil, fmt.Errorf("%s: failed to execute: %s", ErrInvalidURL, err)
+			return nil, fmt.Errorf("%w: failed to execute: %s", ErrInvalidURL, err)
 		}
 
 		if stderr.Len() != 0 {

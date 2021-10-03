@@ -115,7 +115,7 @@ func NewPluginAlert(target string) (PluginAlert, error) {
 		command: "ayd-" + scheme + "-alert",
 	}
 
-	if _, err := exec.LookPath(p.command); errors.Unwrap(err) == exec.ErrNotFound {
+	if _, err := exec.LookPath(p.command); errors.Is(err, exec.ErrNotFound) {
 		return PluginAlert{}, probe.ErrUnsupportedScheme
 	} else if err != nil {
 		return PluginAlert{}, err

@@ -32,7 +32,7 @@ func NewPluginProbe(u *url.URL) (PluginProbe, error) {
 		command: "ayd-" + scheme + "-probe",
 	}
 
-	if _, err := exec.LookPath(p.command); errors.Unwrap(err) == exec.ErrNotFound {
+	if _, err := exec.LookPath(p.command); errors.Is(err, exec.ErrNotFound) {
 		return PluginProbe{}, ErrUnsupportedScheme
 	} else if err != nil {
 		return PluginProbe{}, err

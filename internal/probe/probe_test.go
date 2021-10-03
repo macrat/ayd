@@ -88,8 +88,8 @@ func TestTargetURLNormalize(t *testing.T) {
 	for _, tt := range tests {
 		p, err := probe.New(tt.Input)
 		if err != nil {
-			if err != tt.Error && errors.Unwrap(err) != tt.Error {
-				t.Errorf("%#v: failed to parse: %#s", tt.Input, err)
+			if !errors.Is(err, tt.Error) {
+				t.Errorf("%#v: unexpected error during create probe: %#s", tt.Input, err)
 			}
 			continue
 		} else if tt.Error != nil {

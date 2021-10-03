@@ -56,10 +56,13 @@ func (p TCPProbe) Check(ctx context.Context, r Reporter) {
 	if err != nil {
 		rec.Status = api.StatusFailure
 		rec.Message = err.Error()
-		if _, ok := errors.Unwrap(err).(*net.AddrError); ok {
+
+		if errors.Is(err, &net.AddrError{}) {
 			rec.Status = api.StatusUnknown
 		}
-		if e, ok := errors.Unwrap(err).(*net.DNSError); ok && e.IsNotFound {
+
+		dnsErr := &net.DNSError{}
+		if errors.As(err, &dnsErr) && dnsErr.IsNotFound {
 			rec.Status = api.StatusUnknown
 		}
 	} else {
