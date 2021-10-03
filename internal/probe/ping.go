@@ -19,6 +19,7 @@ type ResourceLocker struct {
 
 	doneSignal *sync.Cond
 	count      int
+	teardown   func()
 }
 
 func NewResourceLocker() *ResourceLocker {
@@ -27,12 +28,13 @@ func NewResourceLocker() *ResourceLocker {
 	return rl
 }
 
-func (rl *ResourceLocker) Start(prepareResource func() error) error {
+func (rl *ResourceLocker) Start(prepareResource func() (teardown func(), err error)) error {
 	rl.Lock()
 	defer rl.Unlock()
 
 	if rl.count == 0 {
-		err := prepareResource()
+		var err error
+		rl.teardown, err = prepareResource()
 		if err != nil {
 			return err
 		}
@@ -49,20 +51,11 @@ func (rl *ResourceLocker) Done() {
 
 	if rl.count > 0 {
 		rl.count--
+
+		if rl.count == 0 {
+			rl.teardown()
+		}
 	}
-
-	rl.doneSignal.Broadcast()
-}
-
-func (rl *ResourceLocker) Teardown(f func()) {
-	rl.Lock()
-	defer rl.Unlock()
-
-	for rl.count > 0 {
-		rl.doneSignal.Wait()
-	}
-
-	f()
 }
 
 type autoPingerStruct struct {
@@ -97,7 +90,7 @@ func makePingers() (v4, v6 *pinger.Pinger) {
 	return v4, v6
 }
 
-func (p *autoPingerStruct) start() error {
+func (p *autoPingerStruct) start() (teardown func(), err error) {
 	p.v4, p.v6 = makePingers()
 
 	ctx, stop := context.WithCancel(context.Background())
@@ -106,23 +99,21 @@ func (p *autoPingerStruct) start() error {
 		stop()
 		p.v4 = nil
 		p.v6 = nil
-		return err
+		return nil, err
 	}
 
 	if err := p.v6.Start(ctx); err != nil {
 		stop()
 		p.v4 = nil
 		p.v6 = nil
-		return err
+		return nil, err
 	}
 
-	go p.rl.Teardown(func() {
+	return func() {
 		stop()
 		p.v4 = nil
 		p.v6 = nil
-	})
-
-	return nil
+	}, nil
 }
 
 func (p *autoPingerStruct) getFor(target net.IP) (*pinger.Pinger, error) {

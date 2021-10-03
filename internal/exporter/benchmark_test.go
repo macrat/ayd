@@ -6,12 +6,12 @@ import (
 	"testing"
 
 	"github.com/macrat/ayd/internal/exporter"
-	"github.com/macrat/ayd/internal/testutil"
 	"github.com/macrat/ayd/internal/store"
+	"github.com/macrat/ayd/internal/testutil"
 )
 
 func Benchmark_exporters(b *testing.B) {
-	benchmarks := []struct{
+	benchmarks := []struct {
 		Path     string
 		Exporter func(*store.Store) http.HandlerFunc
 	}{
