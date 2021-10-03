@@ -18,6 +18,9 @@ func Benchmark_exporters(b *testing.B) {
 		{"/status.html", exporter.StatusHTMLExporter},
 		{"/status.txt", exporter.StatusTextExporter},
 		{"/status.json", exporter.StatusJSONExporter},
+		{"/log.tsv", exporter.LogTSVExporter},
+		{"/log.csv", exporter.LogCSVExporter},
+		{"/log.json", exporter.LogJsonExporter},
 		{"/metrics", exporter.MetricsExporter},
 		{"/healthz", exporter.HealthzExporter},
 	}
