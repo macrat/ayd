@@ -2,6 +2,7 @@ package exporter
 
 import (
 	"bufio"
+	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -9,6 +10,7 @@ import (
 	"net/url"
 	"os"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -267,5 +269,41 @@ func LogJsonExporter(s *store.Store) http.HandlerFunc {
 		}
 
 		HandleError(s, "log.json", enc.Encode(records))
+	}
+}
+
+func LogCSVExporter(s *store.Store) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/csv")
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET")
+
+		scanner, code, err := newLogScannerForExporter(s, r)
+		if err != nil {
+			w.WriteHeader(code)
+			w.Write([]byte(err.Error() + "\n"))
+			return
+		}
+		defer scanner.Close()
+
+		if targets, ok := r.URL.Query()["target"]; ok {
+			scanner = LogFilter{scanner, targets}
+		}
+
+		c := csv.NewWriter(w)
+		c.Write([]string{"timestamp", "status", "latency", "target", "message"})
+
+		for scanner.Scan() {
+			r := scanner.Record()
+			c.Write([]string{
+				r.CheckedAt.Format(time.RFC3339),
+				r.Status.String(),
+				strconv.FormatFloat(float64(r.Latency.Microseconds())/1000, 'f', -1, 64),
+				r.Target.Redacted(),
+				r.Message,
+			})
+		}
+
+		c.Flush()
 	}
 }

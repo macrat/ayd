@@ -35,6 +35,7 @@ func New(s *store.Store) http.Handler {
 	m.Handle("/log", http.RedirectHandler("/log.tsv", http.StatusMovedPermanently))
 	m.HandleFunc("/log.tsv", LogTSVExporter(s))
 	m.HandleFunc("/log.json", LogJsonExporter(s))
+	m.HandleFunc("/log.csv", LogCSVExporter(s))
 
 	m.HandleFunc("/metrics", MetricsExporter(s))
 	m.HandleFunc("/healthz", HealthzExporter(s))
