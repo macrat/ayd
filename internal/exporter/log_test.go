@@ -197,13 +197,19 @@ func TestLogTSVExporter(t *testing.T) {
 			"invalid-since",
 			"?since=invalid-since&until=2022-01-01T00:00:00Z",
 			http.StatusBadRequest,
-			"invalid `since` format\n",
+			"invalid query format: since\n",
 		},
 		{
-			"invalid-since",
+			"invalid-until",
 			"?since=2021-01-01T00:00:00Z&until=invalid-until",
 			http.StatusBadRequest,
-			"invalid `until` format\n",
+			"invalid query format: until\n",
+		},
+		{
+			"invalid-since-and-until",
+			"?since=invalid-since&until=invalid-until",
+			http.StatusBadRequest,
+			"invalid query format: since, until\n",
 		},
 	}
 

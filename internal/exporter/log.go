@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/macrat/ayd/internal/store"
@@ -129,33 +131,41 @@ func NewLogScanner(s *store.Store, since, until time.Time) (LogScanner, error) {
 	return NewLogReader(s.Path, since, until)
 }
 
+func getTimeQuery(queries url.Values, name string, default_ time.Time) (time.Time, error) {
+	q := queries.Get(name)
+	if q == "" {
+		return default_, nil
+	}
+
+	t, err := time.Parse(time.RFC3339, q)
+	if err != nil {
+		return default_, fmt.Errorf("invalid %s format: %w", name, err)
+	}
+	return t, nil
+}
+
 func newLogScannerForExporter(s *store.Store, w http.ResponseWriter, r *http.Request) (scanner LogScanner, ok bool) {
 	qs := r.URL.Query()
 
-	getTimeQuery := func(name string, default_ time.Time) (time.Time, error) {
-		q := qs.Get(name)
-		if q == "" {
-			return default_, nil
-		}
+	var invalidQueries []string
+	var errors []string
 
-		t, err := time.Parse(time.RFC3339, q)
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			fmt.Fprintf(w, "invalid `%s` format\n", name)
-			return default_, fmt.Errorf("invalid %s format: %w", name, err)
-		}
-		return t, nil
+	since, err := getTimeQuery(qs, "since", time.Now().Add(-7*14*time.Hour))
+	if err != nil {
+		invalidQueries = append(invalidQueries, "since")
+		errors = append(errors, err.Error())
 	}
 
-	since, err := getTimeQuery("since", time.Now().Add(-7*14*time.Hour))
+	until, err := getTimeQuery(qs, "until", time.Now())
 	if err != nil {
-		HandleError(s, "log.tsv", err)
-		return nil, false
+		invalidQueries = append(invalidQueries, "until")
+		errors = append(errors, err.Error())
 	}
 
-	until, err := getTimeQuery("until", time.Now())
-	if err != nil {
-		HandleError(s, "log.tsv", err)
+	if len(invalidQueries) > 0 {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintf(w, "invalid query format: %s\n", strings.Join(invalidQueries, ", "))
+		HandleError(s, "log.tsv", fmt.Errorf("%s", strings.Join(errors, "\n")))
 		return nil, false
 	}
 
