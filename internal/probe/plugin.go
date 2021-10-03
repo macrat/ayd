@@ -73,7 +73,7 @@ func ExecutePlugin(ctx context.Context, r Reporter, scope string, target *url.UR
 			CheckedAt: time.Now(),
 			Target:    &url.URL{Scheme: "ayd", Opaque: scope + ":plugin:" + target.String()},
 			Status:    api.StatusUnknown,
-			Message:   fmt.Sprintf("invalid record: %s: %#v", err, text),
+			Message:   fmt.Sprintf("%s: %#v", err, text),
 			Latency:   latency,
 		})
 	}

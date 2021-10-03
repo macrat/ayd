@@ -50,19 +50,19 @@ func TestRecord(t *testing.T) {
 		},
 		{
 			String: "2021-01-02T15:04:05+09:00\tHEALTHY\t123.456",
-			Error:  "unexpected column count",
+			Error:  "invalid record: unexpected column count",
 		},
 		{
 			String: "2021-01-02T15:04:05+09:00\tHEALTHY\t123abc\tping:example.com\thello world",
-			Error:  `strconv.ParseFloat: parsing "123abc": invalid syntax`,
+			Error:  `invalid format latency: strconv.ParseFloat: parsing "123abc": invalid syntax`,
 		},
 		{
 			String: "2021/01/02 15:04:05\tHEALTHY\t123.456\tping:example.com\thello world",
-			Error:  `parsing time "2021/01/02 15:04:05" as "2006-01-02T15:04:05Z07:00": cannot parse "/01/02 15:04:05" as "-"`,
+			Error:  `invalid format checked-at: parsing time "2021/01/02 15:04:05" as "2006-01-02T15:04:05Z07:00": cannot parse "/01/02 15:04:05" as "-"`,
 		},
 		{
 			String: "2021-01-02T15:04:05+09:00\tHEALTHY\t123.456\t::invalid target::\thello world",
-			Error:  `parse "::invalid target::": missing protocol scheme`,
+			Error:  `invalid format target URL: parse "::invalid target::": missing protocol scheme`,
 		},
 	}
 

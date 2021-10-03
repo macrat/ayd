@@ -31,7 +31,7 @@ func TestParseProbePluginArgs(t *testing.T) {
 		{
 			[]string{"./ayd-test-probe", "::invalid::"},
 			"",
-			`invalid argument: invalid target URL: parse "::invalid::": missing protocol scheme`,
+			`invalid target URL: parse "::invalid::": missing protocol scheme`,
 		},
 	}
 
@@ -80,7 +80,7 @@ func TestParseAlertPluginArgs(t *testing.T) {
 			"",
 			"",
 			"",
-			`invalid argument: should give just 5 argument`,
+			`invalid argument: should give exactly 5 arguments`,
 		},
 		{
 			[]string{"./ayd-test-alert", "foo:bar", "2001-02-03T16:05:06Z", "HEALTHY", "bar:baz", "foo bar", "extra arg"},
@@ -89,7 +89,7 @@ func TestParseAlertPluginArgs(t *testing.T) {
 			"",
 			"",
 			"",
-			`invalid argument: should give just 5 argument`,
+			`invalid argument: should give exactly 5 arguments`,
 		},
 		{
 			[]string{"./ayd-test-alert", "::invalid::", "2001-02-03T16:05:06Z", "HEALTHY", "bar:baz", "foo bar"},
@@ -98,7 +98,7 @@ func TestParseAlertPluginArgs(t *testing.T) {
 			"",
 			"",
 			"",
-			`invalid argument: invalid alert URL: parse "::invalid::": missing protocol scheme`,
+			`invalid alert URL: parse "::invalid::": missing protocol scheme`,
 		},
 		{
 			[]string{"./ayd-test-alert", "foo:bar", "2001-02-03T16:05:06Z", "HEALTHY", "::invalid::", "foo bar"},
@@ -107,7 +107,7 @@ func TestParseAlertPluginArgs(t *testing.T) {
 			"",
 			"",
 			"",
-			`invalid argument: invalid target URL: parse "::invalid::": missing protocol scheme`,
+			`invalid target URL: parse "::invalid::": missing protocol scheme`,
 		},
 		{
 			[]string{"./ayd-test-alert", "foo:bar", "this is not a time", "HEALTHY", "bar:baz", "foo bar"},
@@ -116,7 +116,7 @@ func TestParseAlertPluginArgs(t *testing.T) {
 			"",
 			"",
 			"",
-			`invalid argument: invalid checked time: parsing time "this is not a time" as "2006-01-02T15:04:05Z07:00": cannot parse "this is not a time" as "2006"`,
+			`invalid checked at timestamp: parsing time "this is not a time" as "2006-01-02T15:04:05Z07:00": cannot parse "this is not a time" as "2006"`,
 		},
 	}
 

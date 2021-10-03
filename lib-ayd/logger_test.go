@@ -66,7 +66,7 @@ func ExampleLogger_Print() {
 	// Output:
 	// 2001-02-03T16:05:06Z	HEALTHY	0.000	foo://bar	hello world
 	// 2001-02-03T16:05:07Z	UNKNOWN	0.000	foo://bar	without status
-	// error: the target URL is required
+	// error: invalid record: the target URL is required
 }
 
 func ExampleLogger_WithTarget() {

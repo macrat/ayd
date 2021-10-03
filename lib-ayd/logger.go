@@ -1,16 +1,10 @@
 package ayd
 
 import (
-	"errors"
 	"io"
 	"net/url"
 	"os"
 	"time"
-)
-
-var (
-	// ErrEmptyTarget is the error means target URL of Record was empty
-	ErrEmptyTarget = errors.New("the target URL is required")
 )
 
 // Logger is the logger for Ayd plugin
@@ -64,7 +58,10 @@ func (l Logger) Print(r Record) error {
 	}
 
 	_, err := l.writer.Write([]byte(r.String() + "\n"))
-	return err
+	if err != nil {
+		return newError(ErrIO, err, "failed to write log")
+	}
+	return nil
 }
 
 // Unknown prints Unknown status record

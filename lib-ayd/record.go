@@ -2,7 +2,6 @@ package ayd
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/url"
 	"strconv"
 	"strings"
@@ -47,28 +46,28 @@ func ParseRecord(s string) (Record, error) {
 
 	ss := strings.SplitN(s, "\t", 5)
 	if len(ss) != 5 {
-		return Record{}, fmt.Errorf("unexpected column count")
+		return Record{}, newError(ErrInvalidRecord, nil, "invalid record: unexpected column count")
 	}
 
 	timestamp = ss[0]
 	r.Status.UnmarshalText([]byte(ss[1]))
 	latency, err := strconv.ParseFloat(ss[2], 64)
 	if err != nil {
-		return Record{}, err
+		return Record{}, newError(ErrInvalidRecord, err, "invalid format latency")
 	}
 	target = ss[3]
 	r.Message = unescapeMessage(ss[4])
 
 	r.CheckedAt, err = time.Parse(time.RFC3339, timestamp)
 	if err != nil {
-		return Record{}, err
+		return Record{}, newError(ErrInvalidRecord, err, "invalid format checked-at")
 	}
 
 	r.Latency = time.Duration(latency * float64(time.Millisecond))
 
 	r.Target, err = url.Parse(target)
 	if err != nil {
-		return Record{}, err
+		return Record{}, newError(ErrInvalidRecord, err, "invalid format target URL")
 	}
 
 	if (r.Target.Scheme == "exec" || r.Target.Scheme == "source") && r.Target.Opaque == "" {

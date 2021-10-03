@@ -2,14 +2,8 @@ package ayd
 
 import (
 	"encoding/json"
-	"errors"
 	"net/url"
 	"time"
-)
-
-var (
-	// ErrNoSuchTarget is returned if the specified target was not found.
-	ErrNoSuchTarget = errors.New("no such target")
 )
 
 // Report is a report from Ayd server.
