@@ -2,6 +2,7 @@ package exporter
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -144,7 +145,7 @@ func getTimeQuery(queries url.Values, name string, default_ time.Time) (time.Tim
 	return t, nil
 }
 
-func newLogScannerForExporter(s *store.Store, w http.ResponseWriter, r *http.Request) (scanner LogScanner, ok bool) {
+func newLogScannerForExporter(s *store.Store, r *http.Request) (scanner LogScanner, statusCode int, err error) {
 	qs := r.URL.Query()
 
 	var invalidQueries []string
@@ -163,21 +164,17 @@ func newLogScannerForExporter(s *store.Store, w http.ResponseWriter, r *http.Req
 	}
 
 	if len(invalidQueries) > 0 {
-		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintf(w, "invalid query format: %s\n", strings.Join(invalidQueries, ", "))
 		HandleError(s, "log.tsv", fmt.Errorf("%s", strings.Join(errors, "\n")))
-		return nil, false
+		return nil, http.StatusBadRequest, fmt.Errorf("invalid query format: %s", strings.Join(invalidQueries, ", "))
 	}
 
 	scanner, err = NewLogScanner(s, since, until)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("internal server error\n"))
 		HandleError(s, "log.tsv", fmt.Errorf("failed to open log: %w", err))
-		return nil, false
+		return nil, http.StatusInternalServerError, fmt.Errorf("internal server error")
 	}
 
-	return scanner, true
+	return scanner, http.StatusOK, nil
 }
 
 type LogFilter struct {
@@ -211,9 +208,13 @@ func (f LogFilter) Record() api.Record {
 func LogTSVExporter(s *store.Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/tab-separated-values; charset=UTF-8")
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET")
 
-		scanner, ok := newLogScannerForExporter(s, w, r)
-		if !ok {
+		scanner, code, err := newLogScannerForExporter(s, r)
+		if err != nil {
+			w.WriteHeader(code)
+			w.Write([]byte(err.Error() + "\n"))
 			return
 		}
 		defer scanner.Close()
@@ -223,7 +224,48 @@ func LogTSVExporter(s *store.Store) http.HandlerFunc {
 		}
 
 		for scanner.Scan() {
-			w.Write(scanner.Bytes())
+			_, err := w.Write(scanner.Bytes())
+			if err != nil {
+				HandleError(s, "log.tsv", err)
+				break
+			}
 		}
+	}
+}
+
+func LogJsonExporter(s *store.Store) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET")
+
+		enc := json.NewEncoder(w)
+
+		scanner, code, err := newLogScannerForExporter(s, r)
+		if err != nil {
+			msg := struct {
+				E string `json:"error"`
+			}{
+				err.Error(),
+			}
+
+			w.WriteHeader(code)
+			enc.Encode(msg)
+			return
+		}
+		defer scanner.Close()
+
+		if targets, ok := r.URL.Query()["target"]; ok {
+			scanner = LogFilter{scanner, targets}
+		}
+
+		records := struct {
+			R []api.Record `json:"records"`
+		}{}
+		for scanner.Scan() {
+			records.R = append(records.R, scanner.Record())
+		}
+
+		HandleError(s, "log.json", enc.Encode(records))
 	}
 }

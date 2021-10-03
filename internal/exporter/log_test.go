@@ -1,6 +1,7 @@
 package exporter_test
 
 import (
+	"encoding/json"
 	"io"
 	"net/http"
 	"net/url"
@@ -237,6 +238,104 @@ func TestLogTSVExporter(t *testing.T) {
 				t.Errorf("failed to check body: %s", err)
 			} else if !ok {
 				t.Errorf("body must match to %#v but got:\n%s", tt.Pattern, string(body))
+			}
+		})
+	}
+}
+
+func TestLogJsonExporter(t *testing.T) {
+	tests := []struct {
+		Name       string
+		Query      string
+		StatusCode int
+		Length     int
+		Error      string
+	}{
+		{
+			"without-query",
+			"",
+			http.StatusOK,
+			0,
+			"",
+		},
+		{
+			"fetch-all",
+			"?since=2021-01-01T00:00:00Z&until=2022-01-01T00:00:00Z&target=http://a.example.com",
+			http.StatusOK,
+			3,
+			"",
+		},
+		{
+			"drop-with-target",
+			"?since=2021-01-01T00:00:00Z&until=2022-01-01T00:00:00Z&target=http://b.example.com",
+			http.StatusOK,
+			2,
+			"",
+		},
+		{
+			"invalid-since",
+			"?since=invalid-since&until=2022-01-01T00:00:00Z",
+			http.StatusBadRequest,
+			0,
+			"invalid query format: since",
+		},
+		{
+			"invalid-until",
+			"?since=2021-01-01T00:00:00Z&until=invalid-until",
+			http.StatusBadRequest,
+			0,
+			"invalid query format: until",
+		},
+		{
+			"invalid-since-and-until",
+			"?since=invalid-since&until=invalid-until",
+			http.StatusBadRequest,
+			0,
+			"invalid query format: since, until",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.Name, func(t *testing.T) {
+			srv := testutil.StartTestServer(t)
+			defer srv.Close()
+
+			resp, err := srv.Client().Get(srv.URL + "/log.json" + tt.Query)
+			if err != nil {
+				t.Fatalf("failed to get /log.json: %s", err)
+			}
+			defer resp.Body.Close()
+
+			if resp.StatusCode != tt.StatusCode {
+				t.Errorf("unexpected status: %s", resp.Status)
+			}
+
+			dec := json.NewDecoder(resp.Body)
+
+			if tt.Error == "" {
+				var result struct {
+					Records []api.Record `json:"records"`
+				}
+
+				if err = dec.Decode(&result); err != nil {
+					t.Fatalf("failed to read result: %s", err)
+				}
+
+				if len(result.Records) != tt.Length {
+					t.Errorf("unexpected count of result: %#v", result)
+				}
+			} else {
+				var result struct {
+					Error string `json:"error"`
+				}
+
+				if err = dec.Decode(&result); err != nil {
+					t.Fatalf("failed to read result: %s", err)
+				}
+
+				if result.Error != tt.Error {
+					t.Errorf("unexpected error message: %#v", result.Error)
+				}
 			}
 		})
 	}
