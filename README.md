@@ -498,6 +498,8 @@ The differences from plugin to [`exec:`](#exec) are below.
 |receive raw target URL                                 |can not     |can                       |
 |record about multiple targets like as [source](#source)|can not     |can                       |
 
+There is [a library for create plugin](https://pkg.go.dev/github.com/macrat/ayd/lib-ayd).
+
 #### Probe plugin
 
 Probe plugin receives target URL as the first argument of the command.

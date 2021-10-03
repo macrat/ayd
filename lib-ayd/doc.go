@@ -1,2 +1,2 @@
-// Ayd plugin library
+// The library for making Ayd plugin or client.
 package ayd

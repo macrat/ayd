@@ -34,24 +34,29 @@ func Example_alertPlugin() {
 		os.Exit(1)
 	}
 
-	logger := ayd.NewLogger(args.AlertURL)
-
-	// Fetch extra information from Ayd json API
-	aydURL, err := url.Parse(os.Getenv("AYD_URL"))
-	if err != nil {
-		logger.Failure("failed to get Ayd URL")
-		return
-	}
-	report, err := ayd.Fetch(aydURL)
-	if err != nil {
-		logger.Failure("failed to fetch status")
-		return
-	}
-	_ = report.CurrentIncidents // check extra information about current incidents
-
-	logger = logger.StartTimer() // start timer for measure time to send alert
+	logger := ayd.NewLogger(args.AlertURL).StartTimer()
 
 	// send alert to somewhere
 
 	logger.Healthy("alert sent")
+}
+
+func Example_apiClient() {
+	aydURL, _ := url.Parse("http://localhost:9000")
+
+	// fetch status from Ayd server
+	report, err := ayd.Fetch(aydURL)
+	if err != nil {
+		panic(err)
+	}
+
+	for target, status := range report.ProbeHistory {
+		// show target name
+		fmt.Printf("# %s\n", target)
+
+		// show status history
+		for _, x := range status.Records {
+			fmt.Println(x.Status)
+		}
+	}
 }
