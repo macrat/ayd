@@ -140,6 +140,8 @@ func TestSource(t *testing.T) {
 			}
 		})
 	}
+
+	AssertTimeout(t, "source:./testdata/healthy-list.txt")
 }
 
 func TestSource_stderr(t *testing.T) {

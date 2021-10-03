@@ -3,6 +3,7 @@ package main_test
 import (
 	"context"
 	"net/url"
+	"strings"
 	"testing"
 
 	"github.com/macrat/ayd"
@@ -108,5 +109,53 @@ func TestParseArgs(t *testing.T) {
 				t.Errorf("%#v: unexpected interval at %d: expected %s but got %s", tt.Args, i, tt.Want[i].Schedule, result[i].Schedule)
 			}
 		}
+	}
+}
+
+func TestParseArgs_errors(t *testing.T) {
+	tests := []struct {
+		Args   []string
+		Errors []string
+	}{
+		{
+			[]string{"* * * *", "ping:localhost"},
+			[]string{},
+		},
+		{
+			[]string{"no.such.scheme:hello-world", "hello-world"},
+			[]string{
+				`no.such.scheme:hello-world: This scheme is not supported. Please check the plugin is installed if need.`,
+				`hello-world: Not valid as schedule or target URL. Please specify scheme if this is target. (e.g. ping:example.local or http://example.com)`,
+			},
+		},
+		{
+			[]string{"http-abc://example.com", "::"},
+			[]string{
+				`http-abc://example.com: HTTP "ABC" method is not supported. Please use GET, HEAD, POST, or OPTIONS.`,
+				`::: Not valid as schedule or target URL.`,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(strings.Join(tt.Args, ","), func(t *testing.T) {
+			_, errors := main.ParseArgs(tt.Args)
+
+			var es []string
+			for _, e := range errors {
+				es = append(es, e.Error())
+			}
+
+			if len(es) != len(tt.Errors) {
+				t.Fatalf("unexpected count of errors: expected %d but got %d", len(tt.Errors), len(es))
+			}
+
+			for i := range es {
+				if es[i] != tt.Errors[i] {
+					t.Errorf("%d: unexpected error message\nexpected: %s\n but got: %s", i, tt.Errors[i], es[i])
+				}
+			}
+		})
 	}
 }

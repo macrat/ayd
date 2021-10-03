@@ -46,6 +46,15 @@ func TestStatusTextExporter(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("/status.txt?charset=what", func(t *testing.T) {
+		u := srv.URL + "/status.txt?charset=what"
+		if resp, err := srv.Client().Get(u); err != nil {
+			t.Errorf("failed to get %s: %s", u, err)
+		} else if resp.StatusCode != http.StatusBadRequest {
+			t.Errorf("unexpected status: %s", resp.Status)
+		}
+	})
 }
 
 func TestStatusJSONExporter(t *testing.T) {

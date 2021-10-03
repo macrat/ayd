@@ -2,6 +2,7 @@ package testutil
 
 import (
 	"net/http/httptest"
+	"net/url"
 	"testing"
 
 	"github.com/macrat/ayd/internal/exporter"
@@ -14,5 +15,10 @@ func StartTestServer(t testing.TB) *httptest.Server {
 	t.Cleanup(func() {
 		s.Close()
 	})
+
+	s.AddTarget(&url.URL{Scheme: "http", Host: "a.example.com"})
+	s.AddTarget(&url.URL{Scheme: "http", Host: "b.example.com"})
+	s.AddTarget(&url.URL{Scheme: "http", Host: "c.example.com"})
+
 	return httptest.NewServer(exporter.New(s))
 }
