@@ -22,7 +22,7 @@ func StatusHTMLExporter(s *store.Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 
-		HandleError(s, "status.html", tmpl.Execute(w, s.Freeze()))
+		HandleError(s, "status.html", tmpl.Execute(w, s.MakeReport()))
 	}
 }
 
@@ -42,7 +42,7 @@ func StatusTextExporter(s *store.Store) http.HandlerFunc {
 		charset := r.URL.Query().Get("charset")
 		switch strings.ToLower(charset) {
 		case "", "unicode", "utf", "utf8":
-			charset = "unicode"
+			charset = "UTF-8"
 			execute = unicode.Execute
 		case "ascii", "us-ascii", "usascii":
 			charset = "ascii"
@@ -58,7 +58,7 @@ func StatusTextExporter(s *store.Store) http.HandlerFunc {
 		contentType := "text/plain; charset=" + charset
 		w.Header().Set("Content-Type", contentType)
 
-		HandleError(s, "status.txt:"+charset, execute(w, s.Freeze()))
+		HandleError(s, "status.txt:"+charset, execute(w, s.MakeReport()))
 	}
 }
 
@@ -71,6 +71,6 @@ func StatusJSONExporter(s *store.Store) http.HandlerFunc {
 		enc := json.NewEncoder(w)
 		enc.SetIndent("", "  ")
 
-		HandleError(s, "status.json", enc.Encode(s.Freeze()))
+		HandleError(s, "status.json", enc.Encode(s.MakeReport()))
 	}
 }

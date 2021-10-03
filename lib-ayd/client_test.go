@@ -13,21 +13,19 @@ func ExampleFetch() {
 	aydURL, _ := url.Parse("http://localhost:9000")
 
 	// fetch status from Ayd server
-	resp, err := ayd.Fetch(aydURL)
+	report, err := ayd.Fetch(aydURL)
 	if err != nil {
 		panic(err)
 	}
 
-	// parse status of all targets
-	allRecords, err := resp.AllRecords()
-	if err != nil {
-		panic(err)
-	}
+	for target, status := range report.ProbeHistory {
+		// show target name
+		fmt.Printf("# %s\n", target)
 
-	// show targets status
-	for _, targetRecords := range allRecords {
-		record := targetRecords[len(targetRecords)-1]
-		fmt.Println(record.Target.String(), ":", record.Status)
+		// show status history
+		for _, x := range status.Records {
+			fmt.Println(x.Status)
+		}
 	}
 }
 
@@ -40,13 +38,8 @@ func TestFetch(t *testing.T) {
 		t.Fatalf("failed to parse server URL: %s", err)
 	}
 
-	resp, err := ayd.Fetch(u)
+	_, err = ayd.Fetch(u)
 	if err != nil {
 		t.Fatalf("failed to fetch: %s", err)
-	}
-
-	_, err = resp.AllRecords()
-	if err != nil {
-		t.Fatalf("failed to parse records: %s", err)
 	}
 }

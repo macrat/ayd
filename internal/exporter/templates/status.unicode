@@ -1,25 +1,24 @@
 ───────────────────────────────┤ Current Status ├───────────────────────────────
-{{ range .CurrentStatus }}
+{{ range .ProbeHistory }}
 ┌─ {{ .Target }}
-└{{ range .History }}{{
-    if eq .Status "NO_DATA" }}─{{ end }}{{
-    if eq .Status "UNKNOWN" }}━{{ end }}{{
-    if eq .Status "ABORTED" }}─{{ end }}{{
-    if eq .Status "FAILURE" }}!{{ end }}{{
-    if eq .Status "HEALTHY" }}✓{{ end }}{{ end }}┤  updated: {{ if .Updated }}{{ .Updated }}{{ else }}(not yet){{ end }}
+└{{ range .Records | pad_records }}-{{ end }}{{ range .Records }}{{
+    if .Status | is_unknown }}━{{ end }}{{
+    if .Status | is_aborted }}─{{ end }}{{
+    if .Status | is_failure }}!{{ end }}{{
+    if .Status | is_healthy }}✓{{ end }}{{ end }}┤  updated: {{ if .Updated }}{{ .Updated | time2str }}{{ else }}(not yet){{ end }}
 {{ end }}
 
 ──────────────────────────────┤ Current Incident ├──────────────────────────────
 {{ range .CurrentIncidents | invert_incidents }}
 ┳━ {{
-    if eq .Status "FAILURE"
+    if .Status | is_failure
  }}!FAILURE!{{
     else
  }}━UNKNOWN━{{
     end
           }} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳
 ┃{{ printf "%-78s" .Target                                                   }}┃
-┃ {{ printf "%-77s" (printf "%s - continue" .CausedAt)                       }}┃
+┃ {{ printf "%-77s" (printf "%s - continue" (.CausedAt | time2str))          }}┃
 ┃                                                                              ┃{{ range (break_text .Message 78) }}
 ┃{{ printf "%-78s" .                                                         }}┃{{ end }}
 ┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┻
@@ -28,18 +27,18 @@
 ──────────────────────────────┤ Incident History ├──────────────────────────────
 {{ range .IncidentHistory | invert_incidents }}
 ┌─ {{
-    if eq .Status "FAILURE"
+    if .Status | is_failure
  }}!FAILURE!{{
     else
  }}━UNKNOWN━{{
     end
           }} ──────────────────────────────────────────────────────────────────┐
 │{{ printf "%-78s" .Target                                                   }}│
-│ {{ printf "%-77s" (printf "%s - %s" .CausedAt .ResolvedAt)                 }}│
+│ {{ printf "%-77s" (printf "%s - %s" (.CausedAt | time2str) (.ResolvedAt | time2str))}}│
 │                                                                              │{{ range (break_text .Message 78) }}
 │{{ printf "%-78s" .                                                         }}│{{ end }}
 └──────────────────────────────────────────────────────────────────────────────┘
 {{ end }}
 
                          ──────────────────────────────
-{{ align_center (printf "Reported by Ayd? (%s)" .ReportedAt) 80 }}
+{{ align_center (printf "Reported by Ayd? (%s)" (.ReportedAt | time2str)) 80 }}

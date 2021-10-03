@@ -4,13 +4,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/macrat/ayd/internal/store/freeze"
+	"github.com/macrat/ayd/internal/store"
+	api "github.com/macrat/ayd/lib-ayd"
 )
 
 var (
 	templateFuncs = map[string]interface{}{
-		"invert_incidents": func(xs []freeze.Incident) []freeze.Incident {
-			rs := make([]freeze.Incident, len(xs))
+		"invert_incidents": func(xs []api.Incident) []api.Incident {
+			rs := make([]api.Incident, len(xs))
 			for i, x := range xs {
 				rs[len(xs)-i-1] = x
 			}
@@ -33,8 +34,26 @@ var (
 			}
 			return strings.Repeat(" ", (width-len(s))/2) + s
 		},
-		"format_latency": func(latency float64) string {
-			return time.Duration(latency * float64(time.Millisecond)).String()
+		"pad_records": func(rs []api.Record) []struct{} {
+			if len(rs) >= store.PROBE_HISTORY_LEN {
+				return []struct{}{}
+			}
+			return make([]struct{}, store.PROBE_HISTORY_LEN-len(rs))
+		},
+		"is_unknown": func(s api.Status) bool {
+			return s == api.StatusUnknown
+		},
+		"is_aborted": func(s api.Status) bool {
+			return s == api.StatusAborted
+		},
+		"is_failure": func(s api.Status) bool {
+			return s == api.StatusFailure
+		},
+		"is_healthy": func(s api.Status) bool {
+			return s == api.StatusHealthy
+		},
+		"time2str": func(t time.Time) string {
+			return t.Format(time.RFC3339)
 		},
 	}
 )

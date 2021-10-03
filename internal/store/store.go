@@ -29,6 +29,21 @@ type ProbeHistory struct {
 	shown   bool
 }
 
+func (ph ProbeHistory) MakeReport() api.ProbeHistory {
+	r := api.ProbeHistory{
+		Target:  ph.Target,
+		Records: ph.Records,
+	}
+
+	if len(ph.Records) > 0 {
+		latest := ph.Records[len(ph.Records)-1]
+		r.Status = latest.Status
+		r.Updated = latest.CheckedAt
+	}
+
+	return r
+}
+
 type byLatestStatus []*ProbeHistory
 
 func (xs byLatestStatus) Len() int {
@@ -210,10 +225,7 @@ func (s *Store) ProbeHistory() []*ProbeHistory {
 	return result
 }
 
-func (s *Store) CurrentIncidents() []*api.Incident {
-	s.historyLock.RLock()
-	defer s.historyLock.RUnlock()
-
+func (s *Store) currentIncidentsWithoutLock() []*api.Incident {
 	result := make([]*api.Incident, 0, len(s.currentIncidents))
 
 	for _, x := range s.currentIncidents {
@@ -227,8 +239,30 @@ func (s *Store) CurrentIncidents() []*api.Incident {
 	return result
 }
 
+func (s *Store) CurrentIncidents() []*api.Incident {
+	s.historyLock.RLock()
+	defer s.historyLock.RUnlock()
+
+	return s.currentIncidentsWithoutLock()
+}
+
+func (s *Store) incidentHistoryWithoutLock() []*api.Incident {
+	result := make([]*api.Incident, 0, len(s.incidentHistory))
+
+	for _, x := range s.incidentHistory {
+		if s.probeHistory.isShown(x.Target) {
+			result = append(result, x)
+		}
+	}
+
+	return result
+}
+
 func (s *Store) IncidentHistory() []*api.Incident {
-	return s.incidentHistory
+	s.historyLock.RLock()
+	defer s.historyLock.RUnlock()
+
+	return s.incidentHistoryWithoutLock()
 }
 
 func (s *Store) setIncidentIfNeed(r api.Record, needCallback bool) {
@@ -348,4 +382,35 @@ func (s *Store) Err() error {
 	s.errorLock.RLock()
 	defer s.errorLock.RUnlock()
 	return s.lastError
+}
+
+func (s *Store) MakeReport() api.Report {
+	s.historyLock.RLock()
+	defer s.historyLock.RUnlock()
+
+	ci := s.currentIncidentsWithoutLock()
+	ih := s.incidentHistoryWithoutLock()
+
+	report := api.Report{
+		ProbeHistory:     make(map[string]api.ProbeHistory),
+		CurrentIncidents: make([]api.Incident, len(ci)),
+		IncidentHistory:  make([]api.Incident, len(ih)),
+		ReportedAt:       time.Now(),
+	}
+
+	for i, x := range ci {
+		report.CurrentIncidents[i] = *x
+	}
+
+	for i, x := range ih {
+		report.IncidentHistory[i] = *x
+	}
+
+	for k, v := range s.probeHistory {
+		if v.shown {
+			report.ProbeHistory[k] = v.MakeReport()
+		}
+	}
+
+	return report
 }

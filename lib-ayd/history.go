@@ -13,17 +13,17 @@ type ProbeHistory struct {
 	// Status is the latest status of the target
 	Status Status
 
-	History []Record
-
 	// Status is the same as CheckedAt of the latest History record
 	Updated time.Time
+
+	Records []Record
 }
 
 type jsonProbeHistory struct {
 	Target  string   `json:"target"`
 	Status  Status   `json:"status"`
-	History []Record `json:"history"`
 	Updated string   `json:"updated,omitempty"`
+	Records []Record `json:"records"`
 }
 
 // UnmarshalJSON implements the json.Unmarshaler interface.
@@ -47,7 +47,7 @@ func (ph *ProbeHistory) UnmarshalJSON(data []byte) error {
 	*ph = ProbeHistory{
 		Target:  target,
 		Status:  jh.Status,
-		History: jh.History,
+		Records: jh.Records,
 		Updated: updated,
 	}
 
@@ -59,7 +59,7 @@ func (ph ProbeHistory) MarshalJSON() ([]byte, error) {
 	return json.Marshal(jsonProbeHistory{
 		Target:  ph.Target.String(),
 		Status:  ph.Status,
-		History: ph.History,
+		Records: ph.Records,
 		Updated: ph.Updated.Format(time.RFC3339),
 	})
 }

@@ -156,28 +156,28 @@ footer span {
 
         <main>
             <article>
-                <h1>Current Status</h1>{{ range .CurrentStatus }}
+                <h1>Current Status</h1>{{ range .ProbeHistory }}
 
                 <section>
                     <h2>{{ .Target }}</h2>
-                    <div class="status-bar">{{ range .History }}
-                        {{ if eq .Status "NO_DATA" }}<span class="status-bit no-data" title="no data">
+                    <div class="status-bar">
+                        {{ range .Records | pad_records }}<span class="status-bit no-data" title="no data">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
                         </span>
-                        {{ end }}{{ if eq .Status "UNKNOWN" }}<span class="status-bit unknown" title="{{ printf "unknown (%s)\n%s\n\n%s" (format_latency .Latency) .CheckedAt .Message }}">
+                        {{ end }}{{ range .Records }}{{ if .Status | is_unknown }}<span class="status-bit unknown" title="{{ printf "unknown (%s)\n%s\n\n%s" .Latency (.CheckedAt | time2str) .Message }}">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#unknown-icon" /></svg>
                         </span>
-                        {{ end }}{{ if eq .Status "ABORTED" }}<span class="status-bit aborted" title="{{ printf "aborted (%s)\n%s\n\n%s" (format_latency .Latency) .CheckedAt .Message }}">
+                        {{ end }}{{ if .Status | is_aborted }}<span class="status-bit aborted" title="{{ printf "aborted (%s)\n%s\n\n%s" .Latency (.CheckedAt | time2str) .Message }}">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#unknown-icon" /></svg>
                         </span>
-                        {{ end }}{{ if eq .Status "FAILURE" }}<span class="status-bit failure" title="{{ printf "failure (%s)\n%s\n\n%s" (format_latency .Latency) .CheckedAt .Message }}">
+                        {{ end }}{{ if .Status | is_failure }}<span class="status-bit failure" title="{{ printf "failure (%s)\n%s\n\n%s" .Latency (.CheckedAt | time2str) .Message }}">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#failure-icon" /></svg>
                         </span>
-                        {{ end }}{{ if eq .Status "HEALTHY" }}<span class="status-bit healthy" title="{{ printf "healthy (%s)\n%s\n\n%s" (format_latency .Latency) .CheckedAt .Message }}">
+                        {{ end }}{{ if .Status | is_healthy }}<span class="status-bit healthy" title="{{ printf "healthy (%s)\n%s\n\n%s" .Latency (.CheckedAt | time2str) .Message }}">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#healthy-icon" /></svg>
                         </span>
                     {{ end }}{{ end }}</div>
-                    <span class="updated">updated: <time>{{ if .Updated }}{{ .Updated }}{{ else }}(not yet){{ end }}</time></span>
+                    <span class="updated">updated: <time>{{ if .Updated }}{{ .Updated | time2str }}{{ else }}(not yet){{ end }}</time></span>
                 </section>{{ end }}
             </article>
 
@@ -185,11 +185,11 @@ footer span {
                 <h1>Current Incident</h1>{{ range .CurrentIncidents | invert_incidents }}
 
                 <section class="incident continue">
-                    <span class="marker {{ if eq .Status "FAILURE" }}failure{{ else }}unknown{{ end }}"></span>
+                    <span class="marker {{ if .Status | is_failure }}failure{{ else }}unknown{{ end }}"></span>
 
-                    <h2>{{ if eq .Status "FAILURE" }}FAILURE{{ else }}UNKNOWN{{ end }}</h2>
+                    <h2>{{ if .Status | is_failure }}FAILURE{{ else }}UNKNOWN{{ end }}</h2>
                     <div class="target">{{ .Target }}</div>
-                    <div class="period"><time>{{ .CausedAt }}</time> - <time>continue</time></div>{{ if .Message }}
+                    <div class="period"><time>{{ .CausedAt | time2str }}</time> - <time>continue</time></div>{{ if .Message }}
                     <pre class="message">{{ .Message }}</pre>{{ end }}
                 </section>{{ end }}{{ if not .CurrentIncidents }}
                 <div class="placeholder">
@@ -202,11 +202,11 @@ footer span {
                 <h1>Incident History</h1>{{ range .IncidentHistory | invert_incidents }}
 
                 <section class="incident resolved">
-                    <span class="marker {{ if eq .Status "FAILURE" }}failure{{ else }}unknown{{ end }}"></span>
+                    <span class="marker {{ if .Status | is_failure }}failure{{ else }}unknown{{ end }}"></span>
 
-                    <h2>{{ if eq .Status "FAILURE" }}FAILURE{{ else }}UNKNOWN{{ end }}</h2>
+                    <h2>{{ if .Status | is_failure }}FAILURE{{ else }}UNKNOWN{{ end }}</h2>
                     <div class="target">{{ .Target }}</div>
-                    <div class="period"><time>{{ .CausedAt }}</time> - <time>{{ .ResolvedAt }}</time></div>{{ if .Message }}
+                    <div class="period"><time>{{ .CausedAt | time2str }}</time> - <time>{{ .ResolvedAt | time2str }}</time></div>{{ if .Message }}
                     <pre class="message">{{ .Message }}</pre>{{ end }}
                 </section>{{ end }}{{ if not .IncidentHistory }}
                 <div class="placeholder">
@@ -216,7 +216,7 @@ footer span {
             </article>
 
             <footer>
-                <span>Reported By Ayd? (<time>{{ .ReportedAt }}</time>)</span>
+                <span>Reported By Ayd? (<time>{{ .ReportedAt | time2str }}</time>)</span>
             </footer>
         </main>
     </body>

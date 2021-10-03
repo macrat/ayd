@@ -637,6 +637,57 @@ func TestStore_ReportInternalError(t *testing.T) {
 	}
 }
 
+func TestStore_MakeReport(t *testing.T) {
+	s := testutil.NewStoreWithLog(t)
+	defer s.Close()
+
+	assert := func(targetCount, currentIncidentCount, incidentHistoryCount int) {
+		t.Helper()
+
+		r := s.MakeReport()
+
+		if len(r.ProbeHistory) != targetCount {
+			t.Errorf("unexpected target count in the report: %d != %d", len(r.ProbeHistory), targetCount)
+		}
+
+		if len(r.CurrentIncidents) != currentIncidentCount {
+			t.Errorf("unexpected current incident count in the report: want=%d actual=%d", currentIncidentCount, len(r.CurrentIncidents))
+		}
+
+		if len(r.IncidentHistory) != incidentHistoryCount {
+			t.Errorf("unexpected incident history count in the report: want=%d actual=%d", incidentHistoryCount, len(r.IncidentHistory))
+		}
+	}
+
+	timestamp := time.Date(2001, 1, 1, 0, 0, 0, 0, time.UTC)
+	addLog := func(fragment string, status api.Status) {
+		timestamp = timestamp.Add(time.Second)
+
+		s.Report(api.Record{
+			CheckedAt: timestamp,
+			Status:    status,
+			Target:    &url.URL{Scheme: "dummy", Fragment: fragment},
+		})
+	}
+
+	assert(0, 0, 0)
+
+	addLog("1", api.StatusHealthy)
+	assert(1, 0, 0)
+
+	addLog("1", api.StatusHealthy)
+	assert(1, 0, 0)
+
+	addLog("2", api.StatusHealthy)
+	assert(2, 0, 0)
+
+	addLog("1", api.StatusFailure)
+	assert(2, 1, 0)
+
+	addLog("1", api.StatusHealthy)
+	assert(2, 0, 1)
+}
+
 func BenchmarkStore_Append(b *testing.B) {
 	for _, status := range []api.Status{api.StatusHealthy, api.StatusFailure} {
 		b.Run(status.String(), func(b *testing.B) {
@@ -655,5 +706,15 @@ func BenchmarkStore_Append(b *testing.B) {
 				s.Report(record)
 			}
 		})
+	}
+}
+
+func BenchmarkStore_MakeReport(b *testing.B) {
+	s := testutil.NewStore(b)
+	defer s.Close()
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		s.MakeReport()
 	}
 }

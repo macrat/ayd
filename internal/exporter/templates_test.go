@@ -5,26 +5,27 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/macrat/ayd/internal/store/freeze"
+	"github.com/macrat/ayd/internal/store"
+	api "github.com/macrat/ayd/lib-ayd"
 )
 
 func TestInvertIncidents(t *testing.T) {
-	f := templateFuncs["invert_incidents"].(func([]freeze.Incident) []freeze.Incident)
+	f := templateFuncs["invert_incidents"].(func([]api.Incident) []api.Incident)
 
 	t.Run("no_incidents", func(t *testing.T) {
-		result := f([]freeze.Incident{})
+		result := f([]api.Incident{})
 		if len(result) != 0 {
 			t.Fatalf("unexpected result length: %d", len(result))
 		}
 	})
 
 	t.Run("three_incidents", func(t *testing.T) {
-		input := []freeze.Incident{
+		input := []api.Incident{
 			{Message: "foo"},
 			{Message: "bar"},
 			{Message: "baz"},
 		}
-		expect := []freeze.Incident{
+		expect := []api.Incident{
 			{Message: "baz"},
 			{Message: "bar"},
 			{Message: "foo"},
@@ -91,26 +92,24 @@ func TestAlignCenter(t *testing.T) {
 	}
 }
 
-func TestFormatLatency(t *testing.T) {
-	f := templateFuncs["format_latency"].(func(float64) string)
+func TestPadRecords(t *testing.T) {
+	f := templateFuncs["pad_records"].(func([]api.Record) []struct{})
 
 	tests := []struct {
-		Input  float64
-		Output string
+		Input  int
+		Output int
 	}{
-		{0.000, "0s"},
-		{0.123, "123µs"},
-		{1000.0, "1s"},
-		{60 * 1000.0, "1m0s"},
-		{42 * 60 * 60 * 1000.0, "42h0m0s"},
+		{0, store.PROBE_HISTORY_LEN},
+		{3, store.PROBE_HISTORY_LEN - 3},
+		{store.PROBE_HISTORY_LEN + 5, 0},
 	}
 
 	for _, tt := range tests {
 		tt := tt
-		t.Run(fmt.Sprintf("%f", tt.Input), func(t *testing.T) {
-			result := f(tt.Input)
-			if tt.Output != result {
-				t.Errorf("expected %#v\n but got %#v", tt.Output, result)
+		t.Run(fmt.Sprintf("%d", tt.Input), func(t *testing.T) {
+			result := f(make([]api.Record, tt.Input))
+			if tt.Output != len(result) {
+				t.Errorf("expected array length is %d but got %d", tt.Output, len(result))
 			}
 		})
 	}

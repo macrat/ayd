@@ -42,18 +42,12 @@ func Example_alertPlugin() {
 		logger.Failure("failed to get Ayd URL")
 		return
 	}
-	resp, err := ayd.Fetch(aydURL)
+	report, err := ayd.Fetch(aydURL)
 	if err != nil {
 		logger.Failure("failed to fetch status")
 		return
 	}
-	incidents, err := resp.CurrentIncidents()
-	if err != nil {
-		logger.Failure("failed to get current incidents")
-		return
-	}
-
-	_ = incidents // you can use this extra inciden information
+	_ = report.CurrentIncidents // check extra information about current incidents
 
 	logger = logger.StartTimer() // start timer for measure time to send alert
 
