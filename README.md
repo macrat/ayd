@@ -5,7 +5,7 @@
 [![Codecov Test Coverage](https://img.shields.io/codecov/c/gh/macrat/ayd)](https://app.codecov.io/gh/macrat/ayd/)
 [![Docker Build Status](https://img.shields.io/github/workflow/status/macrat/ayd-docker/build?color=blue&label=docker%20build&logoColor=white)](https://hub.docker.com/r/macrat/ayd)
 
-Easiest status monitoring service to check something service is dead or alive.
+The easiest status monitoring service to check if your service is dead or alive.
 
 
 ## Features
@@ -26,9 +26,9 @@ Easiest status monitoring service to check something service is dead or alive.
 
 - Make a status page for temporary usage.
 
-  You can start it via one command! And, stop via just Ctrl-C!
+  You can start it via one command! And, stop it via just Ctrl-C!
 
-- Make a status page for a minimal system.
+- Make a status page for minimal systems.
 
   Single binary server, single log file, there is no database!
 
@@ -40,12 +40,12 @@ Easiest status monitoring service to check something service is dead or alive.
 
 - Investigate more detail.
 
-  This is just for check dead or alive.
+  This program is just for check your service is dead or alive.
 
 
 ## Quick start
 
-1. Download latest version from [release page](https://github.com/macrat/ayd/releases/).
+1. Download the latest version from [release page](https://github.com/macrat/ayd/releases/).
 
 2. Extract downloaded package and put to somewhere that registered to PATH.
 
@@ -77,26 +77,54 @@ $ ayd https://your-service.example.com ping:another-host.example.com
 
 Ayd has these pages/endpoints.
 
-|path                                             |description|
-|-------------------------------------------------|-----------|
-|[/status.html](http://localhost:9000/status.html)|Human friendly status page in HTML.|
-|[/status.txt](http://localhost:9000/status.txt)  |Human friendly status page in plain text.<br />You can use `/status.txt?charset=unicode` and `/status.txt?charset=ascii` for specify charset.|
-|[/status.json](http://localhost:9000/status.json)|Machine readable status page in JSON format.|
-|[/log.tsv](http://localhost:9000/log.tsv)        |Raw log file in TSV format.<br />You can change period via `since` and `until` query in RFC3339 format like `/log.tsv?since=2000-01-01T00:00:00Z&until=2001-01-01T00:00:00Z`.<br />And you can filter records by target URL using `target` query like `/log.tsv?target=http://example.com`|
-|[/log.csv](http://localhost:9000/log.tsv)        |Raw log file in CSV format.<br />You can use the same queries as `/log.tsv`|
-|[/log.json](http://localhost:9000/log.json)      |Raw log file in JSON format.<br />You can use the same queries as `/log.tsv`|
-|[/metrics](http://localhost:9000/metrics)        |Minimal status page for use by [Prometheus](https://prometheus.io/).|
-|[/healthz](http://localhost:9000/healthz)        |Health status page for checking status of Ayd itself.|
+| path                                              | description                                                          |
+|---------------------------------------------------|----------------------------------------------------------------------|
+| [/status.html](http://localhost:9000/status.html) | Human friendly status page in HTML.                                  |
+| [/status.txt](http://localhost:9000/status.txt)   | Human friendly status page in plain text.                            |
+| [/status.json](http://localhost:9000/status.json) | Machine readable status page in JSON format.                         |
+| [/log.tsv](http://localhost:9000/log.tsv)         | Raw log file in TSV format.                                          |
+| [/log.csv](http://localhost:9000/log.tsv)         | Raw log file in CSV format.                                          |
+| [/log.json](http://localhost:9000/log.json)       | Raw log file in JSON format                                          |
+| [/metrics](http://localhost:9000/metrics)         | Minimal status page for use by [Prometheus](https://prometheus.io/). |
+| [/healthz](http://localhost:9000/healthz)         | Health status page for checking status of Ayd itself.                |
+
+#### Change encoding of `/stauts.txt`
+
+`/status.txt` accepts `charset` query to changing the encoding of result.
+The query value is `unicode` or `ascii`.
+In default, the encoding is `unicode`.
+
+examples:
+- <http://localhost:9000/status.txt>, <http://localhost:9000/status.txt?charset=unicode>: Reply is in UTF-8 text.
+- <http://localhost:9000/status.txt?charset=ascii>: Reply is in ASCII text.
+
+Be careful, the target URL or the message won't convert even if set `charset=ascii`. The response could include non-ascii text.
+
+
+#### Filter log entries in `/log.tsv`, `/log.csv`, and `/log.json`
+
+The log endpoints accept `since`, `until`, and `target` query to filtering log entries.
+
+`since` and `until` is the queries to filtering by date-time, in RFC3339 format like `2001-02-03T16:05:06+09:00`.
+In default, Ayd replies logs that from 7 days ago to current time.
+
+And, `target` is the query to filtering by target URL.
+
+examples:
+- <http://localhost:9000/log.tsv?since=2000-01-01T00:00:00Z&until=2001-01-01T00:00:00Z>: Reply is logs from 2000-01-01 to 2000-12-31.
+- <http://localhost:9000/log.csv?since=2021-01-01T00:00:00Z&target=ping:localhost>: Reply is logs about `ping:localhost` since 2021-01-01.
 
 
 ### Target URL
 
-Ayd demands URL as targets.
-Please see below what you can use as a scheme (protocol).
+The target services is URL, specified in the arguments of `ayd` command.
+
+The way to check the target is specified as the scheme of URL, like `ping:example.com` for ping.
+Common ways to check the target is embedded in Ayd, but you can also extend it using [plugin](#plugin)
 
 #### http: / https:
 
-Fetch HTTP(S) page and check status code is 2xx or not.
+Fetch HTTP/HTTPS page and check if the status code is 2xx or not.
 
 You can use GET, HEAD, POST, and OPTIONS method by specifying like `http-post://...` or `https-head://...`.
 The default method is GET.
@@ -113,7 +141,7 @@ examples:
 
 #### ping:
 
-Send ICMP echo request (a.k.a. ping command) and check the server is connected or not.
+Send ICMP echo request (a.k.a. ping command) and check if the target is connected or not.
 
 Ayd sends 3 packets in 1 second and expects all packets to return.
 
@@ -130,9 +158,10 @@ examples:
 
 #### tcp:
 
-Connect to TCP and check the service listening or not.
+Connect to TCP and check if the service is listening or not.
 
-`tcp://` will select IPv4 or IPv6 automatically. You can use `tcp4://` or `tcp6://` to choose IP protocol version.
+`tcp://` will select IPv4 or IPv6 automatically.
+But you can also use `tcp4://` or `tcp6://` to choose IP protocol version.
 
 TCP will timeout in 10 seconds and report as failure.
 
@@ -144,7 +173,7 @@ examples:
 
 #### dns:
 
-Resolve hostname via DNS and check the host exists or not.
+Resolve hostname via DNS and check if the host exists or not.
 
 You can specify record type as a `type` query like `dns:example.com?type=A`, or as a scheme like `dns-cname:example.com`.
 Supported type is `A`, `AAAA`, `CNAME`, `MX`, `NS`, and `TXT`.
@@ -161,7 +190,8 @@ examples:
 
 #### exec:
 
-Execute external command and check return code is 0 or not.
+Execute external command and check if the exit code is 0 or not.
+The exit code 0 means HEALTHY, otherwise mean FAILURE. If couldn't execute command, Ayd reports as UNKNOWN.
 
 The command's stdout and stderr will be captured as a message of the status check record.
 You should keep output as short as possible because Ayd is not good at record a long message.
@@ -237,7 +267,7 @@ https://service2.example.com
 source:./another-list.txt
 ```
 
-The line that starts with `#` will ignore as a comment.
+The line that starts with `#` will ignored as a comment.
 
 examples:
 - `source:./targets.txt`
@@ -246,7 +276,7 @@ examples:
 ##### source+http: / source+https:
 
 `source+http:` and `source+https:` is variants of `source:`.
-These fetch HTTP(S) and load the response as a source file.
+These fetch HTTP/HTTPS and load the response as a source file.
 
 __WARNING:__
 Please don't use it if you can't completely trust the HTTP server because this scheme can be a backdoor of your server.
@@ -268,7 +298,7 @@ examples:
 
 Plugin is a executable file named like `ayd-xxx-probe`, and installed to the PATH directory.
 
-You can use plugin via like `xxx:` scheme after installed it if plugin name is `ayd-xxx-probe`.
+For example, you can use `xxx:` scheme if you have installed a executable file named `ayd-xxx-probe`.
 Of course, you can change executable file name to change scheme name.
 
 If you want to make your own plugin please read [make plugin](#make-plugin) section.
@@ -280,29 +310,29 @@ Plugin will timeout in maximum 1 hour and report as failure.
 - [FTP / FTPS](https://github.com/macrat/ayd-ftp-probe#readme)
 - [SMB (samba)](https://github.com/macrat/ayd-smb-probe#readme)
 - [NTP](https://github.com/macrat/ayd-ntp-probe#readme)
-- or, you can [make your plugin](#make-plugin) yourself.
+- or, you can [make plugin](#make-plugin) yourself easily.
 
 
 ### Scheduling
 
 In default, Ayd will check targets every 5 minutes.
 
-You can place the timing specification before the target specification like below if you want.
+If you want, You can place the schedule specifications before the target URLs like below.
 
 ``` shell
 $ ayd 10m https://your-service.example.com 1h https://another-service.example.com
 ```
 
-The above command will check `your-service.example.com` every 10 minutes, and check `another-service.example.com` every 1 hour.
+The above command means checking `your-service.example.com` every 10 minutes, and checking `another-service.example.com` every 1 hour.
 
-You can also use [the Cron](https://en.wikipedia.org/wiki/Cron) style spec as a timing spec like below.
+You can also use [the Cron](https://en.wikipedia.org/wiki/Cron) style spec as a schedule spec like below.
 
 ``` shell
 $ ayd '*/5  6-21 * *'     https://your-service.example.com \
       '*/10 *    * * 1-5' https://another-service.example.com
 ```
 
-The above command will check `your-service.example.com` every 5 minutes from 6 a.m. to 9 p.m, and check `another-service.example.com` every 10 minutes from monday to friday.
+The above command means checking `your-service.example.com` every 5 minutes from 6 a.m. to 9 p.m, and checking `another-service.example.com` every 10 minutes from monday to friday.
 
 ```
  ┌─────── minute (0 - 59)
@@ -317,7 +347,7 @@ The above command will check `your-service.example.com` every 5 minutes from 6 a
 
 ### Log file
 
-Logfile of Ayd is TSV (Tab Separated Values) format.
+The log file of Ayd is stored in TSV (Tab Separated Values) format, encoded UTF-8.
 The log has these columns.
 
 1. Timestamp in [RFC3339 format](https://tools.ietf.org/html/rfc3339) like `2001-02-30T16:05:06+00:00`.
@@ -356,7 +386,7 @@ For example, log lines look like below.
 2001-02-30T16:10:00+09:00	HEALTHY	0.375	ping:anotherhost	rtt(min/avg/max)=0.31/0.38/0.47 send/rcv=4/4
 ```
 
-Ayd will save the log file in the current directory in default.
+Ayd will save the log file named `ayd.log` into the current directory in default.
 You can change this with `-o` option like below.
 
 ``` shell
@@ -368,18 +398,19 @@ Please consider using the log rotation tool if you have a plan to use it for a l
 (Ayd can handle the huge log, but it is not easy to investigate the huge log when trouble)
 
 Please use `-o -` option for disable writing log file if you don't use log file.
-This is not recommended for production use because Ayd can't restore last status when restore. But, this is may useful for [use Ayd as a parts of script file](#one-shot-mode).
+This is not recommended for production use because Ayd can't restore last status when restore if don't save log file.
+But, this is may useful for [use Ayd as a parts of script file](#one-shot-mode).
 
 
 ### Alerting
 
-Ayd can kick a URL when a target status checks failure.
+Ayd can do something for alerting when an incident happened, recovered, or the incident state has changed.
+The alert is specified as a URL same as a target URL.
+
 You may want to use [exec](#exec), [HTTP](#http--https), or plugin for alerting.
-(Even you can use ping, DNS, etc as alerting. but... it's useless in almost all cases)
+(Even you can use ping, DNS, etc as alerting. But... it's useless in almost all cases)
 
-Ayd will kick alert at the timing that incident caused, resolved, or message changed.
-
-You can specify alert URL like below.
+The alert URL specify looks like below.
 
 ``` shell
 $ ayd -a https://alert.example.com/alert https://target.example.com
@@ -399,11 +430,11 @@ Please see [Alert plugin](#alert-plugin) section if you want make your own plugi
 
 #### e-mail (SMTP)
 
-If you want to send an email via SMTP as an alert, you can use [ayd-mailto-alert](https://github.com/macrat/ayd-mailto-alert) plugin.
+The [ayd-mailto-alert](https://github.com/macrat/ayd-mailto-alert) is a plugin to sending an alert e-mail via SMTP.
 
 ![The screenshot of Ayd alert in email. You can see service status, target URL, and reason to failure. And there is button to open Status Page.](./assets/email-alert.jpg)
 
-This plugin can use like below.
+You can use this plugin like below.
 
 ``` shell
 $ export SMTP_SERVER=smtp.example.com:465 SMTP_USERNAME=your-name SMTP_PASSWORD=your-password
@@ -416,11 +447,11 @@ Please see more information in [the readme of ayd-mailto-alert](https://github.c
 
 #### Slack
 
-You can send an alert to Slack via [ayd-slack-alert](https://github.com/macrat/ayd-slack-alert) plugin.
+The [ayd-slack-alert](https://github.com/macrat/ayd-slack-alert) is a plugin to sending an alert to Slack.
 
 ![The screenshot of Ayd alert in the Slack. You can see service status, target URL, and reason to failure. And there is button to open Status Page.](./assets/slack-alert.jpg)
 
-This plugin can use like below.
+You can use this plugin like below.
 
 ``` shell
 $ export SLACK_WEBHOOK_URL="https://hooks.slack.com/services/......"
@@ -484,7 +515,7 @@ $ sudo systemctl enable ayd
 
 Plugins in Ayd is a executable file named like `ayd-xxx-probe` or `ayd-xxx-alert`, and installed to the PATH directory.
 
-Ayd looks for `ayd-xxx-probe` as target URL or `ayd-xxx-alert` as alert URL, if URL have `xxx:`, `xxx-yyy:`, or `xxx+yyy:`.
+Ayd looks for `ayd-xxx-probe` for a target or `ayd-xxx-alert` for an alert, if URL scheme is `xxx:`, `xxx-yyy:`, or `xxx+yyy:`.
 You can change scheme via changing `xxx`, but you can't use URL schemes that `ayd`, `alert`, and the scheme that is supported by Ayd itself.
 And you can use `yyy` part to change plugin behavior, the same as [http:](#http--https) or [dns:](#dns).
 
@@ -492,13 +523,13 @@ The output of the plugin will parsed the same way to [log file](#log-file).
 
 The differences from plugin to [`exec:`](#exec) are below.
 
-|                                                       |`exec: `    |plugin                    |
-|-------------------------------------------------------|------------|--------------------------|
-|scheme of URL                                          |`exec:` only|anything                  |
-|executable file place                                  |anywhere    |only in the PATH directory|
-|set argument and environment variable in URL           |can         |can not                   |
-|receive raw target URL                                 |can not     |can                       |
-|record about multiple targets like as [source](#source)|can not     |can                       |
+|                                                         | `exec: `     | plugin                     |
+|---------------------------------------------------------|--------------|----------------------------|
+| URL Scheme                                              | `exec:` only | anything                   |
+| executable file directory                               | anywhere     | only in the PATH directory |
+| set argument and environment variable in URL            | can          | can not                    |
+| receive raw target URL                                  | can not      | can                        |
+| record about multiple targets like as [source](#source) | can not      | can                        |
 
 There is [a library for create plugin](https://pkg.go.dev/github.com/macrat/ayd/lib-ayd).
 
@@ -506,7 +537,7 @@ There is [a library for create plugin](https://pkg.go.dev/github.com/macrat/ayd/
 
 Probe plugin receives target URL as the first argument of the command.
 
-For example, target URL `foobar:your-target` is means like below command.
+For example, target URL `foobar:your-target` has the same mean to below command.
 
 ``` bash
 ayd-foobar-probe "foobar:your-target"
@@ -516,7 +547,7 @@ ayd-foobar-probe "foobar:your-target"
 
 Alert plugin receives the URL of alert, and 2nd or after arguments is the same as [log file](#log-file) order but without latency.
 
-For example, alert URL `foobar:your-alert` is means like below command.
+For example, alert URL `foobar:your-alert` has the same mean to below command.
 
 ``` bash
 ayd-foobar-alert                \
@@ -539,13 +570,13 @@ In default, Ayd uses port 9000.
 
 #### Use HTTPS
 
-You can set cert certificate file and key file via `-c` option and `-k` option.
+You can set certificate file and key file via `-c` option and `-k` option.
 
 ``` shell
 $ ayd -c ./your-certificate.crt -k ./your-certificate.key ping:localhost
 ```
 
-This option is also enable HTTP/2.
+The HTTP/2 will be enabled if set these options.
 
 #### Enable authentication for status pages
 
@@ -558,9 +589,9 @@ $ ayd -u user:p@ssword ping:localhost
 
 For above example, you can access status page using `user` as username and `p@ssword` as password.
 
-This is not very secure because you have to write password to argument. (Attacker can peek arguments of other process easily if you have access to server terminal)
-But, this is very easy to setup, and work against end user who don't know how to attack at least.
-If you want to more secure option, please consider use reverse proxy like Nginx.
+This is not very secure because you have to write a plain password to argument. (Attacker can peek arguments of other process easily if you have access to the server terminal)
+But, this is very easy to setup, and at least, work well against end user who don't know how to attack.
+If you need more secure option, please consider use reverse proxy like Nginx.
 
 #### One-shot mode
 
@@ -568,5 +599,5 @@ If you want to use Ayd in a script, you may use `-1` option.
 Ayd will check status just once and exit when passed `-1` option.
 
 Exit status code is 0 if all targets are healthy.
-If some targets are unhealthy, the status code will 1.
-And, if your arguments are wrong (or can't resolve hostnames, or exec scripts not found), the status code will 2.
+If some targets are unhealthy, the status code is 1.
+And, if your arguments are wrong (or can't resolve host names, or exec scripts not found), the status code is 2.
