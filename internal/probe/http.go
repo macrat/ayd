@@ -101,9 +101,9 @@ func (p HTTPProbe) Check(ctx context.Context, r Reporter) {
 		dnsErr := &net.DNSError{}
 		opErr := &net.OpError{}
 
-		if errors.As(err, &dnsErr) && dnsErr.IsNotFound {
+		if errors.As(err, &dnsErr) {
 			status = api.StatusUnknown
-			message = dnsErr.Error()
+			message = "lookup " + dnsErr.Name + ": host not found"
 		} else if errors.As(err, &opErr) && opErr.Op == "dial" {
 			message = fmt.Sprintf("%s: connection refused", opErr.Addr)
 		}

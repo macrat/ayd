@@ -32,8 +32,8 @@ func TestDNSProbe(t *testing.T) {
 		{"dns:example.com?type=TXT", api.StatusHealthy, "(v=spf1 -all\n[0-9a-z]{32}|[0-9a-z]{32}\nv=spf1 -all)", ""},
 		{"dns://1.1.1.1/example.com?type=TXT", api.StatusHealthy, "(v=spf1 -all\n[0-9a-z]{32}|[0-9a-z]{32}\nv=spf1 -all)", ""},
 
-		{"dns:of-course-definitely-no-such-host", api.StatusFailure, `lookup of-course-definitely-no-such-host(:| ).+`, ""},
-		{"dns://8.8.8.8/of-course-definitely-no-such-host", api.StatusFailure, `lookup of-course-definitely-no-such-host(:| ).+8\.8\.8\.8.+`, ""},
+		{"dns:of-course-definitely-no-such-host", api.StatusFailure, `lookup of-course-definitely-no-such-host: not found on .+`, ""},
+		{"dns://8.8.8.8/of-course-definitely-no-such-host", api.StatusFailure, `lookup of-course-definitely-no-such-host: not found on 8\.8\.8\.8`, ""},
 
 		{"dns:example.com?type=UNKNOWN", api.StatusUnknown, ``, "unsupported DNS type"},
 	})

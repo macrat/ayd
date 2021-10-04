@@ -169,12 +169,19 @@ func (p DNSProbe) Check(ctx context.Context, r Reporter) {
 	}
 
 	if err != nil {
-		if e, ok := err.(*net.DNSError); ok && p.target.Host != "" {
-			e.Server = p.target.Host
-		}
-
 		rec.Status = api.StatusFailure
 		rec.Message = err.Error()
+
+		dnsErr := &net.DNSError{}
+		if errors.As(err, &dnsErr) {
+			if p.target.Host != "" {
+				dnsErr.Server = p.target.Host
+				rec.Message = dnsErr.Error()
+			}
+			if dnsErr.IsNotFound {
+				rec.Message = "lookup " + p.hostname + ": not found on " + dnsErr.Server
+			}
+		}
 	}
 
 	r.Report(timeoutOr(ctx, rec))
