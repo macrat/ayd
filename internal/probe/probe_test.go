@@ -71,6 +71,8 @@ func TestTargetURLNormalize(t *testing.T) {
 		{"ping:example.com", url.URL{Scheme: "ping", Opaque: "example.com"}, nil},
 		{"ping://example.com:123/foo/bar?hoge=fuga#piyo", url.URL{Scheme: "ping", Opaque: "example.com", Fragment: "piyo"}, nil},
 		{"ping:example.com#piyo", url.URL{Scheme: "ping", Opaque: "example.com", Fragment: "piyo"}, nil},
+		{"ping-abc:example.com", url.URL{}, probe.ErrUnsupportedScheme},
+		{"ping+abc:example.com", url.URL{}, probe.ErrUnsupportedScheme},
 
 		{"http://example.com/foo/bar?hoge=fuga#piyo", url.URL{Scheme: "http", Host: "example.com", Path: "/foo/bar", RawQuery: "hoge=fuga", Fragment: "piyo"}, nil},
 		{"https://example.com/foo/bar?hoge=fuga#piyo", url.URL{Scheme: "https", Host: "example.com", Path: "/foo/bar", RawQuery: "hoge=fuga", Fragment: "piyo"}, nil},
@@ -79,12 +81,15 @@ func TestTargetURLNormalize(t *testing.T) {
 		{"https-post://example.com/foo/bar?hoge=fuga#piyo", url.URL{Scheme: "https-post", Host: "example.com", Path: "/foo/bar", RawQuery: "hoge=fuga", Fragment: "piyo"}, nil},
 		{"http-head://example.com/foo/bar?hoge=fuga#piyo", url.URL{Scheme: "http-head", Host: "example.com", Path: "/foo/bar", RawQuery: "hoge=fuga", Fragment: "piyo"}, nil},
 		{"https-options://example.com/foo/bar?hoge=fuga#piyo", url.URL{Scheme: "https-options", Host: "example.com", Path: "/foo/bar", RawQuery: "hoge=fuga", Fragment: "piyo"}, nil},
+		{"https+get://example.com", url.URL{}, probe.ErrUnsupportedScheme},
 
 		{"tcp:example.com:80", url.URL{Scheme: "tcp", Host: "example.com:80"}, nil},
 		{"tcp://example.com:80/foo/bar?hoge=fuga#piyo", url.URL{Scheme: "tcp", Host: "example.com:80", Fragment: "piyo"}, nil},
 		{"tcp4:example.com:80", url.URL{Scheme: "tcp4", Host: "example.com:80"}, nil},
 		{"tcp6:example.com:80", url.URL{Scheme: "tcp6", Host: "example.com:80"}, nil},
 		{"tcp:example.com:80#hello", url.URL{Scheme: "tcp", Host: "example.com:80", Fragment: "hello"}, nil},
+		{"tcp-abc:example.com:80", url.URL{}, probe.ErrUnsupportedScheme},
+		{"tcp-def:example.com:80", url.URL{}, probe.ErrUnsupportedScheme},
 
 		{"dns:example.com", url.URL{Scheme: "dns", Opaque: "example.com"}, nil},
 		{"dns:///example.com", url.URL{Scheme: "dns", Opaque: "example.com"}, nil},
@@ -96,11 +101,15 @@ func TestTargetURLNormalize(t *testing.T) {
 		{"dns:example.com?type=a&hoge=fuga", url.URL{Scheme: "dns", Opaque: "example.com", RawQuery: "type=A"}, nil},
 		{"dns-aaaa:example.com", url.URL{Scheme: "dns", Opaque: "example.com", RawQuery: "type=AAAA"}, nil},
 		{"dns-cname:example.com?type=TXT", url.URL{Scheme: "dns", Opaque: "example.com", RawQuery: "type=CNAME"}, nil},
+		{"dns+a:example.com", url.URL{}, probe.ErrUnsupportedScheme},
+		{"dns-abc:example.com", url.URL{}, probe.ErrUnsupportedDNSType},
 
 		{"exec:testdata/test.bat", url.URL{Scheme: "exec", Opaque: "testdata/test.bat"}, nil},
 		{"exec:./testdata/test.bat", url.URL{Scheme: "exec", Opaque: "./testdata/test.bat"}, nil},
 		{"exec:" + cwd + "/testdata/test.bat", url.URL{Scheme: "exec", Opaque: cwd + "/testdata/test.bat"}, nil},
 		{"exec:testdata/test.bat?hoge=fuga#piyo", url.URL{Scheme: "exec", Opaque: "testdata/test.bat", RawQuery: "hoge=fuga", Fragment: "piyo"}, nil},
+		{"exec-abc:testdata/test", url.URL{}, probe.ErrUnsupportedScheme},
+		{"exec+abc:testdata/test", url.URL{}, probe.ErrUnsupportedScheme},
 
 		{"source:./testdata/healthy-list.txt", url.URL{Scheme: "source", Opaque: "./testdata/healthy-list.txt"}, nil},
 		{"source:./testdata/healthy-list.txt#hello", url.URL{Scheme: "source", Opaque: "./testdata/healthy-list.txt", Fragment: "hello"}, nil},
