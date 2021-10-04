@@ -1,5 +1,5 @@
-//go:build !windows
-// +build !windows
+//go:build linux || darwin
+// +build linux darwin
 
 package probe_test
 
