@@ -29,7 +29,7 @@ TARGETS:
    e.g. https://example.com/path/to
 
    You can specify HTTP method in scheme like "http-head" or "https-post".
-   Supported method is GET, HEAD, POST, and OPTION. Default is GET method.
+   Supported method is GET, HEAD, POST, OPTION, and CONNECT. Default is GET method.
 
   ping:
    Send 3 ICMP echo request in 1 second.

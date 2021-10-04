@@ -131,7 +131,7 @@ func TestParseArgs_errors(t *testing.T) {
 		{
 			[]string{"http-abc://example.com", "::"},
 			[]string{
-				`http-abc://example.com: HTTP "ABC" method is not supported. Please use GET, HEAD, POST, or OPTIONS.`,
+				`http-abc://example.com: HTTP "ABC" method is not supported. Please use GET, HEAD, POST, OPTIONS, or CONNECT.`,
 				`::: Not valid as schedule or target URL.`,
 			},
 		},

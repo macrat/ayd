@@ -304,6 +304,11 @@ func RunDummyHTTPServer() *httptest.Server {
 			w.WriteHeader(http.StatusBadRequest)
 		}
 	})
+	mux.HandleFunc("/only/connect", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "CONNECT" {
+			w.WriteHeader(http.StatusBadRequest)
+		}
+	})
 	mux.HandleFunc("/slow-page", func(w http.ResponseWriter, r *http.Request) {
 		time.Sleep(10 * time.Second)
 		w.Write([]byte("OK"))

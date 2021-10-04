@@ -60,9 +60,9 @@ func NewHTTPProbe(u *url.URL) (HTTPProbe, error) {
 		return HTTPProbe{}, ErrUnsupportedScheme
 	} else {
 		switch method {
-		case "GET", "HEAD", "POST", "OPTIONS":
+		case "GET", "HEAD", "POST", "OPTIONS", "CONNECT":
 		default:
-			return HTTPProbe{}, fmt.Errorf("HTTP \"%s\" method is not supported. Please use GET, HEAD, POST, or OPTIONS.", method)
+			return HTTPProbe{}, fmt.Errorf("HTTP \"%s\" method is not supported. Please use GET, HEAD, POST, OPTIONS, or CONNECT.", method)
 		}
 	}
 

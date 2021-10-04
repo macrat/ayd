@@ -27,6 +27,7 @@ func TestHTTPProbe(t *testing.T) {
 		{strings.Replace(server.URL, "http", "http-post", 1) + "/only/post", api.StatusHealthy, `proto=HTTP/1\.1 length=0 status=200_OK`, ""},
 		{strings.Replace(server.URL, "http", "http-head", 1) + "/only/head", api.StatusHealthy, `proto=HTTP/1\.1 length=-1 status=200_OK`, ""},
 		{strings.Replace(server.URL, "http", "http-options", 1) + "/only/options", api.StatusHealthy, `proto=HTTP/1\.1 length=0 status=200_OK`, ""},
+		{strings.Replace(server.URL, "http", "http-connect", 1) + "/only/connect", api.StatusHealthy, `proto=HTTP/1\.1 length=0 status=200_OK`, ""},
 		{server.URL + "/slow-page", api.StatusFailure, `probe timed out`, ""},
 		{"http://localhost:54321", api.StatusFailure, `(127\.0\.0\.1|\[::1\]):54321: connection refused`, ""},
 	})
@@ -36,11 +37,12 @@ func TestHTTPProbe(t *testing.T) {
 	for _, tt := range []string{"unknown-method", ""} {
 		u := "http-" + tt + "://localhost"
 		t.Run(u, func(t *testing.T) {
+			expected := `HTTP "` + strings.ToUpper(tt) + `" method is not supported. Please use GET, HEAD, POST, OPTIONS, or CONNECT.`
 			_, err := probe.New(u)
 			if err == nil {
 				t.Errorf("expected error but got nil")
-			} else if err.Error() != `HTTP "`+strings.ToUpper(tt)+`" method is not supported. Please use GET, HEAD, POST, or OPTIONS.` {
-				t.Errorf("unexpected error: %s", err)
+			} else if err.Error() != expected {
+				t.Errorf("unexpected error:\nexpected: %s\n but got: %s", expected, err)
 			}
 		})
 	}

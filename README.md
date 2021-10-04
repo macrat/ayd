@@ -126,7 +126,7 @@ Common ways to check the target is embedded in Ayd, but you can also extend it u
 
 Fetch HTTP/HTTPS page and check if the status code is 2xx or not.
 
-You can use GET, HEAD, POST, and OPTIONS method by specifying like `http-post://...` or `https-head://...`.
+You can use GET, HEAD, POST, OPTIONS, and CONNECT method by specifying like `http-post://...` or `https-head://...`.
 The default method is GET.
 
 Ayd will Follow redirect maximum 10 times.
