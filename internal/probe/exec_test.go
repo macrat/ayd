@@ -21,6 +21,7 @@ func TestExecuteProbe(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to get current path: %s", err)
 	}
+	cwd = filepath.ToSlash(cwd)
 
 	AssertProbe(t, []ProbeTest{
 		{"exec:./testdata/test?message=hello&code=0", api.StatusHealthy, "hello", ""},
