@@ -3,6 +3,7 @@ package probe_test
 import (
 	"context"
 	"os"
+	"path"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -12,6 +13,27 @@ import (
 	"github.com/macrat/ayd/internal/testutil"
 	api "github.com/macrat/ayd/lib-ayd"
 )
+
+func TestExecuteProbe(t *testing.T) {
+	t.Parallel()
+
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("failed to get current path: %s", err)
+	}
+
+	AssertProbe(t, []ProbeTest{
+		{"exec:./testdata/test?message=hello&code=0", api.StatusHealthy, "hello", ""},
+		{"exec:./testdata/test?message=world&code=1", api.StatusFailure, "world", ""},
+		{"exec:" + path.Join(cwd, "testdata/test") + "?message=hello&code=0", api.StatusHealthy, "hello", ""},
+		{"exec:echo#%0Ahello%0Aworld%0A%0A", api.StatusHealthy, "hello\nworld", ""},
+		{"exec:sleep#10", api.StatusFailure, `probe timed out`, ""},
+		{"exec:echo#::status::unknown", api.StatusUnknown, ``, ""},
+		{"exec:echo#::status::failure", api.StatusFailure, ``, ""},
+	})
+
+	AssertTimeout(t, "exec:echo")
+}
 
 func TestExecuteProbe_unknownError(t *testing.T) {
 	dir := t.TempDir()

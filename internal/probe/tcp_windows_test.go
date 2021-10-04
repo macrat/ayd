@@ -18,7 +18,6 @@ func TestTCPProbe_errors(t *testing.T) {
 
 	AssertProbe(t, []ProbeTest{
 		{"tcp://localhost:56789", api.StatusFailure, `dial tcp (127\.0\.0\.1|\[::1\]):56789: connectex: No connection could be made because the target machine actively refused it.`, ""},
-		{"tcp://localhost", api.StatusUnknown, ``, "TCP target's port number is required"},
 	})
 
 	AssertTimeout(t, strings.Replace(server.URL, "http://", "tcp://", 1))
