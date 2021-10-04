@@ -6,7 +6,6 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
-	"strings"
 	"time"
 
 	"github.com/macrat/ayd/internal/probe"
@@ -34,8 +33,7 @@ type ReplaceReporter struct {
 }
 
 func (r ReplaceReporter) Report(rec api.Record) {
-	scheme := strings.SplitN(rec.Target.Scheme, "-", 2)[0]
-	scheme = strings.SplitN(scheme, "+", 2)[0]
+	scheme, _, _ := probe.SplitScheme(rec.Target.Scheme)
 
 	if scheme != "alert" && scheme != "ayd" {
 		rec.Target = r.Target
@@ -80,8 +78,7 @@ type AlertReporter struct {
 }
 
 func (r AlertReporter) Report(rec api.Record) {
-	scheme := strings.SplitN(rec.Target.Scheme, "-", 2)[0]
-	scheme = strings.SplitN(scheme, "+", 2)[0]
+	scheme, _, _ := probe.SplitScheme(rec.Target.Scheme)
 
 	if scheme != "alert" && scheme != "ayd" {
 		rec.Target = &url.URL{
@@ -103,8 +100,7 @@ func NewPluginAlert(target string) (PluginAlert, error) {
 		return PluginAlert{}, err
 	}
 
-	scheme := strings.SplitN(u.Scheme, "-", 2)[0]
-	scheme = strings.SplitN(scheme, "+", 2)[0]
+	scheme, _, _ := probe.SplitScheme(u.Scheme)
 
 	if scheme == "ayd" || scheme == "alert" {
 		return PluginAlert{}, probe.ErrUnsupportedScheme

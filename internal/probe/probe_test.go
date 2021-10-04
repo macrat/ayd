@@ -18,6 +18,39 @@ import (
 	api "github.com/macrat/ayd/lib-ayd"
 )
 
+func TestSplitScheme(t *testing.T) {
+	tests := []struct {
+		Input     string
+		Probe     string
+		Separator rune
+		Variant   string
+	}{
+		{"http", "http", 0, ""},
+		{"http-get", "http", '-', "get"},
+		{"source+exec", "source", '+', "exec"},
+		{"plug-ab+cd", "plug", '-', "ab+cd"},
+		{"plug+ab-cd", "plug", '+', "ab-cd"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.Input, func(t *testing.T) {
+			probe, separator, variant := probe.SplitScheme(tt.Input)
+
+			if probe != tt.Probe {
+				t.Errorf("expected probe %#v but got %#v", tt.Probe, probe)
+			}
+
+			if separator != tt.Separator {
+				t.Errorf("expected separator %#v but got %#v", tt.Separator, separator)
+			}
+
+			if variant != tt.Variant {
+				t.Errorf("expected variant %#v but got %#v", tt.Variant, variant)
+			}
+		})
+	}
+}
+
 func TestTargetURLNormalize(t *testing.T) {
 	t.Parallel()
 
@@ -38,7 +71,6 @@ func TestTargetURLNormalize(t *testing.T) {
 		{"ping:example.com", url.URL{Scheme: "ping", Opaque: "example.com"}, nil},
 		{"ping://example.com:123/foo/bar?hoge=fuga#piyo", url.URL{Scheme: "ping", Opaque: "example.com", Fragment: "piyo"}, nil},
 		{"ping:example.com#piyo", url.URL{Scheme: "ping", Opaque: "example.com", Fragment: "piyo"}, nil},
-		{"ping-abc:example.com", url.URL{Scheme: "ping", Opaque: "example.com"}, nil},
 
 		{"http://example.com/foo/bar?hoge=fuga#piyo", url.URL{Scheme: "http", Host: "example.com", Path: "/foo/bar", RawQuery: "hoge=fuga", Fragment: "piyo"}, nil},
 		{"https://example.com/foo/bar?hoge=fuga#piyo", url.URL{Scheme: "https", Host: "example.com", Path: "/foo/bar", RawQuery: "hoge=fuga", Fragment: "piyo"}, nil},
@@ -53,7 +85,6 @@ func TestTargetURLNormalize(t *testing.T) {
 		{"tcp4:example.com:80", url.URL{Scheme: "tcp4", Host: "example.com:80"}, nil},
 		{"tcp6:example.com:80", url.URL{Scheme: "tcp6", Host: "example.com:80"}, nil},
 		{"tcp:example.com:80#hello", url.URL{Scheme: "tcp", Host: "example.com:80", Fragment: "hello"}, nil},
-		{"tcp-abc:example.com:80", url.URL{Scheme: "tcp", Host: "example.com:80"}, nil},
 
 		{"dns:example.com", url.URL{Scheme: "dns", Opaque: "example.com"}, nil},
 		{"dns:///example.com", url.URL{Scheme: "dns", Opaque: "example.com"}, nil},
@@ -70,7 +101,6 @@ func TestTargetURLNormalize(t *testing.T) {
 		{"exec:./testdata/test.bat", url.URL{Scheme: "exec", Opaque: "./testdata/test.bat"}, nil},
 		{"exec:" + cwd + "/testdata/test.bat", url.URL{Scheme: "exec", Opaque: cwd + "/testdata/test.bat"}, nil},
 		{"exec:testdata/test.bat?hoge=fuga#piyo", url.URL{Scheme: "exec", Opaque: "testdata/test.bat", RawQuery: "hoge=fuga", Fragment: "piyo"}, nil},
-		{"exec-abc:testdata/test.bat", url.URL{Scheme: "exec", Opaque: "testdata/test.bat"}, nil},
 
 		{"source:./testdata/healthy-list.txt", url.URL{Scheme: "source", Opaque: "./testdata/healthy-list.txt"}, nil},
 		{"source:./testdata/healthy-list.txt#hello", url.URL{Scheme: "source", Opaque: "./testdata/healthy-list.txt", Fragment: "hello"}, nil},

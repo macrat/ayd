@@ -49,17 +49,20 @@ func NewHTTPProbe(u *url.URL) (HTTPProbe, error) {
 	ucopy := *u
 	requrl := &ucopy
 
-	scheme := strings.SplitN(requrl.Scheme, "-", 2)
-	requrl.Scheme = scheme[0]
+	scheme, separator, method := SplitScheme(requrl.Scheme)
+	method = strings.ToUpper(method)
 
-	var method string
-	if len(scheme) > 1 {
-		m := strings.ToUpper(scheme[1])
-		switch m {
+	requrl.Scheme = scheme
+
+	if separator == 0 {
+		method = "GET"
+	} else if separator != '-' {
+		return HTTPProbe{}, ErrUnsupportedScheme
+	} else {
+		switch method {
 		case "GET", "HEAD", "POST", "OPTIONS":
-			method = m
 		default:
-			return HTTPProbe{}, fmt.Errorf("HTTP \"%s\" method is not supported. Please use GET, HEAD, POST, or OPTIONS.", m)
+			return HTTPProbe{}, fmt.Errorf("HTTP \"%s\" method is not supported. Please use GET, HEAD, POST, or OPTIONS.", method)
 		}
 	}
 

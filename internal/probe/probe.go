@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"net/url"
-	"strings"
 
 	api "github.com/macrat/ayd/lib-ayd"
 )
@@ -19,14 +18,22 @@ type Reporter interface {
 	Report(r api.Record)
 }
 
+func SplitScheme(scheme string) (probe string, separator rune, variant string) {
+	for i, x := range scheme {
+		if x == '-' || x == '+' {
+			return scheme[:i], x, scheme[i+1:]
+		}
+	}
+	return scheme, 0, ""
+}
+
 type Probe interface {
 	Target() *url.URL
 	Check(context.Context, Reporter)
 }
 
 func NewFromURL(u *url.URL) (Probe, error) {
-	scheme := strings.SplitN(u.Scheme, "-", 2)[0]
-	scheme = strings.SplitN(scheme, "+", 2)[0]
+	scheme, _, _ := SplitScheme(u.Scheme)
 
 	switch scheme {
 	case "http", "https":

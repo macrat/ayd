@@ -20,7 +20,7 @@ type DummyProbe struct {
 }
 
 func NewDummyProbe(u *url.URL) (DummyProbe, error) {
-	p := DummyProbe{target: &url.URL{Scheme: "dummy", Opaque: u.Opaque, Fragment: u.Fragment}}
+	p := DummyProbe{target: &url.URL{Scheme: u.Scheme, Opaque: u.Opaque, Fragment: u.Fragment}}
 	if u.Opaque == "" {
 		p.target.Opaque = u.Host
 	}

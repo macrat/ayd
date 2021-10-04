@@ -92,8 +92,7 @@ func (s *sourceScanner) URL() (*url.URL, error) {
 		return nil, err
 	}
 
-	scheme := strings.SplitN(u.Scheme, "-", 2)[0]
-	scheme = strings.SplitN(scheme, "+", 2)[0]
+	scheme, _, _ := SplitScheme(u.Scheme)
 	if scheme == "source" {
 		return normalizeSourceURL(u), nil
 	}
@@ -106,13 +105,15 @@ type SourceProbe struct {
 }
 
 func NewSourceProbe(u *url.URL) (SourceProbe, error) {
-	if strings.Contains(u.Scheme, "-") {
-		return SourceProbe{}, ErrUnsupportedScheme
-	}
-	scheme := strings.SplitN(u.Scheme, "+", 2)
-	if len(scheme) > 1 {
-		switch scheme[1] {
-		case "http", "https", "exec", "":
+	_, separator, variant := SplitScheme(u.Scheme)
+
+	if separator != 0 {
+		if separator != '+' {
+			return SourceProbe{}, ErrUnsupportedScheme
+		}
+
+		switch variant {
+		case "http", "https", "exec":
 			break
 		default:
 			return SourceProbe{}, ErrUnsupportedScheme

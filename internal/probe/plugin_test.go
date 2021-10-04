@@ -35,6 +35,7 @@ func TestPluginProbe(t *testing.T) {
 		{"plug:hello-world", api.StatusHealthy, "check plug:hello-world", ""},
 		{"plug-hello:world", api.StatusHealthy, "check plug-hello:world", ""},
 		{"plug+hello:world", api.StatusHealthy, `check plug\+hello:world`, ""},
+		{"plug-hello+world:", api.StatusHealthy, `check plug-hello\+world:`, ""},
 		{"plug:empty", api.StatusHealthy, "", ""},
 		{"ayd:test", api.StatusUnknown, "", "unsupported scheme"},
 		{"alert:test", api.StatusUnknown, "", "unsupported scheme"},

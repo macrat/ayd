@@ -111,8 +111,12 @@ func NewDNSProbe(u *url.URL) (DNSProbe, error) {
 		}
 	}
 
-	if scheme := strings.SplitN(u.Scheme, "-", 2); len(scheme) > 1 && len(scheme[1]) > 0 {
-		u.RawQuery = "type=" + scheme[1]
+	if _, separator, variant := SplitScheme(u.Scheme); separator != 0 {
+		if separator == '+' {
+			return DNSProbe{}, ErrUnsupportedScheme
+		}
+
+		u.RawQuery = "type=" + variant
 	}
 
 	resolve := newDNSResolver(p.target.Host)

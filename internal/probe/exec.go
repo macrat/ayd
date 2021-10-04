@@ -37,6 +37,10 @@ type ExecuteProbe struct {
 func NewExecuteProbe(u *url.URL) (ExecuteProbe, error) {
 	p := ExecuteProbe{}
 
+	if _, separator, _ := SplitScheme(u.Scheme); separator != 0 {
+		return ExecuteProbe{}, ErrUnsupportedScheme
+	}
+
 	path := u.Opaque
 	if u.Opaque == "" {
 		path = u.Path

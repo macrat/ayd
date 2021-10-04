@@ -20,8 +20,7 @@ type PluginProbe struct {
 }
 
 func NewPluginProbe(u *url.URL) (PluginProbe, error) {
-	scheme := strings.SplitN(u.Scheme, "-", 2)[0]
-	scheme = strings.SplitN(scheme, "+", 2)[0]
+	scheme, _, _ := SplitScheme(u.Scheme)
 
 	if scheme == "ayd" || scheme == "alert" {
 		return PluginProbe{}, ErrUnsupportedScheme

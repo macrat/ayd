@@ -159,6 +159,11 @@ type PingProbe struct {
 }
 
 func NewPingProbe(u *url.URL) (PingProbe, error) {
+	_, separator, _ := SplitScheme(u.Scheme)
+	if separator != 0 {
+		return PingProbe{}, ErrUnsupportedScheme
+	}
+
 	if u.Opaque != "" {
 		return PingProbe{&url.URL{Scheme: "ping", Opaque: u.Opaque, Fragment: u.Fragment}}, nil
 	} else {

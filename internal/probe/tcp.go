@@ -5,7 +5,6 @@ import (
 	"errors"
 	"net"
 	"net/url"
-	"strings"
 	"time"
 
 	api "github.com/macrat/ayd/lib-ayd"
@@ -20,8 +19,11 @@ type TCPProbe struct {
 }
 
 func NewTCPProbe(u *url.URL) (TCPProbe, error) {
-	scheme := strings.SplitN(u.Scheme, "-", 2)[0]
-	scheme = strings.SplitN(scheme, "+", 2)[0]
+	scheme, separator, _ := SplitScheme(u.Scheme)
+
+	if separator != 0 {
+		return TCPProbe{}, ErrUnsupportedScheme
+	}
 
 	p := TCPProbe{&url.URL{Scheme: scheme, Host: u.Host, Fragment: u.Fragment}}
 	if u.Host == "" {
