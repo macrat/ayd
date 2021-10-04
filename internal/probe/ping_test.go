@@ -153,7 +153,7 @@ func TestPingProbe(t *testing.T) {
 		{"ping:127.0.0.1", api.StatusHealthy, `ip=127.0.0.1 rtt\(min/avg/max\)=[0-9.]*/[0-9.]*/[0-9.]* send/recv=3/3`, ""},
 		{"ping:::1", api.StatusHealthy, `ip=::1 rtt\(min/avg/max\)=[0-9.]*/[0-9.]*/[0-9.]* send/recv=3/3`, ""},
 		{"ping:of-course-definitely-no-such-host", api.StatusUnknown, `.*`, ""},
-	})
+	}, 2)
 
 	t.Run("timeout", func(t *testing.T) {
 		p := testutil.NewProbe(t, "ping:localhost")

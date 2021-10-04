@@ -25,7 +25,7 @@ func TestDummyProbe(t *testing.T) {
 		{"dummy:?latency=1ms", api.StatusHealthy, ``, ""},
 		{"dummy:?latency=1", api.StatusUnknown, ``, `time: missing unit in duration "1"`},
 		{"dummy:?latency=1kb", api.StatusUnknown, ``, `time: unknown unit "kb" in duration "1kb"`},
-	})
+	}, 1)
 
 	t.Run("dummy:random", func(t *testing.T) {
 		p := testutil.NewProbe(t, "dummy:random")

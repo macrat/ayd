@@ -192,7 +192,7 @@ type ProbeTest struct {
 	ParseErrorPattern string
 }
 
-func AssertProbe(t *testing.T, tests []ProbeTest) {
+func AssertProbe(t *testing.T, tests []ProbeTest, timeout int) {
 	for _, tt := range tests {
 		t.Run(tt.Target, func(t *testing.T) {
 			p, err := probe.New(tt.Target)
@@ -209,7 +209,7 @@ func AssertProbe(t *testing.T, tests []ProbeTest) {
 				t.Fatalf("got unexpected probe: %s", p.Target())
 			}
 
-			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
 			defer cancel()
 
 			rs := testutil.RunCheck(ctx, p)

@@ -30,8 +30,12 @@ func TestHTTPProbe(t *testing.T) {
 		{strings.Replace(server.URL, "http", "http-connect", 1) + "/only/connect", api.StatusHealthy, `proto=HTTP/1\.1 length=0 status=200_OK`, ""},
 		{server.URL + "/slow-page", api.StatusFailure, `probe timed out`, ""},
 		{"http://localhost:54321", api.StatusFailure, `(127\.0\.0\.1|\[::1\]):54321: connection refused`, ""},
+	}, 5)
+
+	// tests that take long time in GitHub CI / macos
+	AssertProbe(t, []ProbeTest{
 		{"http://of-course-no-such-host.local", api.StatusUnknown, "lookup of-course-no-such-host.local: host not found", ""},
-	})
+	}, 10)
 
 	AssertTimeout(t, server.URL)
 

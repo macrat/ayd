@@ -18,10 +18,14 @@ func TestTCPProbe(t *testing.T) {
 
 	AssertProbe(t, []ProbeTest{
 		{strings.Replace(server.URL, "http://", "tcp://", 1), api.StatusHealthy, `source=(127\.0\.0\.1|\[::1\]):[0-9]+ target=(127\.0\.0\.1|\[::1\]):[0-9]+`, ""},
-		{"tcp://of-course-no-such-host.local:54321", api.StatusUnknown, "lookup of-course-no-such-host.local: host not found", ""},
 
 		{"tcp://localhost", api.StatusUnknown, ``, "TCP target's port number is required"},
-	})
+	}, 5)
+
+	// tests that take long time in GitHub CI / macos
+	AssertProbe(t, []ProbeTest{
+		{"tcp://of-course-no-such-host.local:54321", api.StatusUnknown, "lookup of-course-no-such-host.local: host not found", ""},
+	}, 10)
 }
 
 func BenchmarkTCPProbe(b *testing.B) {

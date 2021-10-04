@@ -30,7 +30,7 @@ func TestExecuteProbe(t *testing.T) {
 		{"exec:sleep#10", api.StatusFailure, `probe timed out`, ""},
 		{"exec:echo#::status::unknown", api.StatusUnknown, ``, ""},
 		{"exec:echo#::status::failure", api.StatusFailure, ``, ""},
-	})
+	}, 5)
 
 	AssertTimeout(t, "exec:echo")
 }

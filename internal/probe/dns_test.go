@@ -33,7 +33,7 @@ func TestDNSProbe(t *testing.T) {
 		{"dns://1.1.1.1/example.com?type=TXT", api.StatusHealthy, "(v=spf1 -all\n[0-9a-z]{32}|[0-9a-z]{32}\nv=spf1 -all)", ""},
 
 		{"dns:example.com?type=UNKNOWN", api.StatusUnknown, ``, "unsupported DNS type"},
-	})
+	}, 10)
 
 	AssertTimeout(t, "dns:localhost")
 }

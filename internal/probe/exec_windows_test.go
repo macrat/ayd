@@ -17,7 +17,7 @@ func TestExecuteProbe_windows(t *testing.T) {
 	AssertProbe(t, []ProbeTest{
 		{"exec:./testdata/no-such-script", api.StatusUnknown, ``, `exec: ".\\\\testdata\\\\no-such-script": file does not exist`},
 		{"exec:no-such-command", api.StatusUnknown, ``, `exec: "no-such-command": executable file not found in %PATH%`},
-	})
+	}, 5)
 
 	t.Run("normalize-path", func(t *testing.T) {
 		tests := []struct {

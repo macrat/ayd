@@ -15,5 +15,5 @@ func TestDNSProbe_local(t *testing.T) {
 	AssertProbe(t, []ProbeTest{
 		{"dns:of-course-definitely-no-such-host", api.StatusFailure, `lookup of-course-definitely-no-such-host: not found on .+`, ""},
 		{"dns://8.8.8.8/of-course-definitely-no-such-host", api.StatusFailure, `lookup of-course-definitely-no-such-host: not found on 8\.8\.8\.8`, ""},
-	})
+	}, 10)
 }

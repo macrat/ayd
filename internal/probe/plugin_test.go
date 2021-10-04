@@ -39,7 +39,7 @@ func TestPluginProbe(t *testing.T) {
 		{"plug:empty", api.StatusHealthy, "", ""},
 		{"ayd:test", api.StatusUnknown, "", "unsupported scheme"},
 		{"alert:test", api.StatusUnknown, "", "unsupported scheme"},
-	})
+	}, 5)
 
 	AssertTimeout(t, "plug:")
 
