@@ -54,7 +54,7 @@ func ExecutePlugin(ctx context.Context, r Reporter, scope string, target *url.UR
 
 	count := 0
 
-	scanner := bufio.NewScanner(output)
+	scanner := bufio.NewScanner(strings.NewReader(output))
 	for scanner.Scan() {
 		text := strings.TrimSpace(scanner.Text())
 		if text == "" {

@@ -95,18 +95,19 @@ func isUnknownExecutionError(err error) bool {
 	return false
 }
 
-func runExternalCommand(ctx context.Context, command string, args, env []string) (output *bytes.Buffer, status api.Status, err error) {
+func runExternalCommand(ctx context.Context, command string, args, env []string) (output string, status api.Status, err error) {
 	cmd := exec.CommandContext(ctx, command, args...)
 	cmd.Env = env
 
-	output = &bytes.Buffer{}
-	cmd.Stdout = output
-	cmd.Stderr = output
+	buf := &bytes.Buffer{}
+	cmd.Stdout = buf
+	cmd.Stderr = buf
 
 	err = cmd.Run()
 
-	status = api.StatusHealthy
+	output = autoDecode(buf.Bytes())
 
+	status = api.StatusHealthy
 	if err != nil {
 		status = api.StatusFailure
 
@@ -131,7 +132,7 @@ func (p ExecuteProbe) Check(ctx context.Context, r Reporter) {
 	output, status, err := runExternalCommand(ctx, filepath.FromSlash(p.target.Opaque), args, p.env)
 	latency := time.Now().Sub(stime)
 
-	message := strings.Trim(strings.ReplaceAll(strings.ReplaceAll(output.String(), "\r\n", "\n"), "\r", "\n"), "\n")
+	message := strings.Trim(strings.ReplaceAll(strings.ReplaceAll(output, "\r\n", "\n"), "\r", "\n"), "\n")
 
 	if status != api.StatusHealthy && message == "" {
 		message = err.Error()

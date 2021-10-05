@@ -179,10 +179,10 @@ func (p SourceProbe) open(ctx context.Context) (io.ReadCloser, error) {
 		}
 
 		if stderr.Len() != 0 {
-			return nil, fmt.Errorf("%w: failed to execute: %s", ErrInvalidURL, stderr.String())
+			return nil, fmt.Errorf("%w: failed to execute: %s", ErrInvalidURL, autoDecode(stderr.Bytes()))
 		}
 
-		return io.NopCloser(bytes.NewReader(stdout.Bytes())), nil
+		return io.NopCloser(strings.NewReader(autoDecode(stdout.Bytes()))), nil
 	default:
 		return os.Open(p.target.Opaque)
 	}
