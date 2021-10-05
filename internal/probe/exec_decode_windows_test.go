@@ -16,10 +16,10 @@ func TestDecodeCodePage(t *testing.T) {
 		File     string
 		Expect   string
 	}{
-		{932, "./testdata/utf8", "こんにちはWôrÏd"},
-		{1252, "./testdata/utf8", "こんにちはWôrÏd"},
-		{932, "./testdata/cp932", "こんにちは世界"},
-		{1252, "./testdata/cp1252", "HèÍÎö¨WôrÏd"},
+		{932, "./testdata/utf8", "こんにちはWôrÏd\n"},
+		{1252, "./testdata/utf8", "こんにちはWôrÏd\n"},
+		{932, "./testdata/cp932", "こんにちは世界\n"},
+		{1252, "./testdata/cp1252", "HèÍÎö¨WôrÏd\n"},
 	}
 
 	for _, tt := range tests {

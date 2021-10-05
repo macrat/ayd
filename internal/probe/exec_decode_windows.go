@@ -4,6 +4,7 @@
 package probe
 
 import (
+	"strings"
 	"unicode/utf8"
 
 	"golang.org/x/sys/windows"
@@ -46,22 +47,26 @@ var (
 	}
 )
 
+func crlf2lf(s string) string {
+	return strings.ReplaceAll(s, "\r\n", "\n")
+}
+
 func decodeCodePage(codepage uint32, bytes []byte) string {
 	if utf8.Valid(bytes) {
-		return string(bytes)
+		return crlf2lf(string(bytes))
 	}
 
 	enc, ok := windowsCodePages[codepage]
 	if !ok {
-		return string(bytes)
+		return crlf2lf(string(bytes))
 	}
 
 	bs, err := enc.NewDecoder().Bytes(bytes)
 	if err != nil {
-		return string(bytes)
+		return crlf2lf(string(bytes))
 	}
 
-	return string(bs)
+	return crlf2lf(string(bs))
 }
 
 func autoDecode(bytes []byte) string {
