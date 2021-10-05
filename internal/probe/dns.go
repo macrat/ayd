@@ -152,6 +152,17 @@ func (p DNSProbe) Target() *url.URL {
 	return p.target
 }
 
+func dnsErrorToMessage(err *net.DNSError) string {
+	msg := err.Error()
+	if err.IsNotFound {
+		msg = "lookup " + err.Name + ": not found"
+	}
+	if err.Server != "" {
+		msg += " on " + err.Server
+	}
+	return msg
+}
+
 func (p DNSProbe) Check(ctx context.Context, r Reporter) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
@@ -176,11 +187,8 @@ func (p DNSProbe) Check(ctx context.Context, r Reporter) {
 		if errors.As(err, &dnsErr) {
 			if p.target.Host != "" {
 				dnsErr.Server = p.target.Host
-				rec.Message = dnsErr.Error()
 			}
-			if dnsErr.IsNotFound {
-				rec.Message = "lookup " + p.hostname + ": not found on " + dnsErr.Server
-			}
+			rec.Message = dnsErrorToMessage(dnsErr)
 		}
 	}
 

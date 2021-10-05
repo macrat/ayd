@@ -65,7 +65,7 @@ func (p TCPProbe) Check(ctx context.Context, r Reporter) {
 			rec.Status = api.StatusUnknown
 		} else if errors.As(err, &dnsErr) {
 			rec.Status = api.StatusUnknown
-			rec.Message = "lookup " + dnsErr.Name + ": host not found"
+			rec.Message = dnsErrorToMessage(dnsErr)
 		}
 	} else {
 		rec.Status = api.StatusHealthy

@@ -34,7 +34,7 @@ func TestHTTPProbe(t *testing.T) {
 
 	// tests that take long time in GitHub CI / macos
 	AssertProbe(t, []ProbeTest{
-		{"http://of-course-no-such-host.local", api.StatusUnknown, "lookup of-course-no-such-host.local: host not found", ""},
+		{"http://of-course-no-such-host.local", api.StatusUnknown, "lookup of-course-no-such-host.local: not found(| on .+)", ""},
 	}, 10)
 
 	AssertTimeout(t, server.URL)
