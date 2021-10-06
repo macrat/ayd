@@ -17,11 +17,17 @@ import (
 	"golang.org/x/text/encoding/unicode"
 )
 
+const (
+	windowsUTF16LE = 1200
+	windowsUTF16BE = 1201
+	windowsUTF8    = 65001
+)
+
 var (
 	windowsCodePages = map[uint32]encoding.Encoding{
-		1200:  unicode.UTF16(unicode.LittleEndian, unicode.IgnoreBOM),
-		1201:  unicode.UTF16(unicode.BigEndian, unicode.IgnoreBOM),
-		65001: unicode.UTF8,
+		windowsUTF16LE: unicode.UTF16(unicode.LittleEndian, unicode.IgnoreBOM),
+		windowsUTF16BE: unicode.UTF16(unicode.BigEndian, unicode.IgnoreBOM),
+		windowsUTF8:    unicode.UTF8,
 
 		1250: charmap.Windows1250,
 		1251: charmap.Windows1251,
@@ -47,28 +53,37 @@ var (
 	}
 )
 
-func crlf2lf(s string) string {
-	return strings.ReplaceAll(s, "\r\n", "\n")
-}
-
 func decodeCodePage(codepage uint32, bytes []byte) string {
 	if utf8.Valid(bytes) {
-		return crlf2lf(string(bytes))
+		return string(bytes)
 	}
 
 	enc, ok := windowsCodePages[codepage]
 	if !ok {
-		return crlf2lf(string(bytes))
+		return string(bytes)
 	}
 
 	bs, err := enc.NewDecoder().Bytes(bytes)
 	if err != nil {
-		return crlf2lf(string(bytes))
+		return string(bytes)
 	}
 
-	return crlf2lf(string(bs))
+	return string(bs)
 }
 
-func autoDecode(bytes []byte) string {
-	return decodeCodePage(windows.GetACP(), bytes)
+func detectBOM(bytes []byte, defaultCodePage uint32) uint32 {
+	if bytes[:3] == []byte{0xEF, 0xBB, 0xBF} {
+		return windowsUTF8
+	}
+	if bytes[:2] == []byte{0xFE, 0xFF} {
+		return windowsUTF16BE
+	}
+	if bytes[:2] == []byte{0xFF, 0xFE} {
+		return windowsUTF16LE
+	}
+	return defaultCodePage
+}
+
+func osDependsAutoDecode(bytes []byte) string {
+	return decodeCodePage(detectBOM(bytes, windows.GetACP()), bytes)
 }

@@ -132,7 +132,7 @@ func (p ExecuteProbe) Check(ctx context.Context, r Reporter) {
 	output, status, err := runExternalCommand(ctx, filepath.FromSlash(p.target.Opaque), args, p.env)
 	latency := time.Now().Sub(stime)
 
-	message := strings.Trim(strings.ReplaceAll(strings.ReplaceAll(output, "\r\n", "\n"), "\r", "\n"), "\n")
+	message := strings.Trim(output, "\n")
 
 	if status != api.StatusHealthy && message == "" {
 		message = err.Error()
