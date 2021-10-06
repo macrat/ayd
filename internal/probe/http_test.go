@@ -32,11 +32,6 @@ func TestHTTPProbe(t *testing.T) {
 		{"http://localhost:54321", api.StatusFailure, `(127\.0\.0\.1|\[::1\]):54321: connection refused`, ""},
 	}, 5)
 
-	// tests that take long time in GitHub CI / macos
-	AssertProbe(t, []ProbeTest{
-		{"http://of-course-no-such-host.local", api.StatusUnknown, "lookup of-course-no-such-host.local: not found(| on .+)", ""},
-	}, 10)
-
 	AssertTimeout(t, server.URL)
 
 	for _, tt := range []string{"unknown-method", ""} {
