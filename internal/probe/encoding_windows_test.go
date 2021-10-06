@@ -16,10 +16,10 @@ func TestDecodeCodePage(t *testing.T) {
 		File     string
 		Expect   string
 	}{
-		{932, "./testdata/utf8", "こんにちはWôrÏd\n"},
-		{1252, "./testdata/utf8", "こんにちはWôrÏd\n"},
-		{932, "./testdata/cp932", "こんにちは世界\n"},
-		{1252, "./testdata/cp1252", "HèÍÎö¨WôrÏd\n"},
+		{932, "./testdata/utf8", "こんにちはWôrÏd"},
+		{1252, "./testdata/utf8", "こんにちはWôrÏd"},
+		{932, "./testdata/cp932", "こんにちは世界"},
+		{1252, "./testdata/cp1252", "HèÍÎö¨WôrÏd"},
 	}
 
 	for _, tt := range tests {
@@ -45,12 +45,12 @@ func TestDecodeCodePage(t *testing.T) {
 
 func TestDetectBOM(t *testing.T) {
 	tests := []struct {
-		Bytes    uint32
+		Bytes    []byte
 		CodePage uint32
 	}{
 		{[]byte("\xEF\xBB\xBFhello"), 65001}, // UTF-8
-		{[]byte("\xFE\xFFhello"), 1200},      // UTF-16LE
-		{[]byte("\xFF\xFEhello"), 1201},      // UTF-16BE
+		{[]byte("\xFF\xFEhello"), 1200},      // UTF-16LE
+		{[]byte("\xFE\xFFhello"), 1201},      // UTF-16BE
 		{[]byte("hello"), 0},                 // US-ASCII
 	}
 

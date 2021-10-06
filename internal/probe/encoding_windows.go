@@ -4,7 +4,7 @@
 package probe
 
 import (
-	"strings"
+	"reflect"
 	"unicode/utf8"
 
 	"golang.org/x/sys/windows"
@@ -72,14 +72,16 @@ func decodeCodePage(codepage uint32, bytes []byte) string {
 }
 
 func detectBOM(bytes []byte, defaultCodePage uint32) uint32 {
-	if bytes[:3] == []byte{0xEF, 0xBB, 0xBF} {
+	if len(bytes) >= 3 && reflect.DeepEqual(bytes[:3], []byte{0xEF, 0xBB, 0xBF}) {
 		return windowsUTF8
 	}
-	if bytes[:2] == []byte{0xFE, 0xFF} {
-		return windowsUTF16BE
-	}
-	if bytes[:2] == []byte{0xFF, 0xFE} {
-		return windowsUTF16LE
+	if len(bytes) >= 2 {
+		if reflect.DeepEqual(bytes[:2], []byte{0xFE, 0xFF}) {
+			return windowsUTF16BE
+		}
+		if reflect.DeepEqual(bytes[:2], []byte{0xFF, 0xFE}) {
+			return windowsUTF16LE
+		}
 	}
 	return defaultCodePage
 }
