@@ -1,5 +1,5 @@
 -------------------------------| Current Status |-------------------------------
-{{ range .ProbeHistory }}
+{{ range .ProbeHistory | sort_history }}
 +- {{ .Target }}
 +{{ range .Records | pad_records }}-{{ end }}{{ range .Records }}{{
     if .Status | is_unknown }}?{{ end }}{{

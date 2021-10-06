@@ -3,6 +3,7 @@ package ayd_test
 import (
 	"encoding/json"
 	"net/url"
+	"strings"
 	"testing"
 	"time"
 
@@ -74,4 +75,59 @@ func TestProbeHistory(t *testing.T) {
 
 		assert(t, ph1, ph2)
 	})
+}
+
+func TestSortProbeHistories(t *testing.T) {
+	xs := []ayd.ProbeHistory{
+		{
+			&url.URL{Scheme: "a", Opaque: "1"},
+			ayd.StatusUnknown,
+			time.Now(),
+			[]ayd.Record{},
+		},
+		{
+			&url.URL{Scheme: "a", Opaque: "2"},
+			ayd.StatusHealthy,
+			time.Now(),
+			[]ayd.Record{{Status: ayd.StatusHealthy}},
+		},
+		{
+			&url.URL{Scheme: "a", Opaque: "3"},
+			ayd.StatusHealthy,
+			time.Now(),
+			[]ayd.Record{{Status: ayd.StatusHealthy}},
+		},
+		{
+			&url.URL{Scheme: "a", Opaque: "4"},
+			ayd.StatusFailure,
+			time.Now(),
+			[]ayd.Record{{Status: ayd.StatusFailure}},
+		},
+		{
+			&url.URL{Scheme: "b", Opaque: "1"},
+			ayd.StatusUnknown,
+			time.Now(),
+			[]ayd.Record{{Status: ayd.StatusUnknown}},
+		},
+		{
+			&url.URL{Scheme: "b", Opaque: "2"},
+			ayd.StatusAborted,
+			time.Now(),
+			[]ayd.Record{{Status: ayd.StatusAborted}},
+		},
+	}
+
+	ayd.SortProbeHistories(xs)
+
+	var ss []string
+	for _, x := range xs {
+		ss = append(ss, x.Target.String())
+	}
+
+	s := strings.Join(ss, ",")
+
+	want := "a:4,b:1,a:1,a:2,a:3,b:2"
+	if s != want {
+		t.Errorf("unexpected sorted result:\nexpected: %s\n but got: %s", want, s)
+	}
 }

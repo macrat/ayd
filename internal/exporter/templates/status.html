@@ -156,7 +156,7 @@ footer span {
 
         <main>
             <article>
-                <h1>Current Status</h1>{{ range .ProbeHistory }}
+                <h1>Current Status</h1>{{ range .ProbeHistory | sort_history }}
 
                 <section>
                     <h2>{{ .Target }}</h2>

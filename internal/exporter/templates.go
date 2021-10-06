@@ -10,6 +10,14 @@ import (
 
 var (
 	templateFuncs = map[string]interface{}{
+		"sort_history": func(hm map[string]api.ProbeHistory) []api.ProbeHistory {
+			hs := make([]api.ProbeHistory, 0, len(hm))
+			for _, h := range hm {
+				hs = append(hs, h)
+			}
+			api.SortProbeHistories(hs)
+			return hs
+		},
 		"invert_incidents": func(xs []api.Incident) []api.Incident {
 			rs := make([]api.Incident, len(xs))
 			for i, x := range xs {

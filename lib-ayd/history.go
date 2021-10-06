@@ -3,6 +3,8 @@ package ayd
 import (
 	"encoding/json"
 	"net/url"
+	"sort"
+	"strings"
 	"time"
 )
 
@@ -62,4 +64,48 @@ func (ph ProbeHistory) MarshalJSON() ([]byte, error) {
 		Records: ph.Records,
 		Updated: ph.Updated.Format(time.RFC3339),
 	})
+}
+
+// byLatestStatus implements sort.Interface for ProbeHistory.
+//
+// XXX: There is very similar code in internal/store/store.go
+type byLatestStatus []ProbeHistory
+
+func (xs byLatestStatus) Len() int {
+	return len(xs)
+}
+
+func statusTier(p ProbeHistory) int {
+	if len(p.Records) == 0 {
+		return 1
+	}
+	switch p.Status {
+	case StatusFailure, StatusUnknown:
+		return 0
+	default:
+		return 1
+	}
+}
+
+func (xs byLatestStatus) Less(i, j int) bool {
+	iTier := statusTier(xs[i])
+	jTier := statusTier(xs[j])
+	if iTier < jTier {
+		return true
+	} else if iTier > jTier {
+		return false
+	}
+
+	return strings.Compare(xs[i].Target.Redacted(), xs[j].Target.Redacted()) < 0
+}
+
+func (xs byLatestStatus) Swap(i, j int) {
+	xs[i], xs[j] = xs[j], xs[i]
+}
+
+// SortProbeHistories sorts list of ProbeHistory by latest status and target URL.
+//
+// This function will edit slice directly.
+func SortProbeHistories(hs []ProbeHistory) {
+	sort.Sort(byLatestStatus(hs))
 }
