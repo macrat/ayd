@@ -92,10 +92,9 @@ func TestStatusTextExporter(t *testing.T) {
 				t.Fatalf("failed to read body: %s", err)
 			}
 
-			result := string(regexp.MustCompile(`Reported by Ayd\? \(.+\)`).ReplaceAll(body, []byte("Reported by Ayd? (-- CURRENT TIME MASKED --)")))
+			result := string(regexp.MustCompile(` *Reported by Ayd\? \(.+\)`).ReplaceAll(body, []byte("[[ FOOTER MASKED ]]")))
 
 			if diff := cmp.Diff(readTestFile(t, fmt.Sprintf(tt.File)), result); diff != "" {
-				t.Log(result)
 				t.Errorf(diff)
 			}
 		})
