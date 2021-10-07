@@ -70,6 +70,7 @@ $ ayd https://your-service.example.com ping:another-host.example.com
 - [Log file](#log-file)
 - [Alerting](#alerting)
 - [Daemonize](#daemonize)
+- [Text encoding](#text-encoding)
 - [Other options](#other-options)
 
 
@@ -269,6 +270,8 @@ source:./another-list.txt
 
 The line that starts with `#` will ignored as a comment.
 
+Source file should encoded by UTF-8 without BOM, but in Windows, you can use legacy encoding. Please see also [text encoding chapter](#text-encoding).
+
 examples:
 - `source:./targets.txt`
 - `source:/path/to/targets.txt`
@@ -302,6 +305,10 @@ For example, you can use `xxx:` scheme if you have installed a executable file n
 Of course, you can change executable file name to change scheme name.
 
 If you want to make your own plugin please read [make plugin](#make-plugin) section.
+
+Ayd expects UTF-8 text as outputs of plugins.
+But in Windows, you can use system's default character encoding.
+Please see also [text encoding chapter](#text-encoding).
 
 Plugin will timeout in maximum 1 hour and report as failure.
 
@@ -560,6 +567,21 @@ ayd-foobar-alert                \
 ```
 
 The output of the probe plugin will parsed the same way to [log file](#log-file), but all target URL will add `alert:` prefix and won't not show in status page.
+
+
+### Text encoding
+
+Ayd expects UTF-8 without BOM as input character encoding.
+
+But in Windows, you can use the system's default character encoding too, for example CP1252 or CP932.
+Ayd tries to decode as UTF-8 first, and then tries to use the system's default encoding.
+Ayd follows the BOM instead of using the system's default encoding if found it.
+
+The characters couldn't decode will replaced by U+FFFD that means unrecognized character before save to the log file.
+That means;
+- The log file is always valid UTF-8 even if your external command or plugin writes invalid characters.
+- You can lose information if external commands or plugins write invalid characters as current encoding.
+
 
 ### Other options
 
