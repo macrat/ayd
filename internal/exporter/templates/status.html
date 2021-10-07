@@ -159,7 +159,7 @@ footer span {
                 <h1>Current Status</h1>{{ range .ProbeHistory | sort_history }}
 
                 <section>
-                    <h2>{{ .Target }}</h2>
+                    <h2>{{ .Target | url_unescape }}</h2>
                     <div class="status-bar">
                         {{ range .Records | pad_records }}<span class="status-bit no-data" title="no data">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
@@ -188,7 +188,7 @@ footer span {
                     <span class="marker {{ if .Status | is_failure }}failure{{ else }}unknown{{ end }}"></span>
 
                     <h2>{{ if .Status | is_failure }}FAILURE{{ else }}UNKNOWN{{ end }}</h2>
-                    <div class="target">{{ .Target }}</div>
+                    <div class="target">{{ .Target | url_unescape }}</div>
                     <div class="period"><time>{{ .CausedAt | time2str }}</time> - <time>continue</time></div>{{ if .Message }}
                     <pre class="message">{{ .Message }}</pre>{{ end }}
                 </section>{{ end }}{{ if not .CurrentIncidents }}
@@ -205,7 +205,7 @@ footer span {
                     <span class="marker {{ if .Status | is_failure }}failure{{ else }}unknown{{ end }}"></span>
 
                     <h2>{{ if .Status | is_failure }}FAILURE{{ else }}UNKNOWN{{ end }}</h2>
-                    <div class="target">{{ .Target }}</div>
+                    <div class="target">{{ .Target | url_unescape }}</div>
                     <div class="period"><time>{{ .CausedAt | time2str }}</time> - <time>{{ .ResolvedAt | time2str }}</time></div>{{ if .Message }}
                     <pre class="message">{{ .Message }}</pre>{{ end }}
                 </section>{{ end }}{{ if not .IncidentHistory }}

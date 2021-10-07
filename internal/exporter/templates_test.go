@@ -2,6 +2,7 @@ package exporter
 
 import (
 	"fmt"
+	"net/url"
 	"reflect"
 	"testing"
 
@@ -110,6 +111,34 @@ func TestPadRecords(t *testing.T) {
 			result := f(make([]api.Record, tt.Input))
 			if tt.Output != len(result) {
 				t.Errorf("expected array length is %d but got %d", tt.Output, len(result))
+			}
+		})
+	}
+}
+
+func TestURLUnescape(t *testing.T) {
+	f := templateFuncs["url_unescape"].(func(u *url.URL) string)
+
+	tests := []struct {
+		Input  url.URL
+		Output string
+	}{
+		{
+			url.URL{Scheme: "dummy", Fragment: "Aaあ亜"},
+			"dummy:#Aaあ亜",
+		},
+		{
+			url.URL{Scheme: "https", Host: "テスト.com", RawQuery: "あ=亜"},
+			"https://テスト.com?あ=亜",
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.Input.String(), func(t *testing.T) {
+			result := f(&tt.Input)
+			if tt.Output != result {
+				t.Errorf("expected output is %s but got %s", tt.Output, result)
 			}
 		})
 	}

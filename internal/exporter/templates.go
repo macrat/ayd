@@ -1,6 +1,7 @@
 package exporter
 
 import (
+	"net/url"
 	"strings"
 	"time"
 
@@ -62,6 +63,13 @@ var (
 		},
 		"time2str": func(t time.Time) string {
 			return t.Format(time.RFC3339)
+		},
+		"url_unescape": func(u *url.URL) string {
+			s, err := url.PathUnescape(u.String())
+			if err != nil {
+				return u.String()
+			}
+			return s
 		},
 	}
 )
