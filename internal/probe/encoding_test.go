@@ -1,24 +1,26 @@
 package probe
 
 import (
-	"reflect"
 	"testing"
 )
 
 func TestAutoDecode(t *testing.T) {
 	tests := []struct {
 		Name   string
-		Input  []byte
-		Output []byte
+		Input  string
+		Output string
 	}{
-		{"あ", []byte{0xEF, 0xBB, 0xBF, 0xE3, 0x81, 0x82}, []byte{0xE3, 0x81, 0x82}},
-		{"文", []byte{0xEF, 0xBB, 0xBF, 0xE6, 0x96, 0x87, 0x0A}, []byte{0xE6, 0x96, 0x87, 0x0A}},
+		{"CRLF", "hello\r\n\r\nworld\r\n", "hello\n\nworld\n"},
+		{"CR", "hello\r\rworld\r", "hello\n\nworld\n"},
+		{"LF", "hello\n\nworld\n", "hello\n\nworld\n"},
+		{"mixed", "hello\n\r\r\nworld\r\n", "hello\n\n\nworld\n"},
+		{"invalid-character", "hello\xFF\xFFworld", "hello\uFFFD\uFFFDworld"},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			output := autoDecode(tt.Input)
-			if reflect.DeepEqual(output, tt.Output) {
+			output := autoDecode([]byte(tt.Input))
+			if output != tt.Output {
 				t.Errorf("expected %#v but got %#v", tt.Output, output)
 			}
 		})

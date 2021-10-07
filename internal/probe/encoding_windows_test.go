@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"reflect"
 	"testing"
 )
 
@@ -43,23 +44,61 @@ func TestDecodeCodePage(t *testing.T) {
 	}
 }
 
-func TestDetectBOM(t *testing.T) {
+func TestUseBOM(t *testing.T) {
 	tests := []struct {
-		Bytes    []byte
+		Input    []byte
+		Output   []byte
 		CodePage uint32
 	}{
-		{[]byte("\xEF\xBB\xBFhello"), 65001}, // UTF-8
-		{[]byte("\xFF\xFEhello"), 1200},      // UTF-16LE
-		{[]byte("\xFE\xFFhello"), 1201},      // UTF-16BE
-		{[]byte("hello"), 0},                 // US-ASCII
+		{[]byte("\xEF\xBB\xBFhello"), []byte("hello"), 65001}, // UTF-8
+		{[]byte("\xFF\xFEhello"), []byte("hello"), 1200},      // UTF-16LE
+		{[]byte("\xFE\xFFhello"), []byte("hello"), 1201},      // UTF-16BE
+		{[]byte("hello"), []byte("hello"), 0},                 // US-ASCII
+		{[]byte("\xFEhello"), []byte("\xFEhello"), 0},         // US-ASCII
 	}
 
 	for _, tt := range tests {
 		t.Run(fmt.Sprintf("%d", tt.CodePage), func(t *testing.T) {
-			cp := detectBOM(tt.Bytes, 0)
+			cp, output := useBOM(0, tt.Input)
 
 			if cp != tt.CodePage {
-				t.Errorf("expected %d but got %d", tt.CodePage, cp)
+				t.Errorf("expected code page is %d but got %d", tt.CodePage, cp)
+			}
+
+			if !reflect.DeepEqual(output, tt.Output) {
+				t.Errorf("expected output is %#v but got %#v", tt.Output, output)
+			}
+		})
+	}
+}
+
+func TestOSDependsAutoDecode(t *testing.T) {
+	tests := []struct {
+		File   string
+		Expect string
+	}{
+		{"./testdata/utf8", "こんにちはWôrÏd"},
+		{"./testdata/utf8bom", "UTF8:BOM付き"},
+		{"./testdata/utf16be", "UTF16BE:大端"},
+		{"./testdata/utf16le", "UTF16LE:리틀 엔디안"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.File, func(t *testing.T) {
+			f, err := os.Open(tt.File)
+			if err != nil {
+				t.Fatalf("failed to open test file: %s", err)
+			}
+
+			input, err := io.ReadAll(f)
+			if err != nil {
+				t.Fatalf("failed to read test file: %s", err)
+			}
+
+			output := osDependsAutoDecode(input)
+
+			if output != tt.Expect {
+				t.Fatalf("expected %#v but got %#v", tt.Expect, output)
 			}
 		})
 	}

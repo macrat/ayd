@@ -55,37 +55,40 @@ var (
 
 func decodeCodePage(codepage uint32, bytes []byte) string {
 	if utf8.Valid(bytes) {
-		return string(bytes)
+		return defaultAutoDecode(bytes)
 	}
 
 	enc, ok := windowsCodePages[codepage]
 	if !ok {
-		return string(bytes)
+		return defaultAutoDecode(bytes)
 	}
 
 	bs, err := enc.NewDecoder().Bytes(bytes)
 	if err != nil {
-		return string(bytes)
+		return defaultAutoDecode(bytes)
 	}
 
 	return string(bs)
 }
 
-func detectBOM(bytes []byte, defaultCodePage uint32) uint32 {
+func useBOM(defaultCodePage uint32, bytes []byte) (codePage uint32, bytesWithoutBOM []byte) {
 	if len(bytes) >= 3 && reflect.DeepEqual(bytes[:3], []byte{0xEF, 0xBB, 0xBF}) {
-		return windowsUTF8
+		return windowsUTF8, bytes[3:]
 	}
 	if len(bytes) >= 2 {
 		if reflect.DeepEqual(bytes[:2], []byte{0xFE, 0xFF}) {
-			return windowsUTF16BE
+			return windowsUTF16BE, bytes[2:]
 		}
 		if reflect.DeepEqual(bytes[:2], []byte{0xFF, 0xFE}) {
-			return windowsUTF16LE
+			return windowsUTF16LE, bytes[2:]
 		}
 	}
-	return defaultCodePage
+	return defaultCodePage, bytes
 }
 
+// osDependsAutoDecode in Windows OS decodes unknown encoding text.
+// This function tries UTF-8 first, and then tries the default encoding of the current environment.
+// It uses UTF-8 or UTF-16 instead of the default encoding if the text includes BOM.
 func osDependsAutoDecode(bytes []byte) string {
-	return decodeCodePage(detectBOM(bytes, windows.GetACP()), bytes)
+	return decodeCodePage(useBOM(windows.GetACP(), bytes))
 }
