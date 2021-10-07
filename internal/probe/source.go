@@ -184,7 +184,19 @@ func (p SourceProbe) open(ctx context.Context) (io.ReadCloser, error) {
 
 		return io.NopCloser(strings.NewReader(autoDecode(stdout.Bytes()))), nil
 	default:
-		return os.Open(p.target.Opaque)
+		f, err := os.Open(p.target.Opaque)
+		if err != nil {
+			return nil, err
+		}
+		defer f.Close()
+
+		// XXX: can I make io.Reader instead of read all at here?
+		bs, err := io.ReadAll(f)
+		if err != nil {
+			return nil, err
+		}
+
+		return io.NopCloser(strings.NewReader(autoDecode(bs))), nil
 	}
 }
 
