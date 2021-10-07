@@ -56,7 +56,7 @@ func TestStatusHTMLExporter(t *testing.T) {
 
 	result := string(regexp.MustCompile(`Reported By Ayd\? \(.+\)`).ReplaceAll(body, []byte("Reported By Ayd? (-- CURRENT TIME MASKED --)")))
 
-	if diff := cmp.Diff(result, readTestFile(t, "./testdata/status.html")); diff != "" {
+	if diff := cmp.Diff(readTestFile(t, "./testdata/status.html"), result); diff != "" {
 		t.Errorf(diff)
 	}
 }
@@ -94,7 +94,7 @@ func TestStatusTextExporter(t *testing.T) {
 
 			result := string(regexp.MustCompile(`Reported by Ayd\? \(.+\)`).ReplaceAll(body, []byte("Reported by Ayd? (-- CURRENT TIME MASKED --)")))
 
-			if diff := cmp.Diff(result, readTestFile(t, fmt.Sprintf(tt.File))); diff != "" {
+			if diff := cmp.Diff(readTestFile(t, fmt.Sprintf(tt.File)), result); diff != "" {
 				t.Log(result)
 				t.Errorf(diff)
 			}
