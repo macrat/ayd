@@ -211,21 +211,21 @@ func TestStore_Restore(t *testing.T) {
 
 	records := []api.Record{
 		{
-			CheckedAt: time.Now().Add(30 * time.Second),
+			CheckedAt: time.Now().Add(-30 * time.Minute),
 			Target:    &url.URL{Scheme: "ping", Opaque: "restore-test"},
 			Status:    api.StatusUnknown,
 			Message:   "hello world",
 			Latency:   1 * time.Second,
 		},
 		{
-			CheckedAt: time.Now().Add(20 * time.Second),
+			CheckedAt: time.Now().Add(-20 * time.Minute),
 			Target:    &url.URL{Scheme: "exec", Opaque: "/usr/local/bin/test.sh"},
 			Status:    api.StatusHealthy,
 			Message:   "foobar",
 			Latency:   123 * time.Millisecond,
 		},
 		{
-			CheckedAt: time.Now().Add(10 * time.Second),
+			CheckedAt: time.Now().Add(-10 * time.Minute),
 			Target:    &url.URL{Scheme: "http", Host: "test.local", Path: "/abc/def"},
 			Status:    api.StatusFailure,
 			Message:   "hoge",
