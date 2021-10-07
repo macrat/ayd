@@ -2,11 +2,11 @@ package exporter_test
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -26,7 +26,7 @@ func readTestFile(t *testing.T, file string) string {
 		t.Fatalf("failed to read file: %s", err)
 	}
 
-	return string(bs)
+	return strings.ReplaceAll(string(bs), "\r\n", "\n")
 }
 
 func TestStatusHTMLExporter(t *testing.T) {
@@ -55,6 +55,7 @@ func TestStatusHTMLExporter(t *testing.T) {
 	}
 
 	result := string(regexp.MustCompile(`Reported By Ayd\? \(.+\)`).ReplaceAll(body, []byte("Reported By Ayd? (-- CURRENT TIME MASKED --)")))
+	result = strings.ReplaceAll(result, "\r\n", "\n")
 
 	if diff := cmp.Diff(readTestFile(t, "./testdata/status.html"), result); diff != "" {
 		t.Errorf(diff)
@@ -93,8 +94,9 @@ func TestStatusTextExporter(t *testing.T) {
 			}
 
 			result := string(regexp.MustCompile(` *Reported by Ayd\? \(.+\)`).ReplaceAll(body, []byte("[[ FOOTER MASKED ]]")))
+			result = strings.ReplaceAll(result, "\r\n", "\n")
 
-			if diff := cmp.Diff(readTestFile(t, fmt.Sprintf(tt.File)), result); diff != "" {
+			if diff := cmp.Diff(readTestFile(t, tt.File), result); diff != "" {
 				t.Errorf(diff)
 			}
 		})
