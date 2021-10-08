@@ -15,19 +15,29 @@ import (
 )
 
 func TestExecuteProbe(t *testing.T) {
-	t.Parallel()
+	if runtime.GOOS != "windows" {
+		// This test in windows sometimes be fail if enable parallel.
+		// Maybe it's because of the timing to unset path to testdata/dos_polyfill.
+		t.Parallel()
+	}
 
 	cwd, err := os.Getwd()
 	if err != nil {
 		t.Fatalf("failed to get current path: %s", err)
 	}
+
+	origPath := os.Getenv("PATH")
+	os.Setenv("PATH", origPath+string(filepath.ListSeparator)+filepath.Join(cwd, "testdata", "dos_polyfill"))
+	t.Cleanup(func() {
+		os.Setenv("PATH", origPath)
+	})
+
 	cwd = filepath.ToSlash(cwd)
 
 	AssertProbe(t, []ProbeTest{
 		{"exec:./testdata/test?message=hello&code=0", api.StatusHealthy, "hello", ""},
 		{"exec:./testdata/test?message=world&code=1", api.StatusFailure, "world", ""},
 		{"exec:" + path.Join(cwd, "testdata/test") + "?message=hello&code=0", api.StatusHealthy, "hello", ""},
-		{"exec:echo#%0Ahello%0Aworld%0A%0A", api.StatusHealthy, "hello\nworld", ""},
 		{"exec:sleep#10", api.StatusFailure, `probe timed out`, ""},
 		{"exec:echo#::status::unknown", api.StatusUnknown, ``, ""},
 		{"exec:echo#::status::failure", api.StatusFailure, ``, ""},

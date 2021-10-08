@@ -93,10 +93,6 @@ func TestSource(t *testing.T) {
 			"dummy:healthy#def":   api.StatusHealthy,
 			"source+exec:" + filepath.ToSlash(path.Join(cwd, "testdata/listing-script?message=def")): api.StatusHealthy,
 		}, ""},
-		{"source+exec:echo#dummy:healthy#foobar", map[string]api.Status{
-			"dummy:healthy#foobar":                    api.StatusHealthy,
-			"source+exec:echo#dummy:healthy%23foobar": api.StatusHealthy,
-		}, ""},
 	}
 
 	for _, tt := range tests {
@@ -114,7 +110,7 @@ func TestSource(t *testing.T) {
 				}
 			}
 
-			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
 
 			rs := testutil.RunCheck(ctx, p)
