@@ -38,6 +38,6 @@
             "CharsetID": "04B0"
         }
     },
-    "IconPath": "exporter/static/favicon.ico",
+    "IconPath": "internal/exporter/static/favicon.ico",
     "ManifestPath": ""
 }
