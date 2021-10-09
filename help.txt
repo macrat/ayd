@@ -31,18 +31,20 @@ TARGETS:
    You can specify HTTP method in scheme like "http-head" or "https-post".
    Supported method is GET, HEAD, POST, OPTION, and CONNECT. Default is GET method.
 
-  ping:
+  ping, ping4, ping6:
    Send 3 ICMP echo request in 1 second.
+   "ping4" and "ping6" is variants for specify IPv4 or IPv6.
    e.g. ping:example.com
 
-  tcp:
+  tcp, tcp4, tcp6:
    Connect to TCP port.
+   "tcp4" and "tcp6" is variants for specify IPv4 or IPv6.
    e.g. tcp://example.com:3306
 
   dns:
    Resolve name with DNS.
    e.g. dns:example.com
-        dns://8.8.8.8/example.com
+        dns://8.8.8.8/example.com?type=AAAA
 
   exec:
    Execute external command.
