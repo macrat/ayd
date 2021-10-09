@@ -81,17 +81,17 @@ func TestSource(t *testing.T) {
 			"source+" + server.URL + "/source/slow": api.StatusFailure,
 		}, ""},
 
-		{"source+exec:./testdata/listing-script?message=abc", map[string]api.Status{
+		{"source+exec:./testdata/listing-script?message=abc#world", map[string]api.Status{
 			"dummy:healthy#hello": api.StatusHealthy,
 			"dummy:healthy#world": api.StatusHealthy,
 			"dummy:healthy#abc":   api.StatusHealthy,
-			"source+exec:./testdata/listing-script?message=abc": api.StatusHealthy,
+			"source+exec:./testdata/listing-script?message=abc#world": api.StatusHealthy,
 		}, ""},
-		{"source+exec:" + path.Join(cwd, "testdata/listing-script?message=def"), map[string]api.Status{
+		{"source+exec:" + path.Join(cwd, "testdata/listing-script?message=def#ayd"), map[string]api.Status{
 			"dummy:healthy#hello": api.StatusHealthy,
-			"dummy:healthy#world": api.StatusHealthy,
+			"dummy:healthy#ayd":   api.StatusHealthy,
 			"dummy:healthy#def":   api.StatusHealthy,
-			"source+exec:" + filepath.ToSlash(path.Join(cwd, "testdata/listing-script?message=def")): api.StatusHealthy,
+			"source+exec:" + filepath.ToSlash(path.Join(cwd, "testdata/listing-script?message=def#ayd")): api.StatusHealthy,
 		}, ""},
 	}
 
