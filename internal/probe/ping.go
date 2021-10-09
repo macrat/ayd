@@ -159,15 +159,15 @@ type PingProbe struct {
 }
 
 func NewPingProbe(u *url.URL) (PingProbe, error) {
-	_, separator, _ := SplitScheme(u.Scheme)
+	scheme, separator, _ := SplitScheme(u.Scheme)
 	if separator != 0 {
 		return PingProbe{}, ErrUnsupportedScheme
 	}
 
 	if u.Opaque != "" {
-		return PingProbe{&url.URL{Scheme: "ping", Opaque: u.Opaque, Fragment: u.Fragment}}, nil
+		return PingProbe{&url.URL{Scheme: scheme, Opaque: u.Opaque, Fragment: u.Fragment}}, nil
 	} else {
-		return PingProbe{&url.URL{Scheme: "ping", Opaque: u.Hostname(), Fragment: u.Fragment}}, nil
+		return PingProbe{&url.URL{Scheme: scheme, Opaque: u.Hostname(), Fragment: u.Fragment}}, nil
 	}
 }
 
@@ -179,7 +179,14 @@ func (p PingProbe) Check(ctx context.Context, r Reporter) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
-	target, err := net.ResolveIPAddr("ip", p.target.Opaque)
+	proto := "ip"
+	if p.target.Scheme == "ping4" {
+		proto = "ip4"
+	} else if p.target.Scheme == "ping6" {
+		proto = "ip6"
+	}
+
+	target, err := net.ResolveIPAddr(proto, p.target.Opaque)
 	if err != nil {
 		r.Report(api.Record{
 			CheckedAt: time.Now(),

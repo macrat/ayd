@@ -38,7 +38,7 @@ func NewFromURL(u *url.URL) (Probe, error) {
 	switch scheme {
 	case "http", "https":
 		return NewHTTPProbe(u)
-	case "ping":
+	case "ping", "ping4", "ping6":
 		return NewPingProbe(u)
 	case "tcp", "tcp4", "tcp6":
 		return NewTCPProbe(u)
