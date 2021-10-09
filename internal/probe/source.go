@@ -150,7 +150,7 @@ func (p SourceProbe) open(ctx context.Context) (io.ReadCloser, error) {
 			Header: http.Header{
 				"User-Agent": {HTTPUserAgent},
 			},
-		}).WithContext(ctx))
+		}).Clone(ctx))
 		switch {
 		case err != nil:
 			return nil, err

@@ -87,7 +87,7 @@ func (p HTTPProbe) Check(ctx context.Context, r Reporter) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
 	defer cancel()
 
-	req := p.request.WithContext(ctx)
+	req := p.request.Clone(ctx)
 
 	st := time.Now()
 	resp, err := p.client.Do(req)
