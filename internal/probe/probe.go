@@ -42,7 +42,7 @@ func NewFromURL(u *url.URL) (Probe, error) {
 		return NewPingProbe(u)
 	case "tcp", "tcp4", "tcp6":
 		return NewTCPProbe(u)
-	case "dns":
+	case "dns", "dns4", "dns6":
 		return NewDNSProbe(u)
 	case "exec":
 		return NewExecuteProbe(u)

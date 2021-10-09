@@ -13,6 +13,7 @@ import (
 
 var (
 	ErrUnsupportedDNSType = errors.New("unsupported DNS type")
+	ErrConflictDNSType    = errors.New("DNS type in scheme and query is conflicted")
 )
 
 type dnsResolver struct {
@@ -111,12 +112,28 @@ func NewDNSProbe(u *url.URL) (DNSProbe, error) {
 		}
 	}
 
-	if _, separator, variant := SplitScheme(u.Scheme); separator != 0 {
-		if separator == '+' {
-			return DNSProbe{}, ErrUnsupportedScheme
-		}
+	scheme, separator, variant := SplitScheme(u.Scheme)
+	shorthand := ""
 
-		u.RawQuery = "type=" + variant
+	switch {
+	case scheme == "dns" && separator == 0:
+		// do nothing
+	case scheme == "dns" && separator == '-' && variant != "":
+		shorthand = strings.ToUpper(variant)
+	case scheme == "dns4":
+		shorthand = "A"
+	case scheme == "dns6":
+		shorthand = "AAAA"
+	default:
+		return DNSProbe{}, ErrUnsupportedScheme
+	}
+
+	if shorthand != "" {
+		q := u.Query().Get("type")
+		if q != "" && shorthand != strings.ToUpper(q) {
+			return DNSProbe{}, ErrConflictDNSType
+		}
+		u.RawQuery = "type=" + shorthand
 	}
 
 	resolve := newDNSResolver(p.target.Host)

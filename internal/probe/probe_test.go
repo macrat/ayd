@@ -100,9 +100,13 @@ func TestTargetURLNormalize(t *testing.T) {
 
 		{"dns:example.com?type=a&hoge=fuga", url.URL{Scheme: "dns", Opaque: "example.com", RawQuery: "type=A"}, nil},
 		{"dns-aaaa:example.com", url.URL{Scheme: "dns", Opaque: "example.com", RawQuery: "type=AAAA"}, nil},
-		{"dns-cname:example.com?type=TXT", url.URL{Scheme: "dns", Opaque: "example.com", RawQuery: "type=CNAME"}, nil},
+		{"dns4:example.com", url.URL{Scheme: "dns", Opaque: "example.com", RawQuery: "type=A"}, nil},
+		{"dns6:example.com", url.URL{Scheme: "dns", Opaque: "example.com", RawQuery: "type=AAAA"}, nil},
 		{"dns+a:example.com", url.URL{}, probe.ErrUnsupportedScheme},
 		{"dns-abc:example.com", url.URL{}, probe.ErrUnsupportedDNSType},
+		{"dns-cname:example.com?type=TXT", url.URL{}, probe.ErrConflictDNSType},
+		{"dns4:example.com?type=AAAA", url.URL{}, probe.ErrConflictDNSType},
+		{"dns-txt:example.com?type=TXT", url.URL{Scheme: "dns", Opaque: "example.com", RawQuery: "type=TXT"}, nil},
 
 		{"exec:testdata/test.bat", url.URL{Scheme: "exec", Opaque: "testdata/test.bat"}, nil},
 		{"exec:./testdata/test.bat", url.URL{Scheme: "exec", Opaque: "./testdata/test.bat"}, nil},
