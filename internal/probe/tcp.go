@@ -29,9 +29,14 @@ func NewTCPProbe(u *url.URL) (TCPProbe, error) {
 	if u.Host == "" {
 		p.target.Host = u.Opaque
 	}
-	if port := p.target.Port(); port == "" {
+
+	if p.target.Hostname() == "" {
+		return TCPProbe{}, ErrMissingHost
+	}
+	if p.target.Port() == "" {
 		return TCPProbe{}, ErrTCPPortMissing
 	}
+
 	return p, nil
 }
 

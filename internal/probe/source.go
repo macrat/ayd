@@ -21,6 +21,7 @@ import (
 
 var (
 	ErrInvalidSource = errors.New("invalid source")
+	ErrMissingFile   = errors.New("missing file")
 )
 
 type invalidURLs []string
@@ -107,17 +108,25 @@ type SourceProbe struct {
 func NewSourceProbe(u *url.URL) (SourceProbe, error) {
 	_, separator, variant := SplitScheme(u.Scheme)
 
-	if separator != 0 {
-		if separator != '+' {
-			return SourceProbe{}, ErrUnsupportedScheme
-		}
+	if separator == '-' {
+		return SourceProbe{}, ErrUnsupportedScheme
+	}
 
-		switch variant {
-		case "http", "https", "exec":
-			break
-		default:
-			return SourceProbe{}, ErrUnsupportedScheme
+	switch variant {
+	case "":
+		if u.Opaque == "" && u.Path == "" {
+			return SourceProbe{}, ErrMissingFile
 		}
+	case "http", "https":
+		if u.Hostname() == "" {
+			return SourceProbe{}, ErrMissingHost
+		}
+	case "exec":
+		if u.Opaque == "" && u.Path == "" {
+			return SourceProbe{}, ErrMissingCommand
+		}
+	default:
+		return SourceProbe{}, ErrUnsupportedScheme
 	}
 
 	s := SourceProbe{

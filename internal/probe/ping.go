@@ -166,8 +166,10 @@ func NewPingProbe(u *url.URL) (PingProbe, error) {
 
 	if u.Opaque != "" {
 		return PingProbe{&url.URL{Scheme: scheme, Opaque: u.Opaque, Fragment: u.Fragment}}, nil
-	} else {
+	} else if u.Hostname() != "" {
 		return PingProbe{&url.URL{Scheme: scheme, Opaque: u.Hostname(), Fragment: u.Fragment}}, nil
+	} else {
+		return PingProbe{}, ErrMissingHost
 	}
 }
 

@@ -73,6 +73,8 @@ func TestTargetURLNormalize(t *testing.T) {
 		{"ping:example.com#piyo", url.URL{Scheme: "ping", Opaque: "example.com", Fragment: "piyo"}, nil},
 		{"ping-abc:example.com", url.URL{}, probe.ErrUnsupportedScheme},
 		{"ping+abc:example.com", url.URL{}, probe.ErrUnsupportedScheme},
+		{"ping:", url.URL{}, probe.ErrMissingHost},
+		{"ping:///test", url.URL{}, probe.ErrMissingHost},
 
 		{"http://example.com/foo/bar?hoge=fuga#piyo", url.URL{Scheme: "http", Host: "example.com", Path: "/foo/bar", RawQuery: "hoge=fuga", Fragment: "piyo"}, nil},
 		{"https://example.com/foo/bar?hoge=fuga#piyo", url.URL{Scheme: "https", Host: "example.com", Path: "/foo/bar", RawQuery: "hoge=fuga", Fragment: "piyo"}, nil},
@@ -82,6 +84,8 @@ func TestTargetURLNormalize(t *testing.T) {
 		{"http-head://example.com/foo/bar?hoge=fuga#piyo", url.URL{Scheme: "http-head", Host: "example.com", Path: "/foo/bar", RawQuery: "hoge=fuga", Fragment: "piyo"}, nil},
 		{"https-options://example.com/foo/bar?hoge=fuga#piyo", url.URL{Scheme: "https-options", Host: "example.com", Path: "/foo/bar", RawQuery: "hoge=fuga", Fragment: "piyo"}, nil},
 		{"https+get://example.com", url.URL{}, probe.ErrUnsupportedScheme},
+		{"https:///test", url.URL{}, probe.ErrMissingHost},
+		{"https:", url.URL{}, probe.ErrMissingHost},
 
 		{"tcp:example.com:80", url.URL{Scheme: "tcp", Host: "example.com:80"}, nil},
 		{"tcp://example.com:80/foo/bar?hoge=fuga#piyo", url.URL{Scheme: "tcp", Host: "example.com:80", Fragment: "piyo"}, nil},
@@ -90,6 +94,9 @@ func TestTargetURLNormalize(t *testing.T) {
 		{"tcp:example.com:80#hello", url.URL{Scheme: "tcp", Host: "example.com:80", Fragment: "hello"}, nil},
 		{"tcp-abc:example.com:80", url.URL{}, probe.ErrUnsupportedScheme},
 		{"tcp-def:example.com:80", url.URL{}, probe.ErrUnsupportedScheme},
+		{"tcp://:80", url.URL{}, probe.ErrMissingHost},
+		{"tcp://", url.URL{}, probe.ErrMissingHost},
+		{"tcp:", url.URL{}, probe.ErrMissingHost},
 
 		{"dns:example.com", url.URL{Scheme: "dns", Opaque: "example.com"}, nil},
 		{"dns:///example.com", url.URL{Scheme: "dns", Opaque: "example.com"}, nil},
@@ -97,6 +104,8 @@ func TestTargetURLNormalize(t *testing.T) {
 		{"dns://8.8.8.8:53/example.com", url.URL{Scheme: "dns", Host: "8.8.8.8:53", Path: "/example.com"}, nil},
 		{"dns://example.com:53/foo/bar?hoge=fuga#piyo", url.URL{Scheme: "dns", Host: "example.com:53", Path: "/foo", Fragment: "piyo"}, nil},
 		{"dns:example.com#piyo", url.URL{Scheme: "dns", Opaque: "example.com", Fragment: "piyo"}, nil},
+		{"dns:", url.URL{}, probe.ErrMissingDomainName},
+		{"dns://8.8.8.8:53", url.URL{}, probe.ErrMissingDomainName},
 
 		{"dns:example.com?type=a&hoge=fuga", url.URL{Scheme: "dns", Opaque: "example.com", RawQuery: "type=A"}, nil},
 		{"dns-aaaa:example.com", url.URL{Scheme: "dns", Opaque: "example.com", RawQuery: "type=AAAA"}, nil},
@@ -114,11 +123,16 @@ func TestTargetURLNormalize(t *testing.T) {
 		{"exec:testdata/test.bat?hoge=fuga#piyo", url.URL{Scheme: "exec", Opaque: "testdata/test.bat", RawQuery: "hoge=fuga", Fragment: "piyo"}, nil},
 		{"exec-abc:testdata/test", url.URL{}, probe.ErrUnsupportedScheme},
 		{"exec+abc:testdata/test", url.URL{}, probe.ErrUnsupportedScheme},
+		{"exec:", url.URL{}, probe.ErrMissingCommand},
+		{"exec://", url.URL{}, probe.ErrMissingCommand},
 
 		{"source:./testdata/healthy-list.txt", url.URL{Scheme: "source", Opaque: "./testdata/healthy-list.txt"}, nil},
 		{"source:./testdata/healthy-list.txt#hello", url.URL{Scheme: "source", Opaque: "./testdata/healthy-list.txt", Fragment: "hello"}, nil},
 		{"source-abc:./testdata/healthy-list.txt", url.URL{}, probe.ErrUnsupportedScheme},
 		{"source+abc:./testdata/healthy-list.txt", url.URL{}, probe.ErrUnsupportedScheme},
+		{"source:", url.URL{}, probe.ErrMissingFile},
+		{"source+http:", url.URL{}, probe.ErrMissingHost},
+		{"source+exec:", url.URL{}, probe.ErrMissingCommand},
 
 		{"source-" + server.URL + "/source", url.URL{}, probe.ErrUnsupportedScheme},
 		{"source+" + server.URL + "/source", url.URL{Scheme: "source+http", Host: strings.Replace(server.URL, "http://", "", 1), Path: "/source"}, nil},

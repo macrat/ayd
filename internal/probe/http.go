@@ -66,6 +66,10 @@ func NewHTTPProbe(u *url.URL) (HTTPProbe, error) {
 		}
 	}
 
+	if u.Hostname() == "" {
+		return HTTPProbe{}, ErrMissingHost
+	}
+
 	return HTTPProbe{
 		target: u,
 		client: httpClient,

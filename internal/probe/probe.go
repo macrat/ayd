@@ -12,6 +12,7 @@ var (
 	ErrInvalidURL        = errors.New("invalid URL")
 	ErrMissingScheme     = errors.New("missing scheme in URL")
 	ErrUnsupportedScheme = errors.New("unsupported scheme")
+	ErrMissingHost       = errors.New("missing target host")
 )
 
 type Reporter interface {

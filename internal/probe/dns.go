@@ -14,6 +14,7 @@ import (
 var (
 	ErrUnsupportedDNSType = errors.New("unsupported DNS type")
 	ErrConflictDNSType    = errors.New("DNS type in scheme and query is conflicted")
+	ErrMissingDomainName  = errors.New("missing domain name")
 )
 
 type dnsResolver struct {
@@ -110,6 +111,10 @@ func NewDNSProbe(u *url.URL) (DNSProbe, error) {
 			p.target.Opaque = p.hostname
 			p.target.Path = ""
 		}
+	}
+
+	if p.hostname == "" {
+		return DNSProbe{}, ErrMissingDomainName
 	}
 
 	scheme, separator, variant := SplitScheme(u.Scheme)

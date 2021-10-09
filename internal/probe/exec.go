@@ -17,6 +17,10 @@ import (
 )
 
 var (
+	ErrMissingCommand = errors.New("missing command")
+)
+
+var (
 	executeLatencyRe = regexp.MustCompile("(?m)^::latency::([0-9]+(?:\\.[0-9]+)?)(?:\n|$)")
 	executeStatusRe  = regexp.MustCompile("(?m)^::status::((?i:healthy|failure|aborted|unknown))(?:\n|$)")
 )
@@ -50,6 +54,10 @@ func NewExecuteProbe(u *url.URL) (ExecuteProbe, error) {
 		Opaque:   filepath.ToSlash(path),
 		RawQuery: u.RawQuery,
 		Fragment: u.Fragment,
+	}
+
+	if path == "" {
+		return ExecuteProbe{}, ErrMissingCommand
 	}
 
 	if _, err := exec.LookPath(filepath.FromSlash(path)); err != nil {
