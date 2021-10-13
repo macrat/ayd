@@ -21,9 +21,6 @@ func PreparePluginPath(t *testing.T) {
 
 	origPath := os.Getenv("PATH")
 	os.Setenv("PATH", origPath+string(filepath.ListSeparator)+filepath.Join(cwd, "testdata"))
-	t.Cleanup(func() {
-		os.Setenv("PATH", origPath)
-	})
 }
 
 func TestPluginProbe(t *testing.T) {
