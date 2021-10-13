@@ -81,21 +81,22 @@ func (p DummyProbe) Target() *url.URL {
 func (p DummyProbe) Check(ctx context.Context, r Reporter) {
 	stime := time.Now()
 
+	latency := p.latency
+	if p.target.Query().Get("latency") == "" {
+		latency = time.Duration(rand.Intn(10000)) * time.Microsecond
+	}
+
 	rec := api.Record{
 		CheckedAt: stime,
 		Status:    p.Status(),
 		Target:    p.target,
-		Latency:   p.latency,
+		Latency:   latency,
 		Message:   p.message,
 	}
 
-	if p.latency > 0 {
-		select {
-		case <-time.After(p.latency):
-		case <-ctx.Done():
-			rec.Latency = time.Now().Sub(stime)
-		}
-	} else {
+	select {
+	case <-time.After(latency):
+	case <-ctx.Done():
 		rec.Latency = time.Now().Sub(stime)
 	}
 

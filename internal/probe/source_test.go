@@ -253,7 +253,7 @@ func BenchmarkSource(b *testing.B) {
 			defer os.Remove(f.Name())
 
 			for i := 0; i < n; i++ {
-				fmt.Fprintf(f, "dummy:healthy#%d\n", i)
+				fmt.Fprintf(f, "dummy:healthy?latency=0s#%d\n", i)
 			}
 
 			target := &url.URL{Scheme: "source", Opaque: f.Name()}
