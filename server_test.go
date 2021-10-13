@@ -99,7 +99,7 @@ func TestRunServer_tls(t *testing.T) {
 func TestRunServer_tls_error(t *testing.T) {
 	cert := testutil.NewCertificate(t)
 
-	tasks, errs := main.ParseArgs([]string{"dummy:"})
+	tasks, errs := main.ParseArgs([]string{"dummy:?latency=100ms"})
 	if errs != nil {
 		t.Fatalf("failed to parse argument:\n%s", errs)
 	}

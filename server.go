@@ -39,6 +39,8 @@ func RunServer(ctx context.Context, s *store.Store, tasks []Task, certFile, keyF
 
 	fmt.Fprintf(s.Console, "starts Ayd on %s://%s\n", protocol, listen)
 
+	wg := &sync.WaitGroup{}
+
 	for _, t := range tasks {
 		fmt.Fprintf(s.Console, "%s\t%s\n", t.Schedule, t.Probe.Target().Redacted())
 
@@ -47,7 +49,11 @@ func RunServer(ctx context.Context, s *store.Store, tasks []Task, certFile, keyF
 		job := t.MakeJob(ctx, s)
 
 		if t.Schedule.NeedKickWhenStart() {
-			go job.Run()
+			wg.Add(1)
+			go func() {
+				job.Run()
+				wg.Done()
+			}()
 		}
 
 		scheduler.Schedule(t.Schedule, job)
@@ -59,7 +65,6 @@ func RunServer(ctx context.Context, s *store.Store, tasks []Task, certFile, keyF
 
 	srv := &http.Server{Addr: listen, Handler: exporter.NewBasicAuth(exporter.New(s), *userinfo)}
 
-	wg := &sync.WaitGroup{}
 	wg.Add(2)
 	go func() {
 		<-ctx.Done()
