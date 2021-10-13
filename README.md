@@ -399,19 +399,22 @@ For example, log lines look like below.
 ```
 
 Ayd will save the log file named `ayd.log` into the current directory in default.
-You can change this with `-o` option like below.
+You can change this with `-f` option like below.
 
 ``` shell
-$ ayd -o /path/to/ayd.log ping:example.com
+$ ayd -f /path/to/ayd.log ping:example.com
 ```
 
 There is no feature to log rotate.
 Please consider using the log rotation tool if you have a plan to use it for a long time.
 (Ayd can handle the huge log, but it is not easy to investigate the huge log when trouble)
 
-Please use `-o -` option for disable writing log file if you don't use log file.
+Please use `-f -` option for disable writing log file if you don't use log file.
 This is not recommended for production use because Ayd can't restore last status when restore if don't save log file.
 But, this is may useful for [use Ayd as a parts of script file](#one-shot-mode).
+
+In old version, before 0.10.0 or older, the `-f` option was named `-o` option.
+The `-o` option is still working in the latest version, but it will removed in the future version.
 
 
 ### Alerting
@@ -501,7 +504,7 @@ Description=Ayd status monitoring server
 After=network.target remote-fs.target
 
 [Service]
-ExecStart=/usr/local/bin/ayd -o /var/log/ayd.log \
+ExecStart=/usr/local/bin/ayd -f /var/log/ayd.log \
     http://your-target.example.com
 #   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ please change target
 

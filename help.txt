@@ -1,13 +1,13 @@
 Ayd? status monitoring service (version {{ .Version }})
 
 Usage:
-  {{ .Command }} [-p NUMBER | -o FILE | -a URL]... INTERVALS|TARGETS...
-  {{ .Command }} -1 [-o FILE] INTERVALS|TARGETS...
+  {{ .Command }} [-p NUMBER | -f FILE | -a URL]... INTERVALS|TARGETS...
+  {{ .Command }} -1 [-f FILE] INTERVALS|TARGETS...
 
 OPTIONS:
   -1	          Check status only once and exit. Exit with 0 if all check passed, otherwise exit with code 1.
   -a URL          The alert URL that the same format as target URL.
-  -o FILE         Path to log file. Log file is also use for restore status history. Ayd won't create log file if set "-" or empty. (default "./ayd.log")
+  -f FILE         Path to log file. Log file is also use for restore status history. Ayd won't create log file if set "-" or empty. (default "./ayd.log")
   -p PORT         Listen port of status page. (default 9000)
   -u USER[:PASS]  Username and password for HTTP endpoint.
   -c FILE         Path to certificate file for HTTPS. -k option is also required if use this.
