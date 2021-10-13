@@ -55,7 +55,7 @@ func TestPluginProbe(t *testing.T) {
 	t.Run("plug:invalid-record", func(t *testing.T) {
 		p, err := probe.New("plug:invalid-record")
 		if err != nil {
-			t.Errorf("failed to create plugin: %s", err)
+			t.Fatalf("failed to create plugin: %s", err)
 		}
 
 		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
