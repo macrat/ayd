@@ -97,9 +97,6 @@ func TestRunServer_tls(t *testing.T) {
 }
 
 func TestRunServer_tls_error(t *testing.T) {
-	s := testutil.NewStore(t)
-	defer s.Close()
-
 	cert := testutil.NewCertificate(t)
 
 	tasks, errs := main.ParseArgs([]string{"dummy:"})
@@ -119,6 +116,9 @@ func TestRunServer_tls_error(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
+			s := testutil.NewStore(t)
+			defer s.Close()
+
 			ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 			defer cancel()
 
