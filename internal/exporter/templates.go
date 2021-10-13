@@ -1,6 +1,7 @@
 package exporter
 
 import (
+	"fmt"
 	"net/url"
 	"strings"
 	"time"
@@ -70,6 +71,28 @@ var (
 				return u.String()
 			}
 			return s
+		},
+		"latency_graph": func(rs []api.Record) string {
+			maxLatency := 0.0
+			for _, r := range rs {
+				l := r.Latency.Seconds()
+				if l > maxLatency {
+					maxLatency = l
+				}
+			}
+
+			offset := store.PROBE_HISTORY_LEN - len(rs)
+
+			result := make([]string, len(rs)+2)
+			result[0] = fmt.Sprintf("M%d,1 %d,%v", offset, offset, 1-rs[0].Latency.Seconds()/maxLatency)
+
+			for i, r := range rs {
+				result[i+1] = fmt.Sprintf("%d.5,%v", offset+i, 1-r.Latency.Seconds()/maxLatency)
+			}
+
+			result[len(result)-1] = "h0.5V1"
+
+			return strings.Join(result, " ")
 		},
 	}
 )
