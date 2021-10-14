@@ -1,5 +1,5 @@
 SOURCES = $(shell find . -iname '*.go')
-VERSION = $(shell git describe --abbrev=0 --tags --dirty='+' | grep -o '[0-9].*')
+VERSION = $(shell git describe --tags --dirty | grep -o '[0-9].*')
 COMMIT = $(shell git rev-parse --short $(shell git describe))
 
 
