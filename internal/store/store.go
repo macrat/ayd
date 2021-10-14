@@ -124,8 +124,9 @@ type Store struct {
 
 	writeCh       chan<- api.Record
 	writerStopped chan struct{}
-	errorLock     sync.RWMutex
-	lastError     error
+	errorsLock    sync.RWMutex
+	errors        []string
+	healthy       bool
 }
 
 func New(path string) (*Store, error) {
@@ -138,6 +139,7 @@ func New(path string) (*Store, error) {
 		currentIncidents: make(map[string]*api.Incident),
 		writeCh:          ch,
 		writerStopped:    make(chan struct{}),
+		healthy:          true,
 	}
 
 	if store.Path != "" {
@@ -163,8 +165,11 @@ func (s *Store) ReportInternalError(scope, message string) {
 	})
 }
 
-func (s *Store) handleError(err error) {
+// handleError reports an error of write a log.
+// This error will reported to console in this method, and /healthz page via Store.Errors method.
+func (s *Store) handleError(err error, exportableErrorMessage string) {
 	if err != nil {
+		s.addError(exportableErrorMessage)
 		s.Console.Write([]byte(api.Record{
 			CheckedAt: time.Now(),
 			Status:    api.StatusFailure,
@@ -184,20 +189,20 @@ func (s *Store) writer(ch <-chan api.Record, stopped chan struct{}) {
 			continue
 		}
 
-		s.errorLock.Lock()
+		s.setHealthy()
 
 		var f *os.File
-		f, s.lastError = os.OpenFile(s.Path, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
-		if s.lastError != nil {
-			s.handleError(s.lastError)
-			s.errorLock.Unlock()
+		f, err := os.OpenFile(s.Path, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
+		if err != nil {
+			s.handleError(err, "failed to open log file")
 			continue
 		}
-		_, s.lastError = f.Write(msg)
-		s.handleError(s.lastError)
-		s.handleError(f.Close())
 
-		s.errorLock.Unlock()
+		_, err = f.Write(msg)
+		s.handleError(err, "failed to write log file")
+
+		err = f.Close()
+		s.handleError(err, "failed to close log file")
 	}
 
 	close(stopped)
@@ -378,10 +383,38 @@ func (s *Store) AddTarget(target *url.URL) {
 	s.probeHistory[t].shown = true
 }
 
-func (s *Store) Err() error {
-	s.errorLock.RLock()
-	defer s.errorLock.RUnlock()
-	return s.lastError
+// setHealthy is reset healthy status of this store.
+// This status is reported by Errors method.
+func (s *Store) setHealthy() {
+	s.errorsLock.Lock()
+	defer s.errorsLock.Unlock()
+
+	s.healthy = true
+}
+
+// addError adds error message for Errors method, and set healthy status to false.
+// This errors reported by Errors method.
+func (s *Store) addError(message string) {
+	s.errorsLock.Lock()
+	defer s.errorsLock.Unlock()
+
+	s.healthy = false
+	s.errors = append(
+		s.errors,
+		fmt.Sprintf("%s\t%s", time.Now().Format(time.RFC3339), message),
+	)
+
+	if len(s.errors) > 10 {
+		s.errors = s.errors[1:]
+	}
+}
+
+// Errors returns store status and error logs.
+func (s *Store) Errors() (healthy bool, messages []string) {
+	s.errorsLock.RLock()
+	defer s.errorsLock.RUnlock()
+
+	return s.healthy, s.errors
 }
 
 func (s *Store) MakeReport() api.Report {

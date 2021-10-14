@@ -36,10 +36,10 @@ func MetricsExporter(s *store.Store) http.HandlerFunc {
 
 		fmt.Fprintln(w, "# HELP ayd_healthy 1 if target is healthy, otherwise 0.")
 		fmt.Fprintln(w, "# TYPE ayd_healthy Gauge")
-		if s.Err() == nil {
-			fmt.Fprintln(w, `ayd_healthy{target="ayd"} 1`)
-		} else {
+		if failing, _ := s.Errors(); failing {
 			fmt.Fprintln(w, `ayd_healthy{target="ayd"} 0`)
+		} else {
+			fmt.Fprintln(w, `ayd_healthy{target="ayd"} 1`)
 		}
 
 		fmt.Fprintln(w)

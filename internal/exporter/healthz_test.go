@@ -1,9 +1,13 @@
 package exporter_test
 
 import (
+	"fmt"
+	"io"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 
+	"github.com/macrat/ayd/internal/exporter"
 	"github.com/macrat/ayd/internal/testutil"
 )
 
@@ -11,9 +15,68 @@ func TestHealthzExporter(t *testing.T) {
 	srv := testutil.StartTestServer(t)
 	defer srv.Close()
 
-	if resp, err := srv.Client().Get(srv.URL + "/healthz"); err != nil {
-		t.Errorf("failed to get /healthz: %s", err)
+	resp, err := srv.Client().Get(srv.URL + "/healthz")
+	if err != nil {
+		t.Fatalf("failed to get /healthz: %s", err)
 	} else if resp.StatusCode != http.StatusOK {
-		t.Errorf("unexpected status: %s", resp.Status)
+		t.Fatalf("unexpected status: %s", resp.Status)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatalf("failed to read response: %s", err)
+	}
+
+	if string(body) != "HEALTHY\n" {
+		t.Errorf("unexpected response:\n%s", body)
+	}
+}
+
+type DummyErrorsGetter struct {
+	healthy  bool
+	messages []string
+}
+
+func (d DummyErrorsGetter) Errors() (healthy bool, messages []string) {
+	return d.healthy, d.messages
+}
+
+func (d DummyErrorsGetter) String() string {
+	return fmt.Sprintf("healthy:%v/messages:%v", d.healthy, d.messages)
+}
+
+func TestHealthzExporter_errors(t *testing.T) {
+	tests := []struct {
+		Store DummyErrorsGetter
+		Code  int
+		Body  string
+	}{
+		{DummyErrorsGetter{true, []string{}}, http.StatusOK, "HEALTHY\n"},
+		{DummyErrorsGetter{true, []string{"hello", "world"}}, http.StatusOK, "HEALTHY\nhello\nworld\n"},
+		{DummyErrorsGetter{false, []string{}}, http.StatusInternalServerError, "FAILURE\n"},
+		{DummyErrorsGetter{false, []string{"hello", "world"}}, http.StatusInternalServerError, "FAILURE\nhello\nworld\n"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.Store.String(), func(t *testing.T) {
+			fun := exporter.HealthzExporter(tt.Store)
+
+			w := httptest.NewRecorder()
+			r, err := http.NewRequest("GET", "http://localhost/healthz", nil)
+			if err != nil {
+				t.Fatalf("failed to prepare http request: %s", err)
+			}
+
+			fun(w, r)
+
+			if w.Code != tt.Code {
+				t.Errorf("expected status code is %d but got %d", tt.Code, w.Code)
+			}
+
+			if w.Body.String() != tt.Body {
+				t.Errorf("expected:\n%s\nbut got:\n%s", tt.Body, w.Body)
+			}
+		})
 	}
 }

@@ -22,7 +22,9 @@ func Benchmark_exporters(b *testing.B) {
 		{"/log.csv", exporter.LogCSVExporter},
 		{"/log.json", exporter.LogJsonExporter},
 		{"/metrics", exporter.MetricsExporter},
-		{"/healthz", exporter.HealthzExporter},
+		{"/healthz", func(s *store.Store) http.HandlerFunc {
+			return exporter.HealthzExporter(s)
+		}},
 	}
 
 	for _, tt := range benchmarks {

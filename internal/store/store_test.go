@@ -163,8 +163,8 @@ func TestStore_errorLogging(t *testing.T) {
 		t.Errorf("unexpected log (line 0):\n%s", buf)
 	}
 
-	if s.Err() != nil {
-		t.Errorf("unexpected last error value: %s", s.Err())
+	if healthy, messages := s.Errors(); !healthy {
+		t.Errorf("unexpected error recorded: %#v", messages)
 	}
 
 	os.Chmod(f.Name(), 0000)
@@ -189,8 +189,12 @@ func TestStore_errorLogging(t *testing.T) {
 		t.Errorf("unexpected log:\n%s", buf)
 	}
 
-	if s.Err() == nil {
-		t.Errorf("expected record last err but not recorded")
+	if healthy, messages := s.Errors(); healthy {
+		t.Errorf("expect error recorded but not recorded")
+	} else if len(messages) != 1 {
+		t.Errorf("unexpected number of errors recorded: %#v", messages)
+	} else if ok, _ := regexp.MatchString("^[-+:TZ0-9]+\tfailed to open log file$", messages[0]); !ok {
+		t.Errorf("unexpected error message recorded: %#v", messages)
 	}
 }
 
