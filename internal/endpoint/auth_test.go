@@ -1,4 +1,4 @@
-package exporter_test
+package endpoint_test
 
 import (
 	"net/http"
@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/macrat/ayd/internal/exporter"
+	"github.com/macrat/ayd/internal/endpoint"
 )
 
 type TestHandler struct{}
@@ -31,16 +31,16 @@ func TestNewBasicAuth(t *testing.T) {
 
 	for _, tt := range tests {
 		th := TestHandler{}
-		h := exporter.NewBasicAuth(th, tt.Input)
+		h := endpoint.NewBasicAuth(th, tt.Input)
 
 		if !tt.IsNeedAuth {
 			if h != th {
 				t.Errorf("%#v: expected don't wrap handler but wrapped", tt.Input)
 			}
 		} else {
-			a, ok := h.(exporter.BasicAuth)
+			a, ok := h.(endpoint.BasicAuth)
 			if !ok {
-				t.Errorf("%#v: expected wrap with exporter.BasicAuth but not wrapped", tt.Input)
+				t.Errorf("%#v: expected wrap with endpoint.BasicAuth but not wrapped", tt.Input)
 				continue
 			}
 
@@ -74,7 +74,7 @@ func TestBasicAuth(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.URL, func(t *testing.T) {
-			h := exporter.NewBasicAuth(TestHandler{}, tt.Userinfo)
+			h := endpoint.NewBasicAuth(TestHandler{}, tt.Userinfo)
 			server := httptest.NewServer(h)
 			defer server.Close()
 

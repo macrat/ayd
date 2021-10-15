@@ -1,4 +1,4 @@
-package exporter_test
+package endpoint_test
 
 import (
 	"encoding/json"
@@ -29,7 +29,7 @@ func readTestFile(t *testing.T, file string) string {
 	return strings.ReplaceAll(string(bs), "\r\n", "\n")
 }
 
-func TestStatusHTMLExporter(t *testing.T) {
+func TestStatusHTMLEndpoint(t *testing.T) {
 	srv := testutil.StartTestServer(t)
 	defer srv.Close()
 
@@ -62,7 +62,7 @@ func TestStatusHTMLExporter(t *testing.T) {
 	}
 }
 
-func TestStatusTextExporter(t *testing.T) {
+func TestStatusTextEndpoint(t *testing.T) {
 	srv := testutil.StartTestServer(t)
 	defer srv.Close()
 
@@ -112,7 +112,7 @@ func TestStatusTextExporter(t *testing.T) {
 	})
 }
 
-func TestStatusJSONExporter(t *testing.T) {
+func TestStatusJSONEndpoint(t *testing.T) {
 	srv := testutil.StartTestServer(t)
 	defer srv.Close()
 

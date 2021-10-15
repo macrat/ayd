@@ -1,4 +1,4 @@
-package exporter_test
+package endpoint_test
 
 import (
 	"net/http"

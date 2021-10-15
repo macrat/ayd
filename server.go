@@ -7,7 +7,7 @@ import (
 	"os"
 	"sync"
 
-	"github.com/macrat/ayd/internal/exporter"
+	"github.com/macrat/ayd/internal/endpoint"
 	"github.com/macrat/ayd/internal/store"
 	"github.com/robfig/cron/v3"
 )
@@ -63,7 +63,7 @@ func RunServer(ctx context.Context, s *store.Store, tasks []Task, certFile, keyF
 	scheduler.Start()
 	defer scheduler.Stop()
 
-	srv := &http.Server{Addr: listen, Handler: exporter.NewBasicAuth(exporter.New(s), *userinfo)}
+	srv := &http.Server{Addr: listen, Handler: endpoint.NewBasicAuth(endpoint.New(s), *userinfo)}
 
 	wg.Add(2)
 	go func() {

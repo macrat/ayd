@@ -1,4 +1,4 @@
-package exporter_test
+package endpoint_test
 
 import (
 	"fmt"
@@ -7,11 +7,11 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/macrat/ayd/internal/exporter"
+	"github.com/macrat/ayd/internal/endpoint"
 	"github.com/macrat/ayd/internal/testutil"
 )
 
-func TestHealthzExporter(t *testing.T) {
+func TestHealthzEndpoint(t *testing.T) {
 	srv := testutil.StartTestServer(t)
 	defer srv.Close()
 
@@ -46,7 +46,7 @@ func (d DummyErrorsGetter) String() string {
 	return fmt.Sprintf("healthy:%v/messages:%v", d.healthy, d.messages)
 }
 
-func TestHealthzExporter_errors(t *testing.T) {
+func TestHealthzEndpoint_errors(t *testing.T) {
 	tests := []struct {
 		Store DummyErrorsGetter
 		Code  int
@@ -60,7 +60,7 @@ func TestHealthzExporter_errors(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.Store.String(), func(t *testing.T) {
-			fun := exporter.HealthzExporter(tt.Store)
+			fun := endpoint.HealthzEndpoint(tt.Store)
 
 			w := httptest.NewRecorder()
 			r, err := http.NewRequest("GET", "http://localhost/healthz", nil)

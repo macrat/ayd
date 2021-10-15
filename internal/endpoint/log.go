@@ -1,4 +1,4 @@
-package exporter
+package endpoint
 
 import (
 	"bufio"
@@ -147,7 +147,7 @@ func getTimeQuery(queries url.Values, name string, default_ time.Time) (time.Tim
 	return t, nil
 }
 
-func newLogScannerForExporter(s *store.Store, r *http.Request) (scanner LogScanner, statusCode int, err error) {
+func newLogScannerForEndpoint(s *store.Store, r *http.Request) (scanner LogScanner, statusCode int, err error) {
 	qs := r.URL.Query()
 
 	var invalidQueries []string
@@ -207,13 +207,13 @@ func (f LogFilter) Record() api.Record {
 	return f.Scanner.Record()
 }
 
-func LogTSVExporter(s *store.Store) http.HandlerFunc {
+func LogTSVEndpoint(s *store.Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/tab-separated-values; charset=UTF-8")
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "GET")
 
-		scanner, code, err := newLogScannerForExporter(s, r)
+		scanner, code, err := newLogScannerForEndpoint(s, r)
 		if err != nil {
 			w.WriteHeader(code)
 			w.Write([]byte(err.Error() + "\n"))
@@ -235,7 +235,7 @@ func LogTSVExporter(s *store.Store) http.HandlerFunc {
 	}
 }
 
-func LogJsonExporter(s *store.Store) http.HandlerFunc {
+func LogJsonEndpoint(s *store.Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -243,7 +243,7 @@ func LogJsonExporter(s *store.Store) http.HandlerFunc {
 
 		enc := json.NewEncoder(w)
 
-		scanner, code, err := newLogScannerForExporter(s, r)
+		scanner, code, err := newLogScannerForEndpoint(s, r)
 		if err != nil {
 			msg := struct {
 				E string `json:"error"`
@@ -272,13 +272,13 @@ func LogJsonExporter(s *store.Store) http.HandlerFunc {
 	}
 }
 
-func LogCSVExporter(s *store.Store) http.HandlerFunc {
+func LogCSVEndpoint(s *store.Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/csv")
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "GET")
 
-		scanner, code, err := newLogScannerForExporter(s, r)
+		scanner, code, err := newLogScannerForEndpoint(s, r)
 		if err != nil {
 			w.WriteHeader(code)
 			w.Write([]byte(err.Error() + "\n"))

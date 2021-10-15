@@ -1,4 +1,4 @@
-package exporter_test
+package endpoint_test
 
 import (
 	"net/http"
@@ -7,7 +7,7 @@ import (
 	"github.com/macrat/ayd/internal/testutil"
 )
 
-func TestMetricsExporter(t *testing.T) {
+func TestMetricsEndpoint(t *testing.T) {
 	srv := testutil.StartTestServer(t)
 	defer srv.Close()
 

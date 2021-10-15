@@ -1,4 +1,4 @@
-package exporter
+package endpoint
 
 import (
 	_ "embed"
@@ -28,17 +28,17 @@ func New(s *store.Store) http.Handler {
 	})
 
 	m.Handle("/status", http.RedirectHandler("/status.html", http.StatusMovedPermanently))
-	m.HandleFunc("/status.txt", StatusTextExporter(s))
-	m.HandleFunc("/status.html", StatusHTMLExporter(s))
-	m.HandleFunc("/status.json", StatusJSONExporter(s))
+	m.HandleFunc("/status.txt", StatusTextEndpoint(s))
+	m.HandleFunc("/status.html", StatusHTMLEndpoint(s))
+	m.HandleFunc("/status.json", StatusJSONEndpoint(s))
 
 	m.Handle("/log", http.RedirectHandler("/log.tsv", http.StatusMovedPermanently))
-	m.HandleFunc("/log.tsv", LogTSVExporter(s))
-	m.HandleFunc("/log.json", LogJsonExporter(s))
-	m.HandleFunc("/log.csv", LogCSVExporter(s))
+	m.HandleFunc("/log.tsv", LogTSVEndpoint(s))
+	m.HandleFunc("/log.json", LogJsonEndpoint(s))
+	m.HandleFunc("/log.csv", LogCSVEndpoint(s))
 
-	m.HandleFunc("/metrics", MetricsExporter(s))
-	m.HandleFunc("/healthz", HealthzExporter(s))
+	m.HandleFunc("/metrics", MetricsEndpoint(s))
+	m.HandleFunc("/healthz", HealthzEndpoint(s))
 
 	m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/" {

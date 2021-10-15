@@ -1,29 +1,29 @@
-package exporter_test
+package endpoint_test
 
 import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	"github.com/macrat/ayd/internal/exporter"
+	"github.com/macrat/ayd/internal/endpoint"
 	"github.com/macrat/ayd/internal/store"
 	"github.com/macrat/ayd/internal/testutil"
 )
 
-func Benchmark_exporters(b *testing.B) {
+func Benchmark_endpoints(b *testing.B) {
 	benchmarks := []struct {
 		Path     string
-		Exporter func(*store.Store) http.HandlerFunc
+		Endpoint func(*store.Store) http.HandlerFunc
 	}{
-		{"/status.html", exporter.StatusHTMLExporter},
-		{"/status.txt", exporter.StatusTextExporter},
-		{"/status.json", exporter.StatusJSONExporter},
-		{"/log.tsv", exporter.LogTSVExporter},
-		{"/log.csv", exporter.LogCSVExporter},
-		{"/log.json", exporter.LogJsonExporter},
-		{"/metrics", exporter.MetricsExporter},
+		{"/status.html", endpoint.StatusHTMLEndpoint},
+		{"/status.txt", endpoint.StatusTextEndpoint},
+		{"/status.json", endpoint.StatusJSONEndpoint},
+		{"/log.tsv", endpoint.LogTSVEndpoint},
+		{"/log.csv", endpoint.LogCSVEndpoint},
+		{"/log.json", endpoint.LogJsonEndpoint},
+		{"/metrics", endpoint.MetricsEndpoint},
 		{"/healthz", func(s *store.Store) http.HandlerFunc {
-			return exporter.HealthzExporter(s)
+			return endpoint.HealthzEndpoint(s)
 		}},
 	}
 
@@ -32,7 +32,7 @@ func Benchmark_exporters(b *testing.B) {
 			s := testutil.NewStoreWithLog(b)
 			defer s.Close()
 
-			h := tt.Exporter(s)
+			h := tt.Endpoint(s)
 
 			r := httptest.NewRequest("GET", tt.Path, nil)
 

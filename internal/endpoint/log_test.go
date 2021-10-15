@@ -1,4 +1,4 @@
-package exporter_test
+package endpoint_test
 
 import (
 	"encoding/json"
@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/macrat/ayd/internal/exporter"
+	"github.com/macrat/ayd/internal/endpoint"
 	"github.com/macrat/ayd/internal/store"
 	"github.com/macrat/ayd/internal/testutil"
 	api "github.com/macrat/ayd/lib-ayd"
@@ -63,23 +63,23 @@ func TestLogScanner(t *testing.T) {
 
 	scanners := []struct {
 		Name string
-		F    func(since, until time.Time) exporter.LogScanner
+		F    func(since, until time.Time) endpoint.LogScanner
 	}{
 		{
 			"LogReader",
-			func(since, until time.Time) exporter.LogScanner {
+			func(since, until time.Time) endpoint.LogScanner {
 				f := io.NopCloser(strings.NewReader(strings.Join([]string{
 					"2000-01-01T13:02:03Z\tHEALTHY\t0.123\tdummy:healthy\tfirst",
 					"2000-01-02T13:02:03Z\tHEALTHY\t0.123\tdummy:healthy\tsecond",
 					"2000-01-03T13:02:03Z\tHEALTHY\t0.123\tdummy:healthy\tlast",
 				}, "\n")))
 
-				return exporter.NewLogReaderFromReader(f, since, until)
+				return endpoint.NewLogReaderFromReader(f, since, until)
 			},
 		},
 		{
 			"LogGenerator",
-			func(since, until time.Time) exporter.LogScanner {
+			func(since, until time.Time) endpoint.LogScanner {
 				s, err := store.New("")
 				if err != nil {
 					t.Fatalf("failed to create store: %s", err)
@@ -102,12 +102,12 @@ func TestLogScanner(t *testing.T) {
 					Message:   "last",
 				})
 
-				return exporter.NewLogGenerator(s, since, until)
+				return endpoint.NewLogGenerator(s, since, until)
 			},
 		},
 		{
 			"LogFilter",
-			func(since, until time.Time) exporter.LogScanner {
+			func(since, until time.Time) endpoint.LogScanner {
 				f := io.NopCloser(strings.NewReader(strings.Join([]string{
 					"2000-01-01T13:02:03Z\tHEALTHY\t0.123\tdummy:healthy#1\tfirst",
 					"2000-01-02T13:02:03Z\tHEALTHY\t0.123\tdummy:healthy#1\tsecond",
@@ -116,8 +116,8 @@ func TestLogScanner(t *testing.T) {
 					"2000-01-04T13:02:03Z\tFAILURE\t0.123\tdummy:failure\tanother",
 				}, "\n")))
 
-				return exporter.LogFilter{
-					exporter.NewLogReaderFromReader(f, since, until),
+				return endpoint.LogFilter{
+					endpoint.NewLogReaderFromReader(f, since, until),
 					[]string{"dummy:healthy#1", "dummy:healthy#2"},
 				}
 			},
@@ -151,7 +151,7 @@ func TestLogScanner(t *testing.T) {
 	}
 }
 
-func TestLogTSVExporter(t *testing.T) {
+func TestLogTSVEndpoint(t *testing.T) {
 	tests := []struct {
 		Name       string
 		Query      string
@@ -243,7 +243,7 @@ func TestLogTSVExporter(t *testing.T) {
 	}
 }
 
-func TestLogJsonExporter(t *testing.T) {
+func TestLogJsonEndpoint(t *testing.T) {
 	tests := []struct {
 		Name       string
 		Query      string
@@ -341,7 +341,7 @@ func TestLogJsonExporter(t *testing.T) {
 	}
 }
 
-func TestLogCSVExporter(t *testing.T) {
+func TestLogCSVEndpoint(t *testing.T) {
 	tests := []struct {
 		Name       string
 		Query      string

@@ -5,7 +5,7 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/macrat/ayd/internal/exporter"
+	"github.com/macrat/ayd/internal/endpoint"
 )
 
 func StartTestServer(t testing.TB) *httptest.Server {
@@ -20,5 +20,5 @@ func StartTestServer(t testing.TB) *httptest.Server {
 	s.AddTarget(&url.URL{Scheme: "http", Host: "b.example.com"})
 	s.AddTarget(&url.URL{Scheme: "http", Host: "c.example.com"})
 
-	return httptest.NewServer(exporter.New(s))
+	return httptest.NewServer(endpoint.New(s))
 }

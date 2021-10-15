@@ -1,4 +1,4 @@
-package exporter
+package endpoint
 
 import (
 	"fmt"
@@ -9,7 +9,7 @@ import (
 	api "github.com/macrat/ayd/lib-ayd"
 )
 
-func MetricsExporter(s *store.Store) http.HandlerFunc {
+func MetricsEndpoint(s *store.Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		for _, hs := range s.ProbeHistory() {
 			if len(hs.Records) > 0 {
