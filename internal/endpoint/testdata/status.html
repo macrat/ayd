@@ -47,6 +47,23 @@ h2 {
     font-weight: normal;
     margin: 0;
 }
+h2 svg {
+    display: none;
+}
+
+@media screen and (max-width: 640px) {
+    h2 {
+        margin-top: 1em;
+    }
+    h2 svg {
+        display: inline;
+        position: relative;
+        width: auto;
+        height: 1em;
+        top: 0.1em;
+        fill: rgb(var(--fg));
+    }
+}
 
 .status-bar {
     display: flex;
@@ -59,7 +76,6 @@ h2 {
     justify-content: center;
     align-items: center;
     height: 3rem;
-    width: 2rem;
     padding: .2rem;
     box-sizing: border-box;
     text-align: center;
@@ -67,14 +83,28 @@ h2 {
     margin: 0 -1px;
 }
 .status-bit.no-data { background-color: rgba(var(--bg), .2) }
-.status-bit.unknown { background-color: rgba(var(--fg), .8) }
+.status-bit.unknown { background-color: rgba(var(--fg), .6) }
 .status-bit.aborted { background-color: rgba(var(--bg), .8) }
-.status-bit.failure { background-color: rgba(var(--failure), .8) }
-.status-bit.healthy { background-color: rgba(var(--healthy), .85) }
+.status-bit.failure { background-color: rgba(var(--failure), .75) }
+.status-bit.healthy { background-color: rgba(var(--healthy), .8) }
 .status-bit svg         { fill: rgba(var(--light), .8) }
 .status-bit.no-data svg { fill: rgba(var(--fg), .3) }
 .status-bit.unknown svg { fill: rgba(var(--bg), .8) }
 .status-bit.aborted svg { fill: rgba(var(--fg), .4) }
+
+@media screen and (max-width: 960px) {
+    .status-bit {
+        padding: 0;
+    }
+}
+@media screen and (max-width: 640px) {
+    .status-bit {
+        height: 2rem;
+    }
+    .status-bit svg {
+        display: none;
+    }
+}
 
 .latency-plot {
     position: absolute;
@@ -175,7 +205,10 @@ footer span {
                 <h1>Current Status</h1>
 
                 <section>
-                    <h2>http://c.example.com</h2>
+                    <h2>
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#unknown-icon" /></svg>
+                        http://c.example.com
+                    </h2>
                     <div class="status-bar">
                         <span class="status-bit no-data" title="no data">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
@@ -312,7 +345,10 @@ this is unknown">
                 </section>
 
                 <section>
-                    <h2>http://a.example.com</h2>
+                    <h2>
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#healthy-icon" /></svg>
+                        http://a.example.com
+                    </h2>
                     <div class="status-bar">
                         <span class="status-bit no-data" title="no data">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
@@ -452,7 +488,10 @@ hello world!!">
                 </section>
 
                 <section>
-                    <h2>http://b.example.com</h2>
+                    <h2>
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#healthy-icon" /></svg>
+                        http://b.example.com
+                    </h2>
                     <div class="status-bar">
                         <span class="status-bit no-data" title="no data">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
