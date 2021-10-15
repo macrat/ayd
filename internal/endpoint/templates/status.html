@@ -179,19 +179,10 @@ footer span {
                     <div class="status-bar">{{ range .Records | pad_records }}
                         <span class="status-bit no-data" title="no data">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>{{ end }}{{ range .Records }}{{ if .Status | is_unknown }}
-                        <span class="status-bit unknown" title="{{ printf "unknown (%s)\n%s\n\n%s" .Latency (.CheckedAt | time2str) .Message }}">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#unknown-icon" /></svg>
-                        </span>{{ end }}{{ if .Status | is_aborted }}
-                        <span class="status-bit aborted" title="{{ printf "aborted (%s)\n%s\n\n%s" .Latency (.CheckedAt | time2str) .Message }}">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#aborted-icon" /></svg>
-                        </span>{{ end }}{{ if .Status | is_failure }}
-                        <span class="status-bit failure" title="{{ printf "failure (%s)\n%s\n\n%s" .Latency (.CheckedAt | time2str) .Message }}">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#failure-icon" /></svg>
-                        </span>{{ end }}{{ if .Status | is_healthy }}
-                        <span class="status-bit healthy" title="{{ printf "healthy (%s)\n%s\n\n%s" .Latency (.CheckedAt | time2str) .Message }}">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#healthy-icon" /></svg>
-                        </span>{{ end }}{{ end }}
+                        </span>{{ end }}{{ range .Records }}
+                        <span class="status-bit {{ .Status | to_lower }}" title="{{ printf "%s (%s)\n%s\n\n%s" (.Status | to_lower) .Latency (.CheckedAt | time2str) .Message }}">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#{{ .Status | to_lower }}-icon" /></svg>
+                        </span>{{ end }}
 
                         <svg class="latency-plot" viewBox="0 0 40 1" preserveAspectRatio="none">
                             <path d="{{ .Records | latency_graph }}" />
@@ -205,9 +196,9 @@ footer span {
                 <h1>Current Incident</h1>{{ range .CurrentIncidents | invert_incidents }}
 
                 <section class="incident continue">
-                    <span class="marker {{ if .Status | is_failure }}failure{{ else }}unknown{{ end }}"></span>
+                    <span class="marker {{ .Status | to_lower }}"></span>
 
-                    <h2>{{ if .Status | is_failure }}FAILURE{{ else }}UNKNOWN{{ end }}</h2>
+                    <h2>{{ .Status }}</h2>
                     <div class="target">{{ .Target | url_unescape }}</div>
                     <div class="period"><time>{{ .CausedAt | time2str }}</time> - <time>continue</time></div>{{ if .Message }}
                     <pre class="message">{{ .Message }}</pre>{{ end }}
@@ -222,9 +213,9 @@ footer span {
                 <h1>Incident History</h1>{{ range .IncidentHistory | invert_incidents }}
 
                 <section class="incident resolved">
-                    <span class="marker {{ if .Status | is_failure }}failure{{ else }}unknown{{ end }}"></span>
+                    <span class="marker {{ .Status | to_lower }}"></span>
 
-                    <h2>{{ if .Status | is_failure }}FAILURE{{ else }}UNKNOWN{{ end }}</h2>
+                    <h2>{{ .Status }}</h2>
                     <div class="target">{{ .Target | url_unescape }}</div>
                     <div class="period"><time>{{ .CausedAt | time2str }}</time> - <time>{{ .ResolvedAt | time2str }}</time></div>{{ if .Message }}
                     <pre class="message">{{ .Message }}</pre>{{ end }}

@@ -62,6 +62,9 @@ var (
 		"is_healthy": func(s api.Status) bool {
 			return s == api.StatusHealthy
 		},
+		"to_lower": func(s fmt.Stringer) string {
+			return strings.ToLower(s.String())
+		},
 		"time2str": func(t time.Time) string {
 			return t.Format(time.RFC3339)
 		},
