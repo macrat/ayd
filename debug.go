@@ -5,6 +5,8 @@ package main
 
 import (
 	"fmt"
+	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"runtime"
 	"time"
@@ -29,4 +31,6 @@ func debugStatusReporter() {
 
 func init() {
 	go debugStatusReporter()
+
+	go http.ListenAndServe("localhost:6060", nil)
 }
