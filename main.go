@@ -75,14 +75,14 @@ func RunAyd() int {
 	}
 
 	if *oneshot {
-		if *alertURL != "" {
-			fmt.Fprintln(os.Stderr, "warning: -a option will ignored when use with -1 option")
-		}
 		if *listenPort != 9000 {
-			fmt.Fprintln(os.Stderr, "warning: -p option will ignored when use with -1 option")
+			fmt.Fprintln(os.Stderr, "warning: port option will ignored when use with -1 option")
+		}
+		if *userinfo != "" {
+			fmt.Fprintln(os.Stderr, "warning: user option will ignored in the oneshot mode")
 		}
 		if *certPath != "" || *keyPath != "" {
-			fmt.Fprintln(os.Stderr, "warning: -c and -k option will ignored when use with -1 option")
+			fmt.Fprintln(os.Stderr, "warning: ssl cert and key options will ignored in the oneshot mode")
 		}
 	} else {
 		if *certPath != "" && *keyPath == "" || *certPath == "" && *keyPath != "" {
