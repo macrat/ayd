@@ -130,7 +130,7 @@ func RunAyd() int {
 			return 2
 		}
 		s.OnIncident = append(s.OnIncident, func(i *api.Incident) {
-			go alert.Trigger(ctx, i, s)
+			alert.Trigger(ctx, i, s)
 		})
 	}
 
