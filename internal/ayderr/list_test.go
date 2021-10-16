@@ -3,10 +3,33 @@ package ayderr_test
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/macrat/ayd/internal/ayderr"
 )
+
+func TestList_Error(t *testing.T) {
+	errA := errors.New("error A")
+	errB := errors.New("error B")
+	errC := errors.New("error C")
+	errD := errors.New("error D")
+
+	listBC := ayderr.List{errB, []error{errC}}
+	listABCD := ayderr.List{errA, []error{listBC, errD}}
+
+	expected := strings.Join([]string{
+		"error A:",
+		"  error B:",
+		"    error C",
+		"  error D",
+	}, "\n")
+
+	if diff := cmp.Diff(expected, listABCD.Error()); diff != "" {
+		t.Errorf("unexpected error:\n%s", diff)
+	}
+}
 
 func TestList_Is(t *testing.T) {
 	errA := errors.New("error A")

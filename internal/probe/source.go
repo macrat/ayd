@@ -16,6 +16,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/macrat/ayd/internal/ayderr"
 	api "github.com/macrat/ayd/lib-ayd"
 )
 
@@ -23,16 +24,6 @@ var (
 	ErrInvalidSource = errors.New("invalid source")
 	ErrMissingFile   = errors.New("missing file")
 )
-
-type invalidURLs []string
-
-func (es invalidURLs) Error() string {
-	var ss []string
-	for _, e := range es {
-		ss = append(ss, e)
-	}
-	return "invalid URL: " + strings.Join(ss, ", ")
-}
 
 type ignoreSet []string
 
@@ -219,29 +210,30 @@ func (p SourceProbe) load(ctx context.Context, ignores ignoreSet, out map[string
 	}
 	defer f.Close()
 
-	var invalids invalidURLs
+	invalids := &ayderr.ListBuilder{What: ErrInvalidURL}
 
 	scanner := &sourceScanner{Scanner: bufio.NewScanner(f)}
 	for scanner.Scan() {
 		target, err := scanner.URL()
 		if err != nil {
-			invalids = append(invalids, scanner.Text)
+			invalids.Pushf("%s", scanner.Text)
 			continue
 		}
 
 		if target.Scheme != "source" {
 			probe, err := NewFromURL(target)
 			if err != nil {
-				invalids = append(invalids, scanner.Text)
+				invalids.Pushf("%s", target)
 			} else {
 				out[probe.Target().String()] = probe
 			}
 		} else if !ignores.Has(target.String()) {
 			err := SourceProbe{target}.load(ctx, append(ignores, p.target.String()), out)
-			if es, ok := err.(invalidURLs); ok {
-				invalids = append(invalids, es...)
+			es := ayderr.List{}
+			if errors.As(err, &es) {
+				invalids.Push(es.Children...)
 			} else if err != nil {
-				invalids = append(invalids, scanner.Text)
+				invalids.Pushf("%s", target)
 			}
 		}
 
@@ -252,11 +244,7 @@ func (p SourceProbe) load(ctx context.Context, ignores ignoreSet, out map[string
 		}
 	}
 
-	if len(invalids) > 0 {
-		return invalids
-	}
-
-	return nil
+	return invalids.Build()
 }
 
 func (p SourceProbe) Check(ctx context.Context, r Reporter) {

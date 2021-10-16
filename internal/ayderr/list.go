@@ -16,11 +16,13 @@ type List struct {
 
 // Error implements error interface.
 func (l List) Error() string {
-	ss := make([]string, len(l.Children)+1)
-	ss[0] = l.What.Error() + ":"
+	ss := make([]string, 0, len(l.Children)+1)
+	ss = append(ss, l.What.Error()+":")
 
-	for i, e := range l.Children {
-		ss[i+1] = "  " + e.Error()
+	for _, e := range l.Children {
+		for _, s := range strings.Split(e.Error(), "\n") {
+			ss = append(ss, "  "+s)
+		}
 	}
 
 	return strings.Join(ss, "\n")
