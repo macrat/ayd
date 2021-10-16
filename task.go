@@ -2,13 +2,19 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
+	"github.com/macrat/ayd/internal/ayderr"
 	"github.com/macrat/ayd/internal/probe"
 	"github.com/macrat/ayd/internal/store"
 	api "github.com/macrat/ayd/lib-ayd"
 	"github.com/robfig/cron/v3"
+)
+
+var (
+	ErrInvalidArgument = errors.New("invalid argument")
 )
 
 type Task struct {
@@ -46,9 +52,9 @@ func (t Task) In(list []Task) bool {
 	return false
 }
 
-func ParseArgs(args []string) ([]Task, []error) {
+func ParseArgs(args []string) ([]Task, error) {
 	var tasks []Task
-	var errors []error
+	errors := &ayderr.ListBuilder{What: ErrInvalidArgument}
 
 	schedule := DEFAULT_SCHEDULE
 
@@ -62,15 +68,14 @@ func ParseArgs(args []string) ([]Task, []error) {
 		if err != nil {
 			switch err {
 			case probe.ErrUnsupportedScheme:
-				err = fmt.Errorf("%s: This scheme is not supported. Please check the plugin is installed if need.", a)
+				errors.Pushf("%s: This scheme is not supported. Please check the plugin is installed if need.", a)
 			case probe.ErrMissingScheme:
-				err = fmt.Errorf("%s: Not valid as schedule or target URL. Please specify scheme if this is target. (e.g. ping:example.local or http://example.com)", a)
+				errors.Pushf("%s: Not valid as schedule or target URL. Please specify scheme if this is target. (e.g. ping:example.local or http://example.com)", a)
 			case probe.ErrInvalidURL:
-				err = fmt.Errorf("%s: Not valid as schedule or target URL.", a)
+				errors.Pushf("%s: Not valid as schedule or target URL.", a)
 			default:
-				err = fmt.Errorf("%s: %s", a, err)
+				errors.Pushf("%s: %w", a, err)
 			}
-			errors = append(errors, err)
 			continue
 		}
 
@@ -88,5 +93,5 @@ func ParseArgs(args []string) ([]Task, []error) {
 		result = append(result, t)
 	}
 
-	return result, errors
+	return result, errors.Build()
 }

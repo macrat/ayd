@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/macrat/ayd/internal/ayderr"
 )
 
 // Record is a record in Ayd log
@@ -43,39 +45,43 @@ func ParseRecord(s string) (Record, error) {
 	var timestamp string
 	var latency float64
 	var target string
+	var err error
 
 	ss := strings.SplitN(s, "\t", 5)
 	if len(ss) != 5 {
-		return Record{}, newError(ErrInvalidRecord, nil, "invalid record: unexpected column count")
+		return Record{}, ayderr.New(ErrInvalidRecord, nil, "invalid record: unexpected column count")
 	}
+
+	errors := &ayderr.ListBuilder{What: ErrInvalidRecord}
 
 	timestamp = ss[0]
-	r.Status.UnmarshalText([]byte(ss[1]))
-	latency, err := strconv.ParseFloat(ss[2], 64)
-	if err != nil {
-		return Record{}, newError(ErrInvalidRecord, err, "invalid format latency")
-	}
-	target = ss[3]
-	r.Message = unescapeMessage(ss[4])
-
 	r.CheckedAt, err = time.Parse(time.RFC3339, timestamp)
 	if err != nil {
-		return Record{}, newError(ErrInvalidRecord, err, "invalid format checked-at")
+		errors.Pushf("checked-at: %w", err)
 	}
 
+	r.Status.UnmarshalText([]byte(ss[1]))
+
+	latency, err = strconv.ParseFloat(ss[2], 64)
+	if err != nil {
+		errors.Pushf("latency: %w", err)
+	}
 	r.Latency = time.Duration(latency * float64(time.Millisecond))
 
+	target = ss[3]
 	r.Target, err = url.Parse(target)
 	if err != nil {
-		return Record{}, newError(ErrInvalidRecord, err, "invalid format target URL")
+		errors.Pushf("target URL: %w", err)
+	} else {
+		if (r.Target.Scheme == "exec" || r.Target.Scheme == "source") && r.Target.Opaque == "" {
+			r.Target.Opaque = r.Target.Path
+			r.Target.Path = ""
+		}
 	}
 
-	if (r.Target.Scheme == "exec" || r.Target.Scheme == "source") && r.Target.Opaque == "" {
-		r.Target.Opaque = r.Target.Path
-		r.Target.Path = ""
-	}
+	r.Message = unescapeMessage(ss[4])
 
-	return r, nil
+	return r, errors.Build()
 }
 
 func escapeMessage(s string) string {

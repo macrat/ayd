@@ -1,8 +1,11 @@
-package ayd
+package ayderr_test
 
 import (
 	"errors"
 	"testing"
+
+	"github.com/macrat/ayd/internal/ayderr"
+	"github.com/macrat/ayd/lib-ayd"
 )
 
 func TestAydError(t *testing.T) {
@@ -14,8 +17,8 @@ func TestAydError(t *testing.T) {
 		message string
 	}{
 		{
-			ErrInvalidArgumentValue,
-			ErrArgumentCount,
+			ayd.ErrInvalidArgumentValue,
+			ayd.ErrArgumentCount,
 			"hello %s",
 			[]interface{}{"world"},
 			"hello world: unexpected count of arguments",
@@ -25,7 +28,7 @@ func TestAydError(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.message, func(t *testing.T) {
-			err := newError(tt.kind, tt.from, tt.format, tt.args...)
+			err := ayderr.New(tt.kind, tt.from, tt.format, tt.args...)
 
 			if err.Error() != tt.message {
 				t.Errorf("unexpected message: %s", err)

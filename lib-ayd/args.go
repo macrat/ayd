@@ -5,6 +5,8 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	"github.com/macrat/ayd/internal/ayderr"
 )
 
 // ProbePluginArgs is arguments for probe plugin
@@ -15,12 +17,12 @@ type ProbePluginArgs struct {
 // ParseProbePluginArgsFrom is parse arguments for probe plugin
 func ParseProbePluginArgsFrom(args []string) (ProbePluginArgs, error) {
 	if len(args) != 2 {
-		return ProbePluginArgs{}, newError(ErrArgumentCount, nil, "invalid argument: should give just 1 argument")
+		return ProbePluginArgs{}, ayderr.New(ErrArgumentCount, nil, "invalid argument: should give just 1 argument")
 	}
 
 	target, err := url.Parse(args[1])
 	if err != nil {
-		return ProbePluginArgs{}, newError(ErrInvalidArgumentValue, err, "invalid target URL")
+		return ProbePluginArgs{}, ayderr.New(ErrInvalidArgumentValue, err, "invalid target URL")
 	}
 
 	return ProbePluginArgs{target}, nil
@@ -45,24 +47,24 @@ type AlertPluginArgs struct {
 // ParseAlertPluginArgsFrom is parse arguments for alert plugin
 func ParseAlertPluginArgsFrom(args []string) (AlertPluginArgs, error) {
 	if len(args) != 6 {
-		return AlertPluginArgs{}, newError(ErrArgumentCount, nil, "invalid argument: should give exactly 5 arguments")
+		return AlertPluginArgs{}, ayderr.New(ErrArgumentCount, nil, "invalid argument: should give exactly 5 arguments")
 	}
 
 	alertURL, err := url.Parse(args[1])
 	if err != nil {
-		return AlertPluginArgs{}, newError(ErrInvalidArgumentValue, err, "invalid alert URL")
+		return AlertPluginArgs{}, ayderr.New(ErrInvalidArgumentValue, err, "invalid alert URL")
 	}
 
 	checkedAt, err := time.Parse(time.RFC3339, args[2])
 	if err != nil {
-		return AlertPluginArgs{}, newError(ErrInvalidArgumentValue, err, "invalid checked at timestamp")
+		return AlertPluginArgs{}, ayderr.New(ErrInvalidArgumentValue, err, "invalid checked at timestamp")
 	}
 
 	status := ParseStatus(strings.ToUpper(args[3]))
 
 	targetURL, err := url.Parse(args[4])
 	if err != nil {
-		return AlertPluginArgs{}, newError(ErrInvalidArgumentValue, err, "invalid target URL")
+		return AlertPluginArgs{}, ayderr.New(ErrInvalidArgumentValue, err, "invalid target URL")
 	}
 
 	return AlertPluginArgs{

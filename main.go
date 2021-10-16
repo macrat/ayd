@@ -92,12 +92,9 @@ func RunAyd() int {
 		}
 	}
 
-	tasks, errors := ParseArgs(pflag.Args())
-	if errors != nil {
-		fmt.Fprintln(os.Stderr, "Invalid argument:")
-		for _, err := range errors {
-			fmt.Fprintln(os.Stderr, "", err)
-		}
+	tasks, err := ParseArgs(pflag.Args())
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err.Error())
 		fmt.Fprintf(os.Stderr, "\nPlease see `%s -h` for more information.\n", os.Args[0])
 		return 2
 	}

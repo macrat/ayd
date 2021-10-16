@@ -5,6 +5,8 @@ import (
 	"net/url"
 	"os"
 	"time"
+
+	"github.com/macrat/ayd/internal/ayderr"
 )
 
 // Logger is the logger for Ayd plugin
@@ -59,7 +61,7 @@ func (l Logger) Print(r Record) error {
 
 	_, err := l.writer.Write([]byte(r.String() + "\n"))
 	if err != nil {
-		return newError(ErrIO, err, "failed to write log")
+		return ayderr.New(ErrIO, err, "failed to write log")
 	}
 	return nil
 }

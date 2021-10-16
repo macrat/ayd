@@ -2,11 +2,13 @@ package main_test
 
 import (
 	"context"
+	"errors"
 	"net/url"
 	"strings"
 	"testing"
 
 	"github.com/macrat/ayd"
+	"github.com/macrat/ayd/internal/ayderr"
 	"github.com/macrat/ayd/internal/probe"
 	"github.com/macrat/ayd/internal/testutil"
 	api "github.com/macrat/ayd/lib-ayd"
@@ -87,11 +89,9 @@ func TestParseArgs(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		result, errs := main.ParseArgs(tt.Args)
-		if errs != nil {
-			for _, err := range errs {
-				t.Errorf("%#v: failed parse: %s", tt.Args, err)
-			}
+		result, err := main.ParseArgs(tt.Args)
+		if err != nil {
+			t.Errorf("%#v: failed parse:\n%s", tt.Args, err)
 			continue
 		}
 
@@ -140,20 +140,27 @@ func TestParseArgs_errors(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(strings.Join(tt.Args, ","), func(t *testing.T) {
-			_, errors := main.ParseArgs(tt.Args)
+			_, err := main.ParseArgs(tt.Args)
 
-			var es []string
-			for _, e := range errors {
-				es = append(es, e.Error())
+			if len(tt.Errors) == 0 {
+				if err != nil {
+					t.Fatalf("unexpected error: %s", err)
+				}
+				return
 			}
 
-			if len(es) != len(tt.Errors) {
-				t.Fatalf("unexpected count of errors: expected %d but got %d", len(tt.Errors), len(es))
+			es := ayderr.List{}
+			if !errors.As(err, &es) {
+				t.Fatalf("unexpected error: %#v", err)
 			}
 
-			for i := range es {
-				if es[i] != tt.Errors[i] {
-					t.Errorf("%d: unexpected error message\nexpected: %s\n but got: %s", i, tt.Errors[i], es[i])
+			if len(es.Children) != len(tt.Errors) {
+				t.Fatalf("unexpected count of errors: expected %d but got %d", len(tt.Errors), len(es.Children))
+			}
+
+			for i, e := range es.Children {
+				if e.Error() != tt.Errors[i] {
+					t.Errorf("%d: unexpected error message\nexpected: %s\n but got: %s", i, tt.Errors[i], e)
 				}
 			}
 		})

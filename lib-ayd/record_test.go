@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/macrat/ayd/lib-ayd"
 )
 
@@ -54,23 +55,29 @@ func TestRecord(t *testing.T) {
 		},
 		{
 			String: "2021-01-02T15:04:05+09:00\tHEALTHY\t123abc\tping:example.com\thello world",
-			Error:  `invalid format latency: strconv.ParseFloat: parsing "123abc": invalid syntax`,
+			Error:  "invalid record:\n  latency: strconv.ParseFloat: parsing \"123abc\": invalid syntax",
 		},
 		{
 			String: "2021/01/02 15:04:05\tHEALTHY\t123.456\tping:example.com\thello world",
-			Error:  `invalid format checked-at: parsing time "2021/01/02 15:04:05" as "2006-01-02T15:04:05Z07:00": cannot parse "/01/02 15:04:05" as "-"`,
+			Error:  "invalid record:\n  checked-at: parsing time \"2021/01/02 15:04:05\" as \"2006-01-02T15:04:05Z07:00\": cannot parse \"/01/02 15:04:05\" as \"-\"",
 		},
 		{
 			String: "2021-01-02T15:04:05+09:00\tHEALTHY\t123.456\t::invalid target::\thello world",
-			Error:  `invalid format target URL: parse "::invalid target::": missing protocol scheme`,
+			Error:  "invalid record:\n  target URL: parse \"::invalid target::\": missing protocol scheme",
+		},
+		{
+			String: "2021-01-02T15:04:05+somewhere\tHEALTHY\t123abc\tping:example.com\thello world",
+			Error:  "invalid record:\n  checked-at: parsing time \"2021-01-02T15:04:05+somewhere\" as \"2006-01-02T15:04:05Z07:00\": cannot parse \"+somewhere\" as \"Z07:00\"\n  latency: strconv.ParseFloat: parsing \"123abc\": invalid syntax",
 		},
 	}
 
 	for _, tt := range tests {
 		r, err := ayd.ParseRecord(tt.String)
 		if tt.Error != "" {
-			if err == nil || tt.Error != err.Error() {
-				t.Errorf("expected error when parse %#v\nexpected \"%s\" but got \"%s\"", tt.String, tt.Error, err)
+			if err == nil {
+				t.Errorf("expected %q error when parse %#v but got nil", tt.Error, tt.String)
+			} else if diff := cmp.Diff(err.Error(), tt.Error); diff != "" {
+				t.Errorf("unexpected error when parse %#v\n%s", tt.String, diff)
 			}
 			continue
 		}
