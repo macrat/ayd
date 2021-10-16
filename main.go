@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	_ "embed"
-	"flag"
 	"fmt"
 	"os"
 	"os/signal"
@@ -13,23 +12,25 @@ import (
 	"github.com/macrat/ayd/internal/probe"
 	"github.com/macrat/ayd/internal/store"
 	api "github.com/macrat/ayd/lib-ayd"
+	"github.com/spf13/pflag"
 )
 
 var (
 	version = "HEAD"
 	commit  = "UNKNOWN"
 
-	listenPort  = flag.Int("p", 9000, "Listen port of status page.")
-	storePath   = flag.String("f", "./ayd.log", "Path to log file. Log file is also use for restore status history. Ayd won't create log file if set \"-\" or empty.")
-	oneshot     = flag.Bool("1", false, "Check status only once and exit. Exit with 0 if all check passed, otherwise exit with code 1.")
-	alertURL    = flag.String("a", "", "The alert URL that the same format as target URL.")
-	userinfo    = flag.String("u", "", "Username and password for HTTP endpoint.")
-	certPath    = flag.String("c", "", "Path to certificate file for HTTPS. -k option is also required if use this.")
-	keyPath     = flag.String("k", "", "Path to key file for HTTPS. -c option is also required if use this.")
-	showVersion = flag.Bool("v", false, "Show version and exit.")
+	listenPort  = pflag.IntP("port", "p", 9000, "HTTP listen port")
+	storePath   = pflag.StringP("log-file", "f", "./ayd.log", "Path to log file")
+	oneshot     = pflag.BoolP("oneshot", "1", false, "Check status only once and exit")
+	alertURL    = pflag.StringP("alert", "a", "", "The alert URL")
+	userinfo    = pflag.StringP("user", "u", "", "Username and password for HTTP endpoint")
+	certPath    = pflag.StringP("ssl-cert", "c", "", "HTTPS certificate file")
+	keyPath     = pflag.StringP("ssl-key", "k", "", "HTTPS key file")
+	showVersion = pflag.BoolP("verbose", "v", false, "Show version")
+	showHelp    = pflag.BoolP("help", "h", false, "Show help message")
 
 	// TODO: remove -o option before to release version 1.0.0
-	compatPath = flag.String("o", "", "DEPRECATED: This option renamed to -f.")
+	compatPath = pflag.StringP("deprecated-output-file", "o", "", "DEPRECATED: This option is renamed to -f.")
 )
 
 //go:embed help.txt
@@ -41,8 +42,7 @@ func init() {
 
 func Usage() {
 	tmpl := template.Must(template.New("help.txt").Parse(helpText))
-	tmpl.Execute(flag.CommandLine.Output(), map[string]interface{}{
-		"Command":         os.Args[0],
+	tmpl.Execute(os.Stderr, map[string]interface{}{
 		"Version":         version,
 		"HTTPRedirectMax": probe.HTTP_REDIRECT_MAX,
 	})
@@ -61,8 +61,13 @@ func SetupProbe(ctx context.Context, tasks []Task) {
 }
 
 func RunAyd() int {
-	flag.Usage = Usage
-	flag.Parse()
+	pflag.Usage = Usage
+	pflag.Parse()
+
+	if *showHelp {
+		Usage()
+		return 0
+	}
 
 	if *showVersion {
 		fmt.Printf("Ayd? version %s (%s)\n", version, commit)
@@ -87,7 +92,7 @@ func RunAyd() int {
 		}
 	}
 
-	tasks, errors := ParseArgs(flag.Args())
+	tasks, errors := ParseArgs(pflag.Args())
 	if errors != nil {
 		fmt.Fprintln(os.Stderr, "Invalid argument:")
 		for _, err := range errors {
@@ -101,12 +106,12 @@ func RunAyd() int {
 		return 0
 	}
 
-	if *storePath == "-" {
-		*storePath = ""
-	}
 	if *storePath == "./ayd.log" && *compatPath != "" {
 		fmt.Fprintf(os.Stderr, "\nwarning: The -o option is deprecated.\n         Please use -f option instead of -o.\n\n")
 		*storePath = *compatPath
+	}
+	if *storePath == "-" {
+		*storePath = ""
 	}
 	s, err := store.New(*storePath)
 	if err != nil {

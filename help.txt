@@ -1,18 +1,21 @@
 Ayd? status monitoring service (version {{ .Version }})
 
 Usage:
-  {{ .Command }} [-p NUMBER | -f FILE | -a URL]... INTERVALS|TARGETS...
-  {{ .Command }} -1 [-f FILE] INTERVALS|TARGETS...
+  ayd [OPTIONS...] INTERVALS|TARGETS...
+  ayd -1 [-a URL | -f FILE] INTERVALS|TARGETS...
 
 OPTIONS:
-  -1	          Check status only once and exit. Exit with 0 if all check passed, otherwise exit with code 1.
-  -a URL          The alert URL that the same format as target URL.
-  -f FILE         Path to log file. Log file is also use for restore status history. Ayd won't create log file if set "-" or empty. (default "./ayd.log")
-  -p PORT         Listen port of status page. (default 9000)
-  -u USER[:PASS]  Username and password for HTTP endpoint.
-  -c FILE         Path to certificate file for HTTPS. -k option is also required if use this.
-  -k FILE         Path to key file for HTTPS. -c option is also required if use this.
-  -v              Show Ayd version and exit.
+  -1, --oneshot	          Check status only once and exit.
+                          Exit code means 0=HEALTHY, 1=FAILURE, 2=UNKNOWN.
+  -a, --alert=URL         The alert URL that the same format as target URL.
+  -f, --log-file=FILE     Path to log file. Log file is also used as a database.
+                          Ayd won't create log file if set "-" or empty. (default "./ayd.log")
+  -p, --port=PORT         Listen port of status page. (default 9000)
+  -u, --user=USER[:PASS]  Username and password for HTTP endpoint.
+  -c, --ssl-cert=FILE     Path to certificate file for HTTPS. Please set -k too.
+  -k, --ssl-key=FILE      Path to key file for HTTPS. Please set -c too.
+  -v, --verbose           Show Ayd version and exit.
+  -h, --help              Show this help message and exit.
 
 INTERVALS:
   Specify execution schedule in interval (e.g. "2m" means "every 2 minutes")
@@ -65,25 +68,25 @@ TARGETS:
 
 EXAMPLES:
   Send ping to example.com in default interval(5m):
-   $ {{ .Command }} ping:example.com
+   $ ayd ping:example.com
 
   Send ping to example.com every minutes:
-   $ {{ .Command }} 1m ping:example.com
+   $ ayd 1m ping:example.com
 
   Access to http://example.com every half hours:
-   $ {{ .Command }} 30m http://example.com
+   $ ayd 30m http://example.com
 
   Check a.local(ping) and b.local(http) every minutes,
   and execute ./check.sh command every 15 minutes:
-   $ {{ .Command }} 1m ping:a.local http://b.local 15m exec:./check.sh
+   $ ayd 1m ping:a.local http://b.local 15m exec:./check.sh
 
   Check targets that listed in file named "./list.txt":
    $ echo ping:a.local >> list.txt
    $ echo ping:b.local >> list.txt
-   $ {{ .Command }} source:./list.txt
+   $ ayd source:./list.txt
 
   Listen on http://0.0.0.0:8080 (and connect to example.com:3306 for check):
-   $ {{ .Command }} -p 8080 1m tcp://example.com:3306
+   $ ayd -p 8080 1m tcp://example.com:3306
 
 SEEALSO:
   https://github.com/macrat/ayd#readme
