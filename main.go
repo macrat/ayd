@@ -22,7 +22,7 @@ var (
 	listenPort  = pflag.IntP("port", "p", 9000, "HTTP listen port")
 	storePath   = pflag.StringP("log-file", "f", "./ayd.log", "Path to log file")
 	oneshot     = pflag.BoolP("oneshot", "1", false, "Check status only once and exit")
-	alertURL    = pflag.StringP("alert", "a", "", "The alert URL")
+	alertURLs   = pflag.StringArrayP("alert", "a", nil, "The alert URLs")
 	userinfo    = pflag.StringP("user", "u", "", "Username and password for HTTP endpoint")
 	certPath    = pflag.StringP("ssl-cert", "c", "", "HTTPS certificate file")
 	keyPath     = pflag.StringP("ssl-key", "k", "", "HTTPS key file")
@@ -120,10 +120,10 @@ func RunAyd() int {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
 
-	if *alertURL != "" {
-		alert, err := alert.New(*alertURL)
+	if len(*alertURLs) > 0 {
+		alert, err := alert.NewSet(*alertURLs)
 		if err != nil {
-			fmt.Fprintln(os.Stderr, "Invalid alert target:", err)
+			fmt.Fprintln(os.Stderr, err)
 			return 2
 		}
 		s.OnIncident = append(s.OnIncident, func(i *api.Incident) {

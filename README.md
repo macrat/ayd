@@ -443,6 +443,12 @@ In the above example, Ayd access `https://alert.example/alert` with the below qu
 Alert plugin receives these as arguments.
 Please see [Alert plugin](#alert-plugin) section if you want make your own plugin.
 
+You can use `-a` option more than once if you want Ayd to send alert to multiple systems like below.
+
+``` shell
+$ ayd -a exec:./alert.sh -a mailto:admin@example.com https://target.example.com
+```
+
 #### e-mail (SMTP)
 
 The [ayd-mailto-alert](https://github.com/macrat/ayd-mailto-alert) is a plugin to sending an alert e-mail via SMTP.

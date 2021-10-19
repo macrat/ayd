@@ -7,7 +7,8 @@ Usage:
 OPTIONS:
   -1, --oneshot	          Check status only once and exit.
                           Exit code means 0=HEALTHY, 1=FAILURE, 2=UNKNOWN.
-  -a, --alert=URL         The alert URL that the same format as target URL.
+  -a, --alert=URL         The alert URL that the same format as the target URL.
+                          You can use this option more than once.
   -f, --log-file=FILE     Path to log file. Log file is also used as a database.
                           Ayd won't create log file if set "-" or empty. (default "./ayd.log")
   -p, --port=PORT         Listen port of status page. (default 9000)
