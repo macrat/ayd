@@ -465,21 +465,32 @@ func TestStore_incident(t *testing.T) {
 	defer s.Close()
 
 	lastIncident := ""
+	callbackCount := 0
 	s.OnIncident = []store.IncidentHandler{
-		func(s *string) func(*api.Incident) {
+		func(s *string, c *int) func(*api.Incident) {
 			return func(i *api.Incident) {
 				*s = i.Message
+				*c++
 			}
-		}(&lastIncident),
+		}(&lastIncident, &callbackCount),
 	}
 
 	assertLastIncident := func(s *string) func(string) {
 		return func(expect string) {
+			t.Helper()
 			if *s != expect {
 				t.Fatalf("expected last incident is %#v but got %#v", expect, *s)
 			}
 		}
 	}(&lastIncident)
+	assertCallbackCount := func(c *int) func(int) {
+		return func(expect int) {
+			t.Helper()
+			if *c != expect {
+				t.Fatalf("expected callback calls %d times but called %d times", expect, *c)
+			}
+		}
+	}(&callbackCount)
 	assertIncidents := func(incidents []*api.Incident, target ...string) {
 		t.Helper()
 
@@ -516,55 +527,82 @@ func TestStore_incident(t *testing.T) {
 		})
 	}
 
+	// a healthy is not an incident
 	appendRecord("incident-test-1", "a", "1-1", api.StatusHealthy)
 	assertIncidents(s.CurrentIncidents())
 	assertIncidents(s.IncidentHistory())
 	assertLastIncident("")
+	assertCallbackCount(0)
 
+	// a failure should recorded as an incident
 	appendRecord("incident-test-1", "b", "1-2", api.StatusFailure)
 	assertIncidents(s.CurrentIncidents(), "dummy://test:xxxxx@incident-test-1")
 	assertIncidents(s.IncidentHistory())
 	assertLastIncident("1-2")
+	assertCallbackCount(1)
 
+	// the same incident should not recorded as a new incident
 	appendRecord("incident-test-1", "c", "1-2", api.StatusFailure)
 	assertIncidents(s.CurrentIncidents(), "dummy://test:xxxxx@incident-test-1")
 	assertIncidents(s.IncidentHistory())
 	assertLastIncident("1-2")
+	assertCallbackCount(1)
 
+	// a failure for other target should recorded as a new incident
 	appendRecord("incident-test-2", "d", "2-1", api.StatusFailure)
 	assertIncidents(s.CurrentIncidents(), "dummy://test:xxxxx@incident-test-1", "dummy://test:xxxxx@incident-test-2")
 	assertIncidents(s.IncidentHistory())
 	assertLastIncident("2-1")
+	assertCallbackCount(2)
 
+	// a different message should recorded as another incident
 	appendRecord("incident-test-1", "e", "1-3", api.StatusFailure)
 	assertIncidents(s.CurrentIncidents(), "dummy://test:xxxxx@incident-test-2", "dummy://test:xxxxx@incident-test-1")
 	assertIncidents(s.IncidentHistory(), "dummy://test:xxxxx@incident-test-1")
 	assertLastIncident("1-3")
+	assertCallbackCount(3)
 
+	// the same incident should not recorded as a new incident even if there was another incident
 	appendRecord("incident-test-2", "f", "2-1", api.StatusFailure)
 	assertIncidents(s.CurrentIncidents(), "dummy://test:xxxxx@incident-test-2", "dummy://test:xxxxx@incident-test-1")
 	assertIncidents(s.IncidentHistory(), "dummy://test:xxxxx@incident-test-1")
 	assertLastIncident("1-3")
+	assertCallbackCount(3)
 
+	// an aborted record should be ignored
 	appendRecord("incident-test-2", "g", "2-?", api.StatusAborted)
 	assertIncidents(s.CurrentIncidents(), "dummy://test:xxxxx@incident-test-2", "dummy://test:xxxxx@incident-test-1")
 	assertIncidents(s.IncidentHistory(), "dummy://test:xxxxx@incident-test-1")
 	assertLastIncident("1-3")
+	assertCallbackCount(3)
 
+	// a healthy should make incident mark as recovered
 	appendRecord("incident-test-1", "h", "1-4", api.StatusHealthy)
 	assertIncidents(s.CurrentIncidents(), "dummy://test:xxxxx@incident-test-2")
 	assertIncidents(s.IncidentHistory(), "dummy://test:xxxxx@incident-test-1", "dummy://test:xxxxx@incident-test-1")
 	assertLastIncident("1-3")
+	assertCallbackCount(4)
 
-	appendRecord("incident-test-2", "i", "2-2", api.StatusHealthy)
-	assertIncidents(s.CurrentIncidents())
+	// a record that has different status should recorded as a new incident even if the message is the same as previous record
+	appendRecord("incident-test-2", "i", "2-1", api.StatusUnknown)
+	assertIncidents(s.CurrentIncidents(), "dummy://test:xxxxx@incident-test-2")
 	assertIncidents(s.IncidentHistory(), "dummy://test:xxxxx@incident-test-1", "dummy://test:xxxxx@incident-test-1", "dummy://test:xxxxx@incident-test-2")
 	assertLastIncident("2-1")
+	assertCallbackCount(5)
 
-	appendRecord("incident-test-2", "j", "2-?", api.StatusAborted)
+	// a healthy should make incident mark as recovered again
+	appendRecord("incident-test-2", "j", "2-2", api.StatusHealthy)
 	assertIncidents(s.CurrentIncidents())
-	assertIncidents(s.IncidentHistory(), "dummy://test:xxxxx@incident-test-1", "dummy://test:xxxxx@incident-test-1", "dummy://test:xxxxx@incident-test-2")
+	assertIncidents(s.IncidentHistory(), "dummy://test:xxxxx@incident-test-1", "dummy://test:xxxxx@incident-test-1", "dummy://test:xxxxx@incident-test-2", "dummy://test:xxxxx@incident-test-2")
 	assertLastIncident("2-1")
+	assertCallbackCount(6)
+
+	// an aborted record should be ignored again
+	appendRecord("incident-test-2", "k", "2-?", api.StatusAborted)
+	assertIncidents(s.CurrentIncidents())
+	assertIncidents(s.IncidentHistory(), "dummy://test:xxxxx@incident-test-1", "dummy://test:xxxxx@incident-test-1", "dummy://test:xxxxx@incident-test-2", "dummy://test:xxxxx@incident-test-2")
+	assertLastIncident("2-1")
+	assertCallbackCount(6)
 }
 
 func TestStore_incident_len_limit(t *testing.T) {
