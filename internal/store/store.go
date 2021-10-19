@@ -289,9 +289,12 @@ func (s *Store) setIncidentIfNeed(r api.Record, needCallback bool) {
 			s.incidentHistory = s.incidentHistory[1:]
 		}
 
-		if needCallback {
+		// kick incident callback when recover
+		if r.Status == api.StatusHealthy && needCallback {
+			incidentCopy := *cur
+			incidentCopy.Status = api.StatusHealthy
 			for _, cb := range s.OnIncident {
-				cb(cur)
+				cb(&incidentCopy)
 			}
 		}
 	}
@@ -300,6 +303,7 @@ func (s *Store) setIncidentIfNeed(r api.Record, needCallback bool) {
 		incident := NewIncident(r)
 		s.currentIncidents[target] = incident
 
+		// kick incident callback when new incident caused
 		if needCallback {
 			s.IncidentCount++
 			for _, cb := range s.OnIncident {

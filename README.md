@@ -419,7 +419,7 @@ The `-o` option is still working in the latest version, but it will removed in t
 
 ### Alerting
 
-Ayd can do something for alerting when an incident happened, recovered, or the incident state has changed.
+Ayd can do something for alerting when the target status changed like an incident caused or recovered.
 The alert is specified as a URL same as a target URL.
 
 You may want to use [exec](#exec), [HTTP](#http--https), or plugin for alerting.
