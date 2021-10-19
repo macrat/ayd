@@ -124,8 +124,8 @@ func TestParseArgs_errors(t *testing.T) {
 		{
 			[]string{"no.such.scheme:hello-world", "hello-world"},
 			[]string{
-				`no.such.scheme:hello-world: This scheme is not supported. Please check the plugin is installed if need.`,
-				`hello-world: Not valid as schedule or target URL. Please specify scheme if this is target. (e.g. ping:example.local or http://example.com)`,
+				`no.such.scheme:hello-world: This scheme is not supported. Please check if the plugin is installed if need.`,
+				`hello-world: Not valid as schedule or target URL. Please specify scheme if this is target. (e.g. ping:hello-world or http://hello-world)`,
 			},
 		},
 		{

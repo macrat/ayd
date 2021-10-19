@@ -68,9 +68,9 @@ func ParseArgs(args []string) ([]Task, error) {
 		if err != nil {
 			switch err {
 			case probe.ErrUnsupportedScheme:
-				errors.Pushf("%s: This scheme is not supported. Please check the plugin is installed if need.", a)
+				errors.Pushf("%s: This scheme is not supported. Please check if the plugin is installed if need.", a)
 			case probe.ErrMissingScheme:
-				errors.Pushf("%s: Not valid as schedule or target URL. Please specify scheme if this is target. (e.g. ping:example.local or http://example.com)", a)
+				errors.Pushf("%s: Not valid as schedule or target URL. Please specify scheme if this is target. (e.g. ping:%s or http://%s)", a, a, a)
 			case probe.ErrInvalidURL:
 				errors.Pushf("%s: Not valid as schedule or target URL.", a)
 			default:
