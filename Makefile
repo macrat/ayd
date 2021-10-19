@@ -19,7 +19,7 @@ fmt:
 	gofmt -s -w ${SOURCES}
 
 clean:
-	-rm ayd
+	-rm ayd ayd.log ayd_debug.log
 
 install: ayd
 	sudo install ./ayd /usr/local/bin/ayd
