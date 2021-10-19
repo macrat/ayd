@@ -12,6 +12,8 @@ import (
 )
 
 func TestAlertSet(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		Name     string
 		URLs     []string
@@ -71,5 +73,38 @@ func TestAlertSet(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestAlertSet_blocking(t *testing.T) {
+	t.Parallel()
+
+	as, err := alert.NewSet([]string{"dummy:?latency=500ms", "dummy:?latency=1000ms"})
+	if err != nil {
+		t.Fatalf("failed to create a new set: %s", err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	i := &api.Incident{
+		Target:   &url.URL{Scheme: "dummy", Opaque: "failure"},
+		Status:   api.StatusFailure,
+		CausedAt: time.Date(2001, 2, 3, 16, 5, 6, 0, time.UTC),
+		Message:  "foobar",
+	}
+
+	r := &testutil.DummyReporter{}
+
+	stime := time.Now()
+	as.Trigger(ctx, i, r)
+	delay := time.Now().Sub(stime)
+
+	if len(r.Records) != 2 {
+		t.Errorf("unexpected number of records\n%v", r.Records)
+	}
+
+	if delay < 1*time.Second {
+		t.Errorf("expected to blocking during alert function running but returns too fast: %s", delay)
 	}
 }
