@@ -9,12 +9,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/macrat/ayd"
 	"github.com/macrat/ayd/internal/testutil"
 	api "github.com/macrat/ayd/lib-ayd"
 )
 
-func TestRunServer(t *testing.T) {
+func TestAydCommand_RunServer(t *testing.T) {
 	tests := []struct {
 		Args    []string
 		Records int
@@ -33,15 +32,12 @@ func TestRunServer(t *testing.T) {
 			s := testutil.NewStore(t)
 			defer s.Close()
 
-			tasks, errs := main.ParseArgs(tt.Args)
-			if errs != nil {
-				t.Fatalf("unexpected errors: %s", errs)
-			}
+			cmd := MakeTestCommand(t, tt.Args)
 
 			ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 			defer cancel()
 
-			code := main.RunServer(ctx, s, tasks, "", "")
+			code := cmd.RunServer(ctx, s)
 			if code != 0 {
 				t.Errorf("unexpected exit code: %d", code)
 			}
@@ -63,19 +59,17 @@ func TestRunServer_tls(t *testing.T) {
 	s := testutil.NewStore(t)
 	defer s.Close()
 
-	tasks, errs := main.ParseArgs([]string{"dummy:"})
-	if errs != nil {
-		t.Fatalf("failed to parse argument:\n%s", errs)
-	}
-
 	cert := testutil.NewCertificate(t)
+	cmd := MakeTestCommand(t, []string{"dummy:"})
+	cmd.CertPath = cert.CertFile
+	cmd.KeyPath = cert.KeyFile
 
 	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
 
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
 	go func() {
-		code := main.RunServer(ctx, s, tasks, cert.CertFile, cert.KeyFile)
+		code := cmd.RunServer(ctx, s)
 		if code != 0 {
 			t.Errorf("unexpected return code: %d", code)
 		}
@@ -99,11 +93,6 @@ func TestRunServer_tls(t *testing.T) {
 func TestRunServer_tls_error(t *testing.T) {
 	cert := testutil.NewCertificate(t)
 
-	tasks, errs := main.ParseArgs([]string{"dummy:?latency=100ms"})
-	if errs != nil {
-		t.Fatalf("failed to parse argument:\n%s", errs)
-	}
-
 	tests := []struct {
 		Name      string
 		Cert, Key string
@@ -119,10 +108,14 @@ func TestRunServer_tls_error(t *testing.T) {
 			s := testutil.NewStore(t)
 			defer s.Close()
 
+			cmd := MakeTestCommand(t, []string{"dummy:"})
+			cmd.CertPath = tt.Cert
+			cmd.KeyPath = tt.Key
+
 			ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 			defer cancel()
 
-			code := main.RunServer(ctx, s, tasks, tt.Cert, tt.Key)
+			code := cmd.RunServer(ctx, s)
 			if code != tt.Code {
 				t.Errorf("unexpected return code: %d", code)
 			}
@@ -139,15 +132,12 @@ func TestRunServer_permissionError(t *testing.T) {
 	defer s.Close()
 	os.Chmod(s.Path, 0200)
 
-	tasks, errs := main.ParseArgs([]string{"dummy:"})
-	if errs != nil {
-		t.Fatalf("failed to parse argument:\n%s", errs)
-	}
-
 	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 	defer cancel()
 
-	code := main.RunServer(ctx, s, tasks, "", "")
+	cmd := MakeTestCommand(t, []string{"dummy:"})
+
+	code := cmd.RunServer(ctx, s)
 	if code != 1 {
 		t.Errorf("unexpected return code: %d", code)
 	}
@@ -157,17 +147,17 @@ func BenchmarkRunServer(b *testing.B) {
 	s := testutil.NewStore(b)
 	defer s.Close()
 
-	schedule, _ := main.ParseIntervalSchedule("10ms")
-	tasks := make([]main.Task, 1000)
+	tasks := make([]string, 1001)
+	tasks[0] = "10ms"
 	for i := range tasks {
-		tasks[i].Schedule = schedule
-		tasks[i].Probe = testutil.NewProbe(b, fmt.Sprintf("dummy:#%d", i))
+		tasks[i+1] = fmt.Sprintf("dummy:#%d", i)
 	}
+	cmd := MakeTestCommand(b, tasks)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
-		main.RunServer(ctx, s, tasks, "", "")
+		cmd.RunServer(ctx, s)
 		cancel()
 	}
 	b.StopTimer()

@@ -129,12 +129,12 @@ type Store struct {
 	healthy       bool
 }
 
-func New(path string) (*Store, error) {
+func New(path string, console io.Writer) (*Store, error) {
 	ch := make(chan api.Record, 32)
 
 	store := &Store{
 		Path:             path,
-		Console:          os.Stdout,
+		Console:          console,
 		probeHistory:     make(ProbeHistoryMap),
 		currentIncidents: make(map[string]*api.Incident),
 		writeCh:          ch,

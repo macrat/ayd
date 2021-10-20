@@ -80,11 +80,10 @@ func TestLogScanner(t *testing.T) {
 		{
 			"LogGenerator",
 			func(since, until time.Time) endpoint.LogScanner {
-				s, err := store.New("")
+				s, err := store.New("", io.Discard)
 				if err != nil {
 					t.Fatalf("failed to create store: %s", err)
 				}
-				s.Console = io.Discard
 
 				s.Report(api.Record{
 					CheckedAt: time.Date(2000, 1, 1, 13, 2, 3, 0, time.UTC),

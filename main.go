@@ -4,6 +4,7 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
+	"io"
 	"os"
 	"os/signal"
 	"text/template"
@@ -18,38 +19,120 @@ import (
 var (
 	version = "HEAD"
 	commit  = "UNKNOWN"
-
-	listenPort  = pflag.IntP("port", "p", 9000, "HTTP listen port")
-	storePath   = pflag.StringP("log-file", "f", "./ayd.log", "Path to log file")
-	oneshot     = pflag.BoolP("oneshot", "1", false, "Check status only once and exit")
-	alertURLs   = pflag.StringArrayP("alert", "a", nil, "The alert URLs")
-	userinfo    = pflag.StringP("user", "u", "", "Username and password for HTTP endpoint")
-	certPath    = pflag.StringP("ssl-cert", "c", "", "HTTPS certificate file")
-	keyPath     = pflag.StringP("ssl-key", "k", "", "HTTPS key file")
-	showVersion = pflag.BoolP("verbose", "v", false, "Show version")
-	showHelp    = pflag.BoolP("help", "h", false, "Show help message")
-
-	// TODO: remove -o option before to release version 1.0.0
-	compatPath = pflag.StringP("deprecated-output-file", "o", "", "DEPRECATED: This option is renamed to -f.")
 )
-
-//go:embed help.txt
-var helpText string
 
 func init() {
 	probe.HTTPUserAgent = fmt.Sprintf("ayd/%s health check", version)
 }
 
-func Usage() {
+type AydCommand struct {
+	OutStream io.Writer
+	ErrStream io.Writer
+
+	ListenPort  int
+	StorePath   string
+	OneshotMode bool
+	AlertURLs   []string
+	UserInfo    string
+	CertPath    string
+	KeyPath     string
+	ShowVersion bool
+	ShowHelp    bool
+
+	Tasks []Task
+}
+
+var defaultAydCommand = &AydCommand{
+	OutStream: os.Stdout,
+	ErrStream: os.Stderr,
+}
+
+//go:embed help.txt
+var helpText string
+
+func (cmd *AydCommand) PrintUsage() {
 	tmpl := template.Must(template.New("help.txt").Parse(helpText))
-	tmpl.Execute(os.Stderr, map[string]interface{}{
+	tmpl.Execute(cmd.ErrStream, map[string]interface{}{
 		"Version":         version,
 		"HTTPRedirectMax": probe.HTTP_REDIRECT_MAX,
 	})
 }
 
-func SetupProbe(ctx context.Context, tasks []Task) {
-	for _, task := range tasks {
+func (cmd *AydCommand) ParseArgs(args []string) (exitCode int) {
+	flags := pflag.NewFlagSet("ayd", pflag.ContinueOnError)
+	flags.Usage = cmd.PrintUsage
+
+	flags.IntVarP(&cmd.ListenPort, "port", "p", 9000, "HTTP listen port")
+	flags.StringVarP(&cmd.StorePath, "log-file", "f", "./ayd.log", "Path to log file")
+	flags.BoolVarP(&cmd.OneshotMode, "oneshot", "1", false, "Check status only once and exit")
+	flags.StringArrayVarP(&cmd.AlertURLs, "alert", "a", nil, "The alert URLs")
+	flags.StringVarP(&cmd.UserInfo, "user", "u", "", "Username and password for HTTP endpoint")
+	flags.StringVarP(&cmd.CertPath, "ssl-cert", "c", "", "HTTPS certificate file")
+	flags.StringVarP(&cmd.KeyPath, "ssl-key", "k", "", "HTTPS key file")
+	flags.BoolVarP(&cmd.ShowVersion, "verbose", "v", false, "Show version")
+	flags.BoolVarP(&cmd.ShowHelp, "help", "h", false, "Show help message")
+
+	// TODO: remove -o option before to release version 1.0.0
+	compatPath := flags.StringP("deprecated-output-file", "o", "", "DEPRECATED: This option is renamed to -f.")
+
+	if err := flags.Parse(args[1:]); err != nil {
+		fmt.Fprintln(cmd.ErrStream, err)
+		fmt.Fprintf(cmd.ErrStream, "\nPlease see `%s -h` for more information.\n", args[0])
+		return 2
+	}
+
+	if cmd.ShowVersion || cmd.ShowHelp {
+		return 0
+	}
+
+	if cmd.OneshotMode {
+		if flags.Changed("port") {
+			fmt.Fprintln(cmd.ErrStream, "warning: port option will ignored in the oneshot mode.")
+		}
+		if flags.Changed("user") {
+			fmt.Fprintln(cmd.ErrStream, "warning: user option will ignored in the oneshot mode.")
+		}
+		if flags.Changed("ssl-cert") || flags.Changed("ssl-key") {
+			fmt.Fprintln(cmd.ErrStream, "warning: ssl cert and key options will ignored in the oneshot mode.")
+		}
+	} else {
+		if cmd.CertPath != "" && cmd.KeyPath == "" || cmd.CertPath == "" && cmd.KeyPath != "" {
+			fmt.Fprintln(cmd.ErrStream, "invalid argument: the both of -c and -k option is required if you want to use HTTPS.")
+			return 2
+		}
+	}
+
+	if flags.Changed("deprecated-output-file") {
+		fmt.Fprintf(cmd.ErrStream, "\nwarning: The -o option is deprecated.\n         Please use -f option instead of -o.\n\n")
+	}
+	if !flags.Changed("log-file") && *compatPath != "" {
+		cmd.StorePath = *compatPath
+	}
+	if cmd.StorePath == "-" {
+		cmd.StorePath = ""
+	}
+
+	var err error
+	cmd.Tasks, err = ParseArgs(flags.Args())
+	if err != nil {
+		fmt.Fprintln(cmd.ErrStream, err.Error())
+		fmt.Fprintf(cmd.ErrStream, "\nPlease see `%s -h` for more information.\n", args[0])
+		return 2
+	}
+	if len(cmd.Tasks) == 0 {
+		cmd.PrintUsage()
+		return 2
+	}
+
+	return 0
+}
+
+func (cmd *AydCommand) PrintVersion() {
+	fmt.Fprintf(cmd.OutStream, "Ayd? version %s (%s)\n", version, commit)
+}
+
+func (cmd *AydCommand) SetupProbe(ctx context.Context) {
+	for _, task := range cmd.Tasks {
 		if task.Probe.Target().Scheme == "ping" {
 			if err := probe.CheckPingPermission(); err != nil {
 				fmt.Fprintf(os.Stderr, "failed to start ping service: %s\n", err)
@@ -60,59 +143,24 @@ func SetupProbe(ctx context.Context, tasks []Task) {
 	}
 }
 
-func RunAyd() int {
-	pflag.Usage = Usage
-	pflag.Parse()
+func (cmd *AydCommand) Run(args []string) (exitCode int) {
+	if code := cmd.ParseArgs(args); code != 0 {
+		return code
+	}
 
-	if *showHelp {
-		Usage()
+	if cmd.ShowVersion {
+		cmd.PrintVersion()
 		return 0
 	}
 
-	if *showVersion {
-		fmt.Printf("Ayd? version %s (%s)\n", version, commit)
+	if cmd.ShowHelp {
+		cmd.PrintUsage()
 		return 0
 	}
 
-	if *oneshot {
-		if *listenPort != 9000 {
-			fmt.Fprintln(os.Stderr, "warning: port option will ignored when use with -1 option")
-		}
-		if *userinfo != "" {
-			fmt.Fprintln(os.Stderr, "warning: user option will ignored in the oneshot mode")
-		}
-		if *certPath != "" || *keyPath != "" {
-			fmt.Fprintln(os.Stderr, "warning: ssl cert and key options will ignored in the oneshot mode")
-		}
-	} else {
-		if *certPath != "" && *keyPath == "" || *certPath == "" && *keyPath != "" {
-			fmt.Fprintln(os.Stderr, "Invalid argument:")
-			fmt.Fprintln(os.Stderr, " You can't use only -k option or only -c option. Please set both of them if you want to use HTTPS.")
-			return 2
-		}
-	}
-
-	tasks, err := ParseArgs(pflag.Args())
+	s, err := store.New(cmd.StorePath, cmd.OutStream)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err.Error())
-		fmt.Fprintf(os.Stderr, "\nPlease see `%s -h` for more information.\n", os.Args[0])
-		return 2
-	}
-	if len(tasks) == 0 {
-		Usage()
-		return 0
-	}
-
-	if *storePath == "./ayd.log" && *compatPath != "" {
-		fmt.Fprintf(os.Stderr, "\nwarning: The -o option is deprecated.\n         Please use -f option instead of -o.\n\n")
-		*storePath = *compatPath
-	}
-	if *storePath == "-" {
-		*storePath = ""
-	}
-	s, err := store.New(*storePath)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "error: failed to open log file: %s\n", err)
+		fmt.Fprintf(cmd.ErrStream, "error: failed to open log file: %s\n", err)
 		return 1
 	}
 	defer s.Close()
@@ -120,10 +168,10 @@ func RunAyd() int {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
 
-	if len(*alertURLs) > 0 {
-		alert, err := alert.NewSet(*alertURLs)
+	if len(cmd.AlertURLs) > 0 {
+		alert, err := alert.NewSet(cmd.AlertURLs)
 		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
+			fmt.Fprintln(cmd.ErrStream, err)
 			return 2
 		}
 		s.OnIncident = append(s.OnIncident, func(i *api.Incident) {
@@ -131,15 +179,15 @@ func RunAyd() int {
 		})
 	}
 
-	SetupProbe(ctx, tasks)
+	cmd.SetupProbe(ctx)
 
-	if *oneshot {
-		return RunOneshot(ctx, s, tasks)
+	if cmd.OneshotMode {
+		return cmd.RunOneshot(ctx, s)
 	} else {
-		return RunServer(ctx, s, tasks, *certPath, *keyPath)
+		return cmd.RunServer(ctx, s)
 	}
 }
 
 func main() {
-	os.Exit(RunAyd())
+	os.Exit(defaultAydCommand.Run(os.Args))
 }

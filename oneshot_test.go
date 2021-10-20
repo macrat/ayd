@@ -6,12 +6,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/macrat/ayd"
 	"github.com/macrat/ayd/internal/testutil"
 	api "github.com/macrat/ayd/lib-ayd"
 )
 
-func TestRunOneshot(t *testing.T) {
+func TestAydCommand_RunOneshot(t *testing.T) {
 	tests := []struct {
 		Args    []string
 		Records int
@@ -31,15 +30,10 @@ func TestRunOneshot(t *testing.T) {
 			s := testutil.NewStore(t)
 			defer s.Close()
 
-			tasks, errs := main.ParseArgs(tt.Args)
-			if errs != nil {
-				t.Fatalf("unexpected errors: %s", errs)
-			}
-
 			ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 			defer cancel()
 
-			code := main.RunOneshot(ctx, s, tasks)
+			code := MakeTestCommand(t, tt.Args).RunOneshot(ctx, s)
 			if code != tt.Code {
 				t.Errorf("unexpected exit code: %d", code)
 			}
@@ -70,21 +64,19 @@ func BenchmarkRunOneshot(b *testing.B) {
 					s := testutil.NewStore(b)
 					defer s.Close()
 
-					tasks := make([]main.Task, n)
-					schedule, _ := main.ParseIntervalSchedule("1s")
+					tasks := make([]string, n+1)
+					tasks[0] = "1s"
 					for i := range tasks {
-						tasks[i] = main.Task{
-							Schedule: schedule,
-							Probe:    testutil.NewProbe(b, fmt.Sprintf("dummy:random#benchmark-%d", i)),
-						}
+						tasks[i+1] = fmt.Sprintf("dummy:random#benchmark-%d", i)
 					}
+					cmd := MakeTestCommand(b, tasks)
 
 					ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 					defer cancel()
 
 					b.ResetTimer()
 					for i := 0; i < b.N; i++ {
-						main.RunOneshot(ctx, s, tasks)
+						cmd.RunOneshot(ctx, s)
 					}
 				})
 			}

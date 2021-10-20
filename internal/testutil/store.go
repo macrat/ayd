@@ -13,11 +13,10 @@ import (
 func NewStore(t testing.TB) *store.Store {
 	t.Helper()
 
-	s, err := store.New(filepath.Join(t.TempDir(), "ayd.log"))
+	s, err := store.New(filepath.Join(t.TempDir(), "ayd.log"), io.Discard)
 	if err != nil {
 		t.Fatalf("failed to create store: %s", err)
 	}
-	s.Console = io.Discard
 	return s
 }
 
@@ -31,11 +30,10 @@ func NewStoreWithLog(t testing.TB) *store.Store {
 		t.Fatalf("failed to prepare test log file: %s", err)
 	}
 
-	s, err := store.New(fpath)
+	s, err := store.New(fpath, io.Discard)
 	if err != nil {
 		t.Fatalf("failed to create store: %s", err)
 	}
-	s.Console = io.Discard
 
 	if err = s.Restore(); err != nil {
 		t.Fatalf("failed to restore store: %s", err)

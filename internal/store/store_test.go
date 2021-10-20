@@ -134,19 +134,18 @@ func TestStore_errorLogging(t *testing.T) {
 
 	os.Chmod(f.Name(), 0000)
 
-	_, err = store.New(f.Name())
+	_, err = store.New(f.Name(), io.Discard)
 	if err == nil {
 		t.Errorf("expected failed to open %s (with permission 000) but successed", f.Name())
 	}
 
 	os.Chmod(f.Name(), 0600)
 
-	s, err := store.New(f.Name())
+	buf := NewBuffer()
+	s, err := store.New(f.Name(), buf)
 	if err != nil {
 		t.Errorf("failed to open store %s (with permission 600)", err)
 	}
-	buf := NewBuffer()
-	s.Console = buf
 	defer s.Close()
 
 	s.Report(api.Record{
@@ -206,11 +205,10 @@ func TestStore_Restore(t *testing.T) {
 	defer os.Remove(f.Name())
 	f.Close()
 
-	s1, err := store.New(f.Name())
+	s1, err := store.New(f.Name(), io.Discard)
 	if err != nil {
 		t.Fatalf("failed to create store: %s", err)
 	}
-	s1.Console = io.Discard
 	defer s1.Close()
 
 	records := []api.Record{
@@ -250,11 +248,10 @@ func TestStore_Restore(t *testing.T) {
 
 	time.Sleep(100 * time.Millisecond) // wait for write
 
-	s2, err := store.New(f.Name())
+	s2, err := store.New(f.Name(), io.Discard)
 	if err != nil {
 		t.Fatalf("failed to create store: %s", err)
 	}
-	s2.Console = io.Discard
 	defer s2.Close()
 
 	if err = s2.Restore(); err != nil {
@@ -307,11 +304,10 @@ func TestStore_Restore(t *testing.T) {
 }
 
 func TestStore_Restore_removePassword(t *testing.T) {
-	s, err := store.New("./testdata/with-password.log")
+	s, err := store.New("./testdata/with-password.log", io.Discard)
 	if err != nil {
 		t.Fatalf("failed to create store: %s", err)
 	}
-	s.Console = io.Discard
 	defer s.Close()
 
 	if err = s.Restore(); err != nil {
@@ -332,7 +328,7 @@ func TestStore_Restore_removePassword(t *testing.T) {
 }
 
 func TestStore_Restore_disableLog(t *testing.T) {
-	s, err := store.New("")
+	s, err := store.New("", io.Discard)
 	if err != nil {
 		t.Fatalf("failed to create store: %s", err)
 	}
@@ -356,7 +352,7 @@ func TestStore_Restore_permission(t *testing.T) {
 	defer os.Remove(f.Name())
 	defer f.Close()
 
-	s, err := store.New(f.Name())
+	s, err := store.New(f.Name(), io.Discard)
 	if err != nil {
 		t.Fatalf("failed to create store: %s", err)
 	}
@@ -391,11 +387,10 @@ func TestStore_Restore_limitBorder(t *testing.T) {
 
 	f.Sync()
 
-	s, err := store.New(f.Name())
+	s, err := store.New(f.Name(), io.Discard)
 	if err != nil {
 		t.Fatalf("failed to create store: %s", err)
 	}
-	s.Console = io.Discard
 	defer s.Close()
 
 	if err := s.Restore(); err != nil {
@@ -625,7 +620,7 @@ func TestStore_incident_len_limit(t *testing.T) {
 func TestStore_Path_empty(t *testing.T) {
 	t.Parallel()
 
-	s1, err := store.New("")
+	s1, err := store.New("", io.Discard)
 	if err != nil {
 		t.Fatalf("failed to create store")
 	}
@@ -642,7 +637,7 @@ func TestStore_Path_empty(t *testing.T) {
 
 	time.Sleep(10 * time.Millisecond) // waiting for writer
 
-	s2, err := store.New("")
+	s2, err := store.New("", io.Discard)
 	if err != nil {
 		t.Fatalf("failed to create store")
 	}
@@ -658,11 +653,10 @@ func TestStore_ReportInternalError(t *testing.T) {
 
 	buf := &bytes.Buffer{}
 
-	s, err := store.New("")
+	s, err := store.New("", buf)
 	if err != nil {
 		t.Fatalf("failed to create store")
 	}
-	s.Console = buf
 
 	s.ReportInternalError("test", "hello world")
 

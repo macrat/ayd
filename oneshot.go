@@ -9,7 +9,7 @@ import (
 	api "github.com/macrat/ayd/lib-ayd"
 )
 
-func RunOneshot(ctx context.Context, s *store.Store, tasks []Task) (exitCode int) {
+func (cmd *AydCommand) RunOneshot(ctx context.Context, s *store.Store) (exitCode int) {
 	var failure atomic.Value
 	var unknown atomic.Value
 
@@ -23,7 +23,7 @@ func RunOneshot(ctx context.Context, s *store.Store, tasks []Task) (exitCode int
 	})
 
 	wg := &sync.WaitGroup{}
-	for _, t := range tasks {
+	for _, t := range cmd.Tasks {
 		wg.Add(1)
 
 		f := t.MakeJob(ctx, s).Run
