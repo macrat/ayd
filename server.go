@@ -39,11 +39,14 @@ func (cmd *AydCommand) RunServer(ctx context.Context, s *store.Store) (exitCode 
 
 	fmt.Fprintf(cmd.OutStream, "starts Ayd on %s://%s\n", protocol, listen)
 
-	wg := &sync.WaitGroup{}
-
+	// this loop and below loop can't combine to single loop, for separate the log header and status check records surelly.
 	for _, t := range cmd.Tasks {
 		fmt.Fprintf(cmd.OutStream, "%s\t%s\n", t.Schedule, t.Probe.Target().Redacted())
+	}
+	fmt.Fprintln(cmd.OutStream)
 
+	wg := &sync.WaitGroup{}
+	for _, t := range cmd.Tasks {
 		s.AddTarget(t.Probe.Target())
 
 		job := t.MakeJob(ctx, s)
@@ -58,7 +61,6 @@ func (cmd *AydCommand) RunServer(ctx context.Context, s *store.Store) (exitCode 
 
 		scheduler.Schedule(t.Schedule, job)
 	}
-	fmt.Fprintln(cmd.OutStream)
 
 	scheduler.Start()
 	defer scheduler.Stop()
