@@ -141,13 +141,13 @@ func TestLogger_Print(t *testing.T) {
 	assert("^[-+:0-9TZ]+\tFAILURE\t0\\.000\tdummy:\tworld\n$")
 
 	l.StartTimer().Healthy("no-delay")
-	assert("^[-+:0-9TZ]+\tHEALTHY\t0\\.000\tdummy:\tno-delay\n$")
+	assert("^[-+:0-9TZ]+\tHEALTHY\t0\\.[0-9]{3}\tdummy:\tno-delay\n$")
 
 	l.StartTimer().StopTimer().Healthy("no-delay-stop")
-	assert("^[-+:0-9TZ]+\tHEALTHY\t0\\.000\tdummy:\tno-delay-stop\n$")
+	assert("^[-+:0-9TZ]+\tHEALTHY\t0\\.[0-9]{3}\tdummy:\tno-delay-stop\n$")
 
 	l2 := l.StartTimer()
 	time.Sleep(100 * time.Millisecond)
 	l2.Healthy("no-delay")
-	assert("^[-+:0-9TZ]+\tHEALTHY\t1[0-9]{2}\\.[0-9]{3}\tdummy:\tno-delay\n$")
+	assert("^[-+:0-9TZ]+\tHEALTHY\t[0-9]{3}\\.[0-9]{3}\tdummy:\tno-delay\n$")
 }
