@@ -191,7 +191,6 @@ func (s *Store) writer(ch <-chan api.Record, stopped chan struct{}) {
 
 		s.setHealthy()
 
-		var f *os.File
 		f, err := os.OpenFile(s.Path, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
 		if err != nil {
 			s.handleError(err, "failed to open log file")

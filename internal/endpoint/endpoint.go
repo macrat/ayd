@@ -54,6 +54,6 @@ func New(s *store.Store) http.Handler {
 
 func HandleError(s *store.Store, scope string, err error) {
 	if err != nil {
-		s.ReportInternalError("api:"+scope, err.Error())
+		s.ReportInternalError("endpoint:"+scope, err.Error())
 	}
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"regexp"
 	"runtime"
 	"sync"
 	"testing"
@@ -32,7 +33,7 @@ func TestAydCommand_RunServer(t *testing.T) {
 			s := testutil.NewStore(t)
 			defer s.Close()
 
-			cmd := MakeTestCommand(t, tt.Args)
+			cmd, _ := MakeTestCommand(t, tt.Args)
 
 			ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 			defer cancel()
@@ -60,7 +61,7 @@ func TestRunServer_tls(t *testing.T) {
 	defer s.Close()
 
 	cert := testutil.NewCertificate(t)
-	cmd := MakeTestCommand(t, []string{"dummy:"})
+	cmd, _ := MakeTestCommand(t, []string{"dummy:"})
 	cmd.CertPath = cert.CertFile
 	cmd.KeyPath = cert.KeyFile
 
@@ -96,21 +97,21 @@ func TestRunServer_tls_error(t *testing.T) {
 	tests := []struct {
 		Name      string
 		Cert, Key string
+		Pattern   string
 		Code      int
 	}{
-		{"no-such-key", cert.CertFile, "./testdata/no-such-file.pem", 2},
-		{"no-such-cert", "./testdata/no-such-file.pem", cert.KeyFile, 2},
-		{"invalid-file", cert.KeyFile, cert.CertFile, 1},
+		{"no-such-key", cert.CertFile, "./testdata/no-such-file.pem", "^error: key file does not exist: \\./testdata/no-such-file.pem\n$", 2},
+		{"no-such-cert", "./testdata/no-such-file.pem", cert.KeyFile, "^error: certificate file does not exist: \\./testdata/no-such-file.pem\n$", 2},
+		{"invalid-file", cert.KeyFile, cert.KeyFile, ".*\tFAILURE\t0.000\tayd:endpoint:tls\t.*", 1},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			s := testutil.NewStore(t)
-			defer s.Close()
-
-			cmd := MakeTestCommand(t, []string{"dummy:"})
+			cmd, output := MakeTestCommand(t, []string{"dummy:"})
 			cmd.CertPath = tt.Cert
 			cmd.KeyPath = tt.Key
+
+			s := testutil.NewStoreWithConsole(t, output)
 
 			ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 			defer cancel()
@@ -118,6 +119,12 @@ func TestRunServer_tls_error(t *testing.T) {
 			code := cmd.RunServer(ctx, s)
 			if code != tt.Code {
 				t.Errorf("unexpected return code: %d", code)
+			}
+
+			s.Close() // close store here for make sure that console log flushed
+
+			if ok, _ := regexp.Match(tt.Pattern, output.Bytes()); !ok {
+				t.Errorf("expected output matches with %q but does not match\n%s", tt.Pattern, output)
 			}
 		})
 	}
@@ -135,7 +142,7 @@ func TestRunServer_permissionError(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 	defer cancel()
 
-	cmd := MakeTestCommand(t, []string{"dummy:"})
+	cmd, _ := MakeTestCommand(t, []string{"dummy:"})
 
 	code := cmd.RunServer(ctx, s)
 	if code != 1 {
@@ -152,7 +159,7 @@ func BenchmarkRunServer(b *testing.B) {
 	for i := range tasks {
 		tasks[i+1] = fmt.Sprintf("dummy:#%d", i)
 	}
-	cmd := MakeTestCommand(b, tasks)
+	cmd, _ := MakeTestCommand(b, tasks)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {

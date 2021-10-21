@@ -135,7 +135,7 @@ func (cmd *AydCommand) SetupProbe(ctx context.Context) {
 	for _, task := range cmd.Tasks {
 		if task.Probe.Target().Scheme == "ping" {
 			if err := probe.CheckPingPermission(); err != nil {
-				fmt.Fprintf(os.Stderr, "failed to start ping service: %s\n", err)
+				fmt.Fprintf(cmd.ErrStream, "failed to start ping service: %s\n", err)
 				os.Exit(1)
 			}
 			return

@@ -17,11 +17,11 @@ func (cmd *AydCommand) RunServer(ctx context.Context, s *store.Store) (exitCode 
 	if cmd.CertPath != "" {
 		protocol = "https"
 		if _, err := os.Stat(cmd.CertPath); os.IsNotExist(err) {
-			fmt.Fprintf(os.Stderr, "error: certificate file is not exists: %s\n", cmd.CertPath)
+			fmt.Fprintf(cmd.ErrStream, "error: certificate file does not exist: %s\n", cmd.CertPath)
 			return 2
 		}
 		if _, err := os.Stat(cmd.KeyPath); os.IsNotExist(err) {
-			fmt.Fprintf(os.Stderr, "error: key file is not exists: %s\n", cmd.KeyPath)
+			fmt.Fprintf(cmd.ErrStream, "error: key file does not exist: %s\n", cmd.KeyPath)
 			return 2
 		}
 	}
@@ -33,16 +33,16 @@ func (cmd *AydCommand) RunServer(ctx context.Context, s *store.Store) (exitCode 
 	scheduler := cron.New()
 
 	if err := s.Restore(); err != nil {
-		fmt.Fprintf(os.Stderr, "error: failed to read log file: %s\n", err)
+		fmt.Fprintf(cmd.ErrStream, "error: failed to read log file: %s\n", err)
 		return 1
 	}
 
-	fmt.Fprintf(s.Console, "starts Ayd on %s://%s\n", protocol, listen)
+	fmt.Fprintf(cmd.OutStream, "starts Ayd on %s://%s\n", protocol, listen)
 
 	wg := &sync.WaitGroup{}
 
 	for _, t := range cmd.Tasks {
-		fmt.Fprintf(s.Console, "%s\t%s\n", t.Schedule, t.Probe.Target().Redacted())
+		fmt.Fprintf(cmd.OutStream, "%s\t%s\n", t.Schedule, t.Probe.Target().Redacted())
 
 		s.AddTarget(t.Probe.Target())
 
@@ -58,7 +58,7 @@ func (cmd *AydCommand) RunServer(ctx context.Context, s *store.Store) (exitCode 
 
 		scheduler.Schedule(t.Schedule, job)
 	}
-	fmt.Fprintln(s.Console)
+	fmt.Fprintln(cmd.OutStream)
 
 	scheduler.Start()
 	defer scheduler.Stop()
@@ -75,7 +75,7 @@ func (cmd *AydCommand) RunServer(ctx context.Context, s *store.Store) (exitCode 
 		}()
 
 		if err := srv.Shutdown(context.Background()); err != nil {
-			s.ReportInternalError("api", err.Error())
+			s.ReportInternalError("endpoint", err.Error())
 		}
 		wg.Done()
 	}()
@@ -87,7 +87,7 @@ func (cmd *AydCommand) RunServer(ctx context.Context, s *store.Store) (exitCode 
 		err = srv.ListenAndServe()
 	}
 	if err != http.ErrServerClosed {
-		s.ReportInternalError("api", err.Error())
+		s.ReportInternalError("endpoint:tls", err.Error())
 		exitCode = 1
 	}
 	cancel()

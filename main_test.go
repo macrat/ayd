@@ -3,14 +3,13 @@ package main_test
 import (
 	"bytes"
 	"fmt"
-	"os"
 	"regexp"
 	"testing"
 
 	"github.com/macrat/ayd"
 )
 
-func MakeTestCommand(t testing.TB, taskArgs []string) *main.AydCommand {
+func MakeTestCommand(t testing.TB, taskArgs []string) (*main.AydCommand, *bytes.Buffer) {
 	t.Helper()
 
 	tasks, err := main.ParseArgs(taskArgs)
@@ -18,14 +17,16 @@ func MakeTestCommand(t testing.TB, taskArgs []string) *main.AydCommand {
 		t.Fatalf("failed to parse tasks: %s", err)
 	}
 
+	buf := bytes.NewBuffer([]byte{})
+
 	return &main.AydCommand{
-		OutStream: os.Stdout,
-		ErrStream: os.Stderr,
+		OutStream: buf,
+		ErrStream: buf,
 
 		ListenPort: 9000,
 
 		Tasks: tasks,
-	}
+	}, buf
 }
 
 func TestAydCommand_ParseArgs(t *testing.T) {

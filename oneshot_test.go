@@ -33,7 +33,8 @@ func TestAydCommand_RunOneshot(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 			defer cancel()
 
-			code := MakeTestCommand(t, tt.Args).RunOneshot(ctx, s)
+			cmd, _ := MakeTestCommand(t, tt.Args)
+			code := cmd.RunOneshot(ctx, s)
 			if code != tt.Code {
 				t.Errorf("unexpected exit code: %d", code)
 			}
@@ -69,7 +70,7 @@ func BenchmarkRunOneshot(b *testing.B) {
 					for i := range tasks {
 						tasks[i+1] = fmt.Sprintf("dummy:random#benchmark-%d", i)
 					}
-					cmd := MakeTestCommand(b, tasks)
+					cmd, _ := MakeTestCommand(b, tasks)
 
 					ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 					defer cancel()
