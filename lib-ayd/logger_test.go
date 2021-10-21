@@ -1,8 +1,11 @@
 package ayd_test
 
 import (
+	"bytes"
 	"fmt"
 	"net/url"
+	"regexp"
+	"testing"
 	"time"
 
 	"github.com/macrat/ayd/lib-ayd"
@@ -113,4 +116,38 @@ func ExampleLogger_StopTimer() {
 	// do something, for example calculate result of the check
 
 	l.Healthy("hello world")
+}
+
+func TestLogger_Print(t *testing.T) {
+	buf := &bytes.Buffer{}
+
+	assert := func(pattern string) {
+		t.Helper()
+
+		if ok, _ := regexp.Match(pattern, buf.Bytes()); !ok {
+			t.Errorf("expected log matches with %q but got:\n%s", pattern, buf)
+		}
+
+		buf.Reset()
+	}
+
+	target, _ := url.Parse("dummy:")
+	l := ayd.NewLoggerWithWriter(buf, target)
+
+	l.Healthy("hello")
+	assert("^[-+:0-9TZ]+\tHEALTHY\t0\\.000\tdummy:\thello\n$")
+
+	l.Failure("world")
+	assert("^[-+:0-9TZ]+\tFAILURE\t0\\.000\tdummy:\tworld\n$")
+
+	l.StartTimer().Healthy("no-delay")
+	assert("^[-+:0-9TZ]+\tHEALTHY\t0\\.000\tdummy:\tno-delay\n$")
+
+	l.StartTimer().StopTimer().Healthy("no-delay-stop")
+	assert("^[-+:0-9TZ]+\tHEALTHY\t0\\.000\tdummy:\tno-delay-stop\n$")
+
+	l2 := l.StartTimer()
+	time.Sleep(100 * time.Millisecond)
+	l2.Healthy("no-delay")
+	assert("^[-+:0-9TZ]+\tHEALTHY\t1[0-9]{2}\\.[0-9]{3}\tdummy:\tno-delay\n$")
 }
