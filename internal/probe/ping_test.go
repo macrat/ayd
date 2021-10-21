@@ -3,6 +3,7 @@ package probe_test
 import (
 	"context"
 	"errors"
+	"net/url"
 	"os"
 	"runtime"
 	"testing"
@@ -195,7 +196,7 @@ func TestPingProbe(t *testing.T) {
 	})
 }
 
-func TestCheckPingPermission_privilegedEnv(t *testing.T) {
+func TestPingProbe_privilegedEnv(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("unprivileged mode is not supported on windows")
 	}
@@ -222,10 +223,10 @@ func TestCheckPingPermission_privilegedEnv(t *testing.T) {
 	for _, tt := range tests {
 		t.Run("AYD_PRIVILEGED="+tt.Env, func(t *testing.T) {
 			os.Setenv("AYD_PRIVILEGED", tt.Env)
-			err := probe.CheckPingPermission()
+			_, err := probe.NewPingProbe(&url.URL{Scheme: "ping", Opaque: "localhost"})
 
-			if tt.Fail && err == nil {
-				t.Errorf("expected error but got nil")
+			if tt.Fail && !errors.Is(err, probe.ErrFailedToPreparePing) {
+				t.Errorf("expected permission error but got %v", err)
 			}
 			if !tt.Fail && err != nil {
 				t.Errorf("expected nil but got error: %s", err)

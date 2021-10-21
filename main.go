@@ -131,18 +131,6 @@ func (cmd *AydCommand) PrintVersion() {
 	fmt.Fprintf(cmd.OutStream, "Ayd? version %s (%s)\n", version, commit)
 }
 
-func (cmd *AydCommand) SetupProbe(ctx context.Context) {
-	for _, task := range cmd.Tasks {
-		if task.Probe.Target().Scheme == "ping" {
-			if err := probe.CheckPingPermission(); err != nil {
-				fmt.Fprintf(cmd.ErrStream, "failed to start ping service: %s\n", err)
-				os.Exit(1)
-			}
-			return
-		}
-	}
-}
-
 func (cmd *AydCommand) Run(args []string) (exitCode int) {
 	if code := cmd.ParseArgs(args); code != 0 {
 		return code
@@ -178,8 +166,6 @@ func (cmd *AydCommand) Run(args []string) (exitCode int) {
 			alert.Trigger(ctx, i, s)
 		})
 	}
-
-	cmd.SetupProbe(ctx)
 
 	if cmd.OneshotMode {
 		return cmd.RunOneshot(ctx, s)

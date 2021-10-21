@@ -2,6 +2,7 @@ package probe
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"net/url"
@@ -10,8 +11,13 @@ import (
 	"sync"
 	"time"
 
+	"github.com/macrat/ayd/internal/ayderr"
 	api "github.com/macrat/ayd/lib-ayd"
 	"github.com/macrat/go-parallel-pinger"
+)
+
+var (
+	ErrFailedToPreparePing = errors.New("failed to setup ping service")
 )
 
 type ResourceLocker struct {
@@ -162,6 +168,10 @@ func NewPingProbe(u *url.URL) (PingProbe, error) {
 	scheme, separator, _ := SplitScheme(u.Scheme)
 	if separator != 0 {
 		return PingProbe{}, ErrUnsupportedScheme
+	}
+
+	if err := CheckPingPermission(); err != nil {
+		return PingProbe{}, ayderr.New(ErrFailedToPreparePing, err, ErrFailedToPreparePing.Error())
 	}
 
 	if u.Opaque != "" {
