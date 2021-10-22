@@ -8,8 +8,8 @@ require (
 	github.com/macrat/go-parallel-pinger v1.1.2
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/spf13/pflag v1.0.5
-	golang.org/x/sys v0.0.0-20210925032602-92d5a993a665
-	golang.org/x/text v0.3.6
+	golang.org/x/sys v0.0.0-20211020174200-9d6173849985
+	golang.org/x/text v0.3.7
 )
 
-require golang.org/x/net v0.0.0-20210924151903-3ad01bbaa167 // indirect
+require golang.org/x/net v0.0.0-20211020060615-d418f374d309 // indirect
