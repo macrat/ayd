@@ -107,7 +107,7 @@ func (hs ProbeHistoryMap) isShown(target *url.URL) bool {
 	return hs[target.Redacted()].shown
 }
 
-type IncidentHandler func(*api.Incident)
+type RecordHandler func(api.Record)
 
 type Store struct {
 	Path string
@@ -119,8 +119,8 @@ type Store struct {
 	currentIncidents map[string]*api.Incident
 	incidentHistory  []*api.Incident
 
-	OnIncident    []IncidentHandler
-	IncidentCount int
+	OnStatusChanged []RecordHandler
+	IncidentCount   int
 
 	writeCh       chan<- api.Record
 	writerStopped chan struct{}
@@ -308,10 +308,8 @@ func (s *Store) setIncidentIfNeed(r api.Record, needCallback bool) {
 
 		// kick incident callback when recover
 		if r.Status == api.StatusHealthy && needCallback {
-			incidentCopy := *cur
-			incidentCopy.Status = api.StatusHealthy
-			for _, cb := range s.OnIncident {
-				cb(&incidentCopy)
+			for _, cb := range s.OnStatusChanged {
+				cb(r)
 			}
 		}
 	}
@@ -323,8 +321,8 @@ func (s *Store) setIncidentIfNeed(r api.Record, needCallback bool) {
 		// kick incident callback when new incident caused
 		if needCallback {
 			s.IncidentCount++
-			for _, cb := range s.OnIncident {
-				cb(incident)
+			for _, cb := range s.OnStatusChanged {
+				cb(r)
 			}
 		}
 	}

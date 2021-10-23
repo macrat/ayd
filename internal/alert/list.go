@@ -35,13 +35,13 @@ func NewSet(targets []string) (AlertSet, error) {
 
 // Trigger of AlertSet calls all Trigger methods of children parallelly.
 // This method blocks until all alerts done.
-func (as AlertSet) Trigger(ctx context.Context, i *api.Incident, r probe.Reporter) {
+func (as AlertSet) Trigger(ctx context.Context, lastRecord api.Record, r probe.Reporter) {
 	wg := &sync.WaitGroup{}
 
 	for _, a := range as {
 		wg.Add(1)
 		go func(a Alert) {
-			a.Trigger(ctx, i, r)
+			a.Trigger(ctx, lastRecord, r)
 			wg.Done()
 		}(a)
 	}

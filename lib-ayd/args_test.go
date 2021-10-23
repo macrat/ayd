@@ -60,15 +60,17 @@ func TestParseAlertPluginArgs(t *testing.T) {
 		Alert     string
 		CheckedAt string
 		Status    string
+		Latency   string
 		Target    string
 		Message   string
 		Error     string
 	}{
 		{
-			[]string{"./ayd-test-alert", "foo:bar", "2001-02-03T16:05:06Z", "HEALTHY", "bar:baz", "foo bar"},
+			[]string{"./ayd-test-alert", "foo:bar", "2001-02-03T16:05:06Z", "HEALTHY", "123.456", "bar:baz", "foo bar"},
 			"foo:bar",
 			"2001-02-03 16:05:06 +0000 UTC",
 			"HEALTHY",
+			"123.456",
 			"bar:baz",
 			"foo bar",
 			"",
@@ -80,19 +82,22 @@ func TestParseAlertPluginArgs(t *testing.T) {
 			"",
 			"",
 			"",
-			`invalid argument: should give exactly 5 arguments`,
+			"",
+			`invalid argument: should give exactly 6 arguments`,
 		},
 		{
-			[]string{"./ayd-test-alert", "foo:bar", "2001-02-03T16:05:06Z", "HEALTHY", "bar:baz", "foo bar", "extra arg"},
+			[]string{"./ayd-test-alert", "foo:bar", "2001-02-03T16:05:06Z", "HEALTHY", "123.456", "bar:baz", "foo bar", "extra arg"},
 			"",
 			"",
 			"",
 			"",
 			"",
-			`invalid argument: should give exactly 5 arguments`,
+			"",
+			`invalid argument: should give exactly 6 arguments`,
 		},
 		{
-			[]string{"./ayd-test-alert", "::invalid::", "2001-02-03T16:05:06Z", "HEALTHY", "bar:baz", "foo bar"},
+			[]string{"./ayd-test-alert", "::invalid::", "2001-02-03T16:05:06Z", "HEALTHY", "123.456", "bar:baz", "foo bar"},
+			"",
 			"",
 			"",
 			"",
@@ -101,7 +106,8 @@ func TestParseAlertPluginArgs(t *testing.T) {
 			`invalid alert URL: parse "::invalid::": missing protocol scheme`,
 		},
 		{
-			[]string{"./ayd-test-alert", "foo:bar", "2001-02-03T16:05:06Z", "HEALTHY", "::invalid::", "foo bar"},
+			[]string{"./ayd-test-alert", "foo:bar", "2001-02-03T16:05:06Z", "HEALTHY", "123.456", "::invalid::", "foo bar"},
+			"",
 			"",
 			"",
 			"",
@@ -110,13 +116,24 @@ func TestParseAlertPluginArgs(t *testing.T) {
 			`invalid target URL: parse "::invalid::": missing protocol scheme`,
 		},
 		{
-			[]string{"./ayd-test-alert", "foo:bar", "this is not a time", "HEALTHY", "bar:baz", "foo bar"},
+			[]string{"./ayd-test-alert", "foo:bar", "this is not a time", "HEALTHY", "123.456", "bar:baz", "foo bar"},
+			"",
 			"",
 			"",
 			"",
 			"",
 			"",
 			`invalid checked at timestamp: parsing time "this is not a time" as "2006-01-02T15:04:05Z07:00": cannot parse "this is not a time" as "2006"`,
+		},
+		{
+			[]string{"./ayd-test-alert", "foo:bar", "2001-02-03T16:05:06Z", "HEALTHY", "not a latency", "bar:baz", "foo bar"},
+			"",
+			"",
+			"",
+			"",
+			"",
+			"",
+			`invalid latency: strconv.ParseFloat: parsing "not a latency": invalid syntax`,
 		},
 	}
 

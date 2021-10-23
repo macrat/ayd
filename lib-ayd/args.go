@@ -3,6 +3,7 @@ package ayd
 import (
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -40,14 +41,15 @@ type AlertPluginArgs struct {
 	AlertURL  *url.URL
 	CheckedAt time.Time
 	Status    Status
+	Latency   time.Duration
 	TargetURL *url.URL
 	Message   string
 }
 
 // ParseAlertPluginArgsFrom is parse arguments for alert plugin
 func ParseAlertPluginArgsFrom(args []string) (AlertPluginArgs, error) {
-	if len(args) != 6 {
-		return AlertPluginArgs{}, ayderr.New(ErrArgumentCount, nil, "invalid argument: should give exactly 5 arguments")
+	if len(args) != 7 {
+		return AlertPluginArgs{}, ayderr.New(ErrArgumentCount, nil, "invalid argument: should give exactly 6 arguments")
 	}
 
 	alertURL, err := url.Parse(args[1])
@@ -62,7 +64,12 @@ func ParseAlertPluginArgsFrom(args []string) (AlertPluginArgs, error) {
 
 	status := ParseStatus(strings.ToUpper(args[3]))
 
-	targetURL, err := url.Parse(args[4])
+	latency, err := strconv.ParseFloat(args[4], 64)
+	if err != nil {
+		return AlertPluginArgs{}, ayderr.New(ErrInvalidArgumentValue, err, "invalid latency")
+	}
+
+	targetURL, err := url.Parse(args[5])
 	if err != nil {
 		return AlertPluginArgs{}, ayderr.New(ErrInvalidArgumentValue, err, "invalid target URL")
 	}
@@ -71,8 +78,9 @@ func ParseAlertPluginArgsFrom(args []string) (AlertPluginArgs, error) {
 		AlertURL:  alertURL,
 		CheckedAt: checkedAt,
 		Status:    status,
+		Latency:   time.Duration(latency) * time.Millisecond,
 		TargetURL: targetURL,
-		Message:   args[5],
+		Message:   args[6],
 	}, nil
 }
 

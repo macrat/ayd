@@ -435,12 +435,13 @@ $ ayd -a https://alert.example.com/alert https://target.example.com
 
 In the above example, Ayd access `https://alert.example/alert` with the below queries when `https://target.example.com` down.
 
-|query name     |example                        |description                            |
-|---------------|-------------------------------|---------------------------------------|
-|`ayd_caused_at`|`2001-02-03T16:05:06+09:00`    |The time of the first incident detected|
-|`ayd_status`   |`FAILURE`, `UNKNOWN`, `HEALTHY`|The status of target checking          |
-|`ayd_target`   |`https://target.example.com`   |The alerting target URL                |
-|`ayd_message`  |                               |The message of the incident            |
+| query name       | example                         | description                       |
+|------------------|---------------------------------|-----------------------------------|
+| `ayd_checked_at` | `2001-02-03T16:05:06+09:00`     | The timestamp when status changed |
+| `ayd_status`     | `FAILURE`, `UNKNOWN`, `HEALTHY` | The current status of the target  |
+| `ayd_latency`    | `123.456`                       | The latency of the latest checking|
+| `ayd_target`     | `https://target.example.com`    | The target URL                    |
+| `ayd_message`    |                                 | The latest message of the target  |
 
 Alert plugin receives these as arguments.
 Please see [Alert plugin](#alert-plugin) section if you want make your own plugin.
@@ -568,12 +569,12 @@ ayd-foobar-probe "foobar:your-target"
 
 #### Alert plugin
 
-Alert plugin receives the URL of alert, and 2nd or after arguments is the same as [log file](#log-file) order but without latency.
+Alert plugin receives the URL of alert at 1st of argument, and 2nd or after arguments is the same values and order as the [log file](#log-file).
 
-For example, alert URL `foobar:your-alert` has the same mean to below command.
+For example, the alert URL `foobar:your-alert` for plugin `ayd-foobar-alert` called like a below command.
 
-``` bash
-ayd-foobar-alert                \
+``` shell
+$ ayd-foobar-alert              \
     "foobar:your-alert"         \
     "2001-02-30T16:05:06+09:00" \
     "FAILURE"                   \

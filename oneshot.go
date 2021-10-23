@@ -13,8 +13,8 @@ func (cmd *AydCommand) RunOneshot(ctx context.Context, s *store.Store) (exitCode
 	var failure atomic.Value
 	var unknown atomic.Value
 
-	s.OnIncident = append(s.OnIncident, func(i *api.Incident) {
-		switch i.Status {
+	s.OnStatusChanged = append(s.OnStatusChanged, func(r api.Record) {
+		switch r.Status {
 		case api.StatusFailure:
 			failure.Store(true)
 		case api.StatusUnknown:
