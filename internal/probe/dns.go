@@ -30,8 +30,8 @@ func newDNSResolver(server string) dnsResolver {
 			server += ":53"
 		}
 		return dnsResolver{&net.Resolver{
-			Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
-				return (&net.Dialer{}).DialContext(ctx, network, address)
+			Dial: func(ctx context.Context, network, _ string) (net.Conn, error) {
+				return (&net.Dialer{}).DialContext(ctx, network, server)
 			},
 		}}
 	}
