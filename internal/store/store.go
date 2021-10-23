@@ -229,6 +229,24 @@ func (s *Store) ProbeHistory() []*ProbeHistory {
 	return result
 }
 
+// Targets returns target URLs as a string slice.
+// The result is includes hidden target, sorted in dictionary order.
+func (s *Store) Targets() []string {
+	s.historyLock.RLock()
+	defer s.historyLock.RUnlock()
+
+	result := make([]string, len(s.probeHistory))
+	i := 0
+	for _, x := range s.probeHistory {
+		result[i] = x.Target.String()
+		i++
+	}
+
+	sort.Strings(result)
+
+	return result
+}
+
 func (s *Store) currentIncidentsWithoutLock() []*api.Incident {
 	result := make([]*api.Incident, 0, len(s.currentIncidents))
 

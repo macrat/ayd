@@ -37,6 +37,10 @@ func New(s *store.Store) http.Handler {
 	m.HandleFunc("/log.json", LogJsonEndpoint(s))
 	m.HandleFunc("/log.csv", LogCSVEndpoint(s))
 
+	m.Handle("/targets", http.RedirectHandler("/targets.txt", http.StatusMovedPermanently))
+	m.HandleFunc("/targets.txt", TargetsTextEndpoint(s))
+	m.HandleFunc("/targets.json", TargetsJSONEndpoint(s))
+
 	m.HandleFunc("/metrics", MetricsEndpoint(s))
 	m.HandleFunc("/healthz", HealthzEndpoint(s))
 
