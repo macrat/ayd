@@ -46,14 +46,18 @@ ul {
     <body>
         <h1>Not Found</h1>
         <ul>
-            <li><a href="/status.html">HTML status page</a></li>
-            <li><a href="/status.txt">Text status page</a></li>
-            <li><a href="/status.json">JSON status page</a></li>
-            <li><a href="/log.tsv">Raw log file in TSV format</a></li>
-            <li><a href="/log.csv">Raw log file in CSV format</a></li>
-            <li><a href="/log.json">Raw log file in JSON format</a></li>
-            <li><a href="/targets.txt">The list of target URLs, separated by \n</a></li>
-            <li><a href="/targets.json">The list of target URLs in JSON format</a></li>
+            <li>
+                Current status summary<br />
+                <a href="/status.html">HTML</a>, <a href="/status.txt">plain text</a>, <a href="/status.json">JSON</a>
+            </li>
+            <li>
+                Raw log<br />
+                <a href="/log.csv">CSV</a>, <a href="/log.tsv">TSV</a>, <a href="/log.json">JSON</a>
+            </li>
+            <li>
+                Target URL list<br />
+                <a href="/targets.txt">plain text</a>, <a href="/targets.json">JSON</a>
+            </li>
             <li><a href="/metrics">Prometheus metrics</a></li>
             <li><a href="/healthz">Endpoint for health-check of ayd itself</a></li>
         </ul>
