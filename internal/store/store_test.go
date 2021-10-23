@@ -461,10 +461,10 @@ func TestStore_incident(t *testing.T) {
 
 	lastIncident := ""
 	callbackCount := 0
-	s.OnIncident = []store.IncidentHandler{
-		func(s *string, c *int) func(*api.Incident) {
-			return func(i *api.Incident) {
-				*s = i.Message
+	s.OnStatusChanged = []store.RecordHandler{
+		func(s *string, c *int) func(api.Record) {
+			return func(r api.Record) {
+				*s = r.Message
 				*c++
 			}
 		}(&lastIncident, &callbackCount),
@@ -575,7 +575,7 @@ func TestStore_incident(t *testing.T) {
 	appendRecord("incident-test-1", "h", "1-4", api.StatusHealthy)
 	assertIncidents(s.CurrentIncidents(), "dummy://test:xxxxx@incident-test-2")
 	assertIncidents(s.IncidentHistory(), "dummy://test:xxxxx@incident-test-1", "dummy://test:xxxxx@incident-test-1")
-	assertLastIncident("1-3")
+	assertLastIncident("1-4")
 	assertCallbackCount(4)
 
 	// a record that has different status should recorded as a new incident even if the message is the same as previous record
@@ -589,14 +589,14 @@ func TestStore_incident(t *testing.T) {
 	appendRecord("incident-test-2", "j", "2-2", api.StatusHealthy)
 	assertIncidents(s.CurrentIncidents())
 	assertIncidents(s.IncidentHistory(), "dummy://test:xxxxx@incident-test-1", "dummy://test:xxxxx@incident-test-1", "dummy://test:xxxxx@incident-test-2", "dummy://test:xxxxx@incident-test-2")
-	assertLastIncident("2-1")
+	assertLastIncident("2-2")
 	assertCallbackCount(6)
 
 	// an aborted record should be ignored again
 	appendRecord("incident-test-2", "k", "2-?", api.StatusAborted)
 	assertIncidents(s.CurrentIncidents())
 	assertIncidents(s.IncidentHistory(), "dummy://test:xxxxx@incident-test-1", "dummy://test:xxxxx@incident-test-1", "dummy://test:xxxxx@incident-test-2", "dummy://test:xxxxx@incident-test-2")
-	assertLastIncident("2-1")
+	assertLastIncident("2-2")
 	assertCallbackCount(6)
 }
 

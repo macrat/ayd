@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"strconv"
 	"time"
 
 	"github.com/macrat/ayd/internal/probe"
@@ -13,7 +14,7 @@ import (
 )
 
 type Alert interface {
-	Trigger(context.Context, *api.Incident, probe.Reporter)
+	Trigger(context.Context, api.Record, probe.Reporter)
 }
 
 func New(target string) (Alert, error) {
@@ -45,12 +46,13 @@ type ProbeAlert struct {
 	target *url.URL
 }
 
-func (a ProbeAlert) Trigger(ctx context.Context, incident *api.Incident, r probe.Reporter) {
+func (a ProbeAlert) Trigger(ctx context.Context, lastRecord api.Record, r probe.Reporter) {
 	qs := a.target.Query()
-	qs.Set("ayd_caused_at", incident.CausedAt.Format(time.RFC3339))
-	qs.Set("ayd_status", incident.Status.String())
-	qs.Set("ayd_target", incident.Target.String())
-	qs.Set("ayd_message", incident.Message)
+	qs.Set("ayd_checked_at", lastRecord.CheckedAt.Format(time.RFC3339))
+	qs.Set("ayd_status", lastRecord.Status.String())
+	qs.Set("ayd_latency", strconv.FormatFloat(float64(lastRecord.Latency.Microseconds())/1000.0, 'f', -1, 64))
+	qs.Set("ayd_target", lastRecord.Target.String())
+	qs.Set("ayd_message", lastRecord.Message)
 
 	u := *a.target
 	u.RawQuery = qs.Encode()
@@ -120,7 +122,7 @@ func NewPluginAlert(target string) (PluginAlert, error) {
 	return p, nil
 }
 
-func (a PluginAlert) Trigger(ctx context.Context, incident *api.Incident, r probe.Reporter) {
+func (a PluginAlert) Trigger(ctx context.Context, lastRecord api.Record, r probe.Reporter) {
 	probe.ExecutePlugin(
 		ctx,
 		AlertReporter{r},
@@ -129,10 +131,11 @@ func (a PluginAlert) Trigger(ctx context.Context, incident *api.Incident, r prob
 		a.command,
 		[]string{
 			a.target.String(),
-			incident.CausedAt.Format(time.RFC3339),
-			incident.Status.String(),
-			incident.Target.String(),
-			incident.Message,
+			lastRecord.CheckedAt.Format(time.RFC3339),
+			lastRecord.Status.String(),
+			strconv.FormatFloat(float64(lastRecord.Latency.Microseconds())/1000.0, 'f', -1, 64),
+			lastRecord.Target.String(),
+			lastRecord.Message,
 		},
 		os.Environ(),
 	)

@@ -162,8 +162,8 @@ func (cmd *AydCommand) Run(args []string) (exitCode int) {
 			fmt.Fprintln(cmd.ErrStream, err)
 			return 2
 		}
-		s.OnIncident = append(s.OnIncident, func(i *api.Incident) {
-			alert.Trigger(ctx, i, s)
+		s.OnStatusChanged = append(s.OnStatusChanged, func(r api.Record) {
+			alert.Trigger(ctx, r, s)
 		})
 	}
 

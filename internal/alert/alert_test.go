@@ -31,11 +31,11 @@ func TestAlert(t *testing.T) {
 		Message   string
 		Error     string
 	}{
-		{"exec:ayd-foo-alert", "alert:exec:ayd-foo-alert", "2001-02-03T16:05:06Z\tHEALTHY\t123.456\t\t\"    \"", ""},
-		{"exec:ayd-bar-probe", "alert:exec:ayd-bar-probe", "arg \"\"\nenv ayd_caused_at=2001-02-03T16:05:06Z ayd_status=FAILURE ayd_target=dummy:failure ayd_message=foobar", ""},
-		{"foo:", "alert:foo:", "\"foo: 2001-02-03T16:05:06Z FAILURE dummy:failure foobar\"", ""},
-		{"foo:hello-world", "alert:foo:hello-world", "\"foo:hello-world 2001-02-03T16:05:06Z FAILURE dummy:failure foobar\"", ""},
-		{"foo-bar:hello-world", "alert:foo-bar:hello-world", "\"foo-bar:hello-world 2001-02-03T16:05:06Z FAILURE dummy:failure foobar\"", ""},
+		{"exec:ayd-foo-alert", "alert:exec:ayd-foo-alert", "2001-02-03T16:05:06Z\tHEALTHY\t123.456\t\t\"     \"", ""},
+		{"exec:ayd-bar-probe", "alert:exec:ayd-bar-probe", "arg \"\"\nenv ayd_checked_at=2001-02-03T16:05:06Z ayd_status=FAILURE ayd_latency=12.345 ayd_target=dummy:failure ayd_message=foobar", ""},
+		{"foo:", "alert:foo:", "\"foo: 2001-02-03T16:05:06Z FAILURE 12.345 dummy:failure foobar\"", ""},
+		{"foo:hello-world", "alert:foo:hello-world", "\"foo:hello-world 2001-02-03T16:05:06Z FAILURE 12.345 dummy:failure foobar\"", ""},
+		{"foo-bar:hello-world", "alert:foo-bar:hello-world", "\"foo-bar:hello-world 2001-02-03T16:05:06Z FAILURE 12.345 dummy:failure foobar\"", ""},
 		{"bar:", "", "", "unsupported scheme"},
 		{"::", "", "", "invalid URL"},
 		{"ayd:test:internal-url", "", "", "unsupported scheme"},
@@ -59,16 +59,17 @@ func TestAlert(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 			defer cancel()
 
-			i := &api.Incident{
-				Target:   &url.URL{Scheme: "dummy", Opaque: "failure"},
-				Status:   api.StatusFailure,
-				CausedAt: time.Date(2001, 2, 3, 16, 5, 6, 0, time.UTC),
-				Message:  "foobar",
+			rec := api.Record{
+				CheckedAt: time.Date(2001, 2, 3, 16, 5, 6, 0, time.UTC),
+				Status:    api.StatusFailure,
+				Latency:   12345 * time.Microsecond,
+				Target:    &url.URL{Scheme: "dummy", Opaque: "failure"},
+				Message:   "foobar",
 			}
 
 			r := &testutil.DummyReporter{}
 
-			alert.Trigger(ctx, i, r)
+			alert.Trigger(ctx, rec, r)
 
 			if len(r.Records) != 1 {
 				t.Fatalf("unexpected number of records: %d: %v", len(r.Records), r.Records)
@@ -97,16 +98,16 @@ func TestAlert(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 		defer cancel()
 
-		i := &api.Incident{
-			Target:   &url.URL{Scheme: "dummy", Opaque: "failure"},
-			Status:   api.StatusFailure,
-			CausedAt: time.Date(2001, 2, 3, 16, 5, 6, 0, time.UTC),
-			Message:  "foobar",
+		rec := api.Record{
+			Target:    &url.URL{Scheme: "dummy", Opaque: "failure"},
+			Status:    api.StatusFailure,
+			CheckedAt: time.Date(2001, 2, 3, 16, 5, 6, 0, time.UTC),
+			Message:   "foobar",
 		}
 
 		r := &testutil.DummyReporter{}
 
-		alert.Trigger(ctx, i, r)
+		alert.Trigger(ctx, rec, r)
 
 		if len(r.Records) != 2 {
 			t.Fatalf("unexpected number of records: %d: %v", len(r.Records), r.Records)

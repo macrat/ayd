@@ -44,16 +44,16 @@ func TestAlertSet(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
 
-			i := &api.Incident{
-				Target:   &url.URL{Scheme: "dummy", Opaque: "failure"},
-				Status:   api.StatusFailure,
-				CausedAt: time.Date(2001, 2, 3, 16, 5, 6, 0, time.UTC),
-				Message:  "foobar",
+			rec := api.Record{
+				Target:    &url.URL{Scheme: "dummy", Opaque: "failure"},
+				Status:    api.StatusFailure,
+				CheckedAt: time.Date(2001, 2, 3, 16, 5, 6, 0, time.UTC),
+				Message:   "foobar",
 			}
 
 			r := &testutil.DummyReporter{}
 
-			as.Trigger(ctx, i, r)
+			as.Trigger(ctx, rec, r)
 
 			if len(r.Records) != len(tt.Messages) {
 				t.Fatalf("expected %d records but got %d records", len(tt.Messages), len(r.Records))
@@ -87,17 +87,17 @@ func TestAlertSet_blocking(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	i := &api.Incident{
-		Target:   &url.URL{Scheme: "dummy", Opaque: "failure"},
-		Status:   api.StatusFailure,
-		CausedAt: time.Date(2001, 2, 3, 16, 5, 6, 0, time.UTC),
-		Message:  "foobar",
+	rec := api.Record{
+		Target:    &url.URL{Scheme: "dummy", Opaque: "failure"},
+		Status:    api.StatusFailure,
+		CheckedAt: time.Date(2001, 2, 3, 16, 5, 6, 0, time.UTC),
+		Message:   "foobar",
 	}
 
 	r := &testutil.DummyReporter{}
 
 	stime := time.Now()
-	as.Trigger(ctx, i, r)
+	as.Trigger(ctx, rec, r)
 	delay := time.Now().Sub(stime)
 
 	if len(r.Records) != 2 {
