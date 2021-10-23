@@ -250,7 +250,7 @@ hello world
 This output is reporting latency is `123.456ms`, status is `FAILURE`, and message is `hello world`.
 
 - `::latency::`: Reports the latency of service in milliseconds.
-- `::status::`: Reports the status of service in `healthy`, `failure`, `aborted`, or `unknown`.
+- `::status::`: Reports the status of service in `healthy`, `debased`, `failure`, `aborted`, or `unknown`.
 
 Ayd uses the last value if found multiple reports in single output.
 
@@ -366,9 +366,12 @@ The log has these columns.
 
 1. Timestamp in [RFC3339 format](https://tools.ietf.org/html/rfc3339) like `2001-02-30T16:05:06+00:00`.
 
-2. Status of the record that `HEALTHY`, `FAILURE`, `UNKNOWN`, or `ABORTED`.
+2. Status of the record that `HEALTHY`, `DEBASED`, `FAILURE`, `UNKNOWN`, or `ABORTED`.
 
    * `HEALTHY` means service seems working well.
+
+   * `DEBASED` means service seems working but partially degraded.
+     You should do something to the target system because the target is not completely healthy.
 
    * `FAILURE` means service seems failure or stopped.
      You should do something to the target system because the target may be broken if received this status.
@@ -435,13 +438,13 @@ $ ayd -a https://alert.example.com/alert https://target.example.com
 
 In the above example, Ayd access `https://alert.example/alert` with the below queries when `https://target.example.com` down.
 
-| query name       | example                         | description                       |
-|------------------|---------------------------------|-----------------------------------|
-| `ayd_checked_at` | `2001-02-03T16:05:06+09:00`     | The timestamp when status changed |
-| `ayd_status`     | `FAILURE`, `UNKNOWN`, `HEALTHY` | The current status of the target  |
-| `ayd_latency`    | `123.456`                       | The latency of the latest checking|
-| `ayd_target`     | `https://target.example.com`    | The target URL                    |
-| `ayd_message`    |                                 | The latest message of the target  |
+| query name       | example                                    | description                        |
+|------------------|--------------------------------------------|------------------------------------|
+| `ayd_checked_at` | `2001-02-03T16:05:06+09:00`                | The timestamp when status changed  |
+| `ayd_status`     | `FAILURE`, `DEBASED`, `UNKNOWN`, `HEALTHY` | The current status of the target   |
+| `ayd_latency`    | `123.456`                                  | The latency of the latest checking |
+| `ayd_target`     | `https://target.example.com`               | The target URL                     |
+| `ayd_message`    |                                            | The latest message of the target   |
 
 Alert plugin receives these as arguments.
 Please see [Alert plugin](#alert-plugin) section if you want make your own plugin.

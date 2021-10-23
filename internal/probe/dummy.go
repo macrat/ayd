@@ -29,6 +29,8 @@ func NewDummyProbe(u *url.URL) (DummyProbe, error) {
 	switch p.target.Opaque {
 	case "", "healthy":
 		p.status = api.StatusHealthy
+	case "debased":
+		p.status = api.StatusDebased
 	case "failure":
 		p.status = api.StatusFailure
 	case "aborted":
@@ -38,7 +40,7 @@ func NewDummyProbe(u *url.URL) (DummyProbe, error) {
 	case "random":
 		p.random = true
 	default:
-		return DummyProbe{}, errors.New("opaque must healthy, failure, aborted, unknown, or random")
+		return DummyProbe{}, errors.New("opaque must healthy, debased, failure, aborted, unknown, or random")
 	}
 
 	query := url.Values{}
@@ -69,9 +71,10 @@ func (p DummyProbe) Status() api.Status {
 
 	return []api.Status{
 		api.StatusHealthy,
-		api.StatusUnknown,
+		api.StatusDebased,
 		api.StatusFailure,
-	}[rand.Intn(3)]
+		api.StatusUnknown,
+	}[rand.Intn(4)]
 }
 
 func (p DummyProbe) Target() *url.URL {
