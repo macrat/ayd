@@ -15,13 +15,14 @@ func TestDummyProbe(t *testing.T) {
 	AssertProbe(t, []ProbeTest{
 		{"dummy:", api.StatusHealthy, ``, ""},
 		{"dummy:healthy", api.StatusHealthy, ``, ""},
+		{"dummy:debased", api.StatusDebased, ``, ""},
 		{"dummy:failure", api.StatusFailure, ``, ""},
 		{"dummy:aborted", api.StatusAborted, ``, ""},
 		{"dummy:unknown", api.StatusUnknown, ``, ""},
 		{"dummy:healthy?message=hello+world", api.StatusHealthy, `hello world`, ""},
 		{"dummy:healthy#something-comment", api.StatusHealthy, ``, ""},
 
-		{"dummy:unknown-status", api.StatusUnknown, ``, `opaque must healthy, failure, aborted, unknown, or random`},
+		{"dummy:unknown-status", api.StatusUnknown, ``, `opaque must healthy, debased, failure, aborted, unknown, or random`},
 		{"dummy:?latency=1ms", api.StatusHealthy, ``, ""},
 		{"dummy:?latency=1", api.StatusUnknown, ``, `time: missing unit in duration "1"`},
 		{"dummy:?latency=1kb", api.StatusUnknown, ``, `time: unknown unit "kb" in duration "1kb"`},
@@ -30,13 +31,15 @@ func TestDummyProbe(t *testing.T) {
 	t.Run("dummy:random", func(t *testing.T) {
 		p := testutil.NewProbe(t, "dummy:random")
 
-		h, f, u := 0, 0, 0
-		for i := 0; i < 600; i++ {
+		h, d, f, u := 0, 0, 0, 0
+		for i := 0; i < 800; i++ {
 			rs := testutil.RunCheck(context.Background(), p)
 			for _, r := range rs {
 				switch r.Status {
 				case api.StatusHealthy:
 					h++
+				case api.StatusDebased:
+					d++
 				case api.StatusFailure:
 					f++
 				case api.StatusUnknown:
@@ -47,6 +50,10 @@ func TestDummyProbe(t *testing.T) {
 
 		if h < 150 || 250 < h {
 			t.Errorf("number of healthy records was out of expected range: %d", h)
+		}
+
+		if d < 150 || 250 < d {
+			t.Errorf("number of debased records was out of expected range: %d", f)
 		}
 
 		if f < 150 || 250 < f {

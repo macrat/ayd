@@ -1,2 +1,143 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg width="297mm" height="210mm" version="1.1" viewBox="0 0 297 210" xmlns="http://www.w3.org/2000/svg"><rect x="149.69" y="10.308" width="138.5" height="186.13" fill="#f6f5f8" stroke-linecap="square" stroke-width="7.7292"/><rect x="11.189" y="10.308" width="138.5" height="186.13" fill="#45414a" stroke-linecap="square" stroke-width="7.7292"/><circle cx="51.317" cy="25.912" r="7.7847" fill="#ff2d00"/><circle cx="29.032" cy="25.912" r="7.7847" fill="#f6f5f8"/><g stroke-linecap="square" stroke-width="4.2333"><rect x="26.3" y="62.773" width="108.35" height="24.281" fill="#f6f5f8"/><rect x="164.47" y="62.758" width="108.35" height="24.281" fill="#45414a"/><rect x="26.264" y="100.52" width="108.35" height="24.281" fill="#f6f5f8"/><rect x="164.47" y="101.3" width="108.35" height="24.281" fill="#45414a"/><rect x="26.264" y="139.84" width="108.35" height="24.281" fill="#f6f5f8"/><rect x="164.47" y="139.84" width="108.35" height="24.281" fill="#45414a"/></g><g><circle cx="73.602" cy="25.912" r="7.7847" fill="#89c923"/><circle cx="188.96" cy="25.912" r="7.7847" fill="#ff2d00"/><circle cx="166.67" cy="25.912" r="7.7847" fill="#45414a"/><circle cx="211.24" cy="25.912" r="7.7847" fill="#89c923"/></g></svg>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   width="297mm"
+   height="210mm"
+   version="1.1"
+   viewBox="0 0 297 210"
+   id="svg1746">
+  <metadata
+     id="metadata1752">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <defs
+     id="defs1750" />
+  <rect
+     x="149.69"
+     y="10.308"
+     width="138.5"
+     height="186.13"
+     fill="#f6f5f8"
+     stroke-linecap="square"
+     stroke-width="7.7292"
+     id="rect1714" />
+  <rect
+     x="11.189"
+     y="10.308"
+     width="138.5"
+     height="186.13"
+     fill="#45414a"
+     stroke-linecap="square"
+     stroke-width="7.7292"
+     id="rect1716" />
+  <circle
+     cx="50.459023"
+     cy="26.246157"
+     r="7.7846999"
+     fill="#ff2d00"
+     id="circle1718" />
+  <circle
+     cx="29.032"
+     cy="26.246157"
+     r="7.7846999"
+     fill="#f6f5f8"
+     id="circle1720" />
+  <g
+     stroke-linecap="square"
+     stroke-width="4.2333"
+     id="g1734">
+    <rect
+       x="26.3"
+       y="62.773"
+       width="108.35"
+       height="24.281"
+       fill="#f6f5f8"
+       id="rect1722" />
+    <rect
+       x="164.47"
+       y="62.758"
+       width="108.35"
+       height="24.281"
+       fill="#45414a"
+       id="rect1724" />
+    <rect
+       x="26.264"
+       y="100.52"
+       width="108.35"
+       height="24.281"
+       fill="#f6f5f8"
+       id="rect1726" />
+    <rect
+       x="164.47"
+       y="101.3"
+       width="108.35"
+       height="24.281"
+       fill="#45414a"
+       id="rect1728" />
+    <rect
+       x="26.264"
+       y="139.84"
+       width="108.35"
+       height="24.281"
+       fill="#f6f5f8"
+       id="rect1730" />
+    <rect
+       x="164.47"
+       y="139.84"
+       width="108.35"
+       height="24.281"
+       fill="#45414a"
+       id="rect1732" />
+  </g>
+  <circle
+     cx="93.313065"
+     cy="26.246159"
+     r="7.7846999"
+     fill="#89c923"
+     id="circle1736" />
+  <circle
+     cx="71.88604"
+     cy="26.246159"
+     r="7.7846999"
+     fill="#89c923"
+     id="circle1736-0"
+     style="fill:#dda100;fill-opacity:1" />
+  <circle
+     cx="188.6501"
+     cy="27.577164"
+     r="7.7846999"
+     fill="#ff2d00"
+     id="circle1718-9" />
+  <circle
+     cx="167.22308"
+     cy="27.577164"
+     r="7.7846999"
+     fill="#f6f5f8"
+     id="circle1720-3"
+     style="fill:#45414a;fill-opacity:1" />
+  <circle
+     cx="231.50415"
+     cy="27.577166"
+     r="7.7846999"
+     fill="#89c923"
+     id="circle1736-6" />
+  <circle
+     cx="210.07712"
+     cy="27.577166"
+     r="7.7846999"
+     fill="#89c923"
+     id="circle1736-0-0"
+     style="fill:#dda100;fill-opacity:1" />
+</svg>

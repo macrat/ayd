@@ -223,7 +223,6 @@ func (p PingProbe) Check(ctx context.Context, r Reporter) {
 	rec := api.Record{
 		CheckedAt: stime,
 		Target:    p.target,
-		Status:    api.StatusFailure,
 		Message: fmt.Sprintf(
 			"ip=%s rtt(min/avg/max)=%.2f/%.2f/%.2f send/recv=%d/%d",
 			target,
@@ -236,8 +235,13 @@ func (p PingProbe) Check(ctx context.Context, r Reporter) {
 		Latency: result.AvgRTT,
 	}
 
-	if result.Loss == 0 {
+	switch result.Loss {
+	case 0:
 		rec.Status = api.StatusHealthy
+	case 3:
+		rec.Status = api.StatusFailure
+	default:
+		rec.Status = api.StatusDebased
 	}
 
 	if ctx.Err() == context.Canceled {

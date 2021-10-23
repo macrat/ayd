@@ -2,18 +2,22 @@ package ayd
 
 const (
 	// StatusUnknown means UNKNOWN current status because failed to check the target status.
-	// System administrator have to fix Ayd settings, or do something to target system when this status.
+	// System administrators have to fix Ayd settings, or do something to the target system, when this status.
 	StatusUnknown Status = iota
 
 	// StatusHealthy means success to status check and the target is HEALTHY.
 	StatusHealthy
 
+	// StatusDebased means success to status check and the target is worked but partially features or stability is DEBASED.
+	// System administrators have to do something action to the target system when this status, but might not urgency.
+	StatusDebased
+
 	// StatusFailure means the target is in FAILURE, but status check is success.
-	// System administrator have to do something action to target system when this status.
+	// System administrators have to do something action to the target system when this status.
 	StatusFailure
 
 	// StatusAborted means the status check ABORTED because stop by system administrator or other system program like systemd.
-	// System administrator doesn't have to do something on this status.
+	// System administrators don't have to do something on this status.
 	StatusAborted
 )
 
@@ -27,6 +31,8 @@ func ParseStatus(raw string) Status {
 	switch raw {
 	case "HEALTHY":
 		return StatusHealthy
+	case "DEBASED":
+		return StatusDebased
 	case "FAILURE":
 		return StatusFailure
 	case "ABORTED":
@@ -50,6 +56,8 @@ func (s Status) String() string {
 	switch s {
 	case StatusHealthy:
 		return "HEALTHY"
+	case StatusDebased:
+		return "DEBASED"
 	case StatusFailure:
 		return "FAILURE"
 	case StatusAborted:

@@ -5,6 +5,7 @@
     if .Status | is_unknown }}?{{ end }}{{
     if .Status | is_aborted }}-{{ end }}{{
     if .Status | is_failure }}!{{ end }}{{
+    if .Status | is_debased }}!{{ end }}{{
     if .Status | is_healthy }}v{{ end }}{{ end }}|  updated: {{ if .Updated }}{{ .Updated | time2str }}{{ else }}(not yet){{ end }}
 {{ end }}
 
@@ -12,8 +13,10 @@
 {{ range .CurrentIncidents |  invert_incidents }}
 +- {{
     if .Status | is_failure
- }}!FAILURE!{{
-    else
+ }}!FAILURE!{{ end }}{{
+    if .Status | is_debased
+ }}!DEBASED!{{ end }}{{
+    if .Status | is_unknown
  }}?UNKNOWN?{{
     end
           }} ------------------------------------------------------------------+
@@ -28,8 +31,10 @@
 {{ range .IncidentHistory | invert_incidents }}
 +- {{
     if .Status | is_failure
- }}!FAILURE!{{
-    else
+ }}!FAILURE!{{ end }}{{
+    if .Status | is_debased
+ }}!DEBASED!{{ end }}{{
+    if .Status | is_unknown
  }}?UNKNOWN?{{
     end
           }} ------------------------------------------------------------------+
