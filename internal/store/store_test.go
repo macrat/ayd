@@ -262,7 +262,7 @@ func TestStore_Restore(t *testing.T) {
 	hs2 := s2.ProbeHistory()
 
 	if len(hs2) != 0 {
-		t.Errorf("unexpected history length: %d (histories should hidden yet)", len(hs2))
+		t.Errorf("unexpected history length: %d (histories should inactive yet)", len(hs2))
 	}
 
 	for _, x := range hs1 {
