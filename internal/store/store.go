@@ -26,7 +26,7 @@ var (
 type ProbeHistory struct {
 	Target  *url.URL
 	Records []api.Record
-	shown   bool
+	active  bool
 }
 
 func (ph ProbeHistory) MakeReport() api.ProbeHistory {
@@ -80,6 +80,8 @@ func (xs byLatestStatus) Swap(i, j int) {
 
 type ProbeHistoryMap map[string]*ProbeHistory
 
+// Append adds ayd.Record to the ProbeHistory.
+// This method also mark as the target is active.
 func (hs ProbeHistoryMap) Append(r api.Record) {
 	target := r.Target.Redacted()
 
@@ -100,11 +102,11 @@ func (hs ProbeHistoryMap) Append(r api.Record) {
 		}
 	}
 
-	hs[target].shown = true
+	hs[target].active = true
 }
 
-func (hs ProbeHistoryMap) isShown(target *url.URL) bool {
-	return hs[target.Redacted()].shown
+func (hs ProbeHistoryMap) isActive(target *url.URL) bool {
+	return hs[target.Redacted()].active
 }
 
 type RecordHandler func(api.Record)
@@ -213,13 +215,15 @@ func (s *Store) Close() error {
 	return nil
 }
 
+// ProbeHistory returns a slice of ProbeHistory.
+// This method only returns active target's ProbeHistory.
 func (s *Store) ProbeHistory() []*ProbeHistory {
 	s.historyLock.RLock()
 	defer s.historyLock.RUnlock()
 
 	var result []*ProbeHistory
 	for _, x := range s.probeHistory {
-		if x.shown {
+		if x.active {
 			result = append(result, x)
 		}
 	}
@@ -230,7 +234,7 @@ func (s *Store) ProbeHistory() []*ProbeHistory {
 }
 
 // Targets returns target URLs as a string slice.
-// The result is includes hidden target, sorted in dictionary order.
+// The result is includes inactive target, sorted in dictionary order.
 func (s *Store) Targets() []string {
 	s.historyLock.RLock()
 	defer s.historyLock.RUnlock()
@@ -251,7 +255,7 @@ func (s *Store) currentIncidentsWithoutLock() []*api.Incident {
 	result := make([]*api.Incident, 0, len(s.currentIncidents))
 
 	for _, x := range s.currentIncidents {
-		if s.probeHistory.isShown(x.Target) {
+		if s.probeHistory.isActive(x.Target) {
 			result = append(result, x)
 		}
 	}
@@ -272,7 +276,7 @@ func (s *Store) incidentHistoryWithoutLock() []*api.Incident {
 	result := make([]*api.Incident, 0, len(s.incidentHistory))
 
 	for _, x := range s.incidentHistory {
-		if s.probeHistory.isShown(x.Target) {
+		if s.probeHistory.isActive(x.Target) {
 			result = append(result, x)
 		}
 	}
@@ -382,12 +386,14 @@ func (s *Store) Restore() error {
 	}
 
 	for k := range s.probeHistory {
-		s.probeHistory[k].shown = false
+		s.probeHistory[k].active = false
 	}
 
 	return nil
 }
 
+// AddTarget adds an empty probe history into this store.
+// This method is also mark the target as active.
 func (s *Store) AddTarget(target *url.URL) {
 	s.historyLock.Lock()
 	defer s.historyLock.Unlock()
@@ -399,7 +405,7 @@ func (s *Store) AddTarget(target *url.URL) {
 			Target: target,
 		}
 	}
-	s.probeHistory[t].shown = true
+	s.probeHistory[t].active = true
 }
 
 // setHealthy is reset healthy status of this store.
@@ -436,6 +442,8 @@ func (s *Store) Errors() (healthy bool, messages []string) {
 	return s.healthy, s.errors
 }
 
+// MakeReport creates ayd.Report for exporting for endpoint.
+// The result includes only information about active targets.
 func (s *Store) MakeReport() api.Report {
 	s.historyLock.RLock()
 	defer s.historyLock.RUnlock()
@@ -459,7 +467,7 @@ func (s *Store) MakeReport() api.Report {
 	}
 
 	for k, v := range s.probeHistory {
-		if v.shown {
+		if v.active {
 			report.ProbeHistory[k] = v.MakeReport()
 		}
 	}
