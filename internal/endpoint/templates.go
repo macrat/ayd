@@ -76,6 +76,10 @@ var (
 			return s
 		},
 		"latency_graph": func(rs []api.Record) string {
+			if len(rs) == 0 {
+				return ""
+			}
+
 			maxLatency := 0.0
 			for _, r := range rs {
 				l := r.Latency.Seconds()

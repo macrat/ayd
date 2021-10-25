@@ -154,6 +154,11 @@ func TestLatencyGraph(t *testing.T) {
 		Output string
 	}{
 		{
+			"empty",
+			[]int{},
+			"",
+		},
+		{
 			"with-nodata",
 			[]int{1, 2, 3, 5, 5},
 			"M35,1 35,0.8 35.5,0.8 36.5,0.6 37.5,0.4 38.5,0 39.5,0 h0.5V1",
