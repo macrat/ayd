@@ -546,6 +546,9 @@ Ayd looks for `ayd-xxx-probe` for a target or `ayd-xxx-alert` for an alert, if U
 You can change scheme via changing `xxx`, but you can't use URL schemes that `ayd`, `alert`, and the scheme that is supported by Ayd itself.
 And you can use `yyy` part to change plugin behavior, the same as [http:](#http--https) or [dns:](#dns).
 
+The longest plugin name has priority if you installed multiple plugins.
+For example, `ayd-xxx-yyy-probe` has priority than `ayd-xxx-probe`.
+
 The output of the plugin will parsed the same way to [log file](#log-file).
 
 The differences from plugin to [`exec:`](#exec) are below.

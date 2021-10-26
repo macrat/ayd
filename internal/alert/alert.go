@@ -2,10 +2,8 @@ package alert
 
 import (
 	"context"
-	"errors"
 	"net/url"
 	"os"
-	"os/exec"
 	"strconv"
 	"time"
 
@@ -92,8 +90,7 @@ func (r AlertReporter) Report(rec api.Record) {
 }
 
 type PluginAlert struct {
-	target  *url.URL
-	command string
+	target *url.URL
 }
 
 func NewPluginAlert(target string) (PluginAlert, error) {
@@ -109,13 +106,10 @@ func NewPluginAlert(target string) (PluginAlert, error) {
 	}
 
 	p := PluginAlert{
-		target:  u,
-		command: "ayd-" + scheme + "-alert",
+		target: u,
 	}
 
-	if _, err := exec.LookPath(p.command); errors.Is(err, exec.ErrNotFound) {
-		return PluginAlert{}, probe.ErrUnsupportedScheme
-	} else if err != nil {
+	if _, err := probe.FindPlugin(u.Scheme, "alert"); err != nil {
 		return PluginAlert{}, err
 	}
 
@@ -128,7 +122,6 @@ func (a PluginAlert) Trigger(ctx context.Context, lastRecord api.Record, r probe
 		AlertReporter{r},
 		"alert",
 		a.target,
-		a.command,
 		[]string{
 			a.target.String(),
 			lastRecord.CheckedAt.Format(time.RFC3339),

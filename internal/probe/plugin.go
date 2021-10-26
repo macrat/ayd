@@ -15,8 +15,36 @@ import (
 )
 
 type PluginProbe struct {
-	target  *url.URL
-	command string
+	target *url.URL
+}
+
+// PluginCandidates makes scheme name candidates of plugin by URL scheme.
+func PluginCandidates(scheme string) []string {
+	var xs []string
+
+	for i, x := range scheme {
+		if x == '-' || x == '+' {
+			xs = append(xs, scheme[:i])
+		}
+	}
+
+	xs = append(xs, scheme)
+
+	return xs
+}
+
+// FindPlugin finds a plugin for URL scheme.
+// It choice the longest name plugin.
+func FindPlugin(scheme, scope string) (commandName string, err error) {
+	candidates := PluginCandidates(scheme)
+	for i := range candidates {
+		commandName = "ayd-" + candidates[len(candidates)-i-1] + "-" + scope
+		_, err = exec.LookPath(commandName)
+		if err == nil || !errors.Is(err, exec.ErrNotFound) {
+			return
+		}
+	}
+	return "", ErrUnsupportedScheme
 }
 
 func NewPluginProbe(u *url.URL) (PluginProbe, error) {
@@ -27,13 +55,10 @@ func NewPluginProbe(u *url.URL) (PluginProbe, error) {
 	}
 
 	p := PluginProbe{
-		target:  u,
-		command: "ayd-" + scheme + "-probe",
+		target: u,
 	}
 
-	if _, err := exec.LookPath(p.command); errors.Is(err, exec.ErrNotFound) {
-		return PluginProbe{}, ErrUnsupportedScheme
-	} else if err != nil {
+	if _, err := FindPlugin(u.Scheme, "probe"); err != nil {
 		return PluginProbe{}, err
 	}
 
@@ -44,9 +69,20 @@ func (p PluginProbe) Target() *url.URL {
 	return p.target
 }
 
-func ExecutePlugin(ctx context.Context, r Reporter, scope string, target *url.URL, command string, args, env []string) {
+func ExecutePlugin(ctx context.Context, r Reporter, scope string, target *url.URL, args, env []string) {
 	ctx, cancel := context.WithTimeout(ctx, 60*time.Minute)
 	defer cancel()
+
+	command, err := FindPlugin(target.Scheme, scope)
+	if err != nil {
+		r.Report(api.Record{
+			CheckedAt: time.Now(),
+			Target:    target,
+			Status:    api.StatusUnknown,
+			Message:   scope + " plugin for " + target.Scheme + " was not found",
+		})
+		return
+	}
 
 	stime := time.Now()
 	output, status, err := runExternalCommand(ctx, command, args, env)
@@ -94,5 +130,5 @@ func ExecutePlugin(ctx context.Context, r Reporter, scope string, target *url.UR
 }
 
 func (p PluginProbe) Check(ctx context.Context, r Reporter) {
-	ExecutePlugin(ctx, r, "probe", p.target, p.command, []string{p.target.String()}, os.Environ())
+	ExecutePlugin(ctx, r, "probe", p.target, []string{p.target.String()}, os.Environ())
 }

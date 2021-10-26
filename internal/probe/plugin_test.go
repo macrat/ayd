@@ -2,12 +2,14 @@ package probe_test
 
 import (
 	"context"
+	"net/url"
 	"os"
 	"path/filepath"
 	"runtime"
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/macrat/ayd/internal/probe"
 	"github.com/macrat/ayd/internal/testutil"
 	api "github.com/macrat/ayd/lib-ayd"
@@ -23,6 +25,96 @@ func PreparePluginPath(t *testing.T) {
 	os.Setenv("PATH", origPath+string(filepath.ListSeparator)+filepath.Join(cwd, "testdata"))
 }
 
+func TestPluginCandidates(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		Input  string
+		Output []string
+	}{
+		{"http", []string{"http"}},
+		{"source-view", []string{"source", "source-view"}},
+		{"hello-world+abc-def", []string{"hello", "hello-world", "hello-world+abc", "hello-world+abc-def"}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.Input, func(t *testing.T) {
+			output := probe.PluginCandidates(tt.Input)
+			if diff := cmp.Diff(output, tt.Output); diff != "" {
+				t.Errorf(diff)
+			}
+		})
+	}
+}
+
+func TestFindPlugin(t *testing.T) {
+	t.Parallel()
+	PreparePluginPath(t)
+
+	tests := []struct {
+		Input  string
+		Output string
+		Error  error
+	}{
+		{"plug-plus", "ayd-plug-plus-probe", nil},
+		{"plug-minus", "ayd-plug-probe", nil},
+		{"plug", "ayd-plug-probe", nil},
+		{"plag-what", "", probe.ErrUnsupportedScheme},
+		{"plag", "", probe.ErrUnsupportedScheme},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.Input, func(t *testing.T) {
+			output, err := probe.FindPlugin(tt.Input, "probe")
+			if err != tt.Error {
+				t.Errorf("unexpected error: %s", err)
+			}
+			if output != tt.Output {
+				t.Errorf("unexpected output: %q", output)
+			}
+		})
+	}
+}
+
+func TestExecutePlugin(t *testing.T) {
+	t.Parallel()
+	PreparePluginPath(t)
+
+	tests := []struct {
+		Target  *url.URL
+		Status  api.Status
+		Message string
+	}{
+		{&url.URL{Scheme: "plug"}, api.StatusHealthy, "check plug:"},
+		{&url.URL{Scheme: "plug-plus"}, api.StatusHealthy, "plus plugin: plug-plus:"},
+		{&url.URL{Scheme: "no-such"}, api.StatusUnknown, "probe plugin for no-such was not found"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.Target.String(), func(t *testing.T) {
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+
+			r := &testutil.DummyReporter{}
+			probe.ExecutePlugin(ctx, r, "probe", tt.Target, []string{tt.Target.String()}, nil)
+
+			r.Lock()
+
+			if len(r.Records) != 1 {
+				t.Fatalf("unexpected length of records\n%v", r.Records)
+			}
+
+			if r.Records[0].Status != tt.Status {
+				t.Errorf("unexpected status: %s\n", r.Records[0].Status)
+			}
+
+			if r.Records[0].Message != tt.Message {
+				t.Errorf("unexpected message: %s\n", r.Records[0].Message)
+			}
+		})
+	}
+}
+
 func TestPluginProbe(t *testing.T) {
 	t.Parallel()
 	PreparePluginPath(t)
@@ -33,6 +125,7 @@ func TestPluginProbe(t *testing.T) {
 		{"plug-hello:world", api.StatusHealthy, "check plug-hello:world", ""},
 		{"plug+hello:world", api.StatusHealthy, `check plug\+hello:world`, ""},
 		{"plug-hello+world:", api.StatusHealthy, `check plug-hello\+world:`, ""},
+		{"plug-plus:hello", api.StatusHealthy, "plus plugin: plug-plus:hello", ""},
 		{"plug:empty", api.StatusHealthy, "", ""},
 		{"ayd:test", api.StatusUnknown, "", "unsupported scheme"},
 		{"alert:test", api.StatusUnknown, "", "unsupported scheme"},
