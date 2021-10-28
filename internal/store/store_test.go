@@ -13,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/macrat/ayd/internal/store"
 	"github.com/macrat/ayd/internal/testutil"
 	api "github.com/macrat/ayd/lib-ayd"
@@ -254,8 +255,18 @@ func TestStore_Restore(t *testing.T) {
 	}
 	defer s2.Close()
 
+	if targets := s2.Targets(); len(targets) != 0 {
+		t.Fatalf("expected no targets but got: %v", targets)
+	}
+
 	if err = s2.Restore(); err != nil {
 		t.Fatalf("failed to restore store: %s", err)
+	}
+
+	if targets := s2.Targets(); len(targets) != 3 {
+		t.Fatalf("expected 3 targets but got: %v", targets)
+	} else if diff := cmp.Diff([]string{"exec:/usr/local/bin/test.sh", "http://test.local/abc/def", "ping:restore-test"}, targets); diff != "" {
+		t.Fatalf("unexpected targets\n%s", diff)
 	}
 
 	hs1 := s1.ProbeHistory()
