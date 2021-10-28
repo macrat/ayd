@@ -16,9 +16,10 @@ func StartTestServer(t testing.TB) *httptest.Server {
 		s.Close()
 	})
 
-	s.AddTarget(&url.URL{Scheme: "http", Host: "a.example.com"})
-	s.AddTarget(&url.URL{Scheme: "http", Host: "b.example.com"})
-	s.AddTarget(&url.URL{Scheme: "http", Host: "c.example.com"})
+	for _, x := range []string{"a", "b", "c"} {
+		u := &url.URL{Scheme: "http", Host: x + ".example.com"}
+		s.ActivateTarget(u, u)
+	}
 
 	return httptest.NewServer(endpoint.New(s))
 }

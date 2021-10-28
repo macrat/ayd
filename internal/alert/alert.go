@@ -31,13 +31,17 @@ type ReplaceReporter struct {
 	Upstream probe.Reporter
 }
 
-func (r ReplaceReporter) Report(rec api.Record) {
+func (r ReplaceReporter) Report(_ *url.URL, rec api.Record) {
 	scheme, _, _ := probe.SplitScheme(rec.Target.Scheme)
 
 	if scheme != "alert" && scheme != "ayd" {
 		rec.Target = r.Target
 	}
-	r.Upstream.Report(rec)
+	r.Upstream.Report(r.Target, rec)
+}
+
+func (r ReplaceReporter) DeactivateTarget(source *url.URL, targets ...*url.URL) {
+	r.Upstream.DeactivateTarget(source, targets...)
 }
 
 type ProbeAlert struct {
@@ -62,7 +66,7 @@ func (a ProbeAlert) Trigger(ctx context.Context, lastRecord api.Record, r probe.
 
 	p, err := probe.WithoutPlugin(probe.NewFromURL(&u))
 	if err != nil {
-		reporter.Report(api.Record{
+		reporter.Report(reporter.Target, api.Record{
 			CheckedAt: time.Now(),
 			Status:    api.StatusUnknown,
 			Message:   err.Error(),
@@ -74,10 +78,11 @@ func (a ProbeAlert) Trigger(ctx context.Context, lastRecord api.Record, r probe.
 }
 
 type AlertReporter struct {
+	Source   *url.URL
 	Upstream probe.Reporter
 }
 
-func (r AlertReporter) Report(rec api.Record) {
+func (r AlertReporter) Report(_ *url.URL, rec api.Record) {
 	scheme, _, _ := probe.SplitScheme(rec.Target.Scheme)
 
 	if scheme != "alert" && scheme != "ayd" {
@@ -86,7 +91,11 @@ func (r AlertReporter) Report(rec api.Record) {
 			Opaque: rec.Target.String(),
 		}
 	}
-	r.Upstream.Report(rec)
+	r.Upstream.Report(r.Source, rec)
+}
+
+func (r AlertReporter) DeactivateTarget(source *url.URL, targets ...*url.URL) {
+	r.Upstream.DeactivateTarget(source, targets...)
 }
 
 type PluginAlert struct {
@@ -119,7 +128,7 @@ func NewPluginAlert(target string) (PluginAlert, error) {
 func (a PluginAlert) Trigger(ctx context.Context, lastRecord api.Record, r probe.Reporter) {
 	probe.ExecutePlugin(
 		ctx,
-		AlertReporter{r},
+		AlertReporter{&url.URL{Scheme: "alert", Opaque: a.target.String()}, r},
 		"alert",
 		a.target,
 		[]string{

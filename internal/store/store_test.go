@@ -22,7 +22,7 @@ func TestProbeHistoryMap(t *testing.T) {
 	m := make(store.ProbeHistoryMap)
 
 	for i := 1; i <= 100; i++ {
-		m.Append(api.Record{
+		m.Append(&url.URL{Scheme: "dummy"}, api.Record{
 			CheckedAt: time.Now().Add(time.Duration(i) * time.Second),
 			Target:    &url.URL{Scheme: "dummy", Fragment: "append-test"},
 			Message:   fmt.Sprint(i),
@@ -38,7 +38,7 @@ func TestProbeHistoryMap(t *testing.T) {
 	}
 
 	for i := 1; i <= 10; i++ {
-		m.Append(api.Record{
+		m.Append(&url.URL{Scheme: "dummy"}, api.Record{
 			CheckedAt: time.Now().Add(time.Duration(i) * time.Second),
 			Target:    &url.URL{Scheme: "dummy", Fragment: "append-test-another"},
 			Message:   fmt.Sprint(i),
@@ -54,7 +54,7 @@ func TestProbeHistoryMap(t *testing.T) {
 	}
 
 	for i := 1; i <= 10; i++ {
-		m.Append(api.Record{
+		m.Append(&url.URL{Scheme: "dummy"}, api.Record{
 			CheckedAt: time.Now().Add(time.Duration(-i) * time.Second),
 			Target:    &url.URL{Scheme: "dummy", Fragment: "append-test-reverse"},
 			Message:   fmt.Sprint(i),
@@ -70,12 +70,12 @@ func TestProbeHistoryMap(t *testing.T) {
 	}
 
 	timestamp := time.Now()
-	m.Append(api.Record{
+	m.Append(&url.URL{Scheme: "dummy"}, api.Record{
 		CheckedAt: timestamp,
 		Target:    &url.URL{Scheme: "dummy", Fragment: "append-test-same-time"},
 		Message:   "first",
 	})
-	m.Append(api.Record{
+	m.Append(&url.URL{Scheme: "dummy"}, api.Record{
 		CheckedAt: timestamp,
 		Target:    &url.URL{Scheme: "dummy", Fragment: "append-test-same-time"},
 		Message:   "second",
@@ -148,7 +148,7 @@ func TestStore_errorLogging(t *testing.T) {
 	}
 	defer s.Close()
 
-	s.Report(api.Record{
+	s.Report(&url.URL{Scheme: "dummy"}, api.Record{
 		CheckedAt: time.Date(2001, 2, 3, 16, 5, 6, 0, time.UTC),
 		Status:    api.StatusHealthy,
 		Latency:   42 * time.Millisecond,
@@ -168,7 +168,7 @@ func TestStore_errorLogging(t *testing.T) {
 
 	os.Chmod(f.Name(), 0000)
 
-	s.Report(api.Record{
+	s.Report(&url.URL{Scheme: "dummy"}, api.Record{
 		CheckedAt: time.Date(2001, 2, 3, 16, 5, 7, 0, time.UTC),
 		Status:    api.StatusHealthy,
 		Latency:   42 * time.Millisecond,
@@ -243,7 +243,7 @@ func TestStore_Restore(t *testing.T) {
 	}
 
 	for _, r := range records {
-		s1.Report(r)
+		s1.Report(&url.URL{Scheme: "dummy"}, r)
 	}
 
 	time.Sleep(100 * time.Millisecond) // wait for write
@@ -266,7 +266,7 @@ func TestStore_Restore(t *testing.T) {
 	}
 
 	for _, x := range hs1 {
-		s2.AddTarget(x.Target)
+		s2.ActivateTarget(x.Target, x.Target)
 	}
 	hs2 = s2.ProbeHistory()
 
@@ -301,6 +301,15 @@ func TestStore_Restore(t *testing.T) {
 			}
 		}
 	}
+
+	for _, x := range hs1 {
+		s2.DeactivateTarget(x.Target, x.Target)
+	}
+	hs2 = s2.ProbeHistory()
+
+	if len(hs2) != 0 {
+		t.Fatalf("deactivated but there are still %d histories", len(s2.ProbeHistory()))
+	}
 }
 
 func TestStore_Restore_removePassword(t *testing.T) {
@@ -314,7 +323,8 @@ func TestStore_Restore_removePassword(t *testing.T) {
 		t.Fatalf("failed to restore: %s", err)
 	}
 
-	s.AddTarget(&url.URL{Scheme: "http", User: url.UserPassword("hoge", "xxxxx"), Host: "example.com"})
+	u := &url.URL{Scheme: "http", User: url.UserPassword("hoge", "xxxxx"), Host: "example.com"}
+	s.ActivateTarget(u, u)
 
 	hs := s.ProbeHistory()
 
@@ -397,7 +407,8 @@ func TestStore_Restore_limitBorder(t *testing.T) {
 		t.Fatalf("failed to restore log: %s", err)
 	}
 
-	s.AddTarget(&url.URL{Scheme: "dummy", Opaque: "healthy"})
+	u := &url.URL{Scheme: "dummy", Opaque: "healthy"}
+	s.ActivateTarget(u, u)
 
 	hs := s.ProbeHistory()
 	if len(hs) != 1 {
@@ -421,7 +432,7 @@ func TestStore_AddTarget(t *testing.T) {
 		t.Fatalf("found unexpected probe history")
 	}
 
-	s.Report(api.Record{
+	s.Report(&url.URL{Scheme: "dummy"}, api.Record{
 		Target:  &url.URL{Scheme: "dummy", Fragment: "add-target-1"},
 		Message: "already exists history",
 		Status:  api.StatusHealthy,
@@ -430,9 +441,9 @@ func TestStore_AddTarget(t *testing.T) {
 		t.Fatalf("found unexpected probe history")
 	}
 
-	s.AddTarget(&url.URL{Scheme: "dummy", Fragment: "add-target-2"})
-	s.AddTarget(&url.URL{Scheme: "dummy", Fragment: "add-target-1"})
-	s.AddTarget(&url.URL{Scheme: "dummy", Fragment: "add-target-2"})
+	s.ActivateTarget(&url.URL{Scheme: "dummy"}, &url.URL{Scheme: "dummy", Fragment: "add-target-2"})
+	s.ActivateTarget(&url.URL{Scheme: "dummy"}, &url.URL{Scheme: "dummy", Fragment: "add-target-1"})
+	s.ActivateTarget(&url.URL{Scheme: "dummy"}, &url.URL{Scheme: "dummy", Fragment: "add-target-2"})
 
 	if len(s.ProbeHistory()) != 2 {
 		t.Fatalf("unexpected length probe history: %d", len(s.ProbeHistory()))
@@ -514,7 +525,7 @@ func TestStore_incident(t *testing.T) {
 		t.Helper()
 		offset += 1 * time.Second
 
-		s.Report(api.Record{
+		s.Report(&url.URL{Scheme: "dummy"}, api.Record{
 			CheckedAt: time.Now().Add(offset),
 			Target:    &url.URL{Scheme: "dummy", User: url.UserPassword("test", password), Path: path},
 			Message:   message,
@@ -605,7 +616,7 @@ func TestStore_incident_len_limit(t *testing.T) {
 	defer s.Close()
 
 	for i := 0; i < store.INCIDENT_HISTORY_LEN*2; i++ {
-		s.Report(api.Record{
+		s.Report(&url.URL{Scheme: "dummy"}, api.Record{
 			Target:  &url.URL{Scheme: "dummy", Fragment: "history-limit-test"},
 			Message: fmt.Sprintf("incident-%d", i),
 			Status:  api.StatusFailure,
@@ -626,7 +637,7 @@ func TestStore_Path_empty(t *testing.T) {
 	}
 	defer s1.Close()
 
-	s1.Report(api.Record{
+	s1.Report(&url.URL{Scheme: "dummy"}, api.Record{
 		Target:  &url.URL{Scheme: "dummy", Fragment: "empty-path"},
 		Message: "hello world",
 		Status:  api.StatusHealthy,
@@ -699,7 +710,7 @@ func TestStore_MakeReport(t *testing.T) {
 	addLog := func(fragment string, status api.Status) {
 		timestamp = timestamp.Add(time.Second)
 
-		s.Report(api.Record{
+		s.Report(&url.URL{Scheme: "dummy"}, api.Record{
 			CheckedAt: timestamp,
 			Status:    status,
 			Target:    &url.URL{Scheme: "dummy", Fragment: fragment},
@@ -730,6 +741,8 @@ func BenchmarkStore_Append(b *testing.B) {
 			s := testutil.NewStore(b)
 			defer s.Close()
 
+			source := &url.URL{Scheme: "dummy"}
+
 			record := api.Record{
 				CheckedAt: time.Now(),
 				Target:    &url.URL{Scheme: "dummy", Fragment: "benchmark-append"},
@@ -739,7 +752,7 @@ func BenchmarkStore_Append(b *testing.B) {
 
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
-				s.Report(record)
+				s.Report(source, record)
 			}
 		})
 	}

@@ -200,7 +200,7 @@ func (p PingProbe) Check(ctx context.Context, r Reporter) {
 
 	target, err := net.ResolveIPAddr(proto, p.target.Opaque)
 	if err != nil {
-		r.Report(api.Record{
+		r.Report(p.target, api.Record{
 			CheckedAt: time.Now(),
 			Target:    p.target,
 			Status:    api.StatusUnknown,
@@ -211,7 +211,7 @@ func (p PingProbe) Check(ctx context.Context, r Reporter) {
 
 	stime, d, result, err := autoPinger.Ping(ctx, target)
 	if err != nil {
-		r.Report(api.Record{
+		r.Report(p.target, api.Record{
 			CheckedAt: time.Now(),
 			Target:    p.target,
 			Status:    api.StatusUnknown,
@@ -250,5 +250,5 @@ func (p PingProbe) Check(ctx context.Context, r Reporter) {
 		rec.Latency = d
 	}
 
-	r.Report(rec)
+	r.Report(p.target, rec)
 }

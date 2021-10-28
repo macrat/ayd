@@ -15,7 +15,8 @@ import (
 )
 
 type PluginProbe struct {
-	target *url.URL
+	target  *url.URL
+	tracker *TargetTracker
 }
 
 // PluginCandidates makes scheme name candidates of plugin by URL scheme.
@@ -55,8 +56,10 @@ func NewPluginProbe(u *url.URL) (PluginProbe, error) {
 	}
 
 	p := PluginProbe{
-		target: u,
+		target:  u,
+		tracker: &TargetTracker{},
 	}
+	p.tracker.Activate(u)
 
 	if _, err := FindPlugin(u.Scheme, "probe"); err != nil {
 		return PluginProbe{}, err
@@ -75,7 +78,7 @@ func ExecutePlugin(ctx context.Context, r Reporter, scope string, target *url.UR
 
 	command, err := FindPlugin(target.Scheme, scope)
 	if err != nil {
-		r.Report(api.Record{
+		r.Report(target, api.Record{
 			CheckedAt: time.Now(),
 			Target:    target,
 			Status:    api.StatusUnknown,
@@ -100,11 +103,11 @@ func ExecutePlugin(ctx context.Context, r Reporter, scope string, target *url.UR
 		rec, err := api.ParseRecord(text)
 		if err == nil {
 			count++
-			r.Report(rec)
+			r.Report(target, rec)
 			continue
 		}
 
-		r.Report(api.Record{
+		r.Report(target, api.Record{
 			CheckedAt: time.Now(),
 			Target:    &url.URL{Scheme: "ayd", Opaque: scope + ":plugin:" + target.String()},
 			Status:    api.StatusUnknown,
@@ -119,7 +122,7 @@ func ExecutePlugin(ctx context.Context, r Reporter, scope string, target *url.UR
 			msg = err.Error()
 		}
 
-		r.Report(timeoutOr(ctx, api.Record{
+		r.Report(target, timeoutOr(ctx, api.Record{
 			CheckedAt: stime,
 			Target:    target,
 			Status:    status,
@@ -130,5 +133,8 @@ func ExecutePlugin(ctx context.Context, r Reporter, scope string, target *url.UR
 }
 
 func (p PluginProbe) Check(ctx context.Context, r Reporter) {
+	r = p.tracker.PrepareReporter(p.target, r)
 	ExecutePlugin(ctx, r, "probe", p.target, []string{p.target.String()}, os.Environ())
+
+	r.DeactivateTarget(p.target, p.tracker.Inactives()...)
 }

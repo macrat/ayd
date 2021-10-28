@@ -149,7 +149,7 @@ func (p ExecuteProbe) Check(ctx context.Context, r Reporter) {
 	message, latency = getLatencyByMessage(message, latency)
 	message, status = getStatusByMessage(message, status)
 
-	r.Report(timeoutOr(ctx, api.Record{
+	r.Report(p.target, timeoutOr(ctx, api.Record{
 		CheckedAt: stime,
 		Target:    p.target,
 		Status:    status,

@@ -26,7 +26,7 @@ func (t Task) MakeJob(ctx context.Context, s *store.Store) cron.Job {
 	return cron.FuncJob(func() {
 		defer func() {
 			if err := recover(); err != nil {
-				s.Report(api.Record{
+				s.Report(t.Probe.Target(), api.Record{
 					CheckedAt: time.Now(),
 					Target:    t.Probe.Target(),
 					Status:    api.StatusUnknown,

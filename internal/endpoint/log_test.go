@@ -85,17 +85,17 @@ func TestLogScanner(t *testing.T) {
 					t.Fatalf("failed to create store: %s", err)
 				}
 
-				s.Report(api.Record{
+				s.Report(&url.URL{Scheme: "dummy"}, api.Record{
 					CheckedAt: time.Date(2000, 1, 1, 13, 2, 3, 0, time.UTC),
 					Target:    &url.URL{Scheme: "dummy", Fragment: "hello"},
 					Message:   "first",
 				})
-				s.Report(api.Record{
+				s.Report(&url.URL{Scheme: "dummy"}, api.Record{
 					CheckedAt: time.Date(2000, 1, 2, 13, 2, 3, 0, time.UTC),
 					Target:    &url.URL{Scheme: "dummy", Fragment: "world"},
 					Message:   "second",
 				})
-				s.Report(api.Record{
+				s.Report(&url.URL{Scheme: "dummy"}, api.Record{
 					CheckedAt: time.Date(2000, 1, 3, 13, 2, 3, 0, time.UTC),
 					Target:    &url.URL{Scheme: "dummy", Fragment: "hello"},
 					Message:   "last",

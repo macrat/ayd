@@ -103,5 +103,5 @@ func (p DummyProbe) Check(ctx context.Context, r Reporter) {
 		rec.Latency = time.Now().Sub(stime)
 	}
 
-	r.Report(timeoutOr(ctx, rec))
+	r.Report(p.target, timeoutOr(ctx, rec))
 }

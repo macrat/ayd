@@ -78,5 +78,5 @@ func (p TCPProbe) Check(ctx context.Context, r Reporter) {
 		conn.Close()
 	}
 
-	r.Report(timeoutOr(ctx, rec))
+	r.Report(p.target, timeoutOr(ctx, rec))
 }
