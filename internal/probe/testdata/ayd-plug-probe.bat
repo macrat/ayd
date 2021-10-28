@@ -1,6 +1,8 @@
 @echo off
 
-if not "%1" == "plug:empty" (
+if "%1" == "plug:change" (
+    echo 2001-02-03T16:05:06Z	HEALTHY	123.456	changed:plug	check changed:plug
+) else if not "%1" == "plug:empty" (
     echo 2001-02-03T16:05:06Z	HEALTHY	123.456	%1	check %1
 )
 

@@ -214,5 +214,5 @@ func (p DNSProbe) Check(ctx context.Context, r Reporter) {
 		}
 	}
 
-	r.Report(timeoutOr(ctx, rec))
+	r.Report(p.target, timeoutOr(ctx, rec))
 }

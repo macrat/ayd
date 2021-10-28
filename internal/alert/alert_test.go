@@ -129,11 +129,11 @@ func TestReplaceReporter(t *testing.T) {
 	r1 := &testutil.DummyReporter{}
 	r2 := alert.ReplaceReporter{&url.URL{Scheme: "alert", Opaque: "dummy:hello-world"}, r1}
 
-	r2.Report(api.Record{
+	r2.Report(&url.URL{Scheme: "dummy"}, api.Record{
 		Target:  &url.URL{Scheme: "dummy", Opaque: "another"},
 		Message: "hello world",
 	})
-	r2.Report(api.Record{
+	r2.Report(&url.URL{Scheme: "dummy"}, api.Record{
 		Target:  &url.URL{Scheme: "ayd", Opaque: "test:internal-log"},
 		Message: "something log",
 	})
@@ -153,13 +153,13 @@ func TestReplaceReporter(t *testing.T) {
 
 func TestAlertReporter(t *testing.T) {
 	r1 := &testutil.DummyReporter{}
-	r2 := alert.AlertReporter{r1}
+	r2 := alert.AlertReporter{&url.URL{Scheme: "alert", Opaque: "dummy:"}, r1}
 
-	r2.Report(api.Record{
+	r2.Report(&url.URL{Scheme: "dummy"}, api.Record{
 		Target:  &url.URL{Scheme: "dummy", Opaque: "another"},
 		Message: "hello world",
 	})
-	r2.Report(api.Record{
+	r2.Report(&url.URL{Scheme: "dummy"}, api.Record{
 		Target:  &url.URL{Scheme: "ayd", Opaque: "test:internal-log"},
 		Message: "something log",
 	})

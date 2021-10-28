@@ -218,6 +218,43 @@ func TestSource_stderr(t *testing.T) {
 	}
 }
 
+func TestSource_inactiveTargetHandling(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+
+	if err := os.WriteFile(dir+"/list.txt", []byte("dummy:#1\ndummy:#2"), 0644); err != nil {
+		t.Fatalf("faield to prepare test list file: %s", err)
+	}
+
+	sourceURL := "source:" + dir + "/list.txt"
+	p, err := probe.New(sourceURL)
+	if err != nil {
+		t.Fatalf("failed to prepare probe: %s", err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	r := &testutil.DummyReporter{}
+
+	p.Check(ctx, r)
+	r.AssertActives(t, sourceURL, "dummy:#1", "dummy:#2")
+
+	if err := os.WriteFile(dir+"/list.txt", []byte("dummy:#1\ndummy:#3"), 0644); err != nil {
+		t.Fatalf("faield to update test list file: %s", err)
+	}
+
+	p.Check(ctx, r)
+	r.AssertActives(t, sourceURL, "dummy:#1", "dummy:#3")
+
+	if err := os.WriteFile(dir+"/list.txt", []byte("dummy:#2\ndummy:#3"), 0644); err != nil {
+		t.Fatalf("faield to update test list file: %s", err)
+	}
+
+	p.Check(ctx, r)
+	r.AssertActives(t, sourceURL, "dummy:#2", "dummy:#3")
+}
+
 func BenchmarkSource_load(b *testing.B) {
 	for _, n := range []int{10, 25, 50, 75, 100, 250, 500, 750, 1000} {
 		b.Run(fmt.Sprint(n), func(b *testing.B) {

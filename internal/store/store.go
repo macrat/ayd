@@ -26,7 +26,7 @@ var (
 type ProbeHistory struct {
 	Target  *url.URL
 	Records []api.Record
-	active  bool
+	sources []string
 }
 
 func (ph ProbeHistory) MakeReport() api.ProbeHistory {
@@ -42,6 +42,40 @@ func (ph ProbeHistory) MakeReport() api.ProbeHistory {
 	}
 
 	return r
+}
+
+// addSource appends reporter URL that reports to this ProbeHistory.
+// The sources will used to detect if is this target active or not.
+func (ph *ProbeHistory) addSource(source *url.URL) {
+	s := source.Redacted()
+	for _, x := range ph.sources {
+		if x == s {
+			return
+		}
+	}
+
+	ph.sources = append(ph.sources, s)
+}
+
+// removeSource removes reporter URL, that reports to this ProbeHistory, from sources.
+func (ph *ProbeHistory) removeSource(source *url.URL) {
+	s := source.Redacted()
+	for i, x := range ph.sources {
+		if x == s {
+			ph.sources = append(ph.sources[:i], ph.sources[i+1:]...)
+			return
+		}
+	}
+}
+
+// setInactive removes all reporter URLs from this ProbeHistory.
+func (ph *ProbeHistory) setInactive() {
+	ph.sources = nil
+}
+
+// isActive returns if is this ProbeHistory active in current execution or not.
+func (ph ProbeHistory) isActive() bool {
+	return len(ph.sources) != 0
 }
 
 type byLatestStatus []*ProbeHistory
@@ -81,8 +115,10 @@ func (xs byLatestStatus) Swap(i, j int) {
 type ProbeHistoryMap map[string]*ProbeHistory
 
 // Append adds ayd.Record to the ProbeHistory.
-// This method also mark as the target is active.
-func (hs ProbeHistoryMap) Append(r api.Record) {
+//
+// `source` of argument means who is reporting this record.
+// In the almost cases, it is the same as r.Target, but some cases like `source:` have another URL.
+func (hs ProbeHistoryMap) Append(source *url.URL, r api.Record) {
 	target := r.Target.Redacted()
 
 	if h, ok := hs[target]; ok {
@@ -102,11 +138,12 @@ func (hs ProbeHistoryMap) Append(r api.Record) {
 		}
 	}
 
-	hs[target].active = true
+	hs[target].addSource(source)
 }
 
+// isActive returns if is the specified target active in current execution or not.
 func (hs ProbeHistoryMap) isActive(target *url.URL) bool {
-	return hs[target.Redacted()].active
+	return hs[target.Redacted()].isActive()
 }
 
 type RecordHandler func(api.Record)
@@ -159,7 +196,7 @@ func New(path string, console io.Writer) (*Store, error) {
 }
 
 func (s *Store) ReportInternalError(scope, message string) {
-	s.Report(api.Record{
+	s.Report(&url.URL{Scheme: "ayd", Opaque: scope}, api.Record{
 		CheckedAt: time.Now(),
 		Status:    api.StatusFailure,
 		Target:    &url.URL{Scheme: "ayd", Opaque: scope},
@@ -223,7 +260,7 @@ func (s *Store) ProbeHistory() []*ProbeHistory {
 
 	var result []*ProbeHistory
 	for _, x := range s.probeHistory {
-		if x.active {
+		if x.isActive() {
 			result = append(result, x)
 		}
 	}
@@ -332,7 +369,10 @@ func (s *Store) setIncidentIfNeed(r api.Record, needCallback bool) {
 	}
 }
 
-func (s *Store) Report(r api.Record) {
+// Report reports a Record to this Store.
+//
+// See also ProbeHistoryMap.Append about the arguments.
+func (s *Store) Report(source *url.URL, r api.Record) {
 	if _, ok := r.Target.User.Password(); ok {
 		r.Target.User = url.UserPassword(r.Target.User.Username(), "xxxxx")
 	}
@@ -344,7 +384,7 @@ func (s *Store) Report(r api.Record) {
 		s.historyLock.Lock()
 		defer s.historyLock.Unlock()
 
-		s.probeHistory.Append(r)
+		s.probeHistory.Append(source, r)
 		s.setIncidentIfNeed(r, true)
 	}
 }
@@ -380,21 +420,21 @@ func (s *Store) Restore() error {
 		}
 
 		if r.Target.Scheme != "alert" && r.Target.Scheme != "ayd" {
-			s.probeHistory.Append(r)
+			s.probeHistory.Append(r.Target, r)
 			s.setIncidentIfNeed(r, false)
 		}
 	}
 
 	for k := range s.probeHistory {
-		s.probeHistory[k].active = false
+		s.probeHistory[k].setInactive()
 	}
 
 	return nil
 }
 
-// AddTarget adds an empty probe history into this store.
-// This method is also mark the target as active.
-func (s *Store) AddTarget(target *url.URL) {
+// ActivateTarget marks the target will reported via specified source.
+// This method prepares a ProbeHistory, and mark it as active.
+func (s *Store) ActivateTarget(source, target *url.URL) {
 	s.historyLock.Lock()
 	defer s.historyLock.Unlock()
 
@@ -405,7 +445,20 @@ func (s *Store) AddTarget(target *url.URL) {
 			Target: target,
 		}
 	}
-	s.probeHistory[t].active = true
+
+	s.probeHistory[t].addSource(source)
+}
+
+// DeactivateTarget marks the target is no longer reported via specified source.
+func (s *Store) DeactivateTarget(source *url.URL, targets ...*url.URL) {
+	s.historyLock.Lock()
+	defer s.historyLock.Unlock()
+
+	for _, t := range targets {
+		if x, ok := s.probeHistory[t.Redacted()]; ok {
+			x.removeSource(source)
+		}
+	}
 }
 
 // setHealthy is reset healthy status of this store.
@@ -467,7 +520,7 @@ func (s *Store) MakeReport() api.Report {
 	}
 
 	for k, v := range s.probeHistory {
-		if v.active {
+		if v.isActive() {
 			report.ProbeHistory[k] = v.MakeReport()
 		}
 	}

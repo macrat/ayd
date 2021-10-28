@@ -1,6 +1,8 @@
 #!/bin/sh
 
-if [ "$1" != "plug:empty" ]; then
+if [ "$1" == "plug:change" ]; then
+    echo "2001-02-03T16:05:06Z	HEALTHY	123.456	changed:plug	check changed:plug"
+elif [ "$1" != "plug:empty" ]; then
     echo "2001-02-03T16:05:06Z	HEALTHY	123.456	${1}	check ${1}"
 fi
 

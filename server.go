@@ -47,7 +47,7 @@ func (cmd *AydCommand) RunServer(ctx context.Context, s *store.Store) (exitCode 
 
 	wg := &sync.WaitGroup{}
 	for _, t := range cmd.Tasks {
-		s.AddTarget(t.Probe.Target())
+		s.ActivateTarget(t.Probe.Target(), t.Probe.Target())
 
 		job := t.MakeJob(ctx, s)
 

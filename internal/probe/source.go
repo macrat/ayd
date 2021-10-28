@@ -93,7 +93,8 @@ func (s *sourceScanner) URL() (*url.URL, error) {
 }
 
 type SourceProbe struct {
-	target *url.URL
+	target  *url.URL
+	tracker *TargetTracker
 }
 
 func NewSourceProbe(u *url.URL) (SourceProbe, error) {
@@ -121,7 +122,8 @@ func NewSourceProbe(u *url.URL) (SourceProbe, error) {
 	}
 
 	s := SourceProbe{
-		target: normalizeSourceURL(u),
+		target:  normalizeSourceURL(u),
+		tracker: &TargetTracker{},
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
@@ -228,7 +230,7 @@ func (p SourceProbe) load(ctx context.Context, ignores ignoreSet, out map[string
 				out[probe.Target().String()] = probe
 			}
 		} else if !ignores.Has(target.String()) {
-			err := SourceProbe{target}.load(ctx, append(ignores, p.target.String()), out)
+			err := SourceProbe{target: target}.load(ctx, append(ignores, p.target.String()), out)
 			es := ayderr.List{}
 			if errors.As(err, &es) {
 				invalids.Push(es.Children...)
@@ -256,7 +258,7 @@ func (p SourceProbe) Check(ctx context.Context, r Reporter) {
 	probes := make(map[string]Probe)
 	if err := p.load(ctx, nil, probes); err != nil {
 		d := time.Now().Sub(stime)
-		r.Report(timeoutOr(ctx, api.Record{
+		r.Report(p.target, timeoutOr(ctx, api.Record{
 			CheckedAt: stime,
 			Target:    p.target,
 			Status:    api.StatusFailure,
@@ -267,7 +269,7 @@ func (p SourceProbe) Check(ctx context.Context, r Reporter) {
 	}
 
 	d := time.Now().Sub(stime)
-	r.Report(api.Record{
+	r.Report(p.target, api.Record{
 		CheckedAt: stime,
 		Target:    p.target,
 		Status:    api.StatusHealthy,
@@ -275,8 +277,9 @@ func (p SourceProbe) Check(ctx context.Context, r Reporter) {
 		Latency:   d,
 	})
 
-	wg := &sync.WaitGroup{}
+	r = p.tracker.PrepareReporter(p.target, r)
 
+	wg := &sync.WaitGroup{}
 	for _, p := range probes {
 		wg.Add(1)
 
@@ -286,4 +289,6 @@ func (p SourceProbe) Check(ctx context.Context, r Reporter) {
 		}(p)
 	}
 	wg.Wait()
+
+	r.DeactivateTarget(p.target, p.tracker.Inactives()...)
 }

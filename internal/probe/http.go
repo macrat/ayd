@@ -118,7 +118,7 @@ func (p HTTPProbe) Check(ctx context.Context, r Reporter) {
 		}
 	}
 
-	r.Report(timeoutOr(ctx, api.Record{
+	r.Report(p.target, timeoutOr(ctx, api.Record{
 		CheckedAt: st,
 		Target:    p.target,
 		Status:    status,

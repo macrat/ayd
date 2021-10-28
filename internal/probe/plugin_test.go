@@ -200,3 +200,23 @@ func TestWithoutPlugin(t *testing.T) {
 		})
 	}
 }
+
+func TestPluginProbe_inactiveTargetHandling(t *testing.T) {
+	t.Parallel()
+	PreparePluginPath(t)
+
+	sourceURL := "plug:change"
+	p, err := probe.New(sourceURL)
+	if err != nil {
+		t.Fatalf("failed to prepare probe: %s", err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	r := &testutil.DummyReporter{}
+	r.Actives = []*url.URL{{Scheme: "plug", Opaque: "change"}}
+
+	p.Check(ctx, r)
+	r.AssertActives(t, "changed:plug")
+}

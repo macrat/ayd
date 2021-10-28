@@ -15,10 +15,6 @@ var (
 	ErrMissingHost       = errors.New("missing target host")
 )
 
-type Reporter interface {
-	Report(r api.Record)
-}
-
 func SplitScheme(scheme string) (probe string, separator rune, variant string) {
 	for i, x := range scheme {
 		if x == '-' || x == '+' {
