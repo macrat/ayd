@@ -1,6 +1,7 @@
 package store
 
 import (
+	"fmt"
 	"net/url"
 	"reflect"
 	"sort"
@@ -51,6 +52,25 @@ func TestProbeHistory_sources(t *testing.T) {
 
 	ph.setInactive()
 	assert()
+}
+
+func BenchmarkProbeHistory_sources(b *testing.B) {
+	for _, n := range []int{1, 10, 100, 1000} {
+		b.Run(fmt.Sprint(n), func(b *testing.B) {
+			ph := &ProbeHistory{}
+
+			xs := make([]*url.URL, n)
+			for i := range xs {
+				xs[i] = &url.URL{Scheme: "dummy", Opaque: fmt.Sprint(i)}
+			}
+
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				ph.removeSource(xs[i%n])
+				ph.addSource(xs[i%n])
+			}
+		})
+	}
 }
 
 func TestByLatestStatus(t *testing.T) {
