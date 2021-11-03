@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/NYTimes/gziphandler"
-	"github.com/macrat/ayd/internal/store"
 )
 
 //go:embed static/favicon.ico
@@ -17,7 +16,7 @@ var faviconSvg []byte
 //go:embed static/not-found.html
 var notFoundPage []byte
 
-func New(s *store.Store) http.Handler {
+func New(s Store) http.Handler {
 	m := http.NewServeMux()
 
 	m.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
@@ -56,7 +55,7 @@ func New(s *store.Store) http.Handler {
 	return gziphandler.GzipHandler(m)
 }
 
-func HandleError(s *store.Store, scope string, err error) {
+func HandleError(s Store, scope string, err error) {
 	if err != nil {
 		s.ReportInternalError("endpoint:"+scope, err.Error())
 	}

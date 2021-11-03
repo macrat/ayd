@@ -6,14 +6,13 @@ import (
 	"testing"
 
 	"github.com/macrat/ayd/internal/endpoint"
-	"github.com/macrat/ayd/internal/store"
 	"github.com/macrat/ayd/internal/testutil"
 )
 
 func Benchmark_endpoints(b *testing.B) {
 	benchmarks := []struct {
 		Path     string
-		Endpoint func(*store.Store) http.HandlerFunc
+		Endpoint func(endpoint.Store) http.HandlerFunc
 	}{
 		{"/status.html", endpoint.StatusHTMLEndpoint},
 		{"/status.txt", endpoint.StatusTextEndpoint},
@@ -22,7 +21,7 @@ func Benchmark_endpoints(b *testing.B) {
 		{"/log.csv", endpoint.LogCSVEndpoint},
 		{"/log.json", endpoint.LogJsonEndpoint},
 		{"/metrics", endpoint.MetricsEndpoint},
-		{"/healthz", func(s *store.Store) http.HandlerFunc {
+		{"/healthz", func(s endpoint.Store) http.HandlerFunc {
 			return endpoint.HealthzEndpoint(s)
 		}},
 	}

@@ -8,7 +8,9 @@ import (
 	"testing"
 
 	"github.com/macrat/ayd/internal/endpoint"
+	"github.com/macrat/ayd/internal/store"
 	"github.com/macrat/ayd/internal/testutil"
+	api "github.com/macrat/ayd/lib-ayd"
 )
 
 func TestHealthzEndpoint(t *testing.T) {
@@ -38,8 +40,31 @@ type DummyErrorsGetter struct {
 	messages []string
 }
 
+func (d DummyErrorsGetter) Path() string {
+	return ""
+}
+
+func (d DummyErrorsGetter) ProbeHistory() []*store.ProbeHistory {
+	return nil
+}
+
+func (d DummyErrorsGetter) Targets() []string {
+	return nil
+}
+
+func (d DummyErrorsGetter) MakeReport() api.Report {
+	return api.Report{}
+}
+
+func (d DummyErrorsGetter) ReportInternalError(_, _ string) {
+}
+
 func (d DummyErrorsGetter) Errors() (healthy bool, messages []string) {
 	return d.healthy, d.messages
+}
+
+func (d DummyErrorsGetter) IncidentCount() int {
+	return 0
 }
 
 func (d DummyErrorsGetter) String() string {

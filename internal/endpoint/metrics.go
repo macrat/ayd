@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/macrat/ayd/internal/store"
 	api "github.com/macrat/ayd/lib-ayd"
 )
 
@@ -23,7 +22,7 @@ type metricInfo struct {
 
 // MetricsEndpoint implements Prometheus metrics endpoint.
 // This endpoint follows both of Prometheus specification and OpenMetrics specification.
-func MetricsEndpoint(s *store.Store) http.HandlerFunc {
+func MetricsEndpoint(s Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		hss := s.ProbeHistory()
 		metrics := make([]metricInfo, 0, len(hss))
@@ -88,6 +87,6 @@ func MetricsEndpoint(s *store.Store) http.HandlerFunc {
 
 		fmt.Fprintln(w, "# HELP ayd_incident_total The number of incident happened since server started.")
 		fmt.Fprintln(w, "# TYPE ayd_incident_total counter")
-		fmt.Fprintf(w, "ayd_incident_total %d\n", s.IncidentCount)
+		fmt.Fprintf(w, "ayd_incident_total %d\n", s.IncidentCount())
 	}
 }

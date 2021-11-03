@@ -137,7 +137,7 @@ func TestRunServer_permissionError(t *testing.T) {
 
 	s := testutil.NewStore(t)
 	defer s.Close()
-	os.Chmod(s.Path, 0200)
+	os.Chmod(s.Path(), 0200)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 	defer cancel()
