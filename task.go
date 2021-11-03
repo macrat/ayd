@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/macrat/ayd/internal/ayderr"
-	"github.com/macrat/ayd/internal/probe"
+	"github.com/macrat/ayd/internal/url/probe"
 	"github.com/macrat/ayd/internal/store"
 	api "github.com/macrat/ayd/lib-ayd"
 	"github.com/robfig/cron/v3"

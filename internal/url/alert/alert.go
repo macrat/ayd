@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/macrat/ayd/internal/probe"
+	"github.com/macrat/ayd/internal/url/probe"
 	api "github.com/macrat/ayd/lib-ayd"
 )
 
