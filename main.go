@@ -9,8 +9,8 @@ import (
 	"os/signal"
 	"text/template"
 
-	"github.com/macrat/ayd/internal/alert"
-	"github.com/macrat/ayd/internal/probe"
+	"github.com/macrat/ayd/internal/url/alert"
+	"github.com/macrat/ayd/internal/url/probe"
 	"github.com/macrat/ayd/internal/store"
 	api "github.com/macrat/ayd/lib-ayd"
 	"github.com/spf13/pflag"
