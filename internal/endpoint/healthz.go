@@ -5,13 +5,8 @@ import (
 	"net/http"
 )
 
-type ErrorsGetter interface {
-	Errors() (healthy bool, messages []string)
-}
-
 // HealthzEndpoint is the http.HandlerFunc for /healthz page.
-// It receives ErrorsGetter interface instead of *store.Store because for make easier to test.
-func HealthzEndpoint(s ErrorsGetter) http.HandlerFunc {
+func HealthzEndpoint(s Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain")
 

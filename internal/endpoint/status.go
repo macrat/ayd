@@ -9,14 +9,12 @@ import (
 	"net/http"
 	"strings"
 	textTemplate "text/template"
-
-	"github.com/macrat/ayd/internal/store"
 )
 
 //go:embed templates/status.html
 var statusHTMLTemplate string
 
-func StatusHTMLEndpoint(s *store.Store) http.HandlerFunc {
+func StatusHTMLEndpoint(s Store) http.HandlerFunc {
 	tmpl := htmlTemplate.Must(htmlTemplate.New("status.html").Funcs(templateFuncs).Parse(statusHTMLTemplate))
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -32,7 +30,7 @@ var statusUnicodeTextTemplate string
 //go:embed templates/status.ascii
 var statusASCIITextTemplate string
 
-func StatusTextEndpoint(s *store.Store) http.HandlerFunc {
+func StatusTextEndpoint(s Store) http.HandlerFunc {
 	unicode := textTemplate.Must(textTemplate.New("status.unicode").Funcs(templateFuncs).Parse(statusUnicodeTextTemplate))
 	ascii := textTemplate.Must(textTemplate.New("status.ascii").Funcs(templateFuncs).Parse(statusASCIITextTemplate))
 
@@ -62,7 +60,7 @@ func StatusTextEndpoint(s *store.Store) http.HandlerFunc {
 	}
 }
 
-func StatusJSONEndpoint(s *store.Store) http.HandlerFunc {
+func StatusJSONEndpoint(s Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 		w.Header().Set("Access-Control-Allow-Origin", "*")

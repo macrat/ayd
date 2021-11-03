@@ -4,12 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-
-	"github.com/macrat/ayd/internal/store"
 )
 
 // TargetsTextEndpoint replies target list in text.
-func TargetsTextEndpoint(s *store.Store) http.HandlerFunc {
+func TargetsTextEndpoint(s Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain; charset=UTF-8")
 
@@ -20,7 +18,7 @@ func TargetsTextEndpoint(s *store.Store) http.HandlerFunc {
 }
 
 // TargetsJSONEndpoint replies target list in json format.
-func TargetsJSONEndpoint(s *store.Store) http.HandlerFunc {
+func TargetsJSONEndpoint(s Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 

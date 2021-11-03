@@ -14,7 +14,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/macrat/ayd/internal/store"
 	api "github.com/macrat/ayd/lib-ayd"
 )
 
@@ -75,7 +74,7 @@ type LogGenerator struct {
 	index   int
 }
 
-func NewLogGenerator(s *store.Store, since, until time.Time) *LogGenerator {
+func NewLogGenerator(s Store, since, until time.Time) *LogGenerator {
 	g := &LogGenerator{index: -1}
 	for _, xs := range s.ProbeHistory() {
 		for _, x := range xs.Records {
@@ -127,11 +126,11 @@ type LogScanner interface {
 	Record() api.Record
 }
 
-func NewLogScanner(s *store.Store, since, until time.Time) (LogScanner, error) {
-	if s.Path == "" {
+func NewLogScanner(s Store, since, until time.Time) (LogScanner, error) {
+	if s.Path() == "" {
 		return NewLogGenerator(s, since, until), nil
 	}
-	return NewLogReader(s.Path, since, until)
+	return NewLogReader(s.Path(), since, until)
 }
 
 func getTimeQuery(queries url.Values, name string, default_ time.Time) (time.Time, error) {
@@ -147,7 +146,7 @@ func getTimeQuery(queries url.Values, name string, default_ time.Time) (time.Tim
 	return t, nil
 }
 
-func newLogScannerForEndpoint(s *store.Store, r *http.Request) (scanner LogScanner, statusCode int, err error) {
+func newLogScannerForEndpoint(s Store, r *http.Request) (scanner LogScanner, statusCode int, err error) {
 	qs := r.URL.Query()
 
 	var invalidQueries []string
@@ -207,7 +206,7 @@ func (f LogFilter) Record() api.Record {
 	return f.Scanner.Record()
 }
 
-func LogTSVEndpoint(s *store.Store) http.HandlerFunc {
+func LogTSVEndpoint(s Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/tab-separated-values; charset=UTF-8")
 		w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -235,7 +234,7 @@ func LogTSVEndpoint(s *store.Store) http.HandlerFunc {
 	}
 }
 
-func LogJsonEndpoint(s *store.Store) http.HandlerFunc {
+func LogJsonEndpoint(s Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -272,7 +271,7 @@ func LogJsonEndpoint(s *store.Store) http.HandlerFunc {
 	}
 }
 
-func LogCSVEndpoint(s *store.Store) http.HandlerFunc {
+func LogCSVEndpoint(s Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/csv")
 		w.Header().Set("Access-Control-Allow-Origin", "*")

@@ -149,7 +149,7 @@ func (hs ProbeHistoryMap) isActive(target *url.URL) bool {
 type RecordHandler func(api.Record)
 
 type Store struct {
-	Path string
+	path string
 
 	Console io.Writer
 
@@ -159,7 +159,7 @@ type Store struct {
 	incidentHistory  []*api.Incident
 
 	OnStatusChanged []RecordHandler
-	IncidentCount   int
+	incidentCount   int
 
 	writeCh       chan<- api.Record
 	writerStopped chan struct{}
@@ -172,7 +172,7 @@ func New(path string, console io.Writer) (*Store, error) {
 	ch := make(chan api.Record, 32)
 
 	store := &Store{
-		Path:             path,
+		path:             path,
 		Console:          console,
 		probeHistory:     make(ProbeHistoryMap),
 		currentIncidents: make(map[string]*api.Incident),
@@ -181,8 +181,8 @@ func New(path string, console io.Writer) (*Store, error) {
 		healthy:          true,
 	}
 
-	if store.Path != "" {
-		if f, err := os.OpenFile(store.Path, os.O_WRONLY|os.O_APPEND|os.O_CREATE|os.O_SYNC, 0644); err != nil {
+	if store.path != "" {
+		if f, err := os.OpenFile(store.path, os.O_WRONLY|os.O_APPEND|os.O_CREATE|os.O_SYNC, 0644); err != nil {
 			close(ch)
 			return nil, err
 		} else {
@@ -193,6 +193,21 @@ func New(path string, console io.Writer) (*Store, error) {
 	go store.writer(ch, store.writerStopped)
 
 	return store, nil
+}
+
+// Path returns path to log file.
+func (s *Store) Path() string {
+	return s.path
+}
+
+// SetPath sets path to log file.
+func (s *Store) SetPath(p string) {
+	s.path = p
+}
+
+// IncidentCount returns the count of incident causes.
+func (s *Store) IncidentCount() int {
+	return s.incidentCount
 }
 
 func (s *Store) ReportInternalError(scope, message string) {
@@ -224,13 +239,13 @@ func (s *Store) writer(ch <-chan api.Record, stopped chan struct{}) {
 
 		s.Console.Write(msg)
 
-		if s.Path == "" {
+		if s.path == "" {
 			continue
 		}
 
 		s.setHealthy()
 
-		f, err := os.OpenFile(s.Path, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
+		f, err := os.OpenFile(s.path, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
 		if err != nil {
 			s.handleError(err, "failed to open log file")
 			continue
@@ -361,7 +376,7 @@ func (s *Store) setIncidentIfNeed(r api.Record, needCallback bool) {
 
 		// kick incident callback when new incident caused
 		if needCallback {
-			s.IncidentCount++
+			s.incidentCount++
 			for _, cb := range s.OnStatusChanged {
 				cb(r)
 			}
@@ -390,14 +405,14 @@ func (s *Store) Report(source *url.URL, r api.Record) {
 }
 
 func (s *Store) Restore() error {
-	if s.Path == "" {
+	if s.path == "" {
 		return nil
 	}
 
 	s.historyLock.Lock()
 	defer s.historyLock.Unlock()
 
-	f, err := os.OpenFile(s.Path, os.O_RDONLY|os.O_CREATE, 0644)
+	f, err := os.OpenFile(s.path, os.O_RDONLY|os.O_CREATE, 0644)
 	if err != nil {
 		return err
 	}
