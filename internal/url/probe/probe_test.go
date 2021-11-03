@@ -13,8 +13,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/macrat/ayd/internal/url/probe"
 	"github.com/macrat/ayd/internal/testutil"
+	"github.com/macrat/ayd/internal/url/probe"
 	api "github.com/macrat/ayd/lib-ayd"
 )
 
