@@ -9,8 +9,8 @@ import (
 
 	"github.com/macrat/ayd"
 	"github.com/macrat/ayd/internal/ayderr"
-	"github.com/macrat/ayd/internal/url/probe"
 	"github.com/macrat/ayd/internal/testutil"
+	aurl "github.com/macrat/ayd/internal/url"
 	api "github.com/macrat/ayd/lib-ayd"
 )
 
@@ -20,7 +20,7 @@ func (p PanicProbe) Target() *url.URL {
 	return &url.URL{Scheme: "test", Opaque: "panic"}
 }
 
-func (p PanicProbe) Check(ctx context.Context, r probe.Reporter) {
+func (p PanicProbe) Check(ctx context.Context, r aurl.Reporter) {
 	panic("this always make panic")
 }
 

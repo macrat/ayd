@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/url"
 
+	aurl "github.com/macrat/ayd/internal/url"
 	api "github.com/macrat/ayd/lib-ayd"
 )
 
@@ -14,6 +15,9 @@ var (
 	ErrUnsupportedScheme = errors.New("unsupported scheme")
 	ErrMissingHost       = errors.New("missing target host")
 )
+
+// Reporter is a shorthand to ayd/internal/url.Reporter.
+type Reporter = aurl.Reporter
 
 func SplitScheme(scheme string) (probe string, separator rune, variant string) {
 	for i, x := range scheme {

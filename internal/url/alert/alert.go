@@ -7,12 +7,16 @@ import (
 	"strconv"
 	"time"
 
+	aurl "github.com/macrat/ayd/internal/url"
 	"github.com/macrat/ayd/internal/url/probe"
 	api "github.com/macrat/ayd/lib-ayd"
 )
 
+// Reporter is a shorthand to ayd/internal/url.Reporter.
+type Reporter = aurl.Reporter
+
 type Alert interface {
-	Trigger(context.Context, api.Record, probe.Reporter)
+	Trigger(context.Context, api.Record, Reporter)
 }
 
 func New(target string) (Alert, error) {
@@ -28,7 +32,7 @@ func New(target string) (Alert, error) {
 
 type ReplaceReporter struct {
 	Target   *url.URL
-	Upstream probe.Reporter
+	Upstream Reporter
 }
 
 func (r ReplaceReporter) Report(_ *url.URL, rec api.Record) {
@@ -48,7 +52,7 @@ type ProbeAlert struct {
 	target *url.URL
 }
 
-func (a ProbeAlert) Trigger(ctx context.Context, lastRecord api.Record, r probe.Reporter) {
+func (a ProbeAlert) Trigger(ctx context.Context, lastRecord api.Record, r Reporter) {
 	qs := a.target.Query()
 	qs.Set("ayd_checked_at", lastRecord.CheckedAt.Format(time.RFC3339))
 	qs.Set("ayd_status", lastRecord.Status.String())
@@ -125,7 +129,7 @@ func NewPluginAlert(target string) (PluginAlert, error) {
 	return p, nil
 }
 
-func (a PluginAlert) Trigger(ctx context.Context, lastRecord api.Record, r probe.Reporter) {
+func (a PluginAlert) Trigger(ctx context.Context, lastRecord api.Record, r Reporter) {
 	probe.ExecutePlugin(
 		ctx,
 		AlertReporter{&url.URL{Scheme: "alert", Opaque: a.target.String()}, r},
