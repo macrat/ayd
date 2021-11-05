@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/macrat/ayd/internal/scheme/probe"
+	"github.com/macrat/ayd/internal/scheme"
 	api "github.com/macrat/ayd/lib-ayd"
 )
 
@@ -69,7 +69,7 @@ func (r *DummyReporter) AssertActives(t *testing.T, expects ...string) {
 	}
 }
 
-func RunCheck(ctx context.Context, p probe.Probe) []api.Record {
+func RunCheck(ctx context.Context, p scheme.Probe) []api.Record {
 	reporter := &DummyReporter{}
 	p.Check(ctx, reporter)
 	return reporter.Records

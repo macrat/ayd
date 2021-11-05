@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/macrat/ayd/internal/ayderr"
-	"github.com/macrat/ayd/internal/scheme/probe"
+	"github.com/macrat/ayd/internal/scheme"
 	"github.com/macrat/ayd/internal/store"
 	api "github.com/macrat/ayd/lib-ayd"
 	"github.com/robfig/cron/v3"
@@ -19,7 +19,7 @@ var (
 
 type Task struct {
 	Schedule Schedule
-	Probe    probe.Probe
+	Probe    scheme.Probe
 }
 
 func (t Task) MakeJob(ctx context.Context, s *store.Store) cron.Job {
@@ -64,14 +64,14 @@ func ParseArgs(args []string) ([]Task, error) {
 			continue
 		}
 
-		p, err := probe.New(a)
+		p, err := scheme.NewProbe(a)
 		if err != nil {
 			switch err {
-			case probe.ErrUnsupportedScheme:
+			case scheme.ErrUnsupportedScheme:
 				errors.Pushf("%s: This scheme is not supported. Please check if the plugin is installed if need.", a)
-			case probe.ErrMissingScheme:
+			case scheme.ErrMissingScheme:
 				errors.Pushf("%s: Not valid as schedule or target URL. Please specify scheme if this is target. (e.g. ping:%s or http://%s)", a, a, a)
-			case probe.ErrInvalidURL:
+			case scheme.ErrInvalidURL:
 				errors.Pushf("%s: Not valid as schedule or target URL.", a)
 			default:
 				errors.Pushf("%s: %w", a, err)

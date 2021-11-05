@@ -6,7 +6,7 @@ import (
 	"sync"
 
 	"github.com/macrat/ayd/internal/ayderr"
-	"github.com/macrat/ayd/internal/scheme/probe"
+	"github.com/macrat/ayd/internal/scheme"
 	api "github.com/macrat/ayd/lib-ayd"
 )
 
@@ -35,7 +35,7 @@ func NewSet(targets []string) (AlertSet, error) {
 
 // Trigger of AlertSet calls all Trigger methods of children parallelly.
 // This method blocks until all alerts done.
-func (as AlertSet) Trigger(ctx context.Context, lastRecord api.Record, r probe.Reporter) {
+func (as AlertSet) Trigger(ctx context.Context, lastRecord api.Record, r scheme.Reporter) {
 	wg := &sync.WaitGroup{}
 
 	for _, a := range as {
