@@ -13,7 +13,7 @@ import (
 	api "github.com/macrat/ayd/lib-ayd"
 )
 
-func TestAlert(t *testing.T) {
+func TestAlerter(t *testing.T) {
 	cwd, err := os.Getwd()
 	if err != nil {
 		t.Fatalf("failed to get current path: %s", err)
@@ -69,7 +69,7 @@ func TestAlert(t *testing.T) {
 
 			r := &testutil.DummyReporter{}
 
-			alert.Trigger(ctx, rec, r)
+			alert.Alert(ctx, r, rec)
 
 			if len(r.Records) != 1 {
 				t.Fatalf("unexpected number of records: %d: %v", len(r.Records), r.Records)
@@ -107,7 +107,7 @@ func TestAlert(t *testing.T) {
 
 		r := &testutil.DummyReporter{}
 
-		alert.Trigger(ctx, rec, r)
+		alert.Alert(ctx, r, rec)
 
 		if len(r.Records) != 2 {
 			t.Fatalf("unexpected number of records: %d: %v", len(r.Records), r.Records)
