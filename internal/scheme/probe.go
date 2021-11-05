@@ -33,7 +33,7 @@ func NewProberFromURL(u *url.URL) (Prober, error) {
 	case "dns", "dns4", "dns6":
 		return NewDNSScheme(u)
 	case "exec":
-		return NewExecuteProbe(u)
+		return NewExecScheme(u)
 	case "source":
 		return NewSourceProbe(u)
 	case "dummy":

@@ -14,7 +14,7 @@ import (
 	api "github.com/macrat/ayd/lib-ayd"
 )
 
-func TestExecuteProbe(t *testing.T) {
+func TestExecScheme_Probe(t *testing.T) {
 	if runtime.GOOS != "windows" {
 		// This test in windows sometimes be fail if enable parallel.
 		// Maybe it's because of the timing to unset path to testdata/dos_polyfill.
@@ -46,7 +46,7 @@ func TestExecuteProbe(t *testing.T) {
 	AssertTimeout(t, "exec:echo")
 }
 
-func TestExecuteProbe_unknownError(t *testing.T) {
+func TestExecScheme_Probe_unknownError(t *testing.T) {
 	dir := t.TempDir()
 	file := filepath.Join(dir, "test.bat")
 
@@ -85,7 +85,7 @@ func TestExecuteProbe_unknownError(t *testing.T) {
 	}
 }
 
-func BenchmarkExecuteProbe(b *testing.B) {
+func BenchmarkExecScheme(b *testing.B) {
 	p := testutil.NewProber(b, "exec:echo#hello-world")
 
 	r := &testutil.DummyReporter{}
