@@ -1,4 +1,4 @@
-package alert_test
+package scheme_test
 
 import (
 	"context"
@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/macrat/ayd/internal/scheme/alert"
+	"github.com/macrat/ayd/internal/scheme"
 	"github.com/macrat/ayd/internal/testutil"
 	api "github.com/macrat/ayd/lib-ayd"
 )
@@ -46,7 +46,7 @@ func TestAlert(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.TargetIn, func(t *testing.T) {
-			alert, err := alert.New(tt.TargetIn)
+			alert, err := scheme.NewAlert(tt.TargetIn)
 			if err != nil {
 				if err.Error() != tt.Error {
 					t.Fatalf("unexpected error: %s", err)
@@ -90,7 +90,7 @@ func TestAlert(t *testing.T) {
 	}
 
 	t.Run("broken:", func(t *testing.T) {
-		alert, err := alert.New("broken:")
+		alert, err := scheme.NewAlert("broken:")
 		if err != nil {
 			t.Fatalf("unexpected error: %s", err)
 		}
@@ -127,7 +127,7 @@ func TestAlert(t *testing.T) {
 
 func TestReplaceReporter(t *testing.T) {
 	r1 := &testutil.DummyReporter{}
-	r2 := alert.ReplaceReporter{&url.URL{Scheme: "alert", Opaque: "dummy:hello-world"}, r1}
+	r2 := scheme.ReplaceReporter{&url.URL{Scheme: "alert", Opaque: "dummy:hello-world"}, r1}
 
 	r2.Report(&url.URL{Scheme: "dummy"}, api.Record{
 		Target:  &url.URL{Scheme: "dummy", Opaque: "another"},
@@ -153,7 +153,7 @@ func TestReplaceReporter(t *testing.T) {
 
 func TestAlertReporter(t *testing.T) {
 	r1 := &testutil.DummyReporter{}
-	r2 := alert.AlertReporter{&url.URL{Scheme: "alert", Opaque: "dummy:"}, r1}
+	r2 := scheme.AlertReporter{&url.URL{Scheme: "alert", Opaque: "dummy:"}, r1}
 
 	r2.Report(&url.URL{Scheme: "dummy"}, api.Record{
 		Target:  &url.URL{Scheme: "dummy", Opaque: "another"},
