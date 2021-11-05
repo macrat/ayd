@@ -7,13 +7,13 @@ import (
 	"strconv"
 	"time"
 
-	aurl "github.com/macrat/ayd/internal/url"
-	"github.com/macrat/ayd/internal/url/probe"
+	"github.com/macrat/ayd/internal/scheme"
+	"github.com/macrat/ayd/internal/scheme/probe"
 	api "github.com/macrat/ayd/lib-ayd"
 )
 
-// Reporter is a shorthand to ayd/internal/url.Reporter.
-type Reporter = aurl.Reporter
+// Reporter is a shorthand to ayd/internal/scheme.Reporter.
+type Reporter = scheme.Reporter
 
 type Alert interface {
 	Trigger(context.Context, api.Record, Reporter)

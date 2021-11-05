@@ -1,4 +1,4 @@
-package url
+package scheme
 
 import (
 	"net/url"
