@@ -8,13 +8,15 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 	"time"
 
 	api "github.com/macrat/ayd/lib-ayd"
 )
 
-type PluginProbe struct {
+// PluginScheme is the plugin handler. This implements both of Prober interface and Alerter interface.
+type PluginScheme struct {
 	target  *url.URL
 	tracker *TargetTracker
 }
@@ -48,27 +50,35 @@ func FindPlugin(scheme, scope string) (commandName string, err error) {
 	return "", ErrUnsupportedScheme
 }
 
-func NewPluginProbe(u *url.URL) (PluginProbe, error) {
+func NewPluginScheme(u *url.URL, scope string) (PluginScheme, error) {
 	scheme, _, _ := SplitScheme(u.Scheme)
 
 	if scheme == "ayd" || scheme == "alert" {
-		return PluginProbe{}, ErrUnsupportedScheme
+		return PluginScheme{}, ErrUnsupportedScheme
 	}
 
-	p := PluginProbe{
+	p := PluginScheme{
 		target:  u,
 		tracker: &TargetTracker{},
 	}
 	p.tracker.Activate(u)
 
-	if _, err := FindPlugin(u.Scheme, "probe"); err != nil {
-		return PluginProbe{}, err
+	if _, err := FindPlugin(u.Scheme, scope); err != nil {
+		return PluginScheme{}, err
 	}
 
 	return p, nil
 }
 
-func (p PluginProbe) Target() *url.URL {
+func NewPluginProbe(u *url.URL) (PluginScheme, error) {
+	return NewPluginScheme(u, "probe")
+}
+
+func NewPluginAlert(u *url.URL) (PluginScheme, error) {
+	return NewPluginScheme(u, "alert")
+}
+
+func (p PluginScheme) Target() *url.URL {
 	return p.target
 }
 
@@ -132,9 +142,26 @@ func ExecutePlugin(ctx context.Context, r Reporter, scope string, target *url.UR
 	}
 }
 
-func (p PluginProbe) Probe(ctx context.Context, r Reporter) {
+func (p PluginScheme) Probe(ctx context.Context, r Reporter) {
 	r = p.tracker.PrepareReporter(p.target, r)
 	ExecutePlugin(ctx, r, "probe", p.target, []string{p.target.String()}, os.Environ())
-
 	r.DeactivateTarget(p.target, p.tracker.Inactives()...)
+}
+
+func (p PluginScheme) Alert(ctx context.Context, r Reporter, lastRecord api.Record) {
+	ExecutePlugin(
+		ctx,
+		AlertReporter{&url.URL{Scheme: "alert", Opaque: p.target.String()}, r},
+		"alert",
+		p.target,
+		[]string{
+			p.target.String(),
+			lastRecord.CheckedAt.Format(time.RFC3339),
+			lastRecord.Status.String(),
+			strconv.FormatFloat(float64(lastRecord.Latency.Microseconds())/1000.0, 'f', -1, 64),
+			lastRecord.Target.String(),
+			lastRecord.Message,
+		},
+		os.Environ(),
+	)
 }

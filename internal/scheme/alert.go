@@ -3,7 +3,6 @@ package scheme
 import (
 	"context"
 	"net/url"
-	"os"
 	"strconv"
 	"time"
 
@@ -15,9 +14,14 @@ type Alerter interface {
 }
 
 func NewAlerter(target string) (Alerter, error) {
-	p, err := WithoutPluginProbe(NewProber(target))
+	u, err := url.Parse(target)
+	if err != nil {
+		return nil, ErrInvalidURL
+	}
+
+	p, err := WithoutPluginProbe(NewProberFromURL(u))
 	if err == ErrUnsupportedScheme {
-		return NewPluginAlert(target)
+		return NewPluginAlert(u)
 	} else if err != nil {
 		return nil, err
 	}
@@ -91,47 +95,4 @@ func (r AlertReporter) Report(_ *url.URL, rec api.Record) {
 
 func (r AlertReporter) DeactivateTarget(source *url.URL, targets ...*url.URL) {
 	r.Upstream.DeactivateTarget(source, targets...)
-}
-
-type PluginAlert struct {
-	target *url.URL
-}
-
-func NewPluginAlert(target string) (PluginAlert, error) {
-	u, err := url.Parse(target)
-	if err != nil {
-		return PluginAlert{}, err
-	}
-
-	if s, _, _ := SplitScheme(u.Scheme); s == "ayd" || s == "alert" {
-		return PluginAlert{}, ErrUnsupportedScheme
-	}
-
-	p := PluginAlert{
-		target: u,
-	}
-
-	if _, err := FindPlugin(u.Scheme, "alert"); err != nil {
-		return PluginAlert{}, err
-	}
-
-	return p, nil
-}
-
-func (a PluginAlert) Alert(ctx context.Context, r Reporter, lastRecord api.Record) {
-	ExecutePlugin(
-		ctx,
-		AlertReporter{&url.URL{Scheme: "alert", Opaque: a.target.String()}, r},
-		"alert",
-		a.target,
-		[]string{
-			a.target.String(),
-			lastRecord.CheckedAt.Format(time.RFC3339),
-			lastRecord.Status.String(),
-			strconv.FormatFloat(float64(lastRecord.Latency.Microseconds())/1000.0, 'f', -1, 64),
-			lastRecord.Target.String(),
-			lastRecord.Message,
-		},
-		os.Environ(),
-	)
 }
