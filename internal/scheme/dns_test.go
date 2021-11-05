@@ -9,7 +9,7 @@ import (
 	api "github.com/macrat/ayd/lib-ayd"
 )
 
-func TestDNSProbe(t *testing.T) {
+func TestDNSScheme(t *testing.T) {
 	t.Parallel()
 
 	AssertProbe(t, []ProbeTest{
@@ -38,7 +38,7 @@ func TestDNSProbe(t *testing.T) {
 	AssertTimeout(t, "dns:localhost")
 }
 
-func BenchmarkDNSProbe(b *testing.B) {
+func BenchmarkDNSScheme(b *testing.B) {
 	p := testutil.NewProber(b, "dns:localhost")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)

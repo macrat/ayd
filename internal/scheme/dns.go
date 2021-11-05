@@ -87,14 +87,14 @@ func (r dnsResolver) txt(ctx context.Context, target string) (string, error) {
 	return strings.Join(texts, "\n"), err
 }
 
-type DNSProbe struct {
+type DNSScheme struct {
 	target   *url.URL
 	hostname string
 	resolve  func(ctx context.Context, target string) (string, error)
 }
 
-func NewDNSProbe(u *url.URL) (DNSProbe, error) {
-	p := DNSProbe{
+func NewDNSScheme(u *url.URL) (DNSScheme, error) {
+	s := DNSScheme{
 		target: &url.URL{
 			Scheme:   "dns",
 			Opaque:   u.Opaque,
@@ -103,18 +103,18 @@ func NewDNSProbe(u *url.URL) (DNSProbe, error) {
 		hostname: u.Opaque,
 	}
 	if u.Opaque == "" {
-		p.target.Host = u.Host
-		p.hostname = strings.SplitN(strings.TrimLeft(u.Path, "/"), "/", 2)[0]
-		p.target.Path = "/" + p.hostname
+		s.target.Host = u.Host
+		s.hostname = strings.SplitN(strings.TrimLeft(u.Path, "/"), "/", 2)[0]
+		s.target.Path = "/" + s.hostname
 
-		if p.target.Host == "" {
-			p.target.Opaque = p.hostname
-			p.target.Path = ""
+		if s.target.Host == "" {
+			s.target.Opaque = s.hostname
+			s.target.Path = ""
 		}
 	}
 
-	if p.hostname == "" {
-		return DNSProbe{}, ErrMissingDomainName
+	if s.hostname == "" {
+		return DNSScheme{}, ErrMissingDomainName
 	}
 
 	scheme, separator, variant := SplitScheme(u.Scheme)
@@ -130,48 +130,48 @@ func NewDNSProbe(u *url.URL) (DNSProbe, error) {
 	case scheme == "dns6":
 		shorthand = "AAAA"
 	default:
-		return DNSProbe{}, ErrUnsupportedScheme
+		return DNSScheme{}, ErrUnsupportedScheme
 	}
 
 	if shorthand != "" {
 		q := u.Query().Get("type")
 		if q != "" && shorthand != strings.ToUpper(q) {
-			return DNSProbe{}, ErrConflictDNSType
+			return DNSScheme{}, ErrConflictDNSType
 		}
 		u.RawQuery = "type=" + shorthand
 	}
 
-	resolve := newDNSResolver(p.target.Host)
+	resolve := newDNSResolver(s.target.Host)
 
 	switch strings.ToUpper(u.Query().Get("type")) {
 	case "":
-		p.resolve = resolve.auto
+		s.resolve = resolve.auto
 	case "A":
-		p.target.RawQuery = "type=A"
-		p.resolve = resolve.a
+		s.target.RawQuery = "type=A"
+		s.resolve = resolve.a
 	case "AAAA":
-		p.target.RawQuery = "type=AAAA"
-		p.resolve = resolve.aaaa
+		s.target.RawQuery = "type=AAAA"
+		s.resolve = resolve.aaaa
 	case "CNAME":
-		p.target.RawQuery = "type=CNAME"
-		p.resolve = resolve.cname
+		s.target.RawQuery = "type=CNAME"
+		s.resolve = resolve.cname
 	case "MX":
-		p.target.RawQuery = "type=MX"
-		p.resolve = resolve.mx
+		s.target.RawQuery = "type=MX"
+		s.resolve = resolve.mx
 	case "NS":
-		p.target.RawQuery = "type=NS"
-		p.resolve = resolve.ns
+		s.target.RawQuery = "type=NS"
+		s.resolve = resolve.ns
 	case "TXT":
-		p.target.RawQuery = "type=TXT"
-		p.resolve = resolve.txt
+		s.target.RawQuery = "type=TXT"
+		s.resolve = resolve.txt
 	default:
-		return DNSProbe{}, ErrUnsupportedDNSType
+		return DNSScheme{}, ErrUnsupportedDNSType
 	}
-	return p, nil
+	return s, nil
 }
 
-func (p DNSProbe) Target() *url.URL {
-	return p.target
+func (s DNSScheme) Target() *url.URL {
+	return s.target
 }
 
 func dnsErrorToMessage(err *net.DNSError) string {
@@ -185,17 +185,17 @@ func dnsErrorToMessage(err *net.DNSError) string {
 	return msg
 }
 
-func (p DNSProbe) Probe(ctx context.Context, r Reporter) {
+func (s DNSScheme) Probe(ctx context.Context, r Reporter) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
 	st := time.Now()
-	msg, err := p.resolve(ctx, p.hostname)
+	msg, err := s.resolve(ctx, s.hostname)
 	d := time.Now().Sub(st)
 
 	rec := api.Record{
 		CheckedAt: st,
-		Target:    p.target,
+		Target:    s.target,
 		Status:    api.StatusHealthy,
 		Message:   msg,
 		Latency:   d,
@@ -207,12 +207,16 @@ func (p DNSProbe) Probe(ctx context.Context, r Reporter) {
 
 		dnsErr := &net.DNSError{}
 		if errors.As(err, &dnsErr) {
-			if p.target.Host != "" {
-				dnsErr.Server = p.target.Host
+			if s.target.Host != "" {
+				dnsErr.Server = s.target.Host
 			}
 			rec.Message = dnsErrorToMessage(dnsErr)
 		}
 	}
 
-	r.Report(p.target, timeoutOr(ctx, rec))
+	r.Report(s.target, timeoutOr(ctx, rec))
+}
+
+func (s DNSScheme) Alert(ctx context.Context, r Reporter, _ api.Record) {
+	s.Probe(ctx, AlertReporter{s.target, r})
 }

@@ -31,7 +31,7 @@ func NewProberFromURL(u *url.URL) (Prober, error) {
 	case "tcp", "tcp4", "tcp6":
 		return NewTCPScheme(u)
 	case "dns", "dns4", "dns6":
-		return NewDNSProbe(u)
+		return NewDNSScheme(u)
 	case "exec":
 		return NewExecuteProbe(u)
 	case "source":

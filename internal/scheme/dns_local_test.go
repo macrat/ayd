@@ -9,7 +9,7 @@ import (
 	api "github.com/macrat/ayd/lib-ayd"
 )
 
-func TestDNSProbe_local(t *testing.T) {
+func TestDNSScheme_local(t *testing.T) {
 	t.Parallel()
 
 	AssertProbe(t, []ProbeTest{
