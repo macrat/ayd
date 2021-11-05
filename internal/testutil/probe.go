@@ -6,10 +6,10 @@ import (
 	"github.com/macrat/ayd/internal/scheme"
 )
 
-func NewProbe(t testing.TB, u string) scheme.Probe {
+func NewProber(t testing.TB, u string) scheme.Prober {
 	t.Helper()
 
-	p, err := scheme.NewProbe(u)
+	p, err := scheme.NewProber(u)
 	if err != nil {
 		t.Fatalf("failed to create probe: %s", err)
 	}

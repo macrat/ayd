@@ -81,7 +81,7 @@ func (p DummyProbe) Target() *url.URL {
 	return p.target
 }
 
-func (p DummyProbe) Check(ctx context.Context, r Reporter) {
+func (p DummyProbe) Probe(ctx context.Context, r Reporter) {
 	stime := time.Now()
 
 	latency := p.latency

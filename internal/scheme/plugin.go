@@ -132,7 +132,7 @@ func ExecutePlugin(ctx context.Context, r Reporter, scope string, target *url.UR
 	}
 }
 
-func (p PluginProbe) Check(ctx context.Context, r Reporter) {
+func (p PluginProbe) Probe(ctx context.Context, r Reporter) {
 	r = p.tracker.PrepareReporter(p.target, r)
 	ExecutePlugin(ctx, r, "probe", p.target, []string{p.target.String()}, os.Environ())
 

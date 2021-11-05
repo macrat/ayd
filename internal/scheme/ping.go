@@ -187,7 +187,7 @@ func (p PingProbe) Target() *url.URL {
 	return p.target
 }
 
-func (p PingProbe) Check(ctx context.Context, r Reporter) {
+func (p PingProbe) Probe(ctx context.Context, r Reporter) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 

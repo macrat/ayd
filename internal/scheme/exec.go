@@ -127,7 +127,7 @@ func runExternalCommand(ctx context.Context, command string, args, env []string)
 	return
 }
 
-func (p ExecuteProbe) Check(ctx context.Context, r Reporter) {
+func (p ExecuteProbe) Probe(ctx context.Context, r Reporter) {
 	ctx, cancel := context.WithTimeout(ctx, 60*time.Minute)
 	defer cancel()
 

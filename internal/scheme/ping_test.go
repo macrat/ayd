@@ -159,13 +159,13 @@ func TestPingProbe(t *testing.T) {
 	}, 2)
 
 	t.Run("timeout", func(t *testing.T) {
-		p := testutil.NewProbe(t, "ping:localhost")
+		p := testutil.NewProber(t, "ping:localhost")
 
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Millisecond)
 		time.Sleep(10 * time.Millisecond)
 		defer cancel()
 
-		records := testutil.RunCheck(ctx, p)
+		records := testutil.RunProbe(ctx, p)
 		if len(records) != 1 {
 			t.Fatalf("unexpected number of records: %#v", records)
 		}
@@ -176,12 +176,12 @@ func TestPingProbe(t *testing.T) {
 	})
 
 	t.Run("cancel", func(t *testing.T) {
-		p := testutil.NewProbe(t, "ping:localhost")
+		p := testutil.NewProber(t, "ping:localhost")
 
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel()
 
-		records := testutil.RunCheck(ctx, p)
+		records := testutil.RunProbe(ctx, p)
 		if len(records) != 1 {
 			t.Fatalf("unexpected number of records: %#v", records)
 		}
@@ -236,7 +236,7 @@ func TestPingProbe_privilegedEnv(t *testing.T) {
 }
 
 func BenchmarkPingProbe(b *testing.B) {
-	p := testutil.NewProbe(b, "ping:localhost")
+	p := testutil.NewProber(b, "ping:localhost")
 
 	r := &testutil.DummyReporter{}
 
@@ -245,6 +245,6 @@ func BenchmarkPingProbe(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		p.Check(ctx, r)
+		p.Probe(ctx, r)
 	}
 }

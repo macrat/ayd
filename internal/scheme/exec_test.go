@@ -59,7 +59,7 @@ func TestExecuteProbe_unknownError(t *testing.T) {
 	}
 	f.Close()
 
-	p := testutil.NewProbe(t, "exec:"+file)
+	p := testutil.NewProber(t, "exec:"+file)
 
 	if err := os.Chmod(file, 0000); err != nil {
 		t.Fatalf("failed to change permission of test file: %s", err)
@@ -69,7 +69,7 @@ func TestExecuteProbe_unknownError(t *testing.T) {
 	defer cancel()
 
 	if runtime.GOOS == "linux" || runtime.GOOS == "darwin" {
-		rs := testutil.RunCheck(ctx, p)
+		rs := testutil.RunProbe(ctx, p)
 		if rs[0].Status != api.StatusUnknown || !strings.Contains(rs[0].Message, "permission denied") {
 			t.Errorf("unexpected result:\n%s", rs[0])
 		}
@@ -79,14 +79,14 @@ func TestExecuteProbe_unknownError(t *testing.T) {
 		t.Fatalf("failed to remove test file: %s", err)
 	}
 
-	rs := testutil.RunCheck(ctx, p)
+	rs := testutil.RunProbe(ctx, p)
 	if rs[0].Status != api.StatusUnknown || (!strings.Contains(rs[0].Message, "no such file or directory") && !strings.Contains(rs[0].Message, "file does not exist")) {
 		t.Errorf("unexpected result:\n%s", rs[0])
 	}
 }
 
 func BenchmarkExecuteProbe(b *testing.B) {
-	p := testutil.NewProbe(b, "exec:echo#hello-world")
+	p := testutil.NewProber(b, "exec:echo#hello-world")
 
 	r := &testutil.DummyReporter{}
 
@@ -95,6 +95,6 @@ func BenchmarkExecuteProbe(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		p.Check(ctx, r)
+		p.Probe(ctx, r)
 	}
 }

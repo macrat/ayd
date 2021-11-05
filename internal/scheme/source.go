@@ -129,7 +129,7 @@ func NewSourceProbe(u *url.URL) (SourceProbe, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
 
-	err := s.load(ctx, nil, make(map[string]Probe))
+	err := s.load(ctx, nil, make(map[string]Prober))
 	if err != nil {
 		err = fmt.Errorf("%w: %s", ErrInvalidSource, err)
 	}
@@ -202,7 +202,7 @@ func (p SourceProbe) open(ctx context.Context) (io.ReadCloser, error) {
 	}
 }
 
-func (p SourceProbe) load(ctx context.Context, ignores ignoreSet, out map[string]Probe) error {
+func (p SourceProbe) load(ctx context.Context, ignores ignoreSet, out map[string]Prober) error {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
 	defer cancel()
 
@@ -223,11 +223,11 @@ func (p SourceProbe) load(ctx context.Context, ignores ignoreSet, out map[string
 		}
 
 		if target.Scheme != "source" {
-			probe, err := NewProbeFromURL(target)
+			prober, err := NewProberFromURL(target)
 			if err != nil {
 				invalids.Pushf("%s", target)
 			} else {
-				out[probe.Target().String()] = probe
+				out[prober.Target().String()] = prober
 			}
 		} else if !ignores.Has(target.String()) {
 			err := SourceProbe{target: target}.load(ctx, append(ignores, p.target.String()), out)
@@ -249,13 +249,13 @@ func (p SourceProbe) load(ctx context.Context, ignores ignoreSet, out map[string
 	return invalids.Build()
 }
 
-func (p SourceProbe) Check(ctx context.Context, r Reporter) {
+func (p SourceProbe) Probe(ctx context.Context, r Reporter) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	stime := time.Now()
 
-	probes := make(map[string]Probe)
+	probes := make(map[string]Prober)
 	if err := p.load(ctx, nil, probes); err != nil {
 		d := time.Now().Sub(stime)
 		r.Report(p.target, timeoutOr(ctx, api.Record{
@@ -283,8 +283,8 @@ func (p SourceProbe) Check(ctx context.Context, r Reporter) {
 	for _, p := range probes {
 		wg.Add(1)
 
-		go func(p Probe) {
-			p.Check(ctx, r)
+		go func(p Prober) {
+			p.Probe(ctx, r)
 			wg.Done()
 		}(p)
 	}

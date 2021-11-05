@@ -110,7 +110,7 @@ func TestTargetURLNormalize(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		p, err := scheme.NewProbe(tt.Input)
+		p, err := scheme.NewProber(tt.Input)
 		if err != nil {
 			if !errors.Is(err, tt.Error) {
 				t.Errorf("%#v: unexpected error during create probe: %#s", tt.Input, err)
@@ -149,21 +149,21 @@ func TestTargetURLNormalize(t *testing.T) {
 	}
 
 	t.Run("unknown:target", func(t *testing.T) {
-		_, err := scheme.NewProbe("unknown:target")
+		_, err := scheme.NewProber("unknown:target")
 		if err != scheme.ErrUnsupportedScheme {
 			t.Errorf("unexpected error: %v", err)
 		}
 	})
 
 	t.Run("abc", func(t *testing.T) {
-		_, err := scheme.NewProbe("abc")
+		_, err := scheme.NewProber("abc")
 		if err != scheme.ErrMissingScheme {
 			t.Errorf("unexpected error: %v", err)
 		}
 	})
 
 	t.Run("::", func(t *testing.T) {
-		_, err := scheme.NewProbe("::")
+		_, err := scheme.NewProber("::")
 		if err != scheme.ErrInvalidURL {
 			t.Errorf("unexpected error: %v", err)
 		}
@@ -180,7 +180,7 @@ type ProbeTest struct {
 func AssertProbe(t *testing.T, tests []ProbeTest, timeout int) {
 	for _, tt := range tests {
 		t.Run(tt.Target, func(t *testing.T) {
-			p, err := scheme.NewProbe(tt.Target)
+			p, err := scheme.NewProber(tt.Target)
 			if err != nil {
 				if ok, _ := regexp.MatchString("^"+tt.ParseErrorPattern+"$", err.Error()); !ok {
 					t.Fatalf("unexpected error on create probe: %s", err)
@@ -197,7 +197,7 @@ func AssertProbe(t *testing.T, tests []ProbeTest, timeout int) {
 			ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
 			defer cancel()
 
-			rs := testutil.RunCheck(ctx, p)
+			rs := testutil.RunProbe(ctx, p)
 
 			if len(rs) != 1 {
 				t.Fatalf("got unexpected number of results: %d\n%v", len(rs), rs)
@@ -219,13 +219,13 @@ func AssertProbe(t *testing.T, tests []ProbeTest, timeout int) {
 
 func AssertTimeout(t *testing.T, target string) {
 	t.Run("timeout", func(t *testing.T) {
-		p := testutil.NewProbe(t, target)
+		p := testutil.NewProber(t, target)
 
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Nanosecond)
 		defer cancel()
 		time.Sleep(10 * time.Millisecond)
 
-		records := testutil.RunCheck(ctx, p)
+		records := testutil.RunProbe(ctx, p)
 		if len(records) != 1 {
 			t.Fatalf("unexpected number of records: %#v", records)
 		}
@@ -239,12 +239,12 @@ func AssertTimeout(t *testing.T, target string) {
 		}
 	})
 	t.Run("cancel", func(t *testing.T) {
-		p := testutil.NewProbe(t, target)
+		p := testutil.NewProber(t, target)
 
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel()
 
-		records := testutil.RunCheck(ctx, p)
+		records := testutil.RunProbe(ctx, p)
 		if len(records) != 1 {
 			t.Fatalf("unexpected number of records: %#v", records)
 		}
