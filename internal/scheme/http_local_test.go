@@ -9,7 +9,7 @@ import (
 	api "github.com/macrat/ayd/lib-ayd"
 )
 
-func TestHTTPProbe_local(t *testing.T) {
+func TestHTTPScheme_local(t *testing.T) {
 	t.Parallel()
 
 	AssertProbe(t, []ProbeTest{
