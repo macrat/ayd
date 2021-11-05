@@ -27,7 +27,7 @@ func NewProberFromURL(u *url.URL) (Prober, error) {
 	case "http", "https":
 		return NewHTTPProbe(u)
 	case "ping", "ping4", "ping6":
-		return NewPingProbe(u)
+		return NewPingScheme(u)
 	case "tcp", "tcp4", "tcp6":
 		return NewTCPProbe(u)
 	case "dns", "dns4", "dns6":
