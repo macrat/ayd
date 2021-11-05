@@ -160,49 +160,49 @@ func CheckPingPermission() error {
 	return p.Start(ctx)
 }
 
-type PingProbe struct {
+type PingScheme struct {
 	target *url.URL
 }
 
-func NewPingProbe(u *url.URL) (PingProbe, error) {
+func NewPingScheme(u *url.URL) (PingScheme, error) {
 	scheme, separator, _ := SplitScheme(u.Scheme)
 	if separator != 0 {
-		return PingProbe{}, ErrUnsupportedScheme
+		return PingScheme{}, ErrUnsupportedScheme
 	}
 
 	if err := CheckPingPermission(); err != nil {
-		return PingProbe{}, ayderr.New(ErrFailedToPreparePing, err, ErrFailedToPreparePing.Error())
+		return PingScheme{}, ayderr.New(ErrFailedToPreparePing, err, ErrFailedToPreparePing.Error())
 	}
 
 	if u.Opaque != "" {
-		return PingProbe{&url.URL{Scheme: scheme, Opaque: u.Opaque, Fragment: u.Fragment}}, nil
+		return PingScheme{&url.URL{Scheme: scheme, Opaque: u.Opaque, Fragment: u.Fragment}}, nil
 	} else if u.Hostname() != "" {
-		return PingProbe{&url.URL{Scheme: scheme, Opaque: u.Hostname(), Fragment: u.Fragment}}, nil
+		return PingScheme{&url.URL{Scheme: scheme, Opaque: u.Hostname(), Fragment: u.Fragment}}, nil
 	} else {
-		return PingProbe{}, ErrMissingHost
+		return PingScheme{}, ErrMissingHost
 	}
 }
 
-func (p PingProbe) Target() *url.URL {
-	return p.target
+func (s PingScheme) Target() *url.URL {
+	return s.target
 }
 
-func (p PingProbe) Probe(ctx context.Context, r Reporter) {
+func (s PingScheme) Probe(ctx context.Context, r Reporter) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
 	proto := "ip"
-	if p.target.Scheme == "ping4" {
+	if s.target.Scheme == "ping4" {
 		proto = "ip4"
-	} else if p.target.Scheme == "ping6" {
+	} else if s.target.Scheme == "ping6" {
 		proto = "ip6"
 	}
 
-	target, err := net.ResolveIPAddr(proto, p.target.Opaque)
+	target, err := net.ResolveIPAddr(proto, s.target.Opaque)
 	if err != nil {
-		r.Report(p.target, api.Record{
+		r.Report(s.target, api.Record{
 			CheckedAt: time.Now(),
-			Target:    p.target,
+			Target:    s.target,
 			Status:    api.StatusUnknown,
 			Message:   err.Error(),
 		})
@@ -211,9 +211,9 @@ func (p PingProbe) Probe(ctx context.Context, r Reporter) {
 
 	stime, d, result, err := autoPinger.Ping(ctx, target)
 	if err != nil {
-		r.Report(p.target, api.Record{
+		r.Report(s.target, api.Record{
 			CheckedAt: time.Now(),
-			Target:    p.target,
+			Target:    s.target,
 			Status:    api.StatusUnknown,
 			Message:   err.Error(),
 		})
@@ -222,7 +222,7 @@ func (p PingProbe) Probe(ctx context.Context, r Reporter) {
 
 	rec := api.Record{
 		CheckedAt: stime,
-		Target:    p.target,
+		Target:    s.target,
 		Message: fmt.Sprintf(
 			"ip=%s rtt(min/avg/max)=%.2f/%.2f/%.2f send/recv=%d/%d",
 			target,
@@ -250,5 +250,9 @@ func (p PingProbe) Probe(ctx context.Context, r Reporter) {
 		rec.Latency = d
 	}
 
-	r.Report(p.target, rec)
+	r.Report(s.target, rec)
+}
+
+func (s PingScheme) Alert(ctx context.Context, r Reporter, _ api.Record) {
+	s.Probe(ctx, AlertReporter{s.target, r})
 }

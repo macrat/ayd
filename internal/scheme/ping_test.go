@@ -142,7 +142,7 @@ func BenchmarkResourceLocker_Done(b *testing.B) {
 	}
 }
 
-func TestPingProbe(t *testing.T) {
+func TestPingScheme_Probe(t *testing.T) {
 	t.Parallel()
 
 	if err := scheme.CheckPingPermission(); err != nil {
@@ -196,7 +196,7 @@ func TestPingProbe(t *testing.T) {
 	})
 }
 
-func TestPingProbe_privilegedEnv(t *testing.T) {
+func TestPingScheme_privilegedEnv(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("unprivileged mode is not supported on windows")
 	}
@@ -223,7 +223,7 @@ func TestPingProbe_privilegedEnv(t *testing.T) {
 	for _, tt := range tests {
 		t.Run("AYD_PRIVILEGED="+tt.Env, func(t *testing.T) {
 			os.Setenv("AYD_PRIVILEGED", tt.Env)
-			_, err := scheme.NewPingProbe(&url.URL{Scheme: "ping", Opaque: "localhost"})
+			_, err := scheme.NewPingScheme(&url.URL{Scheme: "ping", Opaque: "localhost"})
 
 			if tt.Fail && !errors.Is(err, scheme.ErrFailedToPreparePing) {
 				t.Errorf("expected permission error but got %v", err)
@@ -235,7 +235,7 @@ func TestPingProbe_privilegedEnv(t *testing.T) {
 	}
 }
 
-func BenchmarkPingProbe(b *testing.B) {
+func BenchmarkPingScheme(b *testing.B) {
 	p := testutil.NewProber(b, "ping:localhost")
 
 	r := &testutil.DummyReporter{}
