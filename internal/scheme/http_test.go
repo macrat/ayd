@@ -2,6 +2,9 @@ package scheme_test
 
 import (
 	"context"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 	"time"
@@ -11,7 +14,7 @@ import (
 	api "github.com/macrat/ayd/lib-ayd"
 )
 
-func TestHTTPProbe(t *testing.T) {
+func TestHTTPScheme_Probe(t *testing.T) {
 	t.Parallel()
 
 	server := RunDummyHTTPServer()
@@ -48,7 +51,52 @@ func TestHTTPProbe(t *testing.T) {
 	}
 }
 
-func BenchmarkHTTPProbe(b *testing.B) {
+func TestHTTPScheme_Alert(t *testing.T) {
+	t.Parallel()
+
+	log := []string{}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log = append(log, r.URL.String())
+	}))
+
+	u, err := url.Parse(server.URL)
+	if err != nil {
+		t.Fatalf("failed to prepare URL: %s", err)
+	}
+
+	s, err := scheme.NewHTTPScheme(u)
+	if err != nil {
+		t.Fatalf("failed to prepare HTTPScheme: %s", err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	r := &testutil.DummyReporter{}
+
+	s.Alert(ctx, r, api.Record{
+		CheckedAt: time.Date(2021, 1, 2, 15, 4, 5, 0, time.UTC),
+		Status:    api.StatusFailure,
+		Latency:   123456 * time.Microsecond,
+		Target:    &url.URL{Scheme: "dummy", Fragment: "hello"},
+		Message:   "hello world",
+	})
+
+	if len(r.Records) != 1 {
+		t.Errorf("unexpected number of records\n%v", r.Records)
+	}
+
+	if len(log) != 1 {
+		t.Fatalf("unexpected number of request in the log\n%s", log)
+	}
+
+	expected := `/?ayd_checked_at=2021-01-02T15%3A04%3A05Z&ayd_latency=123.456&ayd_message=hello+world&ayd_status=FAILURE&ayd_target=dummy%3A%23hello`
+	if log[0] != expected {
+		t.Errorf("unexpected request URL\nexpected: %s\n but got: %s", expected, log[0])
+	}
+}
+
+func BenchmarkHTTPScheme(b *testing.B) {
 	server := RunDummyHTTPServer()
 	defer server.Close()
 
