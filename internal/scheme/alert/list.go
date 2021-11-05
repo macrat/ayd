@@ -6,7 +6,7 @@ import (
 	"sync"
 
 	"github.com/macrat/ayd/internal/ayderr"
-	"github.com/macrat/ayd/internal/url/probe"
+	"github.com/macrat/ayd/internal/scheme/probe"
 	api "github.com/macrat/ayd/lib-ayd"
 )
 
