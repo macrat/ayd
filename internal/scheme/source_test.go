@@ -108,6 +108,7 @@ func TestSource(t *testing.T) {
 				} else if ok, _ := regexp.MatchString("^"+tt.ErrorPattern+"$", err.Error()); !ok {
 					t.Fatalf("unexpected error: %s", err)
 				}
+				return
 			}
 
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
