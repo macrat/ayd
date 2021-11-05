@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"net/url"
 	"os"
 	"os/exec"
@@ -33,23 +34,23 @@ func getExecuteEnvByURL(u *url.URL) []string {
 	return env
 }
 
-type ExecuteProbe struct {
+type ExecScheme struct {
 	target *url.URL
 	env    []string
 }
 
-func NewExecuteProbe(u *url.URL) (ExecuteProbe, error) {
-	p := ExecuteProbe{}
+func NewExecScheme(u *url.URL) (ExecScheme, error) {
+	s := ExecScheme{}
 
 	if _, separator, _ := SplitScheme(u.Scheme); separator != 0 {
-		return ExecuteProbe{}, ErrUnsupportedScheme
+		return ExecScheme{}, ErrUnsupportedScheme
 	}
 
 	path := u.Opaque
 	if u.Opaque == "" {
 		path = u.Path
 	}
-	p.target = &url.URL{
+	s.target = &url.URL{
 		Scheme:   "exec",
 		Opaque:   filepath.ToSlash(path),
 		RawQuery: u.RawQuery,
@@ -57,20 +58,20 @@ func NewExecuteProbe(u *url.URL) (ExecuteProbe, error) {
 	}
 
 	if path == "" {
-		return ExecuteProbe{}, ErrMissingCommand
+		return ExecScheme{}, ErrMissingCommand
 	}
 
 	if _, err := exec.LookPath(filepath.FromSlash(path)); err != nil {
-		return ExecuteProbe{}, err
+		return ExecScheme{}, err
 	}
 
-	p.env = getExecuteEnvByURL(u)
+	s.env = getExecuteEnvByURL(u)
 
-	return p, nil
+	return s, nil
 }
 
-func (p ExecuteProbe) Target() *url.URL {
-	return p.target
+func (s ExecScheme) Target() *url.URL {
+	return s.target
 }
 
 func getLatencyByMessage(message string, default_ time.Duration) (replacedMessage string, latency time.Duration) {
@@ -127,17 +128,22 @@ func runExternalCommand(ctx context.Context, command string, args, env []string)
 	return
 }
 
-func (p ExecuteProbe) Probe(ctx context.Context, r Reporter) {
+func (s ExecScheme) run(ctx context.Context, r Reporter, extraEnv []string) {
 	ctx, cancel := context.WithTimeout(ctx, 60*time.Minute)
 	defer cancel()
 
 	var args []string
-	if p.target.Fragment != "" {
-		args = []string{p.target.Fragment}
+	if s.target.Fragment != "" {
+		args = []string{s.target.Fragment}
 	}
 
 	stime := time.Now()
-	output, status, err := runExternalCommand(ctx, filepath.FromSlash(p.target.Opaque), args, p.env)
+	output, status, err := runExternalCommand(
+		ctx,
+		filepath.FromSlash(s.target.Opaque),
+		args,
+		append(s.env, extraEnv...),
+	)
 	latency := time.Now().Sub(stime)
 
 	message := strings.Trim(output, "\n")
@@ -149,11 +155,25 @@ func (p ExecuteProbe) Probe(ctx context.Context, r Reporter) {
 	message, latency = getLatencyByMessage(message, latency)
 	message, status = getStatusByMessage(message, status)
 
-	r.Report(p.target, timeoutOr(ctx, api.Record{
+	r.Report(s.target, timeoutOr(ctx, api.Record{
 		CheckedAt: stime,
-		Target:    p.target,
+		Target:    s.target,
 		Status:    status,
 		Message:   message,
 		Latency:   latency,
 	}))
+}
+
+func (s ExecScheme) Probe(ctx context.Context, r Reporter) {
+	s.run(ctx, r, nil)
+}
+
+func (s ExecScheme) Alert(ctx context.Context, r Reporter, lastRecord api.Record) {
+	s.run(ctx, AlertReporter{s.target, r}, []string{
+		"ayd_checked_at=" + lastRecord.CheckedAt.Format(time.RFC3339),
+		"ayd_status=" + lastRecord.Status.String(),
+		fmt.Sprintf("ayd_latency=%.4f", lastRecord.Latency.Seconds()/1000.0),
+		"ayd_target=" + lastRecord.Target.String(),
+		"ayd_message=" + lastRecord.Message,
+	})
 }
