@@ -61,7 +61,7 @@ func WithoutPluginProbe(p Prober, err error) (Prober, error) {
 		return nil, err
 	}
 
-	if _, ok := p.(PluginProbe); ok {
+	if _, ok := p.(PluginScheme); ok {
 		return nil, ErrUnsupportedScheme
 	}
 
