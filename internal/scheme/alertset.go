@@ -1,4 +1,4 @@
-package alert
+package scheme
 
 import (
 	"context"
@@ -6,7 +6,6 @@ import (
 	"sync"
 
 	"github.com/macrat/ayd/internal/ayderr"
-	"github.com/macrat/ayd/internal/scheme"
 	api "github.com/macrat/ayd/lib-ayd"
 )
 
@@ -18,13 +17,13 @@ var (
 // It also implements Alert alertinterface.
 type AlertSet []Alert
 
-func NewSet(targets []string) (AlertSet, error) {
+func NewAlertSet(targets []string) (AlertSet, error) {
 	alerts := make(AlertSet, len(targets))
 	errs := &ayderr.ListBuilder{What: ErrInvalidAlertURL}
 
 	for i, t := range targets {
 		var err error
-		alerts[i], err = New(t)
+		alerts[i], err = NewAlert(t)
 		if err != nil {
 			errs.Pushf("%s: %w", t, err)
 		}
@@ -35,7 +34,7 @@ func NewSet(targets []string) (AlertSet, error) {
 
 // Trigger of AlertSet calls all Trigger methods of children parallelly.
 // This method blocks until all alerts done.
-func (as AlertSet) Trigger(ctx context.Context, lastRecord api.Record, r scheme.Reporter) {
+func (as AlertSet) Trigger(ctx context.Context, lastRecord api.Record, r Reporter) {
 	wg := &sync.WaitGroup{}
 
 	for _, a := range as {

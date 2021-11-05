@@ -1,4 +1,4 @@
-package alert
+package scheme
 
 import (
 	"context"
@@ -7,20 +7,16 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/macrat/ayd/internal/scheme"
 	api "github.com/macrat/ayd/lib-ayd"
 )
-
-// Reporter is a shorthand to ayd/internal/scheme.Reporter.
-type Reporter = scheme.Reporter
 
 type Alert interface {
 	Trigger(context.Context, api.Record, Reporter)
 }
 
-func New(target string) (Alert, error) {
-	p, err := scheme.WithoutPluginProbe(scheme.NewProbe(target))
-	if err == scheme.ErrUnsupportedScheme {
+func NewAlert(target string) (Alert, error) {
+	p, err := WithoutPluginProbe(NewProbe(target))
+	if err == ErrUnsupportedScheme {
 		return NewPluginAlert(target)
 	} else if err != nil {
 		return nil, err
@@ -35,9 +31,7 @@ type ReplaceReporter struct {
 }
 
 func (r ReplaceReporter) Report(_ *url.URL, rec api.Record) {
-	scheme, _, _ := scheme.SplitScheme(rec.Target.Scheme)
-
-	if scheme != "alert" && scheme != "ayd" {
+	if s, _, _ := SplitScheme(rec.Target.Scheme); s != "alert" && s != "ayd" {
 		rec.Target = r.Target
 	}
 	r.Upstream.Report(r.Target, rec)
@@ -67,7 +61,7 @@ func (a ProbeAlert) Trigger(ctx context.Context, lastRecord api.Record, r Report
 		r,
 	}
 
-	p, err := scheme.WithoutPluginProbe(scheme.NewProbeFromURL(&u))
+	p, err := WithoutPluginProbe(NewProbeFromURL(&u))
 	if err != nil {
 		reporter.Report(reporter.Target, api.Record{
 			CheckedAt: time.Now(),
@@ -82,13 +76,11 @@ func (a ProbeAlert) Trigger(ctx context.Context, lastRecord api.Record, r Report
 
 type AlertReporter struct {
 	Source   *url.URL
-	Upstream scheme.Reporter
+	Upstream Reporter
 }
 
 func (r AlertReporter) Report(_ *url.URL, rec api.Record) {
-	scheme, _, _ := scheme.SplitScheme(rec.Target.Scheme)
-
-	if scheme != "alert" && scheme != "ayd" {
+	if s, _, _ := SplitScheme(rec.Target.Scheme); s != "alert" && s != "ayd" {
 		rec.Target = &url.URL{
 			Scheme: "alert",
 			Opaque: rec.Target.String(),
@@ -111,15 +103,15 @@ func NewPluginAlert(target string) (PluginAlert, error) {
 		return PluginAlert{}, err
 	}
 
-	if s, _, _ := scheme.SplitScheme(u.Scheme); s == "ayd" || s == "alert" {
-		return PluginAlert{}, scheme.ErrUnsupportedScheme
+	if s, _, _ := SplitScheme(u.Scheme); s == "ayd" || s == "alert" {
+		return PluginAlert{}, ErrUnsupportedScheme
 	}
 
 	p := PluginAlert{
 		target: u,
 	}
 
-	if _, err := scheme.FindPlugin(u.Scheme, "alert"); err != nil {
+	if _, err := FindPlugin(u.Scheme, "alert"); err != nil {
 		return PluginAlert{}, err
 	}
 
@@ -127,7 +119,7 @@ func NewPluginAlert(target string) (PluginAlert, error) {
 }
 
 func (a PluginAlert) Trigger(ctx context.Context, lastRecord api.Record, r Reporter) {
-	scheme.ExecutePlugin(
+	ExecutePlugin(
 		ctx,
 		AlertReporter{&url.URL{Scheme: "alert", Opaque: a.target.String()}, r},
 		"alert",
