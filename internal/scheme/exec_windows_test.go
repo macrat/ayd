@@ -11,7 +11,7 @@ import (
 	api "github.com/macrat/ayd/lib-ayd"
 )
 
-func TestExecuteProbe_windows(t *testing.T) {
+func TestExecScheme_Probe_windows(t *testing.T) {
 	t.Parallel()
 
 	AssertProbe(t, []ProbeTest{
