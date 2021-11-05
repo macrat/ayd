@@ -1,4 +1,4 @@
-package alert_test
+package scheme_test
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/macrat/ayd/internal/scheme/alert"
+	"github.com/macrat/ayd/internal/scheme"
 	"github.com/macrat/ayd/internal/testutil"
 	api "github.com/macrat/ayd/lib-ayd"
 )
@@ -28,7 +28,7 @@ func TestAlertSet(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			as, err := alert.NewSet(tt.URLs)
+			as, err := scheme.NewAlertSet(tt.URLs)
 			if tt.Error != "" {
 				if err == nil {
 					t.Fatalf("expected error but returns nil")
@@ -79,7 +79,7 @@ func TestAlertSet(t *testing.T) {
 func TestAlertSet_blocking(t *testing.T) {
 	t.Parallel()
 
-	as, err := alert.NewSet([]string{"dummy:?latency=500ms", "dummy:?latency=1000ms"})
+	as, err := scheme.NewAlertSet([]string{"dummy:?latency=500ms", "dummy:?latency=1000ms"})
 	if err != nil {
 		t.Fatalf("failed to create a new set: %s", err)
 	}

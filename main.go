@@ -10,7 +10,6 @@ import (
 	"text/template"
 
 	"github.com/macrat/ayd/internal/scheme"
-	"github.com/macrat/ayd/internal/scheme/alert"
 	"github.com/macrat/ayd/internal/store"
 	api "github.com/macrat/ayd/lib-ayd"
 	"github.com/spf13/pflag"
@@ -157,7 +156,7 @@ func (cmd *AydCommand) Run(args []string) (exitCode int) {
 	defer stop()
 
 	if len(cmd.AlertURLs) > 0 {
-		alert, err := alert.NewSet(cmd.AlertURLs)
+		alert, err := scheme.NewAlertSet(cmd.AlertURLs)
 		if err != nil {
 			fmt.Fprintln(cmd.ErrStream, err)
 			return 2
