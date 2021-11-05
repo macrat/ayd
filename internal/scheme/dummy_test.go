@@ -9,7 +9,7 @@ import (
 	api "github.com/macrat/ayd/lib-ayd"
 )
 
-func TestDummyProbe(t *testing.T) {
+func TestDummyScheme_Probe(t *testing.T) {
 	t.Parallel()
 
 	AssertProbe(t, []ProbeTest{
