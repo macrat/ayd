@@ -29,7 +29,7 @@ func NewProberFromURL(u *url.URL) (Prober, error) {
 	case "ping", "ping4", "ping6":
 		return NewPingScheme(u)
 	case "tcp", "tcp4", "tcp6":
-		return NewTCPProbe(u)
+		return NewTCPScheme(u)
 	case "dns", "dns4", "dns6":
 		return NewDNSProbe(u)
 	case "exec":

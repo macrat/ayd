@@ -10,7 +10,7 @@ import (
 	api "github.com/macrat/ayd/lib-ayd"
 )
 
-func TestTCPProbe(t *testing.T) {
+func TestTCPScheme(t *testing.T) {
 	t.Parallel()
 
 	server := RunDummyHTTPServer()
@@ -23,7 +23,7 @@ func TestTCPProbe(t *testing.T) {
 	}, 5)
 }
 
-func BenchmarkTCPProbe(b *testing.B) {
+func BenchmarkTCPScheme(b *testing.B) {
 	server := RunDummyHTTPServer()
 	defer server.Close()
 

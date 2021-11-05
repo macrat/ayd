@@ -14,49 +14,49 @@ var (
 	ErrTCPPortMissing = errors.New("TCP target's port number is required")
 )
 
-type TCPProbe struct {
+type TCPScheme struct {
 	target *url.URL
 }
 
-func NewTCPProbe(u *url.URL) (TCPProbe, error) {
+func NewTCPScheme(u *url.URL) (TCPScheme, error) {
 	scheme, separator, _ := SplitScheme(u.Scheme)
 
 	if separator != 0 {
-		return TCPProbe{}, ErrUnsupportedScheme
+		return TCPScheme{}, ErrUnsupportedScheme
 	}
 
-	p := TCPProbe{&url.URL{Scheme: scheme, Host: u.Host, Fragment: u.Fragment}}
+	s := TCPScheme{&url.URL{Scheme: scheme, Host: u.Host, Fragment: u.Fragment}}
 	if u.Host == "" {
-		p.target.Host = u.Opaque
+		s.target.Host = u.Opaque
 	}
 
-	if p.target.Hostname() == "" {
-		return TCPProbe{}, ErrMissingHost
+	if s.target.Hostname() == "" {
+		return TCPScheme{}, ErrMissingHost
 	}
-	if p.target.Port() == "" {
-		return TCPProbe{}, ErrTCPPortMissing
+	if s.target.Port() == "" {
+		return TCPScheme{}, ErrTCPPortMissing
 	}
 
-	return p, nil
+	return s, nil
 }
 
-func (p TCPProbe) Target() *url.URL {
-	return p.target
+func (s TCPScheme) Target() *url.URL {
+	return s.target
 }
 
-func (p TCPProbe) Probe(ctx context.Context, r Reporter) {
+func (s TCPScheme) Probe(ctx context.Context, r Reporter) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
 	var dialer net.Dialer
 
 	st := time.Now()
-	conn, err := dialer.DialContext(ctx, p.target.Scheme, p.target.Host)
+	conn, err := dialer.DialContext(ctx, s.target.Scheme, s.target.Host)
 	d := time.Now().Sub(st)
 
 	rec := api.Record{
 		CheckedAt: st,
-		Target:    p.target,
+		Target:    s.target,
 		Latency:   d,
 	}
 
@@ -78,5 +78,9 @@ func (p TCPProbe) Probe(ctx context.Context, r Reporter) {
 		conn.Close()
 	}
 
-	r.Report(p.target, timeoutOr(ctx, rec))
+	r.Report(s.target, timeoutOr(ctx, rec))
+}
+
+func (s TCPScheme) Alert(ctx context.Context, r Reporter, _ api.Record) {
+	s.Probe(ctx, AlertReporter{s.target, r})
 }

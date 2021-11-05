@@ -9,7 +9,7 @@ import (
 	api "github.com/macrat/ayd/lib-ayd"
 )
 
-func TestTCPProbe_local(t *testing.T) {
+func TestTCPScheme_local(t *testing.T) {
 	t.Parallel()
 
 	AssertProbe(t, []ProbeTest{

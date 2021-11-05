@@ -10,7 +10,7 @@ import (
 	api "github.com/macrat/ayd/lib-ayd"
 )
 
-func TestTCPProbe_errors(t *testing.T) {
+func TestTCPScheme_errors(t *testing.T) {
 	t.Parallel()
 
 	server := RunDummyHTTPServer()
