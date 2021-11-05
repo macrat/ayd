@@ -9,8 +9,8 @@ import (
 	"os/signal"
 	"text/template"
 
+	"github.com/macrat/ayd/internal/scheme"
 	"github.com/macrat/ayd/internal/scheme/alert"
-	"github.com/macrat/ayd/internal/scheme/probe"
 	"github.com/macrat/ayd/internal/store"
 	api "github.com/macrat/ayd/lib-ayd"
 	"github.com/spf13/pflag"
@@ -22,7 +22,7 @@ var (
 )
 
 func init() {
-	probe.HTTPUserAgent = fmt.Sprintf("ayd/%s health check", version)
+	scheme.HTTPUserAgent = fmt.Sprintf("ayd/%s health check", version)
 }
 
 type AydCommand struct {
@@ -54,7 +54,7 @@ func (cmd *AydCommand) PrintUsage() {
 	tmpl := template.Must(template.New("help.txt").Parse(helpText))
 	tmpl.Execute(cmd.ErrStream, map[string]interface{}{
 		"Version":         version,
-		"HTTPRedirectMax": probe.HTTP_REDIRECT_MAX,
+		"HTTPRedirectMax": scheme.HTTP_REDIRECT_MAX,
 	})
 }
 

@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/macrat/ayd/internal/scheme"
-	"github.com/macrat/ayd/internal/scheme/probe"
 	api "github.com/macrat/ayd/lib-ayd"
 )
 
@@ -20,8 +19,8 @@ type Alert interface {
 }
 
 func New(target string) (Alert, error) {
-	p, err := probe.WithoutPlugin(probe.New(target))
-	if err == probe.ErrUnsupportedScheme {
+	p, err := scheme.WithoutPluginProbe(scheme.NewProbe(target))
+	if err == scheme.ErrUnsupportedScheme {
 		return NewPluginAlert(target)
 	} else if err != nil {
 		return nil, err
@@ -36,7 +35,7 @@ type ReplaceReporter struct {
 }
 
 func (r ReplaceReporter) Report(_ *url.URL, rec api.Record) {
-	scheme, _, _ := probe.SplitScheme(rec.Target.Scheme)
+	scheme, _, _ := scheme.SplitScheme(rec.Target.Scheme)
 
 	if scheme != "alert" && scheme != "ayd" {
 		rec.Target = r.Target
@@ -68,7 +67,7 @@ func (a ProbeAlert) Trigger(ctx context.Context, lastRecord api.Record, r Report
 		r,
 	}
 
-	p, err := probe.WithoutPlugin(probe.NewFromURL(&u))
+	p, err := scheme.WithoutPluginProbe(scheme.NewProbeFromURL(&u))
 	if err != nil {
 		reporter.Report(reporter.Target, api.Record{
 			CheckedAt: time.Now(),
@@ -83,11 +82,11 @@ func (a ProbeAlert) Trigger(ctx context.Context, lastRecord api.Record, r Report
 
 type AlertReporter struct {
 	Source   *url.URL
-	Upstream probe.Reporter
+	Upstream scheme.Reporter
 }
 
 func (r AlertReporter) Report(_ *url.URL, rec api.Record) {
-	scheme, _, _ := probe.SplitScheme(rec.Target.Scheme)
+	scheme, _, _ := scheme.SplitScheme(rec.Target.Scheme)
 
 	if scheme != "alert" && scheme != "ayd" {
 		rec.Target = &url.URL{
@@ -112,17 +111,15 @@ func NewPluginAlert(target string) (PluginAlert, error) {
 		return PluginAlert{}, err
 	}
 
-	scheme, _, _ := probe.SplitScheme(u.Scheme)
-
-	if scheme == "ayd" || scheme == "alert" {
-		return PluginAlert{}, probe.ErrUnsupportedScheme
+	if s, _, _ := scheme.SplitScheme(u.Scheme); s == "ayd" || s == "alert" {
+		return PluginAlert{}, scheme.ErrUnsupportedScheme
 	}
 
 	p := PluginAlert{
 		target: u,
 	}
 
-	if _, err := probe.FindPlugin(u.Scheme, "alert"); err != nil {
+	if _, err := scheme.FindPlugin(u.Scheme, "alert"); err != nil {
 		return PluginAlert{}, err
 	}
 
@@ -130,7 +127,7 @@ func NewPluginAlert(target string) (PluginAlert, error) {
 }
 
 func (a PluginAlert) Trigger(ctx context.Context, lastRecord api.Record, r Reporter) {
-	probe.ExecutePlugin(
+	scheme.ExecutePlugin(
 		ctx,
 		AlertReporter{&url.URL{Scheme: "alert", Opaque: a.target.String()}, r},
 		"alert",
