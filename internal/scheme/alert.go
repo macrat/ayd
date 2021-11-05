@@ -15,7 +15,7 @@ type Alert interface {
 }
 
 func NewAlert(target string) (Alert, error) {
-	p, err := WithoutPluginProbe(NewProbe(target))
+	p, err := WithoutPluginProbe(NewProber(target))
 	if err == ErrUnsupportedScheme {
 		return NewPluginAlert(target)
 	} else if err != nil {
@@ -61,7 +61,7 @@ func (a ProbeAlert) Trigger(ctx context.Context, lastRecord api.Record, r Report
 		r,
 	}
 
-	p, err := WithoutPluginProbe(NewProbeFromURL(&u))
+	p, err := WithoutPluginProbe(NewProberFromURL(&u))
 	if err != nil {
 		reporter.Report(reporter.Target, api.Record{
 			CheckedAt: time.Now(),
@@ -71,7 +71,7 @@ func (a ProbeAlert) Trigger(ctx context.Context, lastRecord api.Record, r Report
 		return
 	}
 
-	p.Check(ctx, reporter)
+	p.Probe(ctx, reporter)
 }
 
 type AlertReporter struct {

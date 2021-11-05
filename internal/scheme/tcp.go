@@ -44,7 +44,7 @@ func (p TCPProbe) Target() *url.URL {
 	return p.target
 }
 
-func (p TCPProbe) Check(ctx context.Context, r Reporter) {
+func (p TCPProbe) Probe(ctx context.Context, r Reporter) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 

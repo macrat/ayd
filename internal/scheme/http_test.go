@@ -38,7 +38,7 @@ func TestHTTPProbe(t *testing.T) {
 		u := "http-" + tt + "://localhost"
 		t.Run(u, func(t *testing.T) {
 			expected := `HTTP "` + strings.ToUpper(tt) + `" method is not supported. Please use GET, HEAD, POST, OPTIONS, or CONNECT.`
-			_, err := scheme.NewProbe(u)
+			_, err := scheme.NewProber(u)
 			if err == nil {
 				t.Errorf("expected error but got nil")
 			} else if err.Error() != expected {
@@ -52,7 +52,7 @@ func BenchmarkHTTPProbe(b *testing.B) {
 	server := RunDummyHTTPServer()
 	defer server.Close()
 
-	p := testutil.NewProbe(b, server.URL+"/ok")
+	p := testutil.NewProber(b, server.URL+"/ok")
 
 	r := &testutil.DummyReporter{}
 
@@ -61,6 +61,6 @@ func BenchmarkHTTPProbe(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		p.Check(ctx, r)
+		p.Probe(ctx, r)
 	}
 }

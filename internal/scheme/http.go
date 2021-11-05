@@ -87,7 +87,7 @@ func (p HTTPProbe) Target() *url.URL {
 	return p.target
 }
 
-func (p HTTPProbe) Check(ctx context.Context, r Reporter) {
+func (p HTTPProbe) Probe(ctx context.Context, r Reporter) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
 	defer cancel()
 

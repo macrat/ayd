@@ -15,12 +15,12 @@ var (
 	ErrMissingHost       = errors.New("missing target host")
 )
 
-type Probe interface {
+type Prober interface {
 	Target() *url.URL
-	Check(context.Context, Reporter)
+	Probe(context.Context, Reporter)
 }
 
-func NewProbeFromURL(u *url.URL) (Probe, error) {
+func NewProberFromURL(u *url.URL) (Prober, error) {
 	scheme, _, _ := SplitScheme(u.Scheme)
 
 	switch scheme {
@@ -43,7 +43,7 @@ func NewProbeFromURL(u *url.URL) (Probe, error) {
 	}
 }
 
-func NewProbe(rawURL string) (Probe, error) {
+func NewProber(rawURL string) (Prober, error) {
 	u, err := url.Parse(rawURL)
 	if err != nil {
 		return nil, ErrInvalidURL
@@ -53,10 +53,10 @@ func NewProbe(rawURL string) (Probe, error) {
 		return nil, ErrMissingScheme
 	}
 
-	return NewProbeFromURL(u)
+	return NewProberFromURL(u)
 }
 
-func WithoutPluginProbe(p Probe, err error) (Probe, error) {
+func WithoutPluginProbe(p Prober, err error) (Prober, error) {
 	if err != nil {
 		return nil, err
 	}
