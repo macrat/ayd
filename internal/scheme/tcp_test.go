@@ -27,7 +27,7 @@ func BenchmarkTCPProbe(b *testing.B) {
 	server := RunDummyHTTPServer()
 	defer server.Close()
 
-	p := testutil.NewProbe(b, strings.Replace(server.URL, "http:", "tcp:", 1))
+	p := testutil.NewProber(b, strings.Replace(server.URL, "http:", "tcp:", 1))
 
 	r := &testutil.DummyReporter{}
 
@@ -36,6 +36,6 @@ func BenchmarkTCPProbe(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		p.Check(ctx, r)
+		p.Probe(ctx, r)
 	}
 }

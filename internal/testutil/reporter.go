@@ -69,8 +69,8 @@ func (r *DummyReporter) AssertActives(t *testing.T, expects ...string) {
 	}
 }
 
-func RunCheck(ctx context.Context, p scheme.Probe) []api.Record {
+func RunProbe(ctx context.Context, p scheme.Prober) []api.Record {
 	reporter := &DummyReporter{}
-	p.Check(ctx, reporter)
+	p.Probe(ctx, reporter)
 	return reporter.Records
 }

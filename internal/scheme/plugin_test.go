@@ -135,7 +135,7 @@ func TestPluginProbe(t *testing.T) {
 
 	if runtime.GOOS != "windows" {
 		t.Run("forbidden:", func(t *testing.T) {
-			_, err := scheme.NewProbe("forbidden:")
+			_, err := scheme.NewProber("forbidden:")
 			if err != scheme.ErrUnsupportedScheme {
 				t.Errorf("unexpected error: %v", err)
 			}
@@ -143,7 +143,7 @@ func TestPluginProbe(t *testing.T) {
 	}
 
 	t.Run("plug:invalid-record", func(t *testing.T) {
-		p, err := scheme.NewProbe("plug:invalid-record")
+		p, err := scheme.NewProber("plug:invalid-record")
 		if err != nil {
 			t.Fatalf("failed to create plugin: %s", err)
 		}
@@ -151,7 +151,7 @@ func TestPluginProbe(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 		defer cancel()
 
-		rs := testutil.RunCheck(ctx, p)
+		rs := testutil.RunProbe(ctx, p)
 
 		if len(rs) != 2 {
 			t.Fatalf("got unexpected number of results: %d", len(rs))
@@ -188,9 +188,9 @@ func TestWithoutPluginProbe(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.URL, func(t *testing.T) {
-			p, err := scheme.NewProbe(tt.URL)
+			p, err := scheme.NewProber(tt.URL)
 			if err != tt.NewError {
-				t.Fatalf("scheme.NewProbe: unexpected error: %s", err)
+				t.Fatalf("scheme.NewProber: unexpected error: %s", err)
 			}
 
 			_, err = scheme.WithoutPluginProbe(p, err)
@@ -206,7 +206,7 @@ func TestPluginProbe_inactiveTargetHandling(t *testing.T) {
 	PreparePluginPath(t)
 
 	sourceURL := "plug:change"
-	p, err := scheme.NewProbe(sourceURL)
+	p, err := scheme.NewProber(sourceURL)
 	if err != nil {
 		t.Fatalf("failed to prepare probe: %s", err)
 	}
@@ -217,6 +217,6 @@ func TestPluginProbe_inactiveTargetHandling(t *testing.T) {
 	r := &testutil.DummyReporter{}
 	r.Actives = []*url.URL{{Scheme: "plug", Opaque: "change"}}
 
-	p.Check(ctx, r)
+	p.Probe(ctx, r)
 	r.AssertActives(t, "changed:plug")
 }

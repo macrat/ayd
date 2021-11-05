@@ -9,7 +9,7 @@ import (
 
 	"github.com/macrat/ayd"
 	"github.com/macrat/ayd/internal/ayderr"
-	aurl "github.com/macrat/ayd/internal/scheme"
+	"github.com/macrat/ayd/internal/scheme"
 	"github.com/macrat/ayd/internal/testutil"
 	api "github.com/macrat/ayd/lib-ayd"
 )
@@ -20,7 +20,7 @@ func (p PanicProbe) Target() *url.URL {
 	return &url.URL{Scheme: "test", Opaque: "panic"}
 }
 
-func (p PanicProbe) Check(ctx context.Context, r aurl.Reporter) {
+func (p PanicProbe) Probe(ctx context.Context, r scheme.Reporter) {
 	panic("this always make panic")
 }
 
@@ -28,7 +28,7 @@ func TestMakeJob(t *testing.T) {
 	s := testutil.NewStore(t)
 	defer s.Close()
 
-	task := main.Task{Probe: PanicProbe{}}
+	task := main.Task{Prober: PanicProbe{}}
 	task.MakeJob(context.Background(), s).Run()
 
 	history := s.ProbeHistory()[0]
@@ -101,8 +101,8 @@ func TestParseArgs(t *testing.T) {
 		}
 
 		for i := range result {
-			if result[i].Probe.Target().String() != tt.Want[i].Target {
-				t.Errorf("%#v: unexpected target at %d: expected %#v but got %#v", tt.Args, i, tt.Want[i].Target, result[i].Probe.Target().String())
+			if result[i].Prober.Target().String() != tt.Want[i].Target {
+				t.Errorf("%#v: unexpected target at %d: expected %#v but got %#v", tt.Args, i, tt.Want[i].Target, result[i].Prober.Target().String())
 			}
 
 			if result[i].Schedule.String() != tt.Want[i].Schedule {

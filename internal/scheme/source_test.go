@@ -98,7 +98,7 @@ func TestSource(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.Target, func(t *testing.T) {
-			p, err := scheme.NewProbe(tt.Target)
+			p, err := scheme.NewProber(tt.Target)
 			if err != nil && tt.ErrorPattern == "" {
 				t.Fatalf("failed to create probe: %s", err)
 			}
@@ -113,7 +113,7 @@ func TestSource(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
 
-			rs := testutil.RunCheck(ctx, p)
+			rs := testutil.RunProbe(ctx, p)
 
 			if len(rs) != len(tt.Records) {
 				t.Fatalf("unexpected number of records: %d\n%v", len(rs), rs)
@@ -170,7 +170,7 @@ func TestSource_stderr(t *testing.T) {
 	copyFile("./testdata/write-stdout", dir+"/list", 0766)
 	copyFile("./testdata/write-stdout.bat", dir+"/list.bat", 0766)
 
-	p, err := scheme.NewProbe("source+exec:" + dir + "/list")
+	p, err := scheme.NewProber("source+exec:" + dir + "/list")
 	if err != nil {
 		t.Fatalf("failed to create probe: %s", err)
 	}
@@ -178,7 +178,7 @@ func TestSource_stderr(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	rs := testutil.RunCheck(ctx, p)
+	rs := testutil.RunProbe(ctx, p)
 
 	if len(rs) != 2 {
 		t.Fatalf("unexpected number of records: %d\n%v", len(rs), rs)
@@ -193,7 +193,7 @@ func TestSource_stderr(t *testing.T) {
 	copyFile("./testdata/write-stderr", dir+"/list", 0766)
 	copyFile("./testdata/write-stderr.bat", dir+"/list.bat", 0766)
 
-	rs = testutil.RunCheck(ctx, p)
+	rs = testutil.RunProbe(ctx, p)
 
 	if len(rs) != 1 {
 		t.Fatalf("unexpected number of records: %d\n%v", len(rs), rs)
@@ -206,7 +206,7 @@ func TestSource_stderr(t *testing.T) {
 	if runtime.GOOS == "linux" || runtime.GOOS == "darwin" {
 		copyFile("./testdata/write-stdout", dir+"/list", 0000)
 
-		rs = testutil.RunCheck(ctx, p)
+		rs = testutil.RunProbe(ctx, p)
 
 		if len(rs) != 1 {
 			t.Fatalf("unexpected number of records: %d\n%v", len(rs), rs)
@@ -227,7 +227,7 @@ func TestSource_inactiveTargetHandling(t *testing.T) {
 	}
 
 	sourceURL := "source:" + dir + "/list.txt"
-	p, err := scheme.NewProbe(sourceURL)
+	p, err := scheme.NewProber(sourceURL)
 	if err != nil {
 		t.Fatalf("failed to prepare probe: %s", err)
 	}
@@ -237,21 +237,21 @@ func TestSource_inactiveTargetHandling(t *testing.T) {
 
 	r := &testutil.DummyReporter{}
 
-	p.Check(ctx, r)
+	p.Probe(ctx, r)
 	r.AssertActives(t, sourceURL, "dummy:#1", "dummy:#2")
 
 	if err := os.WriteFile(dir+"/list.txt", []byte("dummy:#1\ndummy:#3"), 0644); err != nil {
 		t.Fatalf("faield to update test list file: %s", err)
 	}
 
-	p.Check(ctx, r)
+	p.Probe(ctx, r)
 	r.AssertActives(t, sourceURL, "dummy:#1", "dummy:#3")
 
 	if err := os.WriteFile(dir+"/list.txt", []byte("dummy:#2\ndummy:#3"), 0644); err != nil {
 		t.Fatalf("faield to update test list file: %s", err)
 	}
 
-	p.Check(ctx, r)
+	p.Probe(ctx, r)
 	r.AssertActives(t, sourceURL, "dummy:#2", "dummy:#3")
 }
 
@@ -307,7 +307,7 @@ func BenchmarkSource(b *testing.B) {
 
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
-				p.Check(ctx, r)
+				p.Probe(ctx, r)
 			}
 		})
 	}

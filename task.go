@@ -19,28 +19,28 @@ var (
 
 type Task struct {
 	Schedule Schedule
-	Probe    scheme.Probe
+	Prober   scheme.Prober
 }
 
 func (t Task) MakeJob(ctx context.Context, s *store.Store) cron.Job {
 	return cron.FuncJob(func() {
 		defer func() {
 			if err := recover(); err != nil {
-				s.Report(t.Probe.Target(), api.Record{
+				s.Report(t.Prober.Target(), api.Record{
 					CheckedAt: time.Now(),
-					Target:    t.Probe.Target(),
+					Target:    t.Prober.Target(),
 					Status:    api.StatusUnknown,
 					Message:   fmt.Sprintf("panic: %s", err),
 				})
 			}
 		}()
 
-		t.Probe.Check(ctx, s)
+		t.Prober.Probe(ctx, s)
 	})
 }
 
 func (t Task) SameAs(another Task) bool {
-	return t.Schedule.String() == another.Schedule.String() && t.Probe.Target().String() == another.Probe.Target().String()
+	return t.Schedule.String() == another.Schedule.String() && t.Prober.Target().String() == another.Prober.Target().String()
 }
 
 func (t Task) In(list []Task) bool {
@@ -64,7 +64,7 @@ func ParseArgs(args []string) ([]Task, error) {
 			continue
 		}
 
-		p, err := scheme.NewProbe(a)
+		p, err := scheme.NewProber(a)
 		if err != nil {
 			switch err {
 			case scheme.ErrUnsupportedScheme:
@@ -81,7 +81,7 @@ func ParseArgs(args []string) ([]Task, error) {
 
 		tasks = append(tasks, Task{
 			Schedule: schedule,
-			Probe:    p,
+			Prober:   p,
 		})
 	}
 

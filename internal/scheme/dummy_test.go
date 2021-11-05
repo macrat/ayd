@@ -29,11 +29,11 @@ func TestDummyProbe(t *testing.T) {
 	}, 1)
 
 	t.Run("dummy:random", func(t *testing.T) {
-		p := testutil.NewProbe(t, "dummy:random")
+		p := testutil.NewProber(t, "dummy:random")
 
 		h, d, f, u := 0, 0, 0, 0
 		for i := 0; i < 800; i++ {
-			rs := testutil.RunCheck(context.Background(), p)
+			rs := testutil.RunProbe(context.Background(), p)
 			for _, r := range rs {
 				switch r.Status {
 				case api.StatusHealthy:
@@ -66,10 +66,10 @@ func TestDummyProbe(t *testing.T) {
 	})
 
 	t.Run("dummy:healthy?latency=5s", func(t *testing.T) {
-		p := testutil.NewProbe(t, "dummy:healthy?latency=5s")
+		p := testutil.NewProber(t, "dummy:healthy?latency=5s")
 
 		stime := time.Now()
-		rs := testutil.RunCheck(context.Background(), p)
+		rs := testutil.RunProbe(context.Background(), p)
 		latency := time.Now().Sub(stime)
 
 		if latency < 4800*time.Millisecond || 5200*time.Millisecond < latency {
@@ -84,13 +84,13 @@ func TestDummyProbe(t *testing.T) {
 	})
 
 	t.Run("dummy:healthy?latency=5m/timeout", func(t *testing.T) {
-		p := testutil.NewProbe(t, "dummy:healthy?latency=5m")
+		p := testutil.NewProber(t, "dummy:healthy?latency=5m")
 
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 		defer cancel()
 
 		stime := time.Now()
-		rs := testutil.RunCheck(ctx, p)
+		rs := testutil.RunProbe(ctx, p)
 		latency := time.Now().Sub(stime)
 
 		if latency < 800*time.Millisecond || 1200*time.Millisecond < latency {

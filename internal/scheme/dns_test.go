@@ -39,7 +39,7 @@ func TestDNSProbe(t *testing.T) {
 }
 
 func BenchmarkDNSProbe(b *testing.B) {
-	p := testutil.NewProbe(b, "dns:localhost")
+	p := testutil.NewProber(b, "dns:localhost")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
@@ -48,6 +48,6 @@ func BenchmarkDNSProbe(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		p.Check(ctx, r)
+		p.Probe(ctx, r)
 	}
 }

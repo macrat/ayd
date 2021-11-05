@@ -185,7 +185,7 @@ func dnsErrorToMessage(err *net.DNSError) string {
 	return msg
 }
 
-func (p DNSProbe) Check(ctx context.Context, r Reporter) {
+func (p DNSProbe) Probe(ctx context.Context, r Reporter) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
