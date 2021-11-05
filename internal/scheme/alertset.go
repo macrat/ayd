@@ -23,7 +23,7 @@ func NewAlertSet(targets []string) (AlertSet, error) {
 
 	for i, t := range targets {
 		var err error
-		alerts[i], err = NewAlert(t)
+		alerts[i], err = NewAlerter(t)
 		if err != nil {
 			errs.Pushf("%s: %w", t, err)
 		}

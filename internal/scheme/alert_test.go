@@ -46,7 +46,7 @@ func TestAlerter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.TargetIn, func(t *testing.T) {
-			alert, err := scheme.NewAlert(tt.TargetIn)
+			alert, err := scheme.NewAlerter(tt.TargetIn)
 			if err != nil {
 				if err.Error() != tt.Error {
 					t.Fatalf("unexpected error: %s", err)
@@ -90,7 +90,7 @@ func TestAlerter(t *testing.T) {
 	}
 
 	t.Run("broken:", func(t *testing.T) {
-		alert, err := scheme.NewAlert("broken:")
+		alert, err := scheme.NewAlerter("broken:")
 		if err != nil {
 			t.Fatalf("unexpected error: %s", err)
 		}
