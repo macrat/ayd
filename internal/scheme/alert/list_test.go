@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/macrat/ayd/internal/scheme/alert"
 	"github.com/macrat/ayd/internal/testutil"
-	"github.com/macrat/ayd/internal/url/alert"
 	api "github.com/macrat/ayd/lib-ayd"
 )
 

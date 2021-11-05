@@ -3,7 +3,7 @@ package testutil
 import (
 	"testing"
 
-	"github.com/macrat/ayd/internal/url/probe"
+	"github.com/macrat/ayd/internal/scheme/probe"
 )
 
 func NewProbe(t testing.TB, u string) probe.Probe {

@@ -5,7 +5,7 @@ import (
 	"errors"
 	"net/url"
 
-	aurl "github.com/macrat/ayd/internal/url"
+	"github.com/macrat/ayd/internal/scheme"
 	api "github.com/macrat/ayd/lib-ayd"
 )
 
@@ -16,8 +16,8 @@ var (
 	ErrMissingHost       = errors.New("missing target host")
 )
 
-// Reporter is a shorthand to ayd/internal/url.Reporter.
-type Reporter = aurl.Reporter
+// Reporter is a shorthand to ayd/internal/scheme.Reporter.
+type Reporter = scheme.Reporter
 
 func SplitScheme(scheme string) (probe string, separator rune, variant string) {
 	for i, x := range scheme {
