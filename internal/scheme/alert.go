@@ -10,11 +10,11 @@ import (
 	api "github.com/macrat/ayd/lib-ayd"
 )
 
-type Alert interface {
-	Trigger(context.Context, api.Record, Reporter)
+type Alerter interface {
+	Alert(context.Context, Reporter, api.Record)
 }
 
-func NewAlert(target string) (Alert, error) {
+func NewAlerter(target string) (Alerter, error) {
 	p, err := WithoutPluginProbe(NewProber(target))
 	if err == ErrUnsupportedScheme {
 		return NewPluginAlert(target)
@@ -45,7 +45,7 @@ type ProbeAlert struct {
 	target *url.URL
 }
 
-func (a ProbeAlert) Trigger(ctx context.Context, lastRecord api.Record, r Reporter) {
+func (a ProbeAlert) Alert(ctx context.Context, r Reporter, lastRecord api.Record) {
 	qs := a.target.Query()
 	qs.Set("ayd_checked_at", lastRecord.CheckedAt.Format(time.RFC3339))
 	qs.Set("ayd_status", lastRecord.Status.String())
@@ -118,7 +118,7 @@ func NewPluginAlert(target string) (PluginAlert, error) {
 	return p, nil
 }
 
-func (a PluginAlert) Trigger(ctx context.Context, lastRecord api.Record, r Reporter) {
+func (a PluginAlert) Alert(ctx context.Context, r Reporter, lastRecord api.Record) {
 	ExecutePlugin(
 		ctx,
 		AlertReporter{&url.URL{Scheme: "alert", Opaque: a.target.String()}, r},

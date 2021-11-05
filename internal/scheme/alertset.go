@@ -14,8 +14,8 @@ var (
 )
 
 // AlertSet is a set of alerts.
-// It also implements Alert alertinterface.
-type AlertSet []Alert
+// It also implements Alerter alertinterface.
+type AlertSet []Alerter
 
 func NewAlertSet(targets []string) (AlertSet, error) {
 	alerts := make(AlertSet, len(targets))
@@ -32,15 +32,15 @@ func NewAlertSet(targets []string) (AlertSet, error) {
 	return alerts, errs.Build()
 }
 
-// Trigger of AlertSet calls all Trigger methods of children parallelly.
+// Alert of AlertSet calls all Alert methods of children parallelly.
 // This method blocks until all alerts done.
-func (as AlertSet) Trigger(ctx context.Context, lastRecord api.Record, r Reporter) {
+func (as AlertSet) Alert(ctx context.Context, r Reporter, lastRecord api.Record) {
 	wg := &sync.WaitGroup{}
 
 	for _, a := range as {
 		wg.Add(1)
-		go func(a Alert) {
-			a.Trigger(ctx, lastRecord, r)
+		go func(a Alerter) {
+			a.Alert(ctx, r, lastRecord)
 			wg.Done()
 		}(a)
 	}
