@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -39,13 +40,12 @@ func checkHTTPRedirect(req *http.Request, via []*http.Request) error {
 	return nil
 }
 
-type HTTPProbe struct {
+type HTTPScheme struct {
 	target  *url.URL
-	client  *http.Client
 	request *http.Request
 }
 
-func NewHTTPProbe(u *url.URL) (HTTPProbe, error) {
+func NewHTTPScheme(u *url.URL) (HTTPScheme, error) {
 	ucopy := *u
 	requrl := &ucopy
 
@@ -57,22 +57,21 @@ func NewHTTPProbe(u *url.URL) (HTTPProbe, error) {
 	if separator == 0 {
 		method = "GET"
 	} else if separator != '-' {
-		return HTTPProbe{}, ErrUnsupportedScheme
+		return HTTPScheme{}, ErrUnsupportedScheme
 	} else {
 		switch method {
 		case "GET", "HEAD", "POST", "OPTIONS", "CONNECT":
 		default:
-			return HTTPProbe{}, fmt.Errorf("HTTP \"%s\" method is not supported. Please use GET, HEAD, POST, OPTIONS, or CONNECT.", method)
+			return HTTPScheme{}, fmt.Errorf("HTTP \"%s\" method is not supported. Please use GET, HEAD, POST, OPTIONS, or CONNECT.", method)
 		}
 	}
 
 	if u.Hostname() == "" {
-		return HTTPProbe{}, ErrMissingHost
+		return HTTPScheme{}, ErrMissingHost
 	}
 
-	return HTTPProbe{
+	return HTTPScheme{
 		target: u,
-		client: httpClient,
 		request: &http.Request{
 			Method: method,
 			URL:    requrl,
@@ -83,23 +82,20 @@ func NewHTTPProbe(u *url.URL) (HTTPProbe, error) {
 	}, nil
 }
 
-func (p HTTPProbe) Target() *url.URL {
-	return p.target
+func (s HTTPScheme) Target() *url.URL {
+	return s.target
 }
 
-func (p HTTPProbe) Probe(ctx context.Context, r Reporter) {
-	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
-	defer cancel()
-
-	req := p.request.Clone(ctx)
-
-	st := time.Now()
-	resp, err := p.client.Do(req)
-	d := time.Now().Sub(st)
-
+func (s HTTPScheme) responseToRecord(resp *http.Response, err error) api.Record {
 	status := api.StatusFailure
 	message := ""
-	if err != nil {
+
+	if err == nil {
+		message = fmt.Sprintf("proto=%s length=%d status=%s", resp.Proto, resp.ContentLength, strings.ReplaceAll(resp.Status, " ", "_"))
+		if 200 <= resp.StatusCode && resp.StatusCode <= 299 {
+			status = api.StatusHealthy
+		}
+	} else {
 		message = err.Error()
 
 		dnsErr := &net.DNSError{}
@@ -111,18 +107,49 @@ func (p HTTPProbe) Probe(ctx context.Context, r Reporter) {
 		} else if errors.As(err, &opErr) && opErr.Op == "dial" {
 			message = fmt.Sprintf("%s: connection refused", opErr.Addr)
 		}
-	} else {
-		message = fmt.Sprintf("proto=%s length=%d status=%s", resp.Proto, resp.ContentLength, strings.ReplaceAll(resp.Status, " ", "_"))
-		if 200 <= resp.StatusCode && resp.StatusCode <= 299 {
-			status = api.StatusHealthy
-		}
 	}
 
-	r.Report(p.target, timeoutOr(ctx, api.Record{
-		CheckedAt: st,
-		Target:    p.target,
-		Status:    status,
-		Message:   message,
-		Latency:   d,
-	}))
+	return api.Record{
+		Target:  s.target,
+		Status:  status,
+		Message: message,
+	}
+}
+
+func (s HTTPScheme) run(ctx context.Context, r Reporter, req *http.Request) {
+	st := time.Now()
+	resp, err := httpClient.Do(req)
+	d := time.Now().Sub(st)
+
+	rec := s.responseToRecord(resp, err)
+	rec.CheckedAt = st
+	rec.Latency = d
+
+	r.Report(s.target, timeoutOr(ctx, rec))
+}
+
+func (s HTTPScheme) Probe(ctx context.Context, r Reporter) {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
+	defer cancel()
+
+	req := s.request.Clone(ctx)
+
+	s.run(ctx, r, req)
+}
+
+func (s HTTPScheme) Alert(ctx context.Context, r Reporter, lastRecord api.Record) {
+	qs := s.target.Query()
+	qs.Set("ayd_checked_at", lastRecord.CheckedAt.Format(time.RFC3339))
+	qs.Set("ayd_status", lastRecord.Status.String())
+	qs.Set("ayd_latency", strconv.FormatFloat(float64(lastRecord.Latency.Microseconds())/1000.0, 'f', -1, 64))
+	qs.Set("ayd_target", lastRecord.Target.String())
+	qs.Set("ayd_message", lastRecord.Message)
+
+	u := *s.target
+	u.RawQuery = qs.Encode()
+
+	req := s.request.Clone(ctx)
+	req.URL = &u
+
+	s.run(ctx, AlertReporter{s.target, r}, req)
 }
