@@ -11,7 +11,7 @@ import (
 	api "github.com/macrat/ayd/lib-ayd"
 )
 
-type DummyProbe struct {
+type DummyScheme struct {
 	target  *url.URL
 	random  bool
 	status  api.Status
@@ -19,28 +19,28 @@ type DummyProbe struct {
 	message string
 }
 
-func NewDummyProbe(u *url.URL) (DummyProbe, error) {
-	p := DummyProbe{target: &url.URL{Scheme: u.Scheme, Opaque: u.Opaque, Fragment: u.Fragment}}
+func NewDummyScheme(u *url.URL) (DummyScheme, error) {
+	s := DummyScheme{target: &url.URL{Scheme: u.Scheme, Opaque: u.Opaque, Fragment: u.Fragment}}
 	if u.Opaque == "" {
-		p.target.Opaque = u.Host
+		s.target.Opaque = u.Host
 	}
 
-	p.target.Opaque = strings.ToLower(p.target.Opaque)
-	switch p.target.Opaque {
+	s.target.Opaque = strings.ToLower(s.target.Opaque)
+	switch s.target.Opaque {
 	case "", "healthy":
-		p.status = api.StatusHealthy
+		s.status = api.StatusHealthy
 	case "debased":
-		p.status = api.StatusDebased
+		s.status = api.StatusDebased
 	case "failure":
-		p.status = api.StatusFailure
+		s.status = api.StatusFailure
 	case "aborted":
-		p.status = api.StatusAborted
+		s.status = api.StatusAborted
 	case "unknown":
-		p.status = api.StatusUnknown
+		s.status = api.StatusUnknown
 	case "random":
-		p.random = true
+		s.random = true
 	default:
-		return DummyProbe{}, errors.New("opaque must healthy, debased, failure, aborted, unknown, or random")
+		return DummyScheme{}, errors.New("opaque must healthy, debased, failure, aborted, unknown, or random")
 	}
 
 	query := url.Values{}
@@ -48,25 +48,25 @@ func NewDummyProbe(u *url.URL) (DummyProbe, error) {
 	if latency := u.Query().Get("latency"); latency != "" {
 		d, err := time.ParseDuration(latency)
 		if err != nil {
-			return DummyProbe{}, err
+			return DummyScheme{}, err
 		}
-		p.latency = d
+		s.latency = d
 		query.Set("latency", d.String())
 	}
 
 	if message := u.Query().Get("message"); message != "" {
-		p.message = message
+		s.message = message
 		query.Set("message", message)
 	}
 
-	p.target.RawQuery = query.Encode()
+	s.target.RawQuery = query.Encode()
 
-	return p, nil
+	return s, nil
 }
 
-func (p DummyProbe) Status() api.Status {
-	if !p.random {
-		return p.status
+func (s DummyScheme) Status() api.Status {
+	if !s.random {
+		return s.status
 	}
 
 	return []api.Status{
@@ -77,24 +77,24 @@ func (p DummyProbe) Status() api.Status {
 	}[rand.Intn(4)]
 }
 
-func (p DummyProbe) Target() *url.URL {
-	return p.target
+func (s DummyScheme) Target() *url.URL {
+	return s.target
 }
 
-func (p DummyProbe) Probe(ctx context.Context, r Reporter) {
+func (s DummyScheme) Probe(ctx context.Context, r Reporter) {
 	stime := time.Now()
 
-	latency := p.latency
-	if p.target.Query().Get("latency") == "" {
+	latency := s.latency
+	if s.target.Query().Get("latency") == "" {
 		latency = time.Duration(rand.Intn(10000)) * time.Microsecond
 	}
 
 	rec := api.Record{
 		CheckedAt: stime,
-		Status:    p.Status(),
-		Target:    p.target,
+		Status:    s.Status(),
+		Target:    s.target,
 		Latency:   latency,
-		Message:   p.message,
+		Message:   s.message,
 	}
 
 	select {
@@ -103,5 +103,9 @@ func (p DummyProbe) Probe(ctx context.Context, r Reporter) {
 		rec.Latency = time.Now().Sub(stime)
 	}
 
-	r.Report(p.target, timeoutOr(ctx, rec))
+	r.Report(s.target, timeoutOr(ctx, rec))
+}
+
+func (s DummyScheme) Alert(ctx context.Context, r Reporter, _ api.Record) {
+	s.Probe(ctx, AlertReporter{s.target, r})
 }

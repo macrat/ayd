@@ -37,7 +37,7 @@ func NewProberFromURL(u *url.URL) (Prober, error) {
 	case "source":
 		return NewSourceProbe(u)
 	case "dummy":
-		return NewDummyProbe(u)
+		return NewDummyScheme(u)
 	default:
 		return NewPluginProbe(u)
 	}
