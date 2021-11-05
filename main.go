@@ -162,7 +162,7 @@ func (cmd *AydCommand) Run(args []string) (exitCode int) {
 			return 2
 		}
 		s.OnStatusChanged = append(s.OnStatusChanged, func(r api.Record) {
-			alert.Trigger(ctx, r, s)
+			alert.Alert(ctx, s, r)
 		})
 	}
 

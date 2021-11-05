@@ -53,7 +53,7 @@ func TestAlertSet(t *testing.T) {
 
 			r := &testutil.DummyReporter{}
 
-			as.Trigger(ctx, rec, r)
+			as.Alert(ctx, r, rec)
 
 			if len(r.Records) != len(tt.Messages) {
 				t.Fatalf("expected %d records but got %d records", len(tt.Messages), len(r.Records))
@@ -97,7 +97,7 @@ func TestAlertSet_blocking(t *testing.T) {
 	r := &testutil.DummyReporter{}
 
 	stime := time.Now()
-	as.Trigger(ctx, rec, r)
+	as.Alert(ctx, r, rec)
 	delay := time.Now().Sub(stime)
 
 	if len(r.Records) != 2 {
