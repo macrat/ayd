@@ -36,27 +36,44 @@ func (is ignoreSet) Has(s string) bool {
 	return false
 }
 
-func normalizeSourceURL(u *url.URL) *url.URL {
+func normalizeSourceURL(u *url.URL) (*url.URL, error) {
 	switch u.Scheme {
 	case "source+http", "source+https":
-		return u
+		if u.Hostname() == "" {
+			return nil, ErrMissingHost
+		}
+		return u, nil
 	case "source+exec":
 		path := u.Opaque
 		if u.Opaque == "" {
 			path = u.Path
+
+			if path == "" {
+				return nil, ErrMissingCommand
+			}
 		}
 		return &url.URL{
 			Scheme:   "source+exec",
 			Opaque:   filepath.ToSlash(path),
 			RawQuery: u.RawQuery,
 			Fragment: u.Fragment,
-		}
-	default:
+		}, nil
+	case "source":
+		path := u.Opaque
 		if u.Opaque == "" {
-			return &url.URL{Scheme: "source", Opaque: u.Path, Fragment: u.Fragment}
-		} else {
-			return &url.URL{Scheme: "source", Opaque: u.Opaque, Fragment: u.Fragment}
+			path = u.Path
+
+			if path == "" {
+				return nil, ErrMissingFile
+			}
 		}
+		return &url.URL{
+			Scheme:   "source",
+			Opaque:   filepath.ToSlash(path),
+			Fragment: u.Fragment,
+		}, nil
+	default:
+		return nil, ErrUnsupportedScheme
 	}
 }
 
@@ -84,9 +101,8 @@ func (s *sourceScanner) URL() (*url.URL, error) {
 		return nil, err
 	}
 
-	scheme, _, _ := SplitScheme(u.Scheme)
-	if scheme == "source" {
-		return normalizeSourceURL(u), nil
+	if s, _, _ := SplitScheme(u.Scheme); s == "source" {
+		return normalizeSourceURL(u)
 	}
 
 	return u, nil
@@ -98,43 +114,26 @@ type SourceProbe struct {
 }
 
 func NewSourceProbe(u *url.URL) (SourceProbe, error) {
-	_, separator, variant := SplitScheme(u.Scheme)
-
-	if separator == '-' {
-		return SourceProbe{}, ErrUnsupportedScheme
-	}
-
-	switch variant {
-	case "":
-		if u.Opaque == "" && u.Path == "" {
-			return SourceProbe{}, ErrMissingFile
-		}
-	case "http", "https":
-		if u.Hostname() == "" {
-			return SourceProbe{}, ErrMissingHost
-		}
-	case "exec":
-		if u.Opaque == "" && u.Path == "" {
-			return SourceProbe{}, ErrMissingCommand
-		}
-	default:
-		return SourceProbe{}, ErrUnsupportedScheme
+	var err error
+	u, err = normalizeSourceURL(u)
+	if err != nil {
+		return SourceProbe{}, err
 	}
 
 	s := SourceProbe{
-		target:  normalizeSourceURL(u),
+		target:  u,
 		tracker: &TargetTracker{},
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
 
-	err := s.load(ctx, nil, make(map[string]Prober))
+	err = s.load(ctx, nil, make(map[string]Prober))
 	if err != nil {
-		err = fmt.Errorf("%w: %s", ErrInvalidSource, err)
+		return SourceProbe{}, fmt.Errorf("%w: %s", ErrInvalidSource, err)
 	}
 
-	return s, err
+	return s, nil
 }
 
 func (p SourceProbe) Target() *url.URL {
