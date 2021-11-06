@@ -75,14 +75,17 @@ func (r AlertReporter) DeactivateTarget(source *url.URL, targets ...*url.URL) {
 type AlerterSet []Alerter
 
 func NewAlerterSet(targets []string) (AlerterSet, error) {
-	alerts := make(AlerterSet, len(targets))
+	urls := &urlSet{}
+	alerts := make(AlerterSet, 0, len(targets))
 	errs := &ayderr.ListBuilder{What: ErrInvalidAlertURL}
 
-	for i, t := range targets {
-		var err error
-		alerts[i], err = NewAlerter(t)
+	for _, t := range targets {
+		a, err := NewAlerter(t)
 		if err != nil {
 			errs.Pushf("%s: %w", t, err)
+		} else if !urls.Has(a.Target()) {
+			urls.Add(a.Target())
+			alerts = append(alerts, a)
 		}
 	}
 
