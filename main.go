@@ -156,7 +156,7 @@ func (cmd *AydCommand) Run(args []string) (exitCode int) {
 	defer stop()
 
 	if len(cmd.AlertURLs) > 0 {
-		alert, err := scheme.NewAlertSet(cmd.AlertURLs)
+		alert, err := scheme.NewAlerterSet(cmd.AlertURLs)
 		if err != nil {
 			fmt.Fprintln(cmd.ErrStream, err)
 			return 2

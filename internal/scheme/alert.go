@@ -70,12 +70,12 @@ func (r AlertReporter) DeactivateTarget(source *url.URL, targets ...*url.URL) {
 	r.Upstream.DeactivateTarget(source, targets...)
 }
 
-// AlertSet is a set of alerts.
+// AlerterSet is a set of alerts.
 // It also implements Alerter alertinterface.
-type AlertSet []Alerter
+type AlerterSet []Alerter
 
-func NewAlertSet(targets []string) (AlertSet, error) {
-	alerts := make(AlertSet, len(targets))
+func NewAlerterSet(targets []string) (AlerterSet, error) {
+	alerts := make(AlerterSet, len(targets))
 	errs := &ayderr.ListBuilder{What: ErrInvalidAlertURL}
 
 	for i, t := range targets {
@@ -91,13 +91,13 @@ func NewAlertSet(targets []string) (AlertSet, error) {
 
 // Target implements Alert interface.
 // This method always returns alert-set: URL.
-func (as AlertSet) Target() *url.URL {
+func (as AlerterSet) Target() *url.URL {
 	return &url.URL{Scheme: "alert-set"}
 }
 
-// Alert of AlertSet calls all Alert methods of children parallelly.
+// Alert of AlerterSet calls all Alert methods of children parallelly.
 // This method blocks until all alerts done.
-func (as AlertSet) Alert(ctx context.Context, r Reporter, lastRecord api.Record) {
+func (as AlerterSet) Alert(ctx context.Context, r Reporter, lastRecord api.Record) {
 	wg := &sync.WaitGroup{}
 
 	for _, a := range as {
