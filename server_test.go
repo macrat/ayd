@@ -156,7 +156,7 @@ func BenchmarkRunServer(b *testing.B) {
 
 	tasks := make([]string, 1001)
 	tasks[0] = "10ms"
-	for i := range tasks {
+	for i := range tasks[1:] {
 		tasks[i+1] = fmt.Sprintf("dummy:#%d", i)
 	}
 	cmd, _ := MakeTestCommand(b, tasks)
