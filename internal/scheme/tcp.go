@@ -52,7 +52,7 @@ func (s TCPScheme) Probe(ctx context.Context, r Reporter) {
 
 	st := time.Now()
 	conn, err := dialer.DialContext(ctx, s.target.Scheme, s.target.Host)
-	d := time.Now().Sub(st)
+	d := time.Since(st)
 
 	rec := api.Record{
 		CheckedAt: st,

@@ -240,7 +240,7 @@ func TestAlerterSet_blocking(t *testing.T) {
 
 	stime := time.Now()
 	as.Alert(ctx, r, rec)
-	delay := time.Now().Sub(stime)
+	delay := time.Since(stime)
 
 	if len(r.Records) != 2 {
 		t.Errorf("unexpected number of records\n%v", r.Records)

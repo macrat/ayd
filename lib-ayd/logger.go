@@ -44,7 +44,7 @@ func (l Logger) Print(r Record) error {
 
 	if l.useTimer {
 		r.CheckedAt = l.stime
-		r.Latency = time.Now().Sub(l.stime)
+		r.Latency = time.Since(l.stime)
 	} else {
 		if r.CheckedAt.IsZero() {
 			if l.stime.IsZero() {
@@ -145,6 +145,6 @@ func (l Logger) StopTimer() Logger {
 		writer:  l.writer,
 		target:  l.target,
 		stime:   l.stime,
-		latency: time.Now().Sub(l.stime),
+		latency: time.Since(l.stime),
 	}
 }

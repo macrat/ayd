@@ -99,7 +99,7 @@ func ExecutePlugin(ctx context.Context, r Reporter, scope string, target *url.UR
 
 	stime := time.Now()
 	output, status, err := runExternalCommand(ctx, command, args, env)
-	latency := time.Now().Sub(stime)
+	latency := time.Since(stime)
 
 	count := 0
 

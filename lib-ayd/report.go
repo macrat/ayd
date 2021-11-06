@@ -66,14 +66,9 @@ func (r Report) MarshalJSON() ([]byte, error) {
 		probeHistory = append(probeHistory, x)
 	}
 
-	currentIncidents := make([]Incident, 0, len(r.CurrentIncidents))
-	for _, x := range r.CurrentIncidents {
-		currentIncidents = append(currentIncidents, x)
-	}
-
 	return json.Marshal(jsonReport{
 		ProbeHistory:     probeHistory,
-		CurrentIncidents: currentIncidents,
+		CurrentIncidents: r.CurrentIncidents,
 		IncidentHistory:  r.IncidentHistory,
 		ReportedAt:       r.ReportedAt.Format(time.RFC3339),
 	})

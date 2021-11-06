@@ -75,19 +75,19 @@ func NewCertificate(t *testing.T) Certificate {
 	}
 
 	certOut, err := os.Create(c.CertFile)
-	defer certOut.Close()
 	if err != nil {
 		t.Fatalf("failed to create cert file: %s", err)
 	}
+	defer certOut.Close()
 	if err := pem.Encode(certOut, &pem.Block{Type: "CERTIFICATE", Bytes: der}); err != nil {
 		t.Fatalf("failed to write cert file: %s", err)
 	}
 
 	keyOut, err := os.Create(c.KeyFile)
-	defer keyOut.Close()
 	if err != nil {
 		t.Fatalf("failed to key cert file: %s", err)
 	}
+	defer keyOut.Close()
 	priv, err := x509.MarshalPKCS8PrivateKey(c.PrivateKey)
 	if err != nil {
 		t.Fatalf("failed to marshal private key: %s", err)

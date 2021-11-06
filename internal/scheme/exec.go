@@ -144,7 +144,7 @@ func (s ExecScheme) run(ctx context.Context, r Reporter, extraEnv []string) {
 		args,
 		append(s.env, extraEnv...),
 	)
-	latency := time.Now().Sub(stime)
+	latency := time.Since(stime)
 
 	message := strings.Trim(output, "\n")
 

@@ -319,7 +319,7 @@ func (p SourceScheme) Probe(ctx context.Context, r Reporter) {
 	stime := time.Now()
 
 	probes, err := p.loadProbers(ctx)
-	d := time.Now().Sub(stime)
+	d := time.Since(stime)
 
 	if err != nil {
 		r.Report(p.target, timeoutOr(ctx, api.Record{
@@ -365,7 +365,7 @@ func (p SourceScheme) Alert(ctx context.Context, r Reporter, lastRecord api.Reco
 	stime := time.Now()
 
 	alerters, err := p.loadAlerters(ctx)
-	d := time.Now().Sub(stime)
+	d := time.Since(stime)
 
 	if err != nil {
 		r.Report(p.target, timeoutOr(ctx, api.Record{
