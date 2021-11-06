@@ -10,7 +10,7 @@ import (
 	api "github.com/macrat/ayd/lib-ayd"
 )
 
-func TestTCPScheme(t *testing.T) {
+func TestTCPScheme_Probe(t *testing.T) {
 	t.Parallel()
 
 	server := RunDummyHTTPServer()
@@ -20,6 +20,17 @@ func TestTCPScheme(t *testing.T) {
 		{strings.Replace(server.URL, "http://", "tcp://", 1), api.StatusHealthy, `source=(127\.0\.0\.1|\[::1\]):[0-9]+ target=(127\.0\.0\.1|\[::1\]):[0-9]+`, ""},
 
 		{"tcp://localhost", api.StatusUnknown, ``, "TCP target's port number is required"},
+	}, 5)
+}
+
+func TestTCPScheme_Alert(t *testing.T) {
+	t.Parallel()
+
+	server := RunDummyHTTPServer()
+	defer server.Close()
+
+	AssertAlert(t, []ProbeTest{
+		{strings.Replace(server.URL, "http://", "tcp://", 1), api.StatusHealthy, `source=(127\.0\.0\.1|\[::1\]):[0-9]+ target=(127\.0\.0\.1|\[::1\]):[0-9]+`, ""},
 	}, 5)
 }
 
