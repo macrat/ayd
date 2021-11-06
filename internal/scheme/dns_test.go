@@ -36,6 +36,23 @@ func TestDNSScheme_Probe(t *testing.T) {
 	}, 10)
 
 	AssertTimeout(t, "dns:localhost")
+
+	t.Run("case-insensitive", func(t *testing.T) {
+		tests := []struct {
+			Input  string
+			Output string
+		}{
+			{"Dns:LocalHost?TyPe=AaAa", "dns:localhost?type=AAAA"},
+			{"DNS-A:LOCALHOST", "dns:localhost?type=A"},
+		}
+
+		for _, tt := range tests {
+			p := testutil.NewProber(t, tt.Input)
+			if p.Target().String() != tt.Output {
+				t.Errorf("%s: expected %q but got %q", tt.Input, tt.Output, p.Target())
+			}
+		}
+	})
 }
 
 func TestDNSScheme_Alert(t *testing.T) {

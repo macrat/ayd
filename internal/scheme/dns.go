@@ -127,7 +127,7 @@ func getDNSTypeByScheme(fullScheme string) (typ string, err error) {
 	case scheme == "dns" && separator == 0:
 		return "", nil
 	case scheme == "dns" && separator == '-' && variant != "":
-		return variant, nil
+		return strings.ToUpper(variant), nil
 	case scheme == "dns4":
 		return "A", nil
 	case scheme == "dns6":
@@ -137,20 +137,31 @@ func getDNSTypeByScheme(fullScheme string) (typ string, err error) {
 	}
 }
 
+// getDNSTypeQuery gets DNS Type from URL query.
+// Please use it instead of URL.Query().Get("type") because it should case-insensitive.
+func getDNSTypeByQuery(query url.Values) string {
+	for k, v := range query {
+		if strings.ToUpper(k) == "TYPE" {
+			return strings.ToUpper(v[len(v)-1])
+		}
+	}
+	return ""
+}
+
 // NewDNSScheme creates a new DNSScheme.
 // This supports both of for Prober and for Alerter.
 func NewDNSScheme(u *url.URL) (DNSScheme, error) {
 	s := DNSScheme{
 		target: &url.URL{
 			Scheme:   "dns",
-			Opaque:   u.Opaque,
+			Opaque:   strings.ToLower(u.Opaque),
 			Fragment: u.Fragment,
 		},
 		targetName: u.Opaque,
 	}
 	if u.Opaque == "" {
-		s.target.Host = u.Host
-		s.targetName = strings.SplitN(strings.TrimLeft(u.Path, "/"), "/", 2)[0]
+		s.target.Host = strings.ToLower(u.Host)
+		s.targetName = strings.ToLower(strings.SplitN(strings.TrimLeft(u.Path, "/"), "/", 2)[0])
 		s.target.Path = "/" + s.targetName
 
 		if s.target.Host == "" {
@@ -162,24 +173,26 @@ func NewDNSScheme(u *url.URL) (DNSScheme, error) {
 		return DNSScheme{}, ErrMissingDomainName
 	}
 
-	if typ, err := getDNSTypeByScheme(u.Scheme); err != nil {
+	typ := getDNSTypeByQuery(u.Query())
+
+	if t, err := getDNSTypeByScheme(u.Scheme); err != nil {
 		return DNSScheme{}, err
-	} else if typ != "" {
-		q := u.Query().Get("type")
-		if q != "" && strings.ToUpper(typ) != strings.ToUpper(q) {
+	} else if t != "" {
+		if typ != "" && typ != t {
 			return DNSScheme{}, ErrConflictDNSType
 		}
-		u.RawQuery = "type=" + typ
+		u.RawQuery = "type=" + t
+		typ = t
 	}
 
 	var err error
-	s.resolve, err = newDNSResolver(s.target.Host).getFunc(u.Query().Get("type"))
+	s.resolve, err = newDNSResolver(s.target.Host).getFunc(typ)
 	if err != nil {
 		return DNSScheme{}, err
 	}
 
-	if q := u.Query().Get("type"); q != "" {
-		s.target.RawQuery = "type=" + strings.ToUpper(q)
+	if typ != "" {
+		s.target.RawQuery = "type=" + typ
 	}
 
 	return s, nil
