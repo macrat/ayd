@@ -26,6 +26,7 @@ func TestSourceScheme_Probe(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to get current path: %s", err)
 	}
+	cwd = filepath.ToSlash(cwd)
 
 	server := RunDummyHTTPServer()
 	defer server.Close()
