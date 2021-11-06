@@ -15,6 +15,7 @@ var (
 )
 
 type Alerter interface {
+	Target() *url.URL
 	Alert(context.Context, Reporter, api.Record)
 }
 
@@ -86,6 +87,12 @@ func NewAlertSet(targets []string) (AlertSet, error) {
 	}
 
 	return alerts, errs.Build()
+}
+
+// Target implements Alert interface.
+// This method always returns alert-set: URL.
+func (as AlertSet) Target() *url.URL {
+	return &url.URL{Scheme: "alert-set"}
 }
 
 // Alert of AlertSet calls all Alert methods of children parallelly.

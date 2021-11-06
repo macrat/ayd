@@ -267,7 +267,7 @@ func openSource(ctx context.Context, u *url.URL) (io.ReadCloser, error) {
 	}
 }
 
-func loadSource(ctx context.Context, target *url.URL, ignores *urlSet, fn func(u *url.URL) error) error {
+func loadSource(ctx context.Context, target *url.URL, ignores *urlSet, fn func(u *url.URL) (normalized *url.URL, err error)) error {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
 	defer cancel()
 
@@ -291,10 +291,12 @@ func loadSource(ctx context.Context, target *url.URL, ignores *urlSet, fn func(u
 
 		if u.Scheme != "source" {
 			if !ignores.Has(u) {
-				if err := fn(u); err != nil {
+				u2, err := fn(u)
+				if err != nil {
 					invalids.Pushf("%s", u)
+				} else {
+					ignores.Add(u2)
 				}
-				ignores.Add(u)
 			}
 			continue
 		}
@@ -322,12 +324,12 @@ func loadSource(ctx context.Context, target *url.URL, ignores *urlSet, fn func(u
 func (p SourceScheme) loadProbers(ctx context.Context) ([]Prober, error) {
 	var result []Prober
 
-	err := loadSource(ctx, p.target, &urlSet{}, func(u *url.URL) error {
+	err := loadSource(ctx, p.target, &urlSet{}, func(u *url.URL) (*url.URL, error) {
 		p, err := NewProberFromURL(u)
 		if err == nil {
 			result = append(result, p)
 		}
-		return err
+		return p.Target(), err
 	})
 
 	return result, err
@@ -336,12 +338,12 @@ func (p SourceScheme) loadProbers(ctx context.Context) ([]Prober, error) {
 func (p SourceScheme) loadAlerters(ctx context.Context) ([]Alerter, error) {
 	var result []Alerter
 
-	err := loadSource(ctx, p.target, &urlSet{}, func(u *url.URL) error {
+	err := loadSource(ctx, p.target, &urlSet{}, func(u *url.URL) (*url.URL, error) {
 		p, err := NewAlerterFromURL(u)
 		if err == nil {
 			result = append(result, p)
 		}
-		return err
+		return p.Target(), err
 	})
 
 	return result, err
