@@ -17,6 +17,7 @@ var (
 	ErrMissingDomainName  = errors.New("missing domain name")
 )
 
+// dnsResolver is a DNS resolver for DNSScheme.
 type dnsResolver struct {
 	Resolver *net.Resolver
 }
@@ -34,6 +35,30 @@ func newDNSResolver(server string) dnsResolver {
 				return (&net.Dialer{}).DialContext(ctx, network, server)
 			},
 		}}
+	}
+}
+
+type dnsResolveFunc func(ctx context.Context, target string) (string, error)
+
+// getFunc returns a function to resolve DNS for given DNS type.
+func (r dnsResolver) getFunc(typ string) (fn dnsResolveFunc, err error) {
+	switch strings.ToUpper(typ) {
+	case "":
+		return r.auto, nil
+	case "A":
+		return r.a, nil
+	case "AAAA":
+		return r.aaaa, nil
+	case "CNAME":
+		return r.cname, nil
+	case "MX":
+		return r.mx, nil
+	case "NS":
+		return r.ns, nil
+	case "TXT":
+		return r.txt, nil
+	default:
+		return nil, ErrUnsupportedDNSType
 	}
 }
 
@@ -87,12 +112,33 @@ func (r dnsResolver) txt(ctx context.Context, target string) (string, error) {
 	return strings.Join(texts, "\n"), err
 }
 
+// DNSScheme is a Prober and Alerter implementation for the DNS protocol.
 type DNSScheme struct {
-	target   *url.URL
-	hostname string
-	resolve  func(ctx context.Context, target string) (string, error)
+	target     *url.URL
+	targetName string
+	resolve    dnsResolveFunc
 }
 
+// getDNSTypeByScheme gets DNS Type from URL scheme such as dns-txt or dns4.
+func getDNSTypeByScheme(fullScheme string) (typ string, err error) {
+	scheme, separator, variant := SplitScheme(fullScheme)
+
+	switch {
+	case scheme == "dns" && separator == 0:
+		return "", nil
+	case scheme == "dns" && separator == '-' && variant != "":
+		return variant, nil
+	case scheme == "dns4":
+		return "A", nil
+	case scheme == "dns6":
+		return "AAAA", nil
+	default:
+		return "", ErrUnsupportedScheme
+	}
+}
+
+// NewDNSScheme creates a new DNSScheme.
+// This supports both of for Prober and for Alerter.
 func NewDNSScheme(u *url.URL) (DNSScheme, error) {
 	s := DNSScheme{
 		target: &url.URL{
@@ -100,73 +146,42 @@ func NewDNSScheme(u *url.URL) (DNSScheme, error) {
 			Opaque:   u.Opaque,
 			Fragment: u.Fragment,
 		},
-		hostname: u.Opaque,
+		targetName: u.Opaque,
 	}
 	if u.Opaque == "" {
 		s.target.Host = u.Host
-		s.hostname = strings.SplitN(strings.TrimLeft(u.Path, "/"), "/", 2)[0]
-		s.target.Path = "/" + s.hostname
+		s.targetName = strings.SplitN(strings.TrimLeft(u.Path, "/"), "/", 2)[0]
+		s.target.Path = "/" + s.targetName
 
 		if s.target.Host == "" {
-			s.target.Opaque = s.hostname
+			s.target.Opaque = s.targetName
 			s.target.Path = ""
 		}
 	}
-
-	if s.hostname == "" {
+	if s.targetName == "" {
 		return DNSScheme{}, ErrMissingDomainName
 	}
 
-	scheme, separator, variant := SplitScheme(u.Scheme)
-	shorthand := ""
-
-	switch {
-	case scheme == "dns" && separator == 0:
-		// do nothing
-	case scheme == "dns" && separator == '-' && variant != "":
-		shorthand = strings.ToUpper(variant)
-	case scheme == "dns4":
-		shorthand = "A"
-	case scheme == "dns6":
-		shorthand = "AAAA"
-	default:
-		return DNSScheme{}, ErrUnsupportedScheme
-	}
-
-	if shorthand != "" {
+	if typ, err := getDNSTypeByScheme(u.Scheme); err != nil {
+		return DNSScheme{}, err
+	} else if typ != "" {
 		q := u.Query().Get("type")
-		if q != "" && shorthand != strings.ToUpper(q) {
+		if q != "" && strings.ToUpper(typ) != strings.ToUpper(q) {
 			return DNSScheme{}, ErrConflictDNSType
 		}
-		u.RawQuery = "type=" + shorthand
+		u.RawQuery = "type=" + typ
 	}
 
-	resolve := newDNSResolver(s.target.Host)
-
-	switch strings.ToUpper(u.Query().Get("type")) {
-	case "":
-		s.resolve = resolve.auto
-	case "A":
-		s.target.RawQuery = "type=A"
-		s.resolve = resolve.a
-	case "AAAA":
-		s.target.RawQuery = "type=AAAA"
-		s.resolve = resolve.aaaa
-	case "CNAME":
-		s.target.RawQuery = "type=CNAME"
-		s.resolve = resolve.cname
-	case "MX":
-		s.target.RawQuery = "type=MX"
-		s.resolve = resolve.mx
-	case "NS":
-		s.target.RawQuery = "type=NS"
-		s.resolve = resolve.ns
-	case "TXT":
-		s.target.RawQuery = "type=TXT"
-		s.resolve = resolve.txt
-	default:
-		return DNSScheme{}, ErrUnsupportedDNSType
+	var err error
+	s.resolve, err = newDNSResolver(s.target.Host).getFunc(u.Query().Get("type"))
+	if err != nil {
+		return DNSScheme{}, err
 	}
+
+	if q := u.Query().Get("type"); q != "" {
+		s.target.RawQuery = "type=" + strings.ToUpper(q)
+	}
+
 	return s, nil
 }
 
@@ -190,7 +205,7 @@ func (s DNSScheme) Probe(ctx context.Context, r Reporter) {
 	defer cancel()
 
 	st := time.Now()
-	msg, err := s.resolve(ctx, s.hostname)
+	msg, err := s.resolve(ctx, s.targetName)
 	d := time.Since(st)
 
 	rec := api.Record{
