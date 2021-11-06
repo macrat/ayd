@@ -131,21 +131,30 @@ func (s *sourceScanner) URL() (*url.URL, error) {
 	return u, nil
 }
 
-type SourceProbe struct {
+type SourceScheme struct {
 	target  *url.URL
 	tracker *TargetTracker
 }
 
-func NewSourceProbe(u *url.URL) (SourceProbe, error) {
+func newSourceScheme(u *url.URL) (SourceScheme, error) {
 	var err error
 	u, err = normalizeSourceURL(u)
 	if err != nil {
-		return SourceProbe{}, err
+		return SourceScheme{}, err
 	}
 
-	s := SourceProbe{
+	s := SourceScheme{
 		target:  u,
 		tracker: &TargetTracker{},
+	}
+
+	return s, nil
+}
+
+func NewSourceProbe(u *url.URL) (SourceScheme, error) {
+	s, err := newSourceScheme(u)
+	if err != nil {
+		return SourceScheme{}, err
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
@@ -153,15 +162,15 @@ func NewSourceProbe(u *url.URL) (SourceProbe, error) {
 
 	_, err = s.loadProbers(ctx)
 	if errors.Is(err, ErrInvalidSourceURL) {
-		return SourceProbe{}, err
+		return SourceScheme{}, err
 	} else if err != nil {
-		return SourceProbe{}, fmt.Errorf("%w: %s", ErrInvalidSource, err)
+		return SourceScheme{}, fmt.Errorf("%w: %s", ErrInvalidSource, err)
 	}
 
 	return s, nil
 }
 
-func (p SourceProbe) Target() *url.URL {
+func (p SourceScheme) Target() *url.URL {
 	return p.target
 }
 
@@ -291,7 +300,7 @@ func loadSource(ctx context.Context, target *url.URL, ignores *urlSet, fn func(u
 	return invalids.Build()
 }
 
-func (p SourceProbe) loadProbers(ctx context.Context) ([]Prober, error) {
+func (p SourceScheme) loadProbers(ctx context.Context) ([]Prober, error) {
 	var result []Prober
 
 	err := loadSource(ctx, p.target, &urlSet{}, func(u *url.URL) error {
@@ -305,7 +314,7 @@ func (p SourceProbe) loadProbers(ctx context.Context) ([]Prober, error) {
 	return result, err
 }
 
-func (p SourceProbe) Probe(ctx context.Context, r Reporter) {
+func (p SourceScheme) Probe(ctx context.Context, r Reporter) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
