@@ -125,32 +125,6 @@ func TestAlerter(t *testing.T) {
 	})
 }
 
-func TestReplaceReporter(t *testing.T) {
-	r1 := &testutil.DummyReporter{}
-	r2 := scheme.ReplaceReporter{&url.URL{Scheme: "alert", Opaque: "dummy:hello-world"}, r1}
-
-	r2.Report(&url.URL{Scheme: "dummy"}, api.Record{
-		Target:  &url.URL{Scheme: "dummy", Opaque: "another"},
-		Message: "hello world",
-	})
-	r2.Report(&url.URL{Scheme: "dummy"}, api.Record{
-		Target:  &url.URL{Scheme: "ayd", Opaque: "test:internal-log"},
-		Message: "something log",
-	})
-
-	if len(r1.Records) != 2 {
-		t.Fatalf("unexpected number of records: %d: %v", len(r1.Records), r1.Records)
-	}
-
-	if r1.Records[0].String() != "0001-01-01T00:00:00Z	UNKNOWN	0.000	alert:dummy:hello-world	hello world" {
-		t.Errorf("unexpected 1st record: %s", r1.Records[0])
-	}
-
-	if r1.Records[1].String() != "0001-01-01T00:00:00Z	UNKNOWN	0.000	ayd:test:internal-log	something log" {
-		t.Errorf("unexpected 2nd record: %s", r1.Records[1])
-	}
-}
-
 func TestAlertReporter(t *testing.T) {
 	r1 := &testutil.DummyReporter{}
 	r2 := scheme.AlertReporter{&url.URL{Scheme: "alert", Opaque: "dummy:"}, r1}
