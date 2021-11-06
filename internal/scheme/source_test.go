@@ -19,7 +19,7 @@ import (
 	api "github.com/macrat/ayd/lib-ayd"
 )
 
-func TestSource(t *testing.T) {
+func TestSourceScheme_Probe(t *testing.T) {
 	t.Parallel()
 
 	cwd, err := os.Getwd()
@@ -219,7 +219,7 @@ func TestSource_stderr(t *testing.T) {
 	}
 }
 
-func TestSource_inactiveTargetHandling(t *testing.T) {
+func TestSourceScheme_inactiveTargetHandling(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
 
@@ -256,7 +256,52 @@ func TestSource_inactiveTargetHandling(t *testing.T) {
 	r.AssertActives(t, sourceURL, "dummy:#2", "dummy:#3")
 }
 
-func BenchmarkSource_load(b *testing.B) {
+func TestSourceScheme_Alert(t *testing.T) {
+	t.Parallel()
+	PreparePluginPath(t)
+	dir := t.TempDir()
+
+	if err := os.WriteFile(dir+"/list.txt", []byte("foo:alert-test\ndummy:\n"), 0644); err != nil {
+		t.Fatalf("faield to prepare test list file: %s", err)
+	}
+
+	a, err := scheme.NewAlerter("source:" + dir + "/list.txt")
+	if err != nil {
+		t.Fatalf("failed to prepare alerter: %s", err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	r := &testutil.DummyReporter{}
+
+	a.Alert(ctx, r, api.Record{
+		CheckedAt: time.Date(2021, 1, 2, 15, 4, 5, 0, time.UTC),
+		Status:    api.StatusFailure,
+		Latency:   123456 * time.Microsecond,
+		Target:    &url.URL{Scheme: "dummy", Opaque: "hello-world"},
+		Message:   "hello world",
+	})
+
+	if len(r.Records) != 3 {
+		t.Fatalf("unexpected number of records\n%v", r.Records)
+	}
+
+	if r.Records[0].Target.String() != "alert:source:"+dir+"/list.txt" {
+		t.Errorf("first record should be source but got %s", r.Records[0])
+	}
+
+	if r.Records[1].Target.String() == "alert:dummy:" {
+		r.Records[1], r.Records[2] = r.Records[2], r.Records[1]
+	}
+
+	expected := `"foo:alert-test 2021-01-02T15:04:05Z FAILURE 123.456 dummy:hello-world hello world"`
+	if r.Records[1].Message != expected {
+		t.Errorf("unexpected message for foo:alert-test\n--- expected --\n%s\n--- actual ---\n%s", expected, r.Records[1].Message)
+	}
+}
+
+func BenchmarkSourceScheme_loadProbers(b *testing.B) {
 	for _, n := range []int{10, 25, 50, 75, 100, 250, 500, 750, 1000} {
 		b.Run(fmt.Sprint(n), func(b *testing.B) {
 			f, err := os.CreateTemp("", "ayd-test-*-list.txt")
@@ -280,7 +325,7 @@ func BenchmarkSource_load(b *testing.B) {
 	}
 }
 
-func BenchmarkSource(b *testing.B) {
+func BenchmarkSourceScheme(b *testing.B) {
 	for _, n := range []int{10, 25, 50, 75, 100, 250, 500, 750, 1000} {
 		b.Run(fmt.Sprint(n), func(b *testing.B) {
 			f, err := os.CreateTemp("", "ayd-test-*-list.txt")

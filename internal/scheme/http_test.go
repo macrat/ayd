@@ -59,12 +59,7 @@ func TestHTTPScheme_Alert(t *testing.T) {
 		log = append(log, r.URL.String())
 	}))
 
-	u, err := url.Parse(server.URL)
-	if err != nil {
-		t.Fatalf("failed to prepare URL: %s", err)
-	}
-
-	s, err := scheme.NewHTTPScheme(u)
+	a, err := scheme.NewAlerter(server.URL)
 	if err != nil {
 		t.Fatalf("failed to prepare HTTPScheme: %s", err)
 	}
@@ -74,7 +69,7 @@ func TestHTTPScheme_Alert(t *testing.T) {
 
 	r := &testutil.DummyReporter{}
 
-	s.Alert(ctx, r, api.Record{
+	a.Alert(ctx, r, api.Record{
 		CheckedAt: time.Date(2021, 1, 2, 15, 4, 5, 0, time.UTC),
 		Status:    api.StatusFailure,
 		Latency:   123456 * time.Microsecond,
