@@ -20,12 +20,7 @@ type Alerter interface {
 	Alert(context.Context, Reporter, api.Record)
 }
 
-func NewAlerter(target string) (Alerter, error) {
-	u, err := url.Parse(target)
-	if err != nil {
-		return nil, ErrInvalidURL
-	}
-
+func NewAlerterFromURL(u *url.URL) (Alerter, error) {
 	p, err := WithoutPluginProbe(NewProberFromURL(u))
 	if err == ErrUnsupportedScheme {
 		return NewPluginAlert(u)
@@ -34,6 +29,15 @@ func NewAlerter(target string) (Alerter, error) {
 	}
 
 	return ProbeAlert{p.Target()}, nil
+}
+
+func NewAlerter(target string) (Alerter, error) {
+	u, err := url.Parse(target)
+	if err != nil {
+		return nil, ErrInvalidURL
+	}
+
+	return NewAlerterFromURL(u)
 }
 
 type ReplaceReporter struct {

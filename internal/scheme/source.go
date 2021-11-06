@@ -170,6 +170,25 @@ func NewSourceProbe(u *url.URL) (SourceScheme, error) {
 	return s, nil
 }
 
+func NewSourceAlert(u *url.URL) (SourceScheme, error) {
+	s, err := newSourceScheme(u)
+	if err != nil {
+		return SourceScheme{}, err
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+	defer cancel()
+
+	_, err = s.loadAlerters(ctx)
+	if errors.Is(err, ErrInvalidSourceURL) {
+		return SourceScheme{}, err
+	} else if err != nil {
+		return SourceScheme{}, fmt.Errorf("%w: %s", ErrInvalidSource, err)
+	}
+
+	return s, nil
+}
+
 func (p SourceScheme) Target() *url.URL {
 	return p.target
 }
@@ -314,6 +333,20 @@ func (p SourceScheme) loadProbers(ctx context.Context) ([]Prober, error) {
 	return result, err
 }
 
+func (p SourceScheme) loadAlerters(ctx context.Context) ([]Alerter, error) {
+	var result []Alerter
+
+	err := loadSource(ctx, p.target, &urlSet{}, func(u *url.URL) error {
+		p, err := NewAlerterFromURL(u)
+		if err == nil {
+			result = append(result, p)
+		}
+		return err
+	})
+
+	return result, err
+}
+
 func (p SourceScheme) Probe(ctx context.Context, r Reporter) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -321,8 +354,9 @@ func (p SourceScheme) Probe(ctx context.Context, r Reporter) {
 	stime := time.Now()
 
 	probes, err := p.loadProbers(ctx)
+	d := time.Now().Sub(stime)
+
 	if err != nil {
-		d := time.Now().Sub(stime)
 		r.Report(p.target, timeoutOr(ctx, api.Record{
 			CheckedAt: stime,
 			Target:    p.target,
@@ -333,7 +367,6 @@ func (p SourceScheme) Probe(ctx context.Context, r Reporter) {
 		return
 	}
 
-	d := time.Now().Sub(stime)
 	r.Report(p.target, api.Record{
 		CheckedAt: stime,
 		Target:    p.target,
@@ -356,4 +389,46 @@ func (p SourceScheme) Probe(ctx context.Context, r Reporter) {
 	wg.Wait()
 
 	r.DeactivateTarget(p.target, p.tracker.Inactives()...)
+}
+
+func (p SourceScheme) Alert(ctx context.Context, r Reporter, lastRecord api.Record) {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	r = AlertReporter{p.target, r}
+
+	stime := time.Now()
+
+	alerters, err := p.loadAlerters(ctx)
+	d := time.Now().Sub(stime)
+
+	if err != nil {
+		r.Report(p.target, timeoutOr(ctx, api.Record{
+			CheckedAt: stime,
+			Target:    p.target,
+			Status:    api.StatusFailure,
+			Message:   err.Error(),
+			Latency:   d,
+		}))
+		return
+	}
+
+	r.Report(p.target, api.Record{
+		CheckedAt: stime,
+		Target:    p.target,
+		Status:    api.StatusHealthy,
+		Message:   fmt.Sprintf("target_count=%d", len(alerters)),
+		Latency:   d,
+	})
+
+	wg := &sync.WaitGroup{}
+	for _, a := range alerters {
+		wg.Add(1)
+
+		go func(a Alerter) {
+			a.Alert(ctx, r, lastRecord)
+			wg.Done()
+		}(a)
+	}
+	wg.Wait()
 }
