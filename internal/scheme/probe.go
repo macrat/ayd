@@ -56,18 +56,6 @@ func NewProber(rawURL string) (Prober, error) {
 	return NewProberFromURL(u)
 }
 
-func WithoutPluginProbe(p Prober, err error) (Prober, error) {
-	if err != nil {
-		return nil, err
-	}
-
-	if _, ok := p.(PluginScheme); ok {
-		return nil, ErrUnsupportedScheme
-	}
-
-	return p, nil
-}
-
 func timeoutOr(ctx context.Context, r api.Record) api.Record {
 	switch ctx.Err() {
 	case context.Canceled:

@@ -115,7 +115,7 @@ func TestExecutePlugin(t *testing.T) {
 	}
 }
 
-func TestPluginProbe(t *testing.T) {
+func TestPluginScheme_Probe(t *testing.T) {
 	t.Parallel()
 	PreparePluginPath(t)
 
@@ -173,32 +173,13 @@ func TestPluginProbe(t *testing.T) {
 	})
 }
 
-func TestWithoutPluginProbe(t *testing.T) {
+func TestPluginScheme_Alert(t *testing.T) {
+	t.Parallel()
 	PreparePluginPath(t)
 
-	tests := []struct {
-		URL                string
-		NewError           error
-		WithoutPluginError error
-	}{
-		{"dummy:healthy", nil, nil},
-		{"plug:test", nil, scheme.ErrUnsupportedScheme},
-		{"::", scheme.ErrInvalidURL, scheme.ErrInvalidURL},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.URL, func(t *testing.T) {
-			p, err := scheme.NewProber(tt.URL)
-			if err != tt.NewError {
-				t.Fatalf("scheme.NewProber: unexpected error: %s", err)
-			}
-
-			_, err = scheme.WithoutPluginProbe(p, err)
-			if err != tt.WithoutPluginError {
-				t.Fatalf("scheme.WithoutPluginProbe: unexpected error: %s", err)
-			}
-		})
-	}
+	AssertAlert(t, []ProbeTest{
+		{"foo:hello-world", api.StatusHealthy, "\"foo:hello-world 2001-02-03T16:05:06Z FAILURE 123.456 dummy:failure hello world\"", ""},
+	}, 5)
 }
 
 func TestPluginProbe_inactiveTargetHandling(t *testing.T) {

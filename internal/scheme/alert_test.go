@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"testing"
 	"time"
 
@@ -246,5 +247,47 @@ func TestAlertSet_blocking(t *testing.T) {
 
 	if delay < 1*time.Second {
 		t.Errorf("expected to blocking during alert function running but returns too fast: %s", delay)
+	}
+}
+
+func AssertAlert(t *testing.T, tests []ProbeTest, timeout int) {
+	for _, tt := range tests {
+		t.Run(tt.Target, func(t *testing.T) {
+			a, err := scheme.NewAlerter(tt.Target)
+			if err != nil {
+				if ok, _ := regexp.MatchString("^"+tt.ParseErrorPattern+"$", err.Error()); !ok {
+					t.Fatalf("unexpected error on create probe: %s", err)
+				}
+				return
+			} else if tt.ParseErrorPattern != "" {
+				t.Fatal("expected error on create probe but got nil")
+			}
+
+			ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
+			defer cancel()
+
+			rs := testutil.RunAlert(ctx, a, api.Record{
+				CheckedAt: time.Date(2001, 2, 3, 16, 5, 6, 0, time.UTC),
+				Target:    &url.URL{Scheme: "dummy", Opaque: "failure"},
+				Status:    api.StatusFailure,
+				Latency:   123456 * time.Microsecond,
+				Message:   "hello world",
+			})
+
+			if len(rs) != 1 {
+				t.Fatalf("got unexpected number of results: %d\n%v", len(rs), rs)
+			}
+
+			r := rs[0]
+			if r.Target.String() != "alert:"+tt.Target {
+				t.Errorf("got a record of unexpected target: %s", r.Target)
+			}
+			if r.Status != tt.Status {
+				t.Errorf("expected status is %s but got %s", tt.Status, r.Status)
+			}
+			if ok, _ := regexp.MatchString("^"+tt.MessagePattern+"$", r.Message); !ok {
+				t.Errorf("expected message is match to %#v but got %#v", tt.MessagePattern, r.Message)
+			}
+		})
 	}
 }

@@ -235,6 +235,18 @@ func TestPingScheme_privilegedEnv(t *testing.T) {
 	}
 }
 
+func TestPingScheme_Alert(t *testing.T) {
+	t.Parallel()
+
+	if err := scheme.CheckPingPermission(); err != nil {
+		t.Fatalf("failed to check ping permission: %s", err)
+	}
+
+	AssertAlert(t, []ProbeTest{
+		{"ping:localhost", api.StatusHealthy, `ip=(127.0.0.1|::1) rtt\(min/avg/max\)=[0-9.]*/[0-9.]*/[0-9.]* send/recv=3/3`, ""},
+	}, 5)
+}
+
 func BenchmarkPingScheme(b *testing.B) {
 	p := testutil.NewProber(b, "ping:localhost")
 

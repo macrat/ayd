@@ -74,3 +74,9 @@ func RunProbe(ctx context.Context, p scheme.Prober) []api.Record {
 	p.Probe(ctx, reporter)
 	return reporter.Records
 }
+
+func RunAlert(ctx context.Context, a scheme.Alerter, rec api.Record) []api.Record {
+	reporter := &DummyReporter{}
+	a.Alert(ctx, reporter, rec)
+	return reporter.Records
+}
