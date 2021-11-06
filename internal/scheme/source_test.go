@@ -221,7 +221,7 @@ func TestSource_stderr(t *testing.T) {
 
 func TestSourceScheme_inactiveTargetHandling(t *testing.T) {
 	t.Parallel()
-	dir := t.TempDir()
+	dir := filepath.ToSlash(t.TempDir())
 
 	if err := os.WriteFile(dir+"/list.txt", []byte("dummy:#1\ndummy:#2"), 0644); err != nil {
 		t.Fatalf("faield to prepare test list file: %s", err)
@@ -259,7 +259,7 @@ func TestSourceScheme_inactiveTargetHandling(t *testing.T) {
 func TestSourceScheme_Alert(t *testing.T) {
 	t.Parallel()
 	PreparePluginPath(t)
-	dir := t.TempDir()
+	dir := filepath.ToSlash(t.TempDir())
 
 	if err := os.WriteFile(dir+"/list.txt", []byte("foo:alert-test\ndummy:\n"), 0644); err != nil {
 		t.Fatalf("faield to prepare test list file: %s", err)
@@ -280,7 +280,7 @@ func TestSourceScheme_Alert(t *testing.T) {
 		Status:    api.StatusFailure,
 		Latency:   123456 * time.Microsecond,
 		Target:    &url.URL{Scheme: "dummy", Opaque: "hello-world"},
-		Message:   "hello world",
+		Message:   "test-message",
 	})
 
 	if len(r.Records) != 3 {
@@ -295,7 +295,7 @@ func TestSourceScheme_Alert(t *testing.T) {
 		r.Records[1], r.Records[2] = r.Records[2], r.Records[1]
 	}
 
-	expected := `"foo:alert-test 2021-01-02T15:04:05Z FAILURE 123.456 dummy:hello-world hello world"`
+	expected := `"foo:alert-test 2021-01-02T15:04:05Z FAILURE 123.456 dummy:hello-world test-message"`
 	if r.Records[1].Message != expected {
 		t.Errorf("unexpected message for foo:alert-test\n--- expected --\n%s\n--- actual ---\n%s", expected, r.Records[1].Message)
 	}
