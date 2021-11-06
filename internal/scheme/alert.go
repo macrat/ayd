@@ -4,9 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/url"
-	"strconv"
 	"sync"
-	"time"
 
 	"github.com/macrat/ayd/internal/ayderr"
 	api "github.com/macrat/ayd/lib-ayd"
@@ -21,14 +19,26 @@ type Alerter interface {
 }
 
 func NewAlerterFromURL(u *url.URL) (Alerter, error) {
-	p, err := WithoutPluginProbe(NewProberFromURL(u))
-	if err == ErrUnsupportedScheme {
-		return NewPluginAlert(u)
-	} else if err != nil {
-		return nil, err
-	}
+	scheme, _, _ := SplitScheme(u.Scheme)
 
-	return ProbeAlert{p.Target()}, nil
+	switch scheme {
+	case "http", "https":
+		return NewHTTPScheme(u)
+	case "ping", "ping4", "ping6":
+		return NewPingScheme(u)
+	case "tcp", "tcp4", "tcp6":
+		return NewTCPScheme(u)
+	case "dns", "dns4", "dns6":
+		return NewDNSScheme(u)
+	case "exec":
+		return NewExecScheme(u)
+	case "source":
+		return NewSourceAlert(u)
+	case "dummy":
+		return NewDummyScheme(u)
+	default:
+		return NewPluginAlert(u)
+	}
 }
 
 func NewAlerter(target string) (Alerter, error) {
@@ -38,55 +48,6 @@ func NewAlerter(target string) (Alerter, error) {
 	}
 
 	return NewAlerterFromURL(u)
-}
-
-type ReplaceReporter struct {
-	Target   *url.URL
-	Upstream Reporter
-}
-
-func (r ReplaceReporter) Report(_ *url.URL, rec api.Record) {
-	if s, _, _ := SplitScheme(rec.Target.Scheme); s != "alert" && s != "ayd" {
-		rec.Target = r.Target
-	}
-	r.Upstream.Report(r.Target, rec)
-}
-
-func (r ReplaceReporter) DeactivateTarget(source *url.URL, targets ...*url.URL) {
-	r.Upstream.DeactivateTarget(source, targets...)
-}
-
-type ProbeAlert struct {
-	target *url.URL
-}
-
-func (a ProbeAlert) Alert(ctx context.Context, r Reporter, lastRecord api.Record) {
-	qs := a.target.Query()
-	qs.Set("ayd_checked_at", lastRecord.CheckedAt.Format(time.RFC3339))
-	qs.Set("ayd_status", lastRecord.Status.String())
-	qs.Set("ayd_latency", strconv.FormatFloat(float64(lastRecord.Latency.Microseconds())/1000.0, 'f', -1, 64))
-	qs.Set("ayd_target", lastRecord.Target.String())
-	qs.Set("ayd_message", lastRecord.Message)
-
-	u := *a.target
-	u.RawQuery = qs.Encode()
-
-	reporter := ReplaceReporter{
-		&url.URL{Scheme: "alert", Opaque: a.target.String()},
-		r,
-	}
-
-	p, err := WithoutPluginProbe(NewProberFromURL(&u))
-	if err != nil {
-		reporter.Report(reporter.Target, api.Record{
-			CheckedAt: time.Now(),
-			Status:    api.StatusUnknown,
-			Message:   err.Error(),
-		})
-		return
-	}
-
-	p.Probe(ctx, reporter)
 }
 
 type AlertReporter struct {
