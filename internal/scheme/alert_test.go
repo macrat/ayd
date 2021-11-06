@@ -132,7 +132,7 @@ func TestAlertReporter(t *testing.T) {
 
 	r2.Report(&url.URL{Scheme: "dummy"}, api.Record{
 		Target:  &url.URL{Scheme: "dummy", Opaque: "another"},
-		Message: "hello world",
+		Message: "test-message",
 	})
 	r2.Report(&url.URL{Scheme: "dummy"}, api.Record{
 		Target:  &url.URL{Scheme: "ayd", Opaque: "test:internal-log"},
@@ -143,7 +143,7 @@ func TestAlertReporter(t *testing.T) {
 		t.Fatalf("unexpected number of records: %d: %v", len(r1.Records), r1.Records)
 	}
 
-	if r1.Records[0].String() != "0001-01-01T00:00:00Z	UNKNOWN	0.000	alert:dummy:another	hello world" {
+	if r1.Records[0].String() != "0001-01-01T00:00:00Z	UNKNOWN	0.000	alert:dummy:another	test-message" {
 		t.Errorf("unexpected 1st record: %s", r1.Records[0])
 	}
 
@@ -271,7 +271,7 @@ func AssertAlert(t *testing.T, tests []ProbeTest, timeout int) {
 				Target:    &url.URL{Scheme: "dummy", Opaque: "failure"},
 				Status:    api.StatusFailure,
 				Latency:   123456 * time.Microsecond,
-				Message:   "hello world",
+				Message:   "test-message",
 			})
 
 			if len(rs) != 1 {
