@@ -140,64 +140,77 @@ func (p SourceProbe) Target() *url.URL {
 	return p.target
 }
 
-func (p SourceProbe) open(ctx context.Context) (io.ReadCloser, error) {
-	switch p.target.Scheme {
-	case "source+http", "source+https":
-		u := *p.target
-		u.Scheme = u.Scheme[len("source+"):]
-		resp, err := httpClient.Do((&http.Request{
-			Method: "GET",
-			URL:    &u,
-			Header: http.Header{
-				"User-Agent": {HTTPUserAgent},
-			},
-		}).Clone(ctx))
-		switch {
-		case err != nil:
-			return nil, err
-		case resp.StatusCode != http.StatusOK:
-			return nil, fmt.Errorf("%w: failed to fetch", ErrInvalidURL)
-		default:
-			return resp.Body, nil
-		}
-	case "source+exec":
-		var args []string
-		if p.target.Fragment != "" {
-			args = []string{p.target.Fragment}
-		}
+func openHTTPSource(ctx context.Context, u *url.URL) (io.ReadCloser, error) {
+	ucopy := *u
+	ucopy.Scheme = ucopy.Scheme[len("source+"):]
+	resp, err := httpClient.Do((&http.Request{
+		Method: "GET",
+		URL:    &ucopy,
+		Header: http.Header{
+			"User-Agent": {HTTPUserAgent},
+		},
+	}).Clone(ctx))
 
-		cmd := exec.CommandContext(ctx, filepath.FromSlash(p.target.Opaque), args...)
-		cmd.Env = getExecuteEnvByURL(p.target)
-
-		stdout := &bytes.Buffer{}
-		cmd.Stdout = stdout
-		stderr := &bytes.Buffer{}
-		cmd.Stderr = stderr
-
-		err := cmd.Run()
-		if err != nil {
-			return nil, fmt.Errorf("%w: failed to execute: %s", ErrInvalidURL, err)
-		}
-
-		if stderr.Len() != 0 {
-			return nil, fmt.Errorf("%w: failed to execute: %s", ErrInvalidURL, autoDecode(stderr.Bytes()))
-		}
-
-		return io.NopCloser(strings.NewReader(autoDecode(stdout.Bytes()))), nil
+	switch {
+	case err != nil:
+		return nil, err
+	case resp.StatusCode != http.StatusOK:
+		return nil, fmt.Errorf("%w: failed to fetch", ErrInvalidURL)
 	default:
-		f, err := os.Open(p.target.Opaque)
-		if err != nil {
-			return nil, err
-		}
-		defer f.Close()
+		return resp.Body, nil
+	}
+}
 
-		// XXX: can I make io.Reader instead of read all at here?
-		bs, err := io.ReadAll(f)
-		if err != nil {
-			return nil, err
-		}
+func openExecSource(ctx context.Context, u *url.URL) (io.ReadCloser, error) {
+	var args []string
+	if u.Fragment != "" {
+		args = []string{u.Fragment}
+	}
 
-		return io.NopCloser(strings.NewReader(autoDecode(bs))), nil
+	cmd := exec.CommandContext(ctx, filepath.FromSlash(u.Opaque), args...)
+	cmd.Env = getExecuteEnvByURL(u)
+
+	stdout := &bytes.Buffer{}
+	cmd.Stdout = stdout
+	stderr := &bytes.Buffer{}
+	cmd.Stderr = stderr
+
+	err := cmd.Run()
+	if err != nil {
+		return nil, fmt.Errorf("%w: failed to execute: %s", ErrInvalidURL, err)
+	}
+
+	if stderr.Len() != 0 {
+		return nil, fmt.Errorf("%w: failed to execute: %s", ErrInvalidURL, autoDecode(stderr.Bytes()))
+	}
+
+	return io.NopCloser(strings.NewReader(autoDecode(stdout.Bytes()))), nil
+}
+
+func openFileSource(ctx context.Context, u *url.URL) (io.ReadCloser, error) {
+	f, err := os.Open(u.Opaque)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	// XXX: can I make io.Reader instead of read all at here?
+	bs, err := io.ReadAll(f)
+	if err != nil {
+		return nil, err
+	}
+
+	return io.NopCloser(strings.NewReader(autoDecode(bs))), nil
+}
+
+func openSource(ctx context.Context, u *url.URL) (io.ReadCloser, error) {
+	switch u.Scheme {
+	case "source+http", "source+https":
+		return openHTTPSource(ctx, u)
+	case "source+exec":
+		return openExecSource(ctx, u)
+	default:
+		return openFileSource(ctx, u)
 	}
 }
 
@@ -205,7 +218,7 @@ func (p SourceProbe) load(ctx context.Context, ignores ignoreSet, out map[string
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
 	defer cancel()
 
-	f, err := p.open(ctx)
+	f, err := openSource(ctx, p.target)
 	if err != nil {
 		return err
 	}
