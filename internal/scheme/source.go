@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -21,19 +22,41 @@ import (
 )
 
 var (
-	ErrInvalidSource = errors.New("invalid source")
-	ErrMissingFile   = errors.New("missing file")
+	ErrInvalidSource    = errors.New("invalid source")
+	ErrInvalidSourceURL = errors.New("invalid source URL")
+	ErrMissingFile      = errors.New("missing file")
 )
 
-type ignoreSet []string
+// urlSet is a set of URL.
+type urlSet []*url.URL
 
-func (is ignoreSet) Has(s string) bool {
-	for _, i := range is {
-		if i == s {
-			return true
-		}
+func (s urlSet) search(u *url.URL) int {
+	return sort.Search(len(s), func(i int) bool {
+		return strings.Compare(s[i].String(), u.String()) <= 0
+	})
+}
+
+// Has check if the URL is in this urlSet or not.
+func (s urlSet) Has(u *url.URL) bool {
+	i := s.search(u)
+	if len(s) == i {
+		return false
 	}
-	return false
+
+	return s[i].String() == u.String()
+}
+
+// Add adds a URL to urlSet.
+// If the URL is already added, it will be ignored.
+func (s *urlSet) Add(u *url.URL) {
+	i := s.search(u)
+	if len(*s) == i {
+		*s = append(*s, u)
+	}
+
+	if (*s)[i].String() != u.String() {
+		*s = append(append((*s)[:i], u), (*s)[i:]...)
+	}
 }
 
 func normalizeSourceURL(u *url.URL) (*url.URL, error) {
@@ -128,8 +151,10 @@ func NewSourceProbe(u *url.URL) (SourceProbe, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
 
-	err = s.load(ctx, nil, make(map[string]Prober))
-	if err != nil {
+	_, err = s.loadProbers(ctx)
+	if errors.Is(err, ErrInvalidSourceURL) {
+		return SourceProbe{}, err
+	} else if err != nil {
 		return SourceProbe{}, fmt.Errorf("%w: %s", ErrInvalidSource, err)
 	}
 
@@ -214,40 +239,45 @@ func openSource(ctx context.Context, u *url.URL) (io.ReadCloser, error) {
 	}
 }
 
-func (p SourceProbe) load(ctx context.Context, ignores ignoreSet, out map[string]Prober) error {
+func loadSource(ctx context.Context, target *url.URL, ignores *urlSet, fn func(u *url.URL) error) error {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
 	defer cancel()
 
-	f, err := openSource(ctx, p.target)
+	f, err := openSource(ctx, target)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
 
-	invalids := &ayderr.ListBuilder{What: ErrInvalidURL}
+	ignores.Add(target)
+
+	invalids := &ayderr.ListBuilder{What: ErrInvalidSourceURL}
 
 	scanner := &sourceScanner{Scanner: bufio.NewScanner(f)}
 	for scanner.Scan() {
-		target, err := scanner.URL()
+		u, err := scanner.URL()
 		if err != nil {
 			invalids.Pushf("%s", scanner.Text)
 			continue
 		}
 
-		if target.Scheme != "source" {
-			prober, err := NewProberFromURL(target)
-			if err != nil {
-				invalids.Pushf("%s", target)
-			} else {
-				out[prober.Target().String()] = prober
+		if u.Scheme != "source" {
+			if !ignores.Has(u) {
+				if err := fn(u); err != nil {
+					invalids.Pushf("%s", u)
+				}
+				ignores.Add(u)
 			}
-		} else if !ignores.Has(target.String()) {
-			err := SourceProbe{target: target}.load(ctx, append(ignores, p.target.String()), out)
+			continue
+		}
+
+		if !ignores.Has(u) {
+			err := loadSource(ctx, u, ignores, fn)
 			es := ayderr.List{}
 			if errors.As(err, &es) {
 				invalids.Push(es.Children...)
 			} else if err != nil {
-				invalids.Pushf("%s", target)
+				invalids.Pushf("%s", u)
 			}
 		}
 
@@ -261,14 +291,28 @@ func (p SourceProbe) load(ctx context.Context, ignores ignoreSet, out map[string
 	return invalids.Build()
 }
 
+func (p SourceProbe) loadProbers(ctx context.Context) ([]Prober, error) {
+	var result []Prober
+
+	err := loadSource(ctx, p.target, &urlSet{}, func(u *url.URL) error {
+		p, err := NewProberFromURL(u)
+		if err == nil {
+			result = append(result, p)
+		}
+		return err
+	})
+
+	return result, err
+}
+
 func (p SourceProbe) Probe(ctx context.Context, r Reporter) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	stime := time.Now()
 
-	probes := make(map[string]Prober)
-	if err := p.load(ctx, nil, probes); err != nil {
+	probes, err := p.loadProbers(ctx)
+	if err != nil {
 		d := time.Now().Sub(stime)
 		r.Report(p.target, timeoutOr(ctx, api.Record{
 			CheckedAt: stime,
