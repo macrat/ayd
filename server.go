@@ -27,6 +27,7 @@ func (cmd *AydCommand) RunServer(ctx context.Context, s *store.Store) (exitCode 
 	}
 
 	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 
 	listen := fmt.Sprintf("0.0.0.0:%d", cmd.ListenPort)
 
