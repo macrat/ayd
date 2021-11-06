@@ -100,7 +100,7 @@ func (s DummyScheme) Probe(ctx context.Context, r Reporter) {
 	select {
 	case <-time.After(latency):
 	case <-ctx.Done():
-		rec.Latency = time.Now().Sub(stime)
+		rec.Latency = time.Since(stime)
 	}
 
 	r.Report(s.target, timeoutOr(ctx, rec))

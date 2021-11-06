@@ -143,7 +143,7 @@ func (p *autoPingerStruct) Ping(ctx context.Context, target *net.IPAddr) (startT
 
 	startTime = time.Now()
 	result, err = ping.Ping(ctx, target, 3, 500*time.Millisecond)
-	duration = time.Now().Sub(startTime)
+	duration = time.Since(startTime)
 
 	return
 }

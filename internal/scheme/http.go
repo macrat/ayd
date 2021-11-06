@@ -119,7 +119,7 @@ func (s HTTPScheme) responseToRecord(resp *http.Response, err error) api.Record 
 func (s HTTPScheme) run(ctx context.Context, r Reporter, req *http.Request) {
 	st := time.Now()
 	resp, err := httpClient.Do(req)
-	d := time.Now().Sub(st)
+	d := time.Since(st)
 
 	rec := s.responseToRecord(resp, err)
 	rec.CheckedAt = st

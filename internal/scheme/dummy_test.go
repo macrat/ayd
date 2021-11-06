@@ -70,7 +70,7 @@ func TestDummyScheme_Probe(t *testing.T) {
 
 		stime := time.Now()
 		rs := testutil.RunProbe(context.Background(), p)
-		latency := time.Now().Sub(stime)
+		latency := time.Since(stime)
 
 		if latency < 4800*time.Millisecond || 5200*time.Millisecond < latency {
 			t.Errorf("real latency was out of expected range: %s", latency)
@@ -91,7 +91,7 @@ func TestDummyScheme_Probe(t *testing.T) {
 
 		stime := time.Now()
 		rs := testutil.RunProbe(ctx, p)
-		latency := time.Now().Sub(stime)
+		latency := time.Since(stime)
 
 		if latency < 800*time.Millisecond || 1200*time.Millisecond < latency {
 			t.Errorf("real latency was out of expected range: %s", latency)

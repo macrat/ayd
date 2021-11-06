@@ -191,7 +191,7 @@ func (s DNSScheme) Probe(ctx context.Context, r Reporter) {
 
 	st := time.Now()
 	msg, err := s.resolve(ctx, s.hostname)
-	d := time.Now().Sub(st)
+	d := time.Since(st)
 
 	rec := api.Record{
 		CheckedAt: st,
