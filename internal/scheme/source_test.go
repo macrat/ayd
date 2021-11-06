@@ -53,13 +53,13 @@ func TestSource(t *testing.T) {
 		}, ""},
 		{"source:./testdata/invalid-list.txt", map[string]api.Status{
 			"source:./testdata/invalid-list.txt": api.StatusFailure,
-		}, "invalid source: invalid URL:\n  ::invalid host::\n  no-such-scheme:hello world\n  source:./testdata/no-such-list.txt"},
+		}, "invalid source URL:\n  ::invalid host::\n  no-such-scheme:hello world\n  source:./testdata/no-such-list.txt"},
 		{"source:testdata/invalid-list.txt", map[string]api.Status{
 			"source:testdata/invalid-list.txt": api.StatusFailure,
-		}, "invalid source: invalid URL:\n  ::invalid host::\n  no-such-scheme:hello world\n  source:./testdata/no-such-list.txt"},
+		}, "invalid source URL:\n  ::invalid host::\n  no-such-scheme:hello world\n  source:./testdata/no-such-list.txt"},
 		{"source:./testdata/include-invalid-list.txt", map[string]api.Status{
 			"source:./testdata/include-invalid-list.txt": api.StatusFailure,
-		}, "invalid source: invalid URL:\n  ::invalid host::\n  no-such-scheme:hello world\n  source:./testdata/no-such-list.txt"},
+		}, "invalid source URL:\n  ::invalid host::\n  no-such-scheme:hello world\n  source:./testdata/no-such-list.txt"},
 		{"source:./testdata/no-such-list.txt", map[string]api.Status{
 			"source:./testdata/no-such-list.txt": api.StatusFailure,
 		}, `invalid source: open \./testdata/no-such-list\.txt: (no such file or directory|The system cannot find the file specified\.)`},
@@ -106,7 +106,7 @@ func TestSource(t *testing.T) {
 				if err == nil {
 					t.Fatalf("expected error %v but got nil", tt.ErrorPattern)
 				} else if ok, _ := regexp.MatchString("^"+tt.ErrorPattern+"$", err.Error()); !ok {
-					t.Fatalf("unexpected error: %s", err)
+					t.Fatalf("--- expected error ---\n%s\n--- actual error ---\n%s", tt.ErrorPattern, err)
 				}
 				return
 			}
