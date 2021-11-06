@@ -84,7 +84,7 @@ func TestAlerter(t *testing.T) {
 			}
 
 			if r.Records[0].Message != tt.Message {
-				t.Errorf("unexpected message of record: %s", r.Records[0].Message)
+				t.Errorf("--- expected message ---\n%s\n--- actual message ---\n%s", tt.Message, r.Records[0].Message)
 			}
 		})
 	}

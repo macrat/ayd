@@ -172,7 +172,7 @@ func (s ExecScheme) Alert(ctx context.Context, r Reporter, lastRecord api.Record
 	s.run(ctx, AlertReporter{s.target, r}, []string{
 		"ayd_checked_at=" + lastRecord.CheckedAt.Format(time.RFC3339),
 		"ayd_status=" + lastRecord.Status.String(),
-		fmt.Sprintf("ayd_latency=%.4f", lastRecord.Latency.Seconds()/1000.0),
+		fmt.Sprintf("ayd_latency=%.3f", float64(lastRecord.Latency.Microseconds())/1000.0),
 		"ayd_target=" + lastRecord.Target.String(),
 		"ayd_message=" + lastRecord.Message,
 	})
