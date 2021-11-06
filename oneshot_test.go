@@ -67,7 +67,7 @@ func BenchmarkRunOneshot(b *testing.B) {
 
 					tasks := make([]string, n+1)
 					tasks[0] = "1s"
-					for i := range tasks {
+					for i := range tasks[1:] {
 						tasks[i+1] = fmt.Sprintf("dummy:random#benchmark-%d", i)
 					}
 					cmd, _ := MakeTestCommand(b, tasks)
