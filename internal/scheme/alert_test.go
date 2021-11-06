@@ -152,7 +152,7 @@ func TestAlertReporter(t *testing.T) {
 	}
 }
 
-func TestAlertSet(t *testing.T) {
+func TestAlerterSet(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -164,12 +164,13 @@ func TestAlertSet(t *testing.T) {
 		{"empty", []string{}, []string{}, ""},
 		{"single", []string{"dummy:?message=abc"}, []string{"abc"}, ""},
 		{"multiple", []string{"dummy:?message=abc", "dummy:?message=def"}, []string{"abc", "def"}, ""},
+		{"duplicated", []string{"dummy:?message=abc", "dummy:?message=abc", "dummy:?message=def"}, []string{"abc", "def"}, ""},
 		{"invalid", []string{"dummy:#its_okay", "::invalid::", "no.such:abc", "dummy:#its_also_okay"}, nil, "invalid alert URL:\n  ::invalid::: invalid URL\n  no.such:abc: unsupported scheme"},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			as, err := scheme.NewAlertSet(tt.URLs)
+			as, err := scheme.NewAlerterSet(tt.URLs)
 			if tt.Error != "" {
 				if err == nil {
 					t.Fatalf("expected error but returns nil")
@@ -217,10 +218,10 @@ func TestAlertSet(t *testing.T) {
 	}
 }
 
-func TestAlertSet_blocking(t *testing.T) {
+func TestAlerterSet_blocking(t *testing.T) {
 	t.Parallel()
 
-	as, err := scheme.NewAlertSet([]string{"dummy:?latency=500ms", "dummy:?latency=1000ms"})
+	as, err := scheme.NewAlerterSet([]string{"dummy:?latency=500ms", "dummy:?latency=1000ms"})
 	if err != nil {
 		t.Fatalf("failed to create a new set: %s", err)
 	}
