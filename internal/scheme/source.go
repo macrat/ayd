@@ -151,6 +151,16 @@ func newSourceScheme(u *url.URL) (SourceScheme, error) {
 	return s, nil
 }
 
+func sourceLoadTest(_ interface{}, err error) error {
+	if errors.Is(err, ErrInvalidSourceURL) {
+		return err
+	} else if err != nil {
+		return fmt.Errorf("%w: %s", ErrInvalidSource, err)
+	}
+
+	return nil
+}
+
 func NewSourceProbe(u *url.URL) (SourceScheme, error) {
 	s, err := newSourceScheme(u)
 	if err != nil {
@@ -160,14 +170,7 @@ func NewSourceProbe(u *url.URL) (SourceScheme, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
 
-	_, err = s.loadProbers(ctx)
-	if errors.Is(err, ErrInvalidSourceURL) {
-		return SourceScheme{}, err
-	} else if err != nil {
-		return SourceScheme{}, fmt.Errorf("%w: %s", ErrInvalidSource, err)
-	}
-
-	return s, nil
+	return s, sourceLoadTest(s.loadProbers(ctx))
 }
 
 func NewSourceAlert(u *url.URL) (SourceScheme, error) {
@@ -179,14 +182,7 @@ func NewSourceAlert(u *url.URL) (SourceScheme, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
 
-	_, err = s.loadAlerters(ctx)
-	if errors.Is(err, ErrInvalidSourceURL) {
-		return SourceScheme{}, err
-	} else if err != nil {
-		return SourceScheme{}, fmt.Errorf("%w: %s", ErrInvalidSource, err)
-	}
-
-	return s, nil
+	return s, sourceLoadTest(s.loadAlerters(ctx))
 }
 
 func (p SourceScheme) Target() *url.URL {
