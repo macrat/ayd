@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net"
 	"net/url"
+	"strings"
 	"time"
 
 	api "github.com/macrat/ayd/lib-ayd"
@@ -25,9 +26,9 @@ func NewTCPScheme(u *url.URL) (TCPScheme, error) {
 		return TCPScheme{}, ErrUnsupportedScheme
 	}
 
-	s := TCPScheme{&url.URL{Scheme: scheme, Host: u.Host, Fragment: u.Fragment}}
+	s := TCPScheme{&url.URL{Scheme: scheme, Host: strings.ToLower(u.Host), Fragment: u.Fragment}}
 	if u.Host == "" {
-		s.target.Host = u.Opaque
+		s.target.Host = strings.ToLower(u.Opaque)
 	}
 
 	if s.target.Hostname() == "" {

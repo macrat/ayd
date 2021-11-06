@@ -175,9 +175,9 @@ func NewPingScheme(u *url.URL) (PingScheme, error) {
 	}
 
 	if u.Opaque != "" {
-		return PingScheme{&url.URL{Scheme: scheme, Opaque: u.Opaque, Fragment: u.Fragment}}, nil
+		return PingScheme{&url.URL{Scheme: scheme, Opaque: strings.ToLower(u.Opaque), Fragment: u.Fragment}}, nil
 	} else if u.Hostname() != "" {
-		return PingScheme{&url.URL{Scheme: scheme, Opaque: u.Hostname(), Fragment: u.Fragment}}, nil
+		return PingScheme{&url.URL{Scheme: scheme, Opaque: strings.ToLower(u.Hostname()), Fragment: u.Fragment}}, nil
 	} else {
 		return PingScheme{}, ErrMissingHost
 	}

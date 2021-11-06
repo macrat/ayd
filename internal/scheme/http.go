@@ -46,6 +46,8 @@ type HTTPScheme struct {
 }
 
 func NewHTTPScheme(u *url.URL) (HTTPScheme, error) {
+	u.Host = strings.ToLower(u.Host)
+
 	ucopy := *u
 	requrl := &ucopy
 
