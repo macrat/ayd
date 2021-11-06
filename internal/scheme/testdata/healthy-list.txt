@@ -1,6 +1,7 @@
 # healthy target list
 
 source:./testdata/sub-list.txt
+source:./testdata/sub-list.txt?this-query=will-ignored
 dummy:healthy#healthy-list
 
 # ignore self including
