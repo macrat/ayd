@@ -38,6 +38,7 @@ func TestTargetURLNormalize(t *testing.T) {
 		{"ping:example.com", url.URL{Scheme: "ping", Opaque: "example.com"}, nil},
 		{"ping://example.com:123/foo/bar?hoge=fuga#piyo", url.URL{Scheme: "ping", Opaque: "example.com", Fragment: "piyo"}, nil},
 		{"ping:example.com#piyo", url.URL{Scheme: "ping", Opaque: "example.com", Fragment: "piyo"}, nil},
+		{"PiNg:ExAmPlE.cOm", url.URL{Scheme: "ping", Opaque: "example.com"}, nil},
 		{"ping-abc:example.com", url.URL{}, scheme.ErrUnsupportedScheme},
 		{"ping+abc:example.com", url.URL{}, scheme.ErrUnsupportedScheme},
 		{"ping:", url.URL{}, scheme.ErrMissingHost},
@@ -45,6 +46,7 @@ func TestTargetURLNormalize(t *testing.T) {
 
 		{"http://example.com/foo/bar?hoge=fuga#piyo", url.URL{Scheme: "http", Host: "example.com", Path: "/foo/bar", RawQuery: "hoge=fuga", Fragment: "piyo"}, nil},
 		{"https://example.com/foo/bar?hoge=fuga#piyo", url.URL{Scheme: "https", Host: "example.com", Path: "/foo/bar", RawQuery: "hoge=fuga", Fragment: "piyo"}, nil},
+		{"HtTpS://eXaMpLe.CoM/fOo/BaR", url.URL{Scheme: "https", Host: "example.com", Path: "/fOo/BaR"}, nil},
 
 		{"http-get://example.com/foo/bar?hoge=fuga#piyo", url.URL{Scheme: "http-get", Host: "example.com", Path: "/foo/bar", RawQuery: "hoge=fuga", Fragment: "piyo"}, nil},
 		{"https-post://example.com/foo/bar?hoge=fuga#piyo", url.URL{Scheme: "https-post", Host: "example.com", Path: "/foo/bar", RawQuery: "hoge=fuga", Fragment: "piyo"}, nil},
@@ -59,6 +61,7 @@ func TestTargetURLNormalize(t *testing.T) {
 		{"tcp4:example.com:80", url.URL{Scheme: "tcp4", Host: "example.com:80"}, nil},
 		{"tcp6:example.com:80", url.URL{Scheme: "tcp6", Host: "example.com:80"}, nil},
 		{"tcp:example.com:80#hello", url.URL{Scheme: "tcp", Host: "example.com:80", Fragment: "hello"}, nil},
+		{"TcP:eXaMpLe.CoM:80", url.URL{Scheme: "tcp", Host: "example.com:80"}, nil},
 		{"tcp-abc:example.com:80", url.URL{}, scheme.ErrUnsupportedScheme},
 		{"tcp-def:example.com:80", url.URL{}, scheme.ErrUnsupportedScheme},
 		{"tcp://:80", url.URL{}, scheme.ErrMissingHost},
@@ -71,6 +74,7 @@ func TestTargetURLNormalize(t *testing.T) {
 		{"dns://8.8.8.8:53/example.com", url.URL{Scheme: "dns", Host: "8.8.8.8:53", Path: "/example.com"}, nil},
 		{"dns://example.com:53/foo/bar?hoge=fuga#piyo", url.URL{Scheme: "dns", Host: "example.com:53", Path: "/foo", Fragment: "piyo"}, nil},
 		{"dns:example.com#piyo", url.URL{Scheme: "dns", Opaque: "example.com", Fragment: "piyo"}, nil},
+		{"DnS:lOcAlHoSt?TyPe=AaAa", url.URL{Scheme: "dns", Opaque: "localhost", RawQuery: "type=AAAA"}, nil},
 		{"dns:", url.URL{}, scheme.ErrMissingDomainName},
 		{"dns://8.8.8.8:53", url.URL{}, scheme.ErrMissingDomainName},
 
@@ -103,6 +107,7 @@ func TestTargetURLNormalize(t *testing.T) {
 
 		{"source-" + server.URL + "/source", url.URL{}, scheme.ErrUnsupportedScheme},
 		{"source+" + server.URL + "/source", url.URL{Scheme: "source+http", Host: strings.Replace(server.URL, "http://", "", 1), Path: "/source"}, nil},
+		{"source+" + strings.ToUpper(server.URL) + "/source", url.URL{Scheme: "source+http", Host: strings.Replace(server.URL, "http://", "", 1), Path: "/source"}, nil},
 		{"source+" + server.URL + "/error", url.URL{}, scheme.ErrInvalidSource},
 		{"source+https://of-course-no-such-host/source", url.URL{}, scheme.ErrInvalidSource},
 
