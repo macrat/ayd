@@ -98,6 +98,7 @@ func (s *sourceScanner) URL() (*url.URL, error) {
 	return u, nil
 }
 
+// SourceScheme implements how to load target URLs from file, HTTP, or external command.
 type SourceScheme struct {
 	target  *url.URL
 	tracker *TargetTracker
@@ -128,6 +129,8 @@ func sourceLoadTest(_ interface{}, err error) error {
 	return nil
 }
 
+// NewSourceProbe makes a new SourceScheme instance.
+// It checks each URLs in source as a Prober.
 func NewSourceProbe(u *url.URL) (SourceScheme, error) {
 	s, err := newSourceScheme(u)
 	if err != nil {
@@ -140,6 +143,8 @@ func NewSourceProbe(u *url.URL) (SourceScheme, error) {
 	return s, sourceLoadTest(s.loadProbers(ctx))
 }
 
+// NewSourceProbe makes a new SourceScheme instance.
+// It checks each URLs in source as an Alerter.
 func NewSourceAlert(u *url.URL) (SourceScheme, error) {
 	s, err := newSourceScheme(u)
 	if err != nil {
@@ -252,20 +257,20 @@ func loadSource(ctx context.Context, target *url.URL, ignores *urlSet, fn func(u
 			continue
 		}
 
-		if u.Scheme != "source" {
-			if !ignores.Has(u) {
-				u2, err := fn(u)
-				if err != nil {
-					invalids.Pushf("%s", u)
-				} else {
-					ignores.Add(u2)
-				}
-			}
+		if ignores.Has(u) {
 			continue
 		}
 
-		if !ignores.Has(u) {
+		if s, _, _ := SplitScheme(u.Scheme); s != "source" {
+			u2, err := fn(u)
+			if err != nil {
+				invalids.Pushf("%s", u)
+			} else {
+				ignores.Add(u2)
+			}
+		} else {
 			err := loadSource(ctx, u, ignores, fn)
+
 			es := ayderr.List{}
 			if errors.As(err, &es) {
 				invalids.Push(es.Children...)
