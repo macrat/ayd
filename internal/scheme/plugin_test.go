@@ -76,45 +76,6 @@ func TestFindPlugin(t *testing.T) {
 	}
 }
 
-func TestExecutePlugin(t *testing.T) {
-	t.Parallel()
-	PreparePluginPath(t)
-
-	tests := []struct {
-		Target  *url.URL
-		Status  api.Status
-		Message string
-	}{
-		{&url.URL{Scheme: "plug"}, api.StatusHealthy, "check plug:"},
-		{&url.URL{Scheme: "plug-plus"}, api.StatusHealthy, "plus plugin: plug-plus:"},
-		{&url.URL{Scheme: "no-such"}, api.StatusUnknown, "probe plugin for no-such was not found"},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.Target.String(), func(t *testing.T) {
-			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-			defer cancel()
-
-			r := &testutil.DummyReporter{}
-			scheme.ExecutePlugin(ctx, r, "probe", tt.Target, []string{tt.Target.String()}, nil)
-
-			r.Lock()
-
-			if len(r.Records) != 1 {
-				t.Fatalf("unexpected length of records\n%v", r.Records)
-			}
-
-			if r.Records[0].Status != tt.Status {
-				t.Errorf("unexpected status: %s\n", r.Records[0].Status)
-			}
-
-			if r.Records[0].Message != tt.Message {
-				t.Errorf("unexpected message: %s\n", r.Records[0].Message)
-			}
-		})
-	}
-}
-
 func TestPluginScheme_Probe(t *testing.T) {
 	t.Parallel()
 	PreparePluginPath(t)
@@ -169,6 +130,50 @@ func TestPluginScheme_Probe(t *testing.T) {
 		}
 		if rs[1].Message != "invalid record: unexpected column count: \"this is invalid\"" {
 			t.Errorf("got unexpected message: %s", rs[1].Message)
+		}
+	})
+
+	t.Run("removed-plug:", func(t *testing.T) {
+		origPath := os.Getenv("PATH")
+		dir := t.TempDir()
+		os.Setenv("PATH", origPath+string(filepath.ListSeparator)+dir)
+
+		if err := os.WriteFile(dir+"/ayd-removed-plug-probe", []byte("#!/bin/sh\n"), 0744); err != nil {
+			t.Fatalf("failed to prepare dummy plugin for UNIX: %s", err)
+		}
+		if err := os.WriteFile(dir+"/ayd-removed-plug-probe.bat", []byte("@echo off\n"), 0744); err != nil {
+			t.Fatalf("failed to prepare dummy plugin for Windows: %s", err)
+		}
+
+		p, err := scheme.NewProber("removed-plug:")
+		if err != nil {
+			t.Fatalf("failed to create plugin: %s", err)
+		}
+
+		if err = os.Remove(dir + "/ayd-removed-plug-probe"); err != nil {
+			t.Fatalf("failed to remove dummy plugin for UNIX: %s", err)
+		}
+		if err = os.Remove(dir + "/ayd-removed-plug-probe.bat"); err != nil {
+			t.Fatalf("failed to remove dummy plugin for Windows: %s", err)
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+
+		rs := testutil.RunProbe(ctx, p)
+
+		if len(rs) != 1 {
+			t.Fatalf("got unexpected number of results: %d", len(rs))
+		}
+
+		if rs[0].Target.String() != "removed-plug:" {
+			t.Errorf("got a record of unexpected target: %s", rs[0].Target)
+		}
+		if rs[0].Status != api.StatusUnknown {
+			t.Errorf("got unexpected status: %s", rs[0].Status)
+		}
+		if rs[0].Message != "probe plugin for removed-plug was not found" {
+			t.Errorf("got unexpected message: %s", rs[0].Message)
 		}
 	})
 }
