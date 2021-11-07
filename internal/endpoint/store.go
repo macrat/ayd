@@ -1,7 +1,6 @@
 package endpoint
 
 import (
-	"github.com/macrat/ayd/internal/store"
 	api "github.com/macrat/ayd/lib-ayd"
 )
 
@@ -13,9 +12,7 @@ type Store interface {
 	Targets() []string
 
 	// ProbeHistory returns a slice of ProbeHistory.
-	//
-	// XXX: Can I remove direct import store package?
-	ProbeHistory() []*store.ProbeHistory
+	ProbeHistory() []api.ProbeHistory
 
 	// MakeReport creates ayd.Report for exporting for endpoint.
 	MakeReport() api.Report
