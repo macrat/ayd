@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/macrat/ayd/internal/endpoint"
-	"github.com/macrat/ayd/internal/store"
 	"github.com/macrat/ayd/internal/testutil"
 	api "github.com/macrat/ayd/lib-ayd"
 )
@@ -44,7 +43,7 @@ func (d DummyErrorsGetter) Path() string {
 	return ""
 }
 
-func (d DummyErrorsGetter) ProbeHistory() []*store.ProbeHistory {
+func (d DummyErrorsGetter) ProbeHistory() []api.ProbeHistory {
 	return nil
 }
 

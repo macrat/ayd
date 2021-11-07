@@ -78,40 +78,6 @@ func (ph ProbeHistory) isActive() bool {
 	return len(ph.sources) != 0
 }
 
-type byLatestStatus []*ProbeHistory
-
-func (xs byLatestStatus) Len() int {
-	return len(xs)
-}
-
-func statusTier(p *ProbeHistory) int {
-	if len(p.Records) == 0 {
-		return 1
-	}
-	switch p.Records[len(p.Records)-1].Status {
-	case api.StatusFailure, api.StatusUnknown:
-		return 0
-	default:
-		return 1
-	}
-}
-
-func (xs byLatestStatus) Less(i, j int) bool {
-	iTier := statusTier(xs[i])
-	jTier := statusTier(xs[j])
-	if iTier < jTier {
-		return true
-	} else if iTier > jTier {
-		return false
-	}
-
-	return strings.Compare(xs[i].Target.Redacted(), xs[j].Target.Redacted()) < 0
-}
-
-func (xs byLatestStatus) Swap(i, j int) {
-	xs[i], xs[j] = xs[j], xs[i]
-}
-
 type ProbeHistoryMap map[string]*ProbeHistory
 
 // Append adds ayd.Record to the ProbeHistory.
@@ -267,20 +233,20 @@ func (s *Store) Close() error {
 	return nil
 }
 
-// ProbeHistory returns a slice of ProbeHistory.
+// ProbeHistory returns a slice of lib-ayd.ProbeHistory.
 // This method only returns active target's ProbeHistory.
-func (s *Store) ProbeHistory() []*ProbeHistory {
+func (s *Store) ProbeHistory() []api.ProbeHistory {
 	s.historyLock.RLock()
 	defer s.historyLock.RUnlock()
 
-	var result []*ProbeHistory
+	var result []api.ProbeHistory
 	for _, x := range s.probeHistory {
 		if x.isActive() {
-			result = append(result, x)
+			result = append(result, x.MakeReport())
 		}
 	}
 
-	sort.Sort(byLatestStatus(result))
+	api.SortProbeHistories(result)
 
 	return result
 }
