@@ -82,23 +82,23 @@ func (p PluginScheme) Target() *url.URL {
 	return p.target
 }
 
-func ExecutePlugin(ctx context.Context, r Reporter, scope string, target *url.URL, args, env []string) {
+func (p PluginScheme) execute(ctx context.Context, r Reporter, scope string, args []string) {
 	ctx, cancel := context.WithTimeout(ctx, 60*time.Minute)
 	defer cancel()
 
-	command, err := FindPlugin(target.Scheme, scope)
+	command, err := FindPlugin(p.target.Scheme, scope)
 	if err != nil {
-		r.Report(target, api.Record{
+		r.Report(p.target, api.Record{
 			CheckedAt: time.Now(),
-			Target:    target,
+			Target:    p.target,
 			Status:    api.StatusUnknown,
-			Message:   scope + " plugin for " + target.Scheme + " was not found",
+			Message:   scope + " plugin for " + p.target.Scheme + " was not found",
 		})
 		return
 	}
 
 	stime := time.Now()
-	output, status, err := runExternalCommand(ctx, command, args, env)
+	output, status, err := runExternalCommand(ctx, command, args, os.Environ())
 	latency := time.Since(stime)
 
 	count := 0
@@ -113,13 +113,13 @@ func ExecutePlugin(ctx context.Context, r Reporter, scope string, target *url.UR
 		rec, err := api.ParseRecord(text)
 		if err == nil {
 			count++
-			r.Report(target, rec)
+			r.Report(p.target, rec)
 			continue
 		}
 
-		r.Report(target, api.Record{
+		r.Report(p.target, api.Record{
 			CheckedAt: time.Now(),
-			Target:    &url.URL{Scheme: "ayd", Opaque: scope + ":plugin:" + target.String()},
+			Target:    &url.URL{Scheme: "ayd", Opaque: scope + ":plugin:" + p.target.String()},
 			Status:    api.StatusUnknown,
 			Message:   fmt.Sprintf("%s: %#v", err, text),
 			Latency:   latency,
@@ -132,9 +132,9 @@ func ExecutePlugin(ctx context.Context, r Reporter, scope string, target *url.UR
 			msg = err.Error()
 		}
 
-		r.Report(target, timeoutOr(ctx, api.Record{
+		r.Report(p.target, timeoutOr(ctx, api.Record{
 			CheckedAt: stime,
-			Target:    target,
+			Target:    p.target,
 			Status:    status,
 			Message:   msg,
 			Latency:   latency,
@@ -144,16 +144,15 @@ func ExecutePlugin(ctx context.Context, r Reporter, scope string, target *url.UR
 
 func (p PluginScheme) Probe(ctx context.Context, r Reporter) {
 	r = p.tracker.PrepareReporter(p.target, r)
-	ExecutePlugin(ctx, r, "probe", p.target, []string{p.target.String()}, os.Environ())
+	p.execute(ctx, r, "probe", []string{p.target.String()})
 	r.DeactivateTarget(p.target, p.tracker.Inactives()...)
 }
 
 func (p PluginScheme) Alert(ctx context.Context, r Reporter, lastRecord api.Record) {
-	ExecutePlugin(
+	p.execute(
 		ctx,
 		AlertReporter{&url.URL{Scheme: "alert", Opaque: p.target.String()}, r},
 		"alert",
-		p.target,
 		[]string{
 			p.target.String(),
 			lastRecord.CheckedAt.Format(time.RFC3339),
@@ -162,6 +161,5 @@ func (p PluginScheme) Alert(ctx context.Context, r Reporter, lastRecord api.Reco
 			lastRecord.Target.String(),
 			lastRecord.Message,
 		},
-		os.Environ(),
 	)
 }
