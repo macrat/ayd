@@ -20,7 +20,7 @@ var (
 	ErrFailedToPreparePing = errors.New("failed to setup ping service")
 )
 
-type ResourceLocker struct {
+type resourceLocker struct {
 	sync.Mutex
 
 	doneSignal *sync.Cond
@@ -28,13 +28,13 @@ type ResourceLocker struct {
 	teardown   func()
 }
 
-func NewResourceLocker() *ResourceLocker {
-	rl := &ResourceLocker{}
+func newResourceLocker() *resourceLocker {
+	rl := &resourceLocker{}
 	rl.doneSignal = sync.NewCond(rl)
 	return rl
 }
 
-func (rl *ResourceLocker) Start(prepareResource func() (teardown func(), err error)) error {
+func (rl *resourceLocker) Start(prepareResource func() (teardown func(), err error)) error {
 	rl.Lock()
 	defer rl.Unlock()
 
@@ -51,7 +51,7 @@ func (rl *ResourceLocker) Start(prepareResource func() (teardown func(), err err
 	return nil
 }
 
-func (rl *ResourceLocker) Done() {
+func (rl *resourceLocker) Done() {
 	rl.Lock()
 	defer rl.Unlock()
 
@@ -65,14 +65,14 @@ func (rl *ResourceLocker) Done() {
 }
 
 type autoPingerStruct struct {
-	rl *ResourceLocker
+	rl *resourceLocker
 	v4 *pinger.Pinger
 	v6 *pinger.Pinger
 }
 
 func newAutoPinger() *autoPingerStruct {
 	return &autoPingerStruct{
-		rl: NewResourceLocker(),
+		rl: newResourceLocker(),
 	}
 }
 
@@ -148,6 +148,39 @@ func (p *autoPingerStruct) Ping(ctx context.Context, target *net.IPAddr) (startT
 	return
 }
 
+func pingResultToRecord(ctx context.Context, target *url.URL, startTime time.Time, result pinger.Result) api.Record {
+	rec := api.Record{
+		CheckedAt: startTime,
+		Latency:   result.AvgRTT,
+		Target:    target,
+		Message: fmt.Sprintf(
+			"ip=%s rtt(min/avg/max)=%.2f/%.2f/%.2f send/recv=%d/%d",
+			result.Target,
+			float64(result.MinRTT.Microseconds())/1000,
+			float64(result.AvgRTT.Microseconds())/1000,
+			float64(result.MaxRTT.Microseconds())/1000,
+			result.Sent,
+			result.Recv,
+		),
+	}
+
+	switch {
+	case result.Loss == 0:
+		rec.Status = api.StatusHealthy
+	case result.Recv == 0:
+		rec.Status = api.StatusFailure
+	default:
+		rec.Status = api.StatusDebased
+	}
+
+	if ctx.Err() == context.Canceled {
+		rec.Status = api.StatusAborted
+		rec.Message = "probe aborted"
+	}
+
+	return rec
+}
+
 var (
 	autoPinger = newAutoPinger()
 )
@@ -187,66 +220,44 @@ func (s PingScheme) Target() *url.URL {
 	return s.target
 }
 
+func (s PingScheme) proto() string {
+	switch s.target.Scheme {
+	case "ping4":
+		return "ip4"
+	case "ping6":
+		return "ip6"
+	default:
+		return "ip"
+	}
+}
+
 func (s PingScheme) Probe(ctx context.Context, r Reporter) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
-	proto := "ip"
-	if s.target.Scheme == "ping4" {
-		proto = "ip4"
-	} else if s.target.Scheme == "ping6" {
-		proto = "ip6"
-	}
-
-	target, err := net.ResolveIPAddr(proto, s.target.Opaque)
-	if err != nil {
+	preparingError := func(err error) {
 		r.Report(s.target, api.Record{
 			CheckedAt: time.Now(),
 			Target:    s.target,
 			Status:    api.StatusUnknown,
 			Message:   err.Error(),
 		})
+	}
+
+	target, err := net.ResolveIPAddr(s.proto(), s.target.Opaque)
+	if err != nil {
+		preparingError(err)
 		return
 	}
 
 	stime, d, result, err := autoPinger.Ping(ctx, target)
 	if err != nil {
-		r.Report(s.target, api.Record{
-			CheckedAt: time.Now(),
-			Target:    s.target,
-			Status:    api.StatusUnknown,
-			Message:   err.Error(),
-		})
+		preparingError(err)
 		return
 	}
 
-	rec := api.Record{
-		CheckedAt: stime,
-		Target:    s.target,
-		Message: fmt.Sprintf(
-			"ip=%s rtt(min/avg/max)=%.2f/%.2f/%.2f send/recv=%d/%d",
-			target,
-			float64(result.MinRTT.Microseconds())/1000,
-			float64(result.AvgRTT.Microseconds())/1000,
-			float64(result.MaxRTT.Microseconds())/1000,
-			result.Sent,
-			result.Recv,
-		),
-		Latency: result.AvgRTT,
-	}
-
-	switch result.Loss {
-	case 0:
-		rec.Status = api.StatusHealthy
-	case 3:
-		rec.Status = api.StatusFailure
-	default:
-		rec.Status = api.StatusDebased
-	}
-
-	if ctx.Err() == context.Canceled {
-		rec.Status = api.StatusAborted
-		rec.Message = "probe aborted"
+	rec := pingResultToRecord(ctx, s.target, stime, result)
+	if rec.Status == api.StatusAborted {
 		rec.Latency = d
 	}
 
