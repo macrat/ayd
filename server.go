@@ -66,7 +66,7 @@ func (cmd *AydCommand) RunServer(ctx context.Context, s *store.Store) (exitCode 
 	scheduler.Start()
 	defer scheduler.Stop()
 
-	srv := &http.Server{Addr: listen, Handler: endpoint.NewBasicAuth(endpoint.New(s), cmd.UserInfo)}
+	srv := &http.Server{Addr: listen, Handler: endpoint.WithBasicAuth(endpoint.New(s), cmd.UserInfo)}
 
 	wg.Add(2)
 	go func() {

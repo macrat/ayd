@@ -165,13 +165,13 @@ func newLogScannerForEndpoint(s Store, r *http.Request) (scanner LogScanner, sta
 	}
 
 	if len(invalidQueries) > 0 {
-		HandleError(s, "log.tsv", fmt.Errorf("%s", strings.Join(errors, "\n")))
+		handleError(s, "log.tsv", fmt.Errorf("%s", strings.Join(errors, "\n")))
 		return nil, http.StatusBadRequest, fmt.Errorf("invalid query format: %s", strings.Join(invalidQueries, ", "))
 	}
 
 	scanner, err = NewLogScanner(s, since, until)
 	if err != nil {
-		HandleError(s, "log.tsv", fmt.Errorf("failed to open log: %w", err))
+		handleError(s, "log.tsv", fmt.Errorf("failed to open log: %w", err))
 		return nil, http.StatusInternalServerError, fmt.Errorf("internal server error")
 	}
 
@@ -227,7 +227,7 @@ func LogTSVEndpoint(s Store) http.HandlerFunc {
 		for scanner.Scan() {
 			_, err := w.Write(scanner.Bytes())
 			if err != nil {
-				HandleError(s, "log.tsv", err)
+				handleError(s, "log.tsv", err)
 				break
 			}
 		}
@@ -267,7 +267,7 @@ func LogJsonEndpoint(s Store) http.HandlerFunc {
 			records.R = append(records.R, scanner.Record())
 		}
 
-		HandleError(s, "log.json", enc.Encode(records))
+		handleError(s, "log.json", enc.Encode(records))
 	}
 }
 

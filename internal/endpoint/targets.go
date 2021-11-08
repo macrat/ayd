@@ -24,6 +24,6 @@ func TargetsJSONEndpoint(s Store) http.HandlerFunc {
 
 		enc := json.NewEncoder(w)
 
-		HandleError(s, "targets.json", enc.Encode(s.Targets()))
+		handleError(s, "targets.json", enc.Encode(s.Targets()))
 	}
 }

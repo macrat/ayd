@@ -4,7 +4,8 @@ import (
 	api "github.com/macrat/ayd/lib-ayd"
 )
 
-func NewIncident(r api.Record) *api.Incident {
+// newIncidens makes a new api.Incident from an api.Record.
+func newIncident(r api.Record) *api.Incident {
 	return &api.Incident{
 		Target:   r.Target,
 		Status:   r.Status,
@@ -13,7 +14,8 @@ func NewIncident(r api.Record) *api.Incident {
 	}
 }
 
-func IncidentIsContinued(i *api.Incident, r api.Record) bool {
+// incidentIsContinued checks if an incident is stil continued or not.
+func incidentIsContinued(i *api.Incident, r api.Record) bool {
 	return i.ResolvedAt.IsZero() && i.Status == r.Status && i.Message == r.Message
 }
 

@@ -20,7 +20,7 @@ func StatusHTMLEndpoint(s Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 
-		HandleError(s, "status.html", tmpl.Execute(w, s.MakeReport()))
+		handleError(s, "status.html", tmpl.Execute(w, s.MakeReport()))
 	}
 }
 
@@ -49,14 +49,14 @@ func StatusTextEndpoint(s Store) http.HandlerFunc {
 			w.Header().Set("Content-Type", "text/plain")
 			w.WriteHeader(http.StatusBadRequest)
 			_, err := fmt.Fprintln(w, "error: unsupported charset:", charset)
-			HandleError(s, "status.txt", err)
+			handleError(s, "status.txt", err)
 			return
 		}
 
 		contentType := "text/plain; charset=" + charset
 		w.Header().Set("Content-Type", contentType)
 
-		HandleError(s, "status.txt:"+charset, execute(w, s.MakeReport()))
+		handleError(s, "status.txt:"+charset, execute(w, s.MakeReport()))
 	}
 }
 
@@ -69,6 +69,6 @@ func StatusJSONEndpoint(s Store) http.HandlerFunc {
 		enc := json.NewEncoder(w)
 		enc.SetIndent("", "  ")
 
-		HandleError(s, "status.json", enc.Encode(s.MakeReport()))
+		handleError(s, "status.json", enc.Encode(s.MakeReport()))
 	}
 }

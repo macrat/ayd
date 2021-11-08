@@ -5,12 +5,15 @@ import (
 	"strings"
 )
 
+// BasicAuth is a http.Handler wrapper that handles Basic Authorization.
+// It supports only one pair of username and password.
 type BasicAuth struct {
 	Handler            http.Handler
 	Username, Password string
 }
 
-func NewBasicAuth(handler http.Handler, userinfo string) http.Handler {
+// WithBasicAuth wraps http.Handler with a BasicAuth.
+func WithBasicAuth(handler http.Handler, userinfo string) http.Handler {
 	if userinfo == "" {
 		return handler
 	}

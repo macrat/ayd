@@ -16,6 +16,7 @@ var faviconSvg []byte
 //go:embed static/not-found.html
 var notFoundPage []byte
 
+// New makes new http.Handler
 func New(s Store) http.Handler {
 	m := http.NewServeMux()
 
@@ -55,7 +56,7 @@ func New(s Store) http.Handler {
 	return gziphandler.GzipHandler(m)
 }
 
-func HandleError(s Store, scope string, err error) {
+func handleError(s Store, scope string, err error) {
 	if err != nil {
 		s.ReportInternalError("endpoint:"+scope, err.Error())
 	}
