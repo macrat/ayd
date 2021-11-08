@@ -17,7 +17,7 @@ import (
 func TestPingScheme_Probe(t *testing.T) {
 	t.Parallel()
 
-	if err := scheme.CheckPingPermission(); err != nil {
+	if _, err := scheme.NewPingScheme(&url.URL{Scheme: "ping", Opaque: "localhost"}); err != nil {
 		t.Fatalf("failed to check ping permission: %s", err)
 	}
 
@@ -110,7 +110,7 @@ func TestPingScheme_privilegedEnv(t *testing.T) {
 func TestPingScheme_Alert(t *testing.T) {
 	t.Parallel()
 
-	if err := scheme.CheckPingPermission(); err != nil {
+	if _, err := scheme.NewPingScheme(&url.URL{Scheme: "ping", Opaque: "localhost"}); err != nil {
 		t.Fatalf("failed to check ping permission: %s", err)
 	}
 

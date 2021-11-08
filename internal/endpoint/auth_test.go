@@ -15,7 +15,7 @@ func (h TestHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("OK"))
 }
 
-func TestNewBasicAuth(t *testing.T) {
+func TestWithBasicAuth(t *testing.T) {
 	tests := []struct {
 		Input              string
 		IsNeedAuth         bool
@@ -31,7 +31,7 @@ func TestNewBasicAuth(t *testing.T) {
 
 	for _, tt := range tests {
 		th := TestHandler{}
-		h := endpoint.NewBasicAuth(th, tt.Input)
+		h := endpoint.WithBasicAuth(th, tt.Input)
 
 		if !tt.IsNeedAuth {
 			if h != th {
@@ -74,7 +74,7 @@ func TestBasicAuth(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.URL, func(t *testing.T) {
-			h := endpoint.NewBasicAuth(TestHandler{}, tt.Userinfo)
+			h := endpoint.WithBasicAuth(TestHandler{}, tt.Userinfo)
 			server := httptest.NewServer(h)
 			defer server.Close()
 

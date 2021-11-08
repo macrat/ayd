@@ -185,7 +185,8 @@ var (
 	autoPinger = newAutoPinger()
 )
 
-func CheckPingPermission() error {
+// checkPingPermission tries to prepare pinger for check if it has permission.
+func checkPingPermission() error {
 	ctx, stop := context.WithCancel(context.Background())
 	defer stop()
 
@@ -203,7 +204,7 @@ func NewPingScheme(u *url.URL) (PingScheme, error) {
 		return PingScheme{}, ErrUnsupportedScheme
 	}
 
-	if err := CheckPingPermission(); err != nil {
+	if err := checkPingPermission(); err != nil {
 		return PingScheme{}, ayderr.New(ErrFailedToPreparePing, err, ErrFailedToPreparePing.Error())
 	}
 

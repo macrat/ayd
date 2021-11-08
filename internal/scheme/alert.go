@@ -14,8 +14,13 @@ var (
 	ErrInvalidAlertURL = errors.New("invalid alert URL")
 )
 
+// Alerter is the interface to send alerts to somewhere.
 type Alerter interface {
+	// Target returns the alert target URL.
+	// This URL should not change during lifetime of the instance.
 	Target() *url.URL
+
+	// Alert sends an alert to the target, and report result(s) to the Reporter.
 	Alert(context.Context, Reporter, api.Record)
 }
 
@@ -51,6 +56,8 @@ func NewAlerter(target string) (Alerter, error) {
 	return NewAlerterFromURL(u)
 }
 
+// AlertReporter is a wrapper of Reporter interface for alert schemes.
+// It replaces source URL, and puts "alert:" prefix to the target URL.
 type AlertReporter struct {
 	Source   *url.URL
 	Upstream Reporter

@@ -1,2 +1,2 @@
-// ayderr package is the set of error types in Ayd.
+// Package ayderr is the set of error types in Ayd.
 package ayderr

@@ -15,8 +15,13 @@ var (
 	ErrMissingHost       = errors.New("missing target host")
 )
 
+// Prober is the interface to check the target is dead or alive.
 type Prober interface {
+	// Target returns the target URL.
+	// This URL should not change during lifetime of the instance.
 	Target() *url.URL
+
+	// Probe checks the target is dead or alive, and report result(s) to the Reporter.
 	Probe(context.Context, Reporter)
 }
 

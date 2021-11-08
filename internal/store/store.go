@@ -23,104 +23,16 @@ var (
 	LogRestoreBytes int64 = 100 * 1024 * 1024
 )
 
-type ProbeHistory struct {
-	Target  *url.URL
-	Records []api.Record
-	sources []string
-}
-
-func (ph ProbeHistory) MakeReport() api.ProbeHistory {
-	r := api.ProbeHistory{
-		Target:  ph.Target,
-		Records: ph.Records,
-	}
-
-	if len(ph.Records) > 0 {
-		latest := ph.Records[len(ph.Records)-1]
-		r.Status = latest.Status
-		r.Updated = latest.CheckedAt
-	}
-
-	return r
-}
-
-// addSource appends reporter URL that reports to this ProbeHistory.
-// The sources will used to detect if is this target active or not.
-func (ph *ProbeHistory) addSource(source *url.URL) {
-	s := source.Redacted()
-	for _, x := range ph.sources {
-		if x == s {
-			return
-		}
-	}
-
-	ph.sources = append(ph.sources, s)
-}
-
-// removeSource removes reporter URL, that reports to this ProbeHistory, from sources.
-func (ph *ProbeHistory) removeSource(source *url.URL) {
-	s := source.Redacted()
-	for i, x := range ph.sources {
-		if x == s {
-			ph.sources = append(ph.sources[:i], ph.sources[i+1:]...)
-			return
-		}
-	}
-}
-
-// setInactive removes all reporter URLs from this ProbeHistory.
-func (ph *ProbeHistory) setInactive() {
-	ph.sources = nil
-}
-
-// isActive returns if is this ProbeHistory active in current execution or not.
-func (ph ProbeHistory) isActive() bool {
-	return len(ph.sources) != 0
-}
-
-type ProbeHistoryMap map[string]*ProbeHistory
-
-// Append adds ayd.Record to the ProbeHistory.
-//
-// `source` of argument means who is reporting this record.
-// In the almost cases, it is the same as r.Target, but some cases like `source:` have another URL.
-func (hs ProbeHistoryMap) Append(source *url.URL, r api.Record) {
-	target := r.Target.Redacted()
-
-	if h, ok := hs[target]; ok {
-		h.Records = append(h.Records, r)
-
-		for i := len(h.Records) - 1; i > 0 && h.Records[i-1].CheckedAt.After(h.Records[i].CheckedAt); i-- {
-			h.Records[i], h.Records[i-1] = h.Records[i-1], h.Records[i]
-		}
-
-		if len(h.Records) > PROBE_HISTORY_LEN {
-			h.Records = h.Records[1:]
-		}
-	} else {
-		hs[target] = &ProbeHistory{
-			Target:  r.Target,
-			Records: []api.Record{r},
-		}
-	}
-
-	hs[target].addSource(source)
-}
-
-// isActive returns if is the specified target active in current execution or not.
-func (hs ProbeHistoryMap) isActive(target *url.URL) bool {
-	return hs[target.Redacted()].isActive()
-}
-
 type RecordHandler func(api.Record)
 
+// Store is the log handler of Ayd, and it also the database of Ayd.
 type Store struct {
 	path string
 
 	Console io.Writer
 
 	historyLock      sync.RWMutex
-	probeHistory     ProbeHistoryMap
+	probeHistory     probeHistoryMap
 	currentIncidents map[string]*api.Incident
 	incidentHistory  []*api.Incident
 
@@ -140,7 +52,7 @@ func New(path string, console io.Writer) (*Store, error) {
 	store := &Store{
 		path:             path,
 		Console:          console,
-		probeHistory:     make(ProbeHistoryMap),
+		probeHistory:     make(probeHistoryMap),
 		currentIncidents: make(map[string]*api.Incident),
 		writeCh:          ch,
 		writerStopped:    make(chan struct{}),
@@ -316,7 +228,7 @@ func (s *Store) setIncidentIfNeed(r api.Record, needCallback bool) {
 
 	target := r.Target.Redacted()
 	if cur, ok := s.currentIncidents[target]; ok {
-		if IncidentIsContinued(cur, r) {
+		if incidentIsContinued(cur, r) {
 			return
 		}
 
@@ -337,7 +249,7 @@ func (s *Store) setIncidentIfNeed(r api.Record, needCallback bool) {
 	}
 
 	if r.Status != api.StatusHealthy {
-		incident := NewIncident(r)
+		incident := newIncident(r)
 		s.currentIncidents[target] = incident
 
 		// kick incident callback when new incident caused
@@ -352,7 +264,7 @@ func (s *Store) setIncidentIfNeed(r api.Record, needCallback bool) {
 
 // Report reports a Record to this Store.
 //
-// See also ProbeHistoryMap.Append about the arguments.
+// See also probeHistoryMap.Append about the arguments.
 func (s *Store) Report(source *url.URL, r api.Record) {
 	if _, ok := r.Target.User.Password(); ok {
 		r.Target.User = url.UserPassword(r.Target.User.Username(), "xxxxx")
@@ -387,7 +299,7 @@ func (s *Store) Restore() error {
 		fmt.Fprint(os.Stderr, "WARNING: read only last 100MB from log file because it is too large\n\n")
 	}
 
-	s.probeHistory = make(ProbeHistoryMap)
+	s.probeHistory = make(probeHistoryMap)
 
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
@@ -414,7 +326,7 @@ func (s *Store) Restore() error {
 }
 
 // ActivateTarget marks the target will reported via specified source.
-// This method prepares a ProbeHistory, and mark it as active.
+// This method prepares a probeHistory, and mark it as active.
 func (s *Store) ActivateTarget(source, target *url.URL) {
 	s.historyLock.Lock()
 	defer s.historyLock.Unlock()
@@ -422,7 +334,7 @@ func (s *Store) ActivateTarget(source, target *url.URL) {
 	t := target.Redacted()
 
 	if _, ok := s.probeHistory[t]; !ok {
-		s.probeHistory[t] = &ProbeHistory{
+		s.probeHistory[t] = &probeHistory{
 			Target: target,
 		}
 	}

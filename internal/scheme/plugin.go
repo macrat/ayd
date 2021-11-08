@@ -21,8 +21,8 @@ type PluginScheme struct {
 	tracker *TargetTracker
 }
 
-// PluginCandidates makes scheme name candidates of plugin by URL scheme.
-func PluginCandidates(scheme string) []string {
+// pluginCandidates makes scheme name candidates of plugin by URL scheme.
+func pluginCandidates(scheme string) []string {
 	var xs []string
 
 	for i, x := range scheme {
@@ -36,10 +36,10 @@ func PluginCandidates(scheme string) []string {
 	return xs
 }
 
-// FindPlugin finds a plugin for URL scheme.
+// findPlugin finds a plugin for URL scheme.
 // It choice the longest name plugin.
-func FindPlugin(scheme, scope string) (commandName string, err error) {
-	candidates := PluginCandidates(scheme)
+func findPlugin(scheme, scope string) (commandName string, err error) {
+	candidates := pluginCandidates(scheme)
 	for i := range candidates {
 		commandName = "ayd-" + candidates[len(candidates)-i-1] + "-" + scope
 		_, err = exec.LookPath(commandName)
@@ -63,7 +63,7 @@ func NewPluginScheme(u *url.URL, scope string) (PluginScheme, error) {
 	}
 	p.tracker.Activate(u)
 
-	if _, err := FindPlugin(u.Scheme, scope); err != nil {
+	if _, err := findPlugin(u.Scheme, scope); err != nil {
 		return PluginScheme{}, err
 	}
 
@@ -86,7 +86,7 @@ func (p PluginScheme) execute(ctx context.Context, r Reporter, scope string, arg
 	ctx, cancel := context.WithTimeout(ctx, 60*time.Minute)
 	defer cancel()
 
-	command, err := FindPlugin(p.target.Scheme, scope)
+	command, err := findPlugin(p.target.Scheme, scope)
 	if err != nil {
 		r.Report(p.target, api.Record{
 			CheckedAt: time.Now(),

@@ -9,72 +9,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/go-cmp/cmp"
 	"github.com/macrat/ayd/internal/scheme"
 	"github.com/macrat/ayd/internal/testutil"
 	api "github.com/macrat/ayd/lib-ayd"
 )
 
-func PreparePluginPath(t *testing.T) {
-	cwd, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("failed to get current path: %s", err)
-	}
-
-	origPath := os.Getenv("PATH")
-	os.Setenv("PATH", origPath+string(filepath.ListSeparator)+filepath.Join(cwd, "testdata"))
-}
-
-func TestPluginCandidates(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		Input  string
-		Output []string
-	}{
-		{"http", []string{"http"}},
-		{"source-view", []string{"source", "source-view"}},
-		{"hello-world+abc-def", []string{"hello", "hello-world", "hello-world+abc", "hello-world+abc-def"}},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.Input, func(t *testing.T) {
-			output := scheme.PluginCandidates(tt.Input)
-			if diff := cmp.Diff(output, tt.Output); diff != "" {
-				t.Errorf(diff)
-			}
-		})
-	}
-}
-
-func TestFindPlugin(t *testing.T) {
-	t.Parallel()
-	PreparePluginPath(t)
-
-	tests := []struct {
-		Input  string
-		Output string
-		Error  error
-	}{
-		{"plug-plus", "ayd-plug-plus-probe", nil},
-		{"plug-minus", "ayd-plug-probe", nil},
-		{"plug", "ayd-plug-probe", nil},
-		{"plag-what", "", scheme.ErrUnsupportedScheme},
-		{"plag", "", scheme.ErrUnsupportedScheme},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.Input, func(t *testing.T) {
-			output, err := scheme.FindPlugin(tt.Input, "probe")
-			if err != tt.Error {
-				t.Errorf("unexpected error: %s", err)
-			}
-			if output != tt.Output {
-				t.Errorf("unexpected output: %q", output)
-			}
-		})
-	}
-}
+// PreparePluginPath is implemented in plugin_internal_test.go.
+// This is a shorthand for that function.
+var PreparePluginPath = scheme.PreparePluginPath
 
 func TestPluginScheme_Probe(t *testing.T) {
 	t.Parallel()
