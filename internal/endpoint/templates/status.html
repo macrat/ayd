@@ -227,7 +227,7 @@ footer span {
                             <path d="{{ .Records | latency_graph }}" />
                         </svg>
                     </div>
-                    <span class="updated">updated: <time>{{ if .Updated }}{{ .Updated | time2str }}{{ else }}(not yet){{ end }}</time></span>
+                    <span class="updated">updated: <time>{{ if .Updated.IsZero }}(not yet){{ else }}{{ .Updated | time2str }}{{ end }}</time></span>
                 </section>{{ end }}
             </article>
 
