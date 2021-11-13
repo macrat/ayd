@@ -126,12 +126,12 @@ Ayd supports below schemes.
 
 |                                    |     for Target     |      for Alert     |
 |------------------------------------|:------------------:|:------------------:|
-| [`http:` / `https:`](#http--https) | :heavy_check_mark: | :heavy_check_sign: |
+| [`http:` / `https:`](#http--https) | :heavy_check_mark: | :heavy_check_mark: |
 | [`ping:`](#ping)                   | :heavy_check_mark: | :heavy_minus_sign: |
 | [`tcp:`](#tcp)                     | :heavy_check_mark: | :heavy_minus_sign: |
 | [`dns:`](#dns)                     | :heavy_check_mark: | :heavy_minus_sign: |
-| [`exec:`](#exec)                   | :heavy_check_mark: | :heavy_check_sign: |
-| [`source:`](#source)               | :heavy_check_mark: | :heavy_check_sign: |
+| [`exec:`](#exec)                   | :heavy_check_mark: | :heavy_check_mark: |
+| [`source:`](#source)               | :heavy_check_mark: | :heavy_check_mark: |
 
 You can use extra scheme with [plugin](#plugin) if you want to.
 
