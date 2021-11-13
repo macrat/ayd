@@ -49,7 +49,7 @@ The easiest status monitoring service to check if your service is dead or alive.
 
 2. Extract downloaded package and put to somewhere that registered to PATH.
 
-3. Run the server with [target URLs](#target-url) (and [schedule](#scheduling) if need) as arguments.
+3. Run the server with [target URLs](#supported-scheme) (and [schedule](#scheduling) if need) as arguments.
 
 ``` shell
 $ ayd https://your-service.example.com ping:another-host.example.com
@@ -65,11 +65,12 @@ $ ayd https://your-service.example.com ping:another-host.example.com
 ## Usage detail
 
 - [Status page and endpoints](#status-page-and-endpoints)
-- [Target URL](#target-url)
+- [Supported schemes](#supported-scheme)
 - [Scheduling](#scheduling)
 - [Log file](#log-file)
 - [Alerting](#alerting)
 - [Daemonize](#daemonize)
+- [Make plugin](make-plugin)
 - [Text encoding](#text-encoding)
 - [Other options](#other-options)
 
@@ -118,12 +119,21 @@ examples:
 - <http://localhost:9000/log.csv?since=2021-01-01T00:00:00Z&target=ping:localhost>: Reply is logs about `ping:localhost` since 2021-01-01.
 
 
-### Target URL
+### Supported schemes
 
-The target services is URL, specified in the arguments of `ayd` command.
+The target services or the alerting settings are specified in the arguments of `ayd` command as a URL.
+Ayd supports below schemes.
 
-The way to check the target is specified as the scheme of URL, like `ping:example.com` for ping.
-Common ways to check the target is embedded in Ayd, but you can also extend it using [plugin](#plugin)
+|                                    |     for Target     |      for Alert     |
+|------------------------------------|:------------------:|:------------------:|
+| [`http:` / `https:`](#http--https) | :heavy_check_mark: | :heavy_check_sign: |
+| [`ping:`](#ping)                   | :heavy_check_mark: | :heavy_minus_sign: |
+| [`tcp:`](#tcp)                     | :heavy_check_mark: | :heavy_minus_sign: |
+| [`dns:`](#dns)                     | :heavy_check_mark: | :heavy_minus_sign: |
+| [`exec:`](#exec)                   | :heavy_check_mark: | :heavy_check_sign: |
+| [`source:`](#source)               | :heavy_check_mark: | :heavy_check_sign: |
+
+You can use extra scheme with [plugin](#plugin) if you want to.
 
 #### http: / https:
 
@@ -141,6 +151,18 @@ examples:
 - `https://example.com`
 - `http-head://example.com/path/to/somewhere`
 - `https-options://example.com/abc?def=ghi`
+
+##### for Alert
+
+In alerting, Ayd adds some queries to send information about the incident.
+
+| query name       | example                                    | description                        |
+|------------------|--------------------------------------------|------------------------------------|
+| `ayd_checked_at` | `2001-02-03T16:05:06+09:00`                | The timestamp when status changed  |
+| `ayd_status`     | `FAILURE`, `DEBASED`, `UNKNOWN`, `HEALTHY` | The current status of the target   |
+| `ayd_latency`    | `123.456`                                  | The latency of the latest checking |
+| `ayd_target`     | `https://target.example.com`               | The target URL                     |
+| `ayd_message`    |                                            | The latest message of the target   |
 
 #### ping:
 
@@ -254,6 +276,11 @@ This output is reporting latency is `123.456ms`, status is `FAILURE`, and messag
 
 Ayd uses the last value if found multiple reports in single output.
 
+##### for Alert
+
+In alerting, Ayd sets some environment variables about the incident.
+The name of variable and meaning is the same as the queries of [HTTP scheme's alerting](http--https).
+
 #### source:
 
 This is a special scheme for load targets from a file.
@@ -306,7 +333,7 @@ examples:
 
 #### plugin
 
-Plugin is a executable file named like `ayd-xxx-probe`, and installed to the PATH directory.
+Plugin is a executable file named like `ayd-xxx-probe` or `ayd-xxx-alert`, and installed to the PATH directory.
 
 For example, you can use `xxx:` scheme if you have installed a executable file named `ayd-xxx-probe`.
 Of course, you can change executable file name to change scheme name.
@@ -321,10 +348,16 @@ Plugin will timeout in maximum 1 hour and report as failure.
 
 ##### plugin list
 
+###### for Probe
+
 - [FTP / FTPS](https://github.com/macrat/ayd-ftp-probe#readme)
 - [SMB (samba)](https://github.com/macrat/ayd-smb-probe#readme)
 - [NTP](https://github.com/macrat/ayd-ntp-probe#readme)
-- or, you can [make plugin](#make-plugin) yourself easily.
+
+###### for Alert
+
+- [e-mail (SMTP)](https://github.com/macrat/ayd-mailto-alert#readme)
+- [Slack](https://github.com/macrat/ayd-slack-alert#readme)
 
 
 ### Scheduling
@@ -427,27 +460,11 @@ The `-o` option is still working in the latest version, but it will removed in t
 Ayd can do something for alerting when the target status changed like an incident caused or recovered.
 The alert is specified as a URL same as a target URL.
 
-You may want to use [exec](#exec), [HTTP](#http--https), or plugin for alerting.
-(Even you can use ping, DNS, etc as alerting. But... it's useless in almost all cases)
-
 The alert URL specify looks like below.
 
 ``` shell
 $ ayd -a https://alert.example.com/alert https://target.example.com
 ```
-
-In the above example, Ayd access `https://alert.example/alert` with the below queries when `https://target.example.com` down.
-
-| query name       | example                                    | description                        |
-|------------------|--------------------------------------------|------------------------------------|
-| `ayd_checked_at` | `2001-02-03T16:05:06+09:00`                | The timestamp when status changed  |
-| `ayd_status`     | `FAILURE`, `DEBASED`, `UNKNOWN`, `HEALTHY` | The current status of the target   |
-| `ayd_latency`    | `123.456`                                  | The latency of the latest checking |
-| `ayd_target`     | `https://target.example.com`               | The target URL                     |
-| `ayd_message`    |                                            | The latest message of the target   |
-
-Alert plugin receives these as arguments.
-Please see [Alert plugin](#alert-plugin) section if you want make your own plugin.
 
 You can use `-a` option more than once if you want Ayd to send alert to multiple systems like below.
 
@@ -455,7 +472,9 @@ You can use `-a` option more than once if you want Ayd to send alert to multiple
 $ ayd -a exec:./alert.sh -a mailto:admin@example.com https://target.example.com
 ```
 
-#### e-mail (SMTP)
+#### plugins
+
+##### e-mail (SMTP)
 
 The [ayd-mailto-alert](https://github.com/macrat/ayd-mailto-alert) is a plugin to sending an alert e-mail via SMTP.
 
@@ -472,7 +491,7 @@ $ ayd -a mailto:your-email@example.com https://target.example.com
 
 Please see more information in [the readme of ayd-mailto-alert](https://github.com/macrat/ayd-mailto-alert#readme).
 
-#### Slack
+##### Slack
 
 The [ayd-slack-alert](https://github.com/macrat/ayd-slack-alert) is a plugin to sending an alert to Slack.
 
