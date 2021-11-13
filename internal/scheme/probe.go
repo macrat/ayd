@@ -31,6 +31,8 @@ func NewProberFromURL(u *url.URL) (Prober, error) {
 	switch scheme {
 	case "http", "https":
 		return NewHTTPScheme(u)
+	case "ftp", "ftps":
+		return NewFTPProbe(u)
 	case "ping", "ping4", "ping6":
 		return NewPingProbe(u)
 	case "tcp", "tcp4", "tcp6":

@@ -12,6 +12,7 @@ The easiest status monitoring service to check if your service is dead or alive.
 
 - status checking with:
   * [HTTP/HTTPS](#http--https)
+  * [FTP/FTPS](#ftp--ftps)
   * [ICMP echo (ping)](#ping)
   * [TCP connect](#tcp)
   * [DNS resolve](#dns)
@@ -127,6 +128,7 @@ Ayd supports below schemes.
 |                                    |     for Target     |      for Alert     |
 |------------------------------------|:------------------:|:------------------:|
 | [`http:` / `https:`](#http--https) | :heavy_check_mark: | :heavy_check_mark: |
+| [`ftp:` / `ftps:`](#ftp--ftps)     | :heavy_check_mark: | :heavy_minus_sign: |
 | [`ping:`](#ping)                   | :heavy_check_mark: | :heavy_minus_sign: |
 | [`tcp:`](#tcp)                     | :heavy_check_mark: | :heavy_minus_sign: |
 | [`dns:`](#dns)                     | :heavy_check_mark: | :heavy_minus_sign: |
@@ -163,6 +165,18 @@ In alerting, Ayd adds some queries to send information about the incident.
 | `ayd_latency`    | `123.456`                                  | The latency of the latest checking |
 | `ayd_target`     | `https://target.example.com`               | The target URL                     |
 | `ayd_message`    |                                            | The latest message of the target   |
+
+#### ftp: / ftps:
+
+Send LIST or MLSD command of FTP and check the result.
+
+It uses `anonymous` as username and password if absent those in the URL.
+
+FTP will timeout in 10 minutes and report as failure.
+
+examples:
+- `ftp://example.com/path/to/directory`
+- `ftps://foo:bar@example.com/path/to/file.txt`
 
 #### ping:
 
@@ -350,7 +364,6 @@ Plugin will timeout in maximum 1 hour and report as failure.
 
 ###### for Probe
 
-- [FTP / FTPS](https://github.com/macrat/ayd-ftp-probe#readme)
 - [SMB (samba)](https://github.com/macrat/ayd-smb-probe#readme)
 - [NTP](https://github.com/macrat/ayd-ntp-probe#readme)
 

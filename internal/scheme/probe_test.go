@@ -48,6 +48,9 @@ func TestTargetURLNormalize(t *testing.T) {
 		{"https://example.com/foo/bar?hoge=fuga#piyo", url.URL{Scheme: "https", Host: "example.com", Path: "/foo/bar", RawQuery: "hoge=fuga", Fragment: "piyo"}, nil},
 		{"HtTpS://eXaMpLe.CoM/fOo/BaR", url.URL{Scheme: "https", Host: "example.com", Path: "/fOo/BaR"}, nil},
 
+		{"ftp://example.com", url.URL{Scheme: "ftp", Host: "example.com", Path: "/"}, nil},
+		{"ftps://example.com/foo/bar/.././bar/", url.URL{Scheme: "ftps", Host: "example.com", Path: "/foo/bar"}, nil},
+
 		{"http-get://example.com/foo/bar?hoge=fuga#piyo", url.URL{Scheme: "http-get", Host: "example.com", Path: "/foo/bar", RawQuery: "hoge=fuga", Fragment: "piyo"}, nil},
 		{"https-post://example.com/foo/bar?hoge=fuga#piyo", url.URL{Scheme: "https-post", Host: "example.com", Path: "/foo/bar", RawQuery: "hoge=fuga", Fragment: "piyo"}, nil},
 		{"http-head://example.com/foo/bar?hoge=fuga#piyo", url.URL{Scheme: "http-head", Host: "example.com", Path: "/foo/bar", RawQuery: "hoge=fuga", Fragment: "piyo"}, nil},
