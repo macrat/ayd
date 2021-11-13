@@ -168,7 +168,6 @@ func TestFTPProbe(t *testing.T) {
 
 		{"ftp://localhost:12345/", api.StatusFailure, `(127\.0\.0\.1|\[::1\]):12345: connection refused`, ""},
 		{"ftps://localhost:21021/", api.StatusFailure, `550 Action not taken`, ""},
-		{"ftp://of-course-no-such-host.local:21021/", api.StatusUnknown, `lookup of-course-no-such-host.local: not found`, ""},
 
 		{"ftp:///without-host", api.StatusUnknown, ``, "missing target host"},
 		{"ftp://hoge@localhost", api.StatusUnknown, ``, "password is required if set username"},
