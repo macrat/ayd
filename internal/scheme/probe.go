@@ -32,11 +32,11 @@ func NewProberFromURL(u *url.URL) (Prober, error) {
 	case "http", "https":
 		return NewHTTPScheme(u)
 	case "ping", "ping4", "ping6":
-		return NewPingScheme(u)
+		return NewPingProbe(u)
 	case "tcp", "tcp4", "tcp6":
-		return NewTCPScheme(u)
+		return NewTCPProbe(u)
 	case "dns", "dns4", "dns6":
-		return NewDNSScheme(u)
+		return NewDNSProbe(u)
 	case "exec":
 		return NewExecScheme(u)
 	case "source":

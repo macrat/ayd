@@ -15,37 +15,38 @@ var (
 	ErrTCPPortMissing = errors.New("TCP target's port number is required")
 )
 
-type TCPScheme struct {
+// TCPProbe is a Prober implementation for the TCP.
+type TCPProbe struct {
 	target *url.URL
 }
 
-func NewTCPScheme(u *url.URL) (TCPScheme, error) {
+func NewTCPProbe(u *url.URL) (TCPProbe, error) {
 	scheme, separator, _ := SplitScheme(u.Scheme)
 
 	if separator != 0 {
-		return TCPScheme{}, ErrUnsupportedScheme
+		return TCPProbe{}, ErrUnsupportedScheme
 	}
 
-	s := TCPScheme{&url.URL{Scheme: scheme, Host: strings.ToLower(u.Host), Fragment: u.Fragment}}
+	s := TCPProbe{&url.URL{Scheme: scheme, Host: strings.ToLower(u.Host), Fragment: u.Fragment}}
 	if u.Host == "" {
 		s.target.Host = strings.ToLower(u.Opaque)
 	}
 
 	if s.target.Hostname() == "" {
-		return TCPScheme{}, ErrMissingHost
+		return TCPProbe{}, ErrMissingHost
 	}
 	if s.target.Port() == "" {
-		return TCPScheme{}, ErrTCPPortMissing
+		return TCPProbe{}, ErrTCPPortMissing
 	}
 
 	return s, nil
 }
 
-func (s TCPScheme) Target() *url.URL {
+func (s TCPProbe) Target() *url.URL {
 	return s.target
 }
 
-func (s TCPScheme) Probe(ctx context.Context, r Reporter) {
+func (s TCPProbe) Probe(ctx context.Context, r Reporter) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
@@ -80,8 +81,4 @@ func (s TCPScheme) Probe(ctx context.Context, r Reporter) {
 	}
 
 	r.Report(s.target, timeoutOr(ctx, rec))
-}
-
-func (s TCPScheme) Alert(ctx context.Context, r Reporter, _ api.Record) {
-	s.Probe(ctx, AlertReporter{s.target, r})
 }

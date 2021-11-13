@@ -194,34 +194,35 @@ func checkPingPermission() error {
 	return p.Start(ctx)
 }
 
-type PingScheme struct {
+// PingProbe is a Prober implementation for SNMP echo request aka ping.
+type PingProbe struct {
 	target *url.URL
 }
 
-func NewPingScheme(u *url.URL) (PingScheme, error) {
+func NewPingProbe(u *url.URL) (PingProbe, error) {
 	scheme, separator, _ := SplitScheme(u.Scheme)
 	if separator != 0 {
-		return PingScheme{}, ErrUnsupportedScheme
+		return PingProbe{}, ErrUnsupportedScheme
 	}
 
 	if err := checkPingPermission(); err != nil {
-		return PingScheme{}, ayderr.New(ErrFailedToPreparePing, err, ErrFailedToPreparePing.Error())
+		return PingProbe{}, ayderr.New(ErrFailedToPreparePing, err, ErrFailedToPreparePing.Error())
 	}
 
 	if u.Opaque != "" {
-		return PingScheme{&url.URL{Scheme: scheme, Opaque: strings.ToLower(u.Opaque), Fragment: u.Fragment}}, nil
+		return PingProbe{&url.URL{Scheme: scheme, Opaque: strings.ToLower(u.Opaque), Fragment: u.Fragment}}, nil
 	} else if u.Hostname() != "" {
-		return PingScheme{&url.URL{Scheme: scheme, Opaque: strings.ToLower(u.Hostname()), Fragment: u.Fragment}}, nil
+		return PingProbe{&url.URL{Scheme: scheme, Opaque: strings.ToLower(u.Hostname()), Fragment: u.Fragment}}, nil
 	} else {
-		return PingScheme{}, ErrMissingHost
+		return PingProbe{}, ErrMissingHost
 	}
 }
 
-func (s PingScheme) Target() *url.URL {
+func (s PingProbe) Target() *url.URL {
 	return s.target
 }
 
-func (s PingScheme) proto() string {
+func (s PingProbe) proto() string {
 	switch s.target.Scheme {
 	case "ping4":
 		return "ip4"
@@ -232,7 +233,7 @@ func (s PingScheme) proto() string {
 	}
 }
 
-func (s PingScheme) Probe(ctx context.Context, r Reporter) {
+func (s PingProbe) Probe(ctx context.Context, r Reporter) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
@@ -263,8 +264,4 @@ func (s PingScheme) Probe(ctx context.Context, r Reporter) {
 	}
 
 	r.Report(s.target, rec)
-}
-
-func (s PingScheme) Alert(ctx context.Context, r Reporter, _ api.Record) {
-	s.Probe(ctx, AlertReporter{s.target, r})
 }

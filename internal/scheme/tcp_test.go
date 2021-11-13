@@ -23,17 +23,6 @@ func TestTCPScheme_Probe(t *testing.T) {
 	}, 5)
 }
 
-func TestTCPScheme_Alert(t *testing.T) {
-	t.Parallel()
-
-	server := RunDummyHTTPServer()
-	defer server.Close()
-
-	AssertAlert(t, []ProbeTest{
-		{strings.Replace(server.URL, "http://", "tcp://", 1), api.StatusHealthy, `source=(127\.0\.0\.1|\[::1\]):[0-9]+ target=(127\.0\.0\.1|\[::1\]):[0-9]+`, ""},
-	}, 5)
-}
-
 func BenchmarkTCPScheme(b *testing.B) {
 	server := RunDummyHTTPServer()
 	defer server.Close()

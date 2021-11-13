@@ -14,10 +14,10 @@ import (
 	api "github.com/macrat/ayd/lib-ayd"
 )
 
-func TestPingScheme_Probe(t *testing.T) {
+func TestPingProbe_Probe(t *testing.T) {
 	t.Parallel()
 
-	if _, err := scheme.NewPingScheme(&url.URL{Scheme: "ping", Opaque: "localhost"}); err != nil {
+	if _, err := scheme.NewPingProbe(&url.URL{Scheme: "ping", Opaque: "localhost"}); err != nil {
 		t.Fatalf("failed to check ping permission: %s", err)
 	}
 
@@ -68,7 +68,7 @@ func TestPingScheme_Probe(t *testing.T) {
 	})
 }
 
-func TestPingScheme_privilegedEnv(t *testing.T) {
+func TestPingProbe(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("unprivileged mode is not supported on windows")
 	}
@@ -95,7 +95,7 @@ func TestPingScheme_privilegedEnv(t *testing.T) {
 	for _, tt := range tests {
 		t.Run("AYD_PRIVILEGED="+tt.Env, func(t *testing.T) {
 			os.Setenv("AYD_PRIVILEGED", tt.Env)
-			_, err := scheme.NewPingScheme(&url.URL{Scheme: "ping", Opaque: "localhost"})
+			_, err := scheme.NewPingProbe(&url.URL{Scheme: "ping", Opaque: "localhost"})
 
 			if tt.Fail && !errors.Is(err, scheme.ErrFailedToPreparePing) {
 				t.Errorf("expected permission error but got %v", err)
@@ -107,19 +107,7 @@ func TestPingScheme_privilegedEnv(t *testing.T) {
 	}
 }
 
-func TestPingScheme_Alert(t *testing.T) {
-	t.Parallel()
-
-	if _, err := scheme.NewPingScheme(&url.URL{Scheme: "ping", Opaque: "localhost"}); err != nil {
-		t.Fatalf("failed to check ping permission: %s", err)
-	}
-
-	AssertAlert(t, []ProbeTest{
-		{"ping:localhost", api.StatusHealthy, `ip=(127.0.0.1|::1) rtt\(min/avg/max\)=[0-9.]*/[0-9.]*/[0-9.]* send/recv=3/3`, ""},
-	}, 5)
-}
-
-func BenchmarkPingScheme(b *testing.B) {
+func BenchmarkPingProbe(b *testing.B) {
 	p := testutil.NewProber(b, "ping:localhost")
 
 	r := &testutil.DummyReporter{}
