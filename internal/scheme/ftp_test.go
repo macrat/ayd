@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"testing"
 	"time"
+	"runtime"
 
 	api "github.com/macrat/ayd/lib-ayd"
 	ftp "goftp.io/server/core"
@@ -166,11 +167,17 @@ func TestFTPProbe(t *testing.T) {
 		{"ftp://localhost:21021/no/such/file.txt", api.StatusFailure, `550 no such file`, ""},
 		{"ftp://localhost:21021/slow-file", api.StatusFailure, `probe timed out`, ""},
 
-		{"ftp://localhost:12345/", api.StatusFailure, `(127\.0\.0\.1|\[::1\]):12345: connection refused`, ""},
 		{"ftps://localhost:21021/", api.StatusFailure, `550 Action not taken`, ""},
 
 		{"ftp:///without-host", api.StatusUnknown, ``, "missing target host"},
 		{"ftp://hoge@localhost", api.StatusUnknown, ``, "password is required if set username"},
 		{"ftp://:fuga@localhost", api.StatusUnknown, ``, "username is required if set password"},
 	}, 1)
+
+	if runtime.GOOS != "windows" {
+		// Windows doesn't report connection refused. Why?
+		AssertProbe(t, []ProbeTest{
+			{"ftp://localhost:12345/", api.StatusFailure, `(127\.0\.0\.1|\[::1\]):12345: connection refused`, ""},
+		}, 1)
+	}
 }
