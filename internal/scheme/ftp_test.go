@@ -4,9 +4,9 @@ import (
 	"errors"
 	"io"
 	"io/fs"
+	"runtime"
 	"testing"
 	"time"
-	"runtime"
 
 	api "github.com/macrat/ayd/lib-ayd"
 	ftp "goftp.io/server/core"
