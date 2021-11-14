@@ -37,7 +37,7 @@ TARGETS:
 
   ftp, ftps:
    Send LIST or MLSD command of FTP for status checking.
-   e.g. ftp://example.com
+   e.g. ftp://example.com/path/to/file
 
   ping, ping4, ping6:
    Send 3 ICMP echo request in 1 second.

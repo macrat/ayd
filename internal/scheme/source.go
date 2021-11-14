@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -34,32 +35,32 @@ func normalizeSourceURL(u *url.URL) (*url.URL, error) {
 		}
 		return u, nil
 	case "source+exec":
-		path := u.Opaque
+		p := u.Opaque
 		if u.Opaque == "" {
-			path = u.Path
+			p = u.Path
 
-			if path == "" {
+			if p == "" {
 				return nil, ErrMissingCommand
 			}
 		}
 		return &url.URL{
 			Scheme:   "source+exec",
-			Opaque:   filepath.ToSlash(path),
+			Opaque:   filepath.ToSlash(p),
 			RawQuery: u.RawQuery,
 			Fragment: u.Fragment,
 		}, nil
 	case "source":
-		path := u.Opaque
+		p := u.Opaque
 		if u.Opaque == "" {
-			path = u.Path
+			p = u.Path
 
-			if path == "" {
+			if p == "" {
 				return nil, ErrMissingFile
 			}
 		}
 		return &url.URL{
 			Scheme:   "source",
-			Opaque:   filepath.ToSlash(path),
+			Opaque:   path.Clean(filepath.ToSlash(p)),
 			Fragment: u.Fragment,
 		}, nil
 	default:

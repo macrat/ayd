@@ -149,8 +149,8 @@ Ayd will Follow redirect maximum 10 times.
 HTTP will timeout in 10 minutes and report as failure.
 
 examples:
-- `http://example.com`
-- `https://example.com`
+- `http://example.com/`
+- `https://example.com/`
 - `http-head://example.com/path/to/somewhere`
 - `https-options://example.com/abc?def=ghi`
 
@@ -175,6 +175,7 @@ It uses `anonymous` as username and password if absent those in the URL.
 FTP will timeout in 10 minutes and report as failure.
 
 examples:
+- `ftp://example.com/`
 - `ftp://example.com/path/to/directory`
 - `ftps://foo:bar@example.com/path/to/file.txt`
 

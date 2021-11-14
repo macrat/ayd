@@ -72,6 +72,10 @@ func NewHTTPScheme(u *url.URL) (HTTPScheme, error) {
 		return HTTPScheme{}, ErrMissingHost
 	}
 
+	if u.Path == "" {
+		u.Path = "/"
+	}
+
 	return HTTPScheme{
 		target: u,
 		request: &http.Request{

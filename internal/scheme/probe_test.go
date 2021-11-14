@@ -44,12 +44,11 @@ func TestTargetURLNormalize(t *testing.T) {
 		{"ping:", url.URL{}, scheme.ErrMissingHost},
 		{"ping:///test", url.URL{}, scheme.ErrMissingHost},
 
+		{"http://example.com", url.URL{Scheme: "http", Host: "example.com", Path: "/"}, nil},
+		{"http://example.com/", url.URL{Scheme: "http", Host: "example.com", Path: "/"}, nil},
 		{"http://example.com/foo/bar?hoge=fuga#piyo", url.URL{Scheme: "http", Host: "example.com", Path: "/foo/bar", RawQuery: "hoge=fuga", Fragment: "piyo"}, nil},
 		{"https://example.com/foo/bar?hoge=fuga#piyo", url.URL{Scheme: "https", Host: "example.com", Path: "/foo/bar", RawQuery: "hoge=fuga", Fragment: "piyo"}, nil},
 		{"HtTpS://eXaMpLe.CoM/fOo/BaR", url.URL{Scheme: "https", Host: "example.com", Path: "/fOo/BaR"}, nil},
-
-		{"ftp://example.com", url.URL{Scheme: "ftp", Host: "example.com", Path: "/"}, nil},
-		{"ftps://example.com/foo/bar/.././bar/", url.URL{Scheme: "ftps", Host: "example.com", Path: "/foo/bar"}, nil},
 
 		{"http-get://example.com/foo/bar?hoge=fuga#piyo", url.URL{Scheme: "http-get", Host: "example.com", Path: "/foo/bar", RawQuery: "hoge=fuga", Fragment: "piyo"}, nil},
 		{"https-post://example.com/foo/bar?hoge=fuga#piyo", url.URL{Scheme: "https-post", Host: "example.com", Path: "/foo/bar", RawQuery: "hoge=fuga", Fragment: "piyo"}, nil},
@@ -58,6 +57,10 @@ func TestTargetURLNormalize(t *testing.T) {
 		{"https+get://example.com", url.URL{}, scheme.ErrUnsupportedScheme},
 		{"https:///test", url.URL{}, scheme.ErrMissingHost},
 		{"https:", url.URL{}, scheme.ErrMissingHost},
+
+		{"ftp://example.com", url.URL{Scheme: "ftp", Host: "example.com", Path: "/"}, nil},
+		{"ftp://example.com/?abc=def", url.URL{Scheme: "ftp", Host: "example.com", Path: "/"}, nil},
+		{"ftps://example.com/foo/bar/.././bar/", url.URL{Scheme: "ftps", Host: "example.com", Path: "/foo/bar"}, nil},
 
 		{"tcp:example.com:80", url.URL{Scheme: "tcp", Host: "example.com:80"}, nil},
 		{"tcp://example.com:80/foo/bar?hoge=fuga#piyo", url.URL{Scheme: "tcp", Host: "example.com:80", Fragment: "piyo"}, nil},
@@ -100,8 +103,8 @@ func TestTargetURLNormalize(t *testing.T) {
 		{"exec:", url.URL{}, scheme.ErrMissingCommand},
 		{"exec://", url.URL{}, scheme.ErrMissingCommand},
 
-		{"source:./testdata/healthy-list.txt", url.URL{Scheme: "source", Opaque: "./testdata/healthy-list.txt"}, nil},
-		{"source:./testdata/healthy-list.txt#hello", url.URL{Scheme: "source", Opaque: "./testdata/healthy-list.txt", Fragment: "hello"}, nil},
+		{"source:./testdata/healthy-list.txt", url.URL{Scheme: "source", Opaque: "testdata/healthy-list.txt"}, nil},
+		{"source:testdata/healthy-list.txt#hello", url.URL{Scheme: "source", Opaque: "testdata/healthy-list.txt", Fragment: "hello"}, nil},
 		{"source-abc:./testdata/healthy-list.txt", url.URL{}, scheme.ErrUnsupportedScheme},
 		{"source+abc:./testdata/healthy-list.txt", url.URL{}, scheme.ErrUnsupportedScheme},
 		{"source:", url.URL{}, scheme.ErrMissingFile},

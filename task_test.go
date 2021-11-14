@@ -61,7 +61,7 @@ func TestParseArgs(t *testing.T) {
 			Args: []string{"ping:hoge", "2m", "http://example.com"},
 			Want: []WantTask{
 				{"5m0s", "ping:hoge"},
-				{"2m0s", "http://example.com"},
+				{"2m0s", "http://example.com/"},
 			},
 		},
 		{
@@ -69,7 +69,7 @@ func TestParseArgs(t *testing.T) {
 			Want: []WantTask{
 				{"5m0s", "ping:hoge"},
 				{"5m0s", "ping:fuga"},
-				{"1h0m0s", "http://example.com"},
+				{"1h0m0s", "http://example.com/"},
 			},
 		},
 		{

@@ -36,34 +36,34 @@ func TestSourceScheme_Probe(t *testing.T) {
 		Records      map[string]api.Status
 		ErrorPattern string
 	}{
-		{"source:./testdata/healthy-list.txt", map[string]api.Status{
-			"dummy:healthy#sub-list":             api.StatusHealthy,
-			"dummy:healthy#healthy-list":         api.StatusHealthy,
-			"source:./testdata/healthy-list.txt": api.StatusHealthy,
+		{"source:testdata/healthy-list.txt", map[string]api.Status{
+			"dummy:healthy#sub-list":           api.StatusHealthy,
+			"dummy:healthy#healthy-list":       api.StatusHealthy,
+			"source:testdata/healthy-list.txt": api.StatusHealthy,
 		}, ""},
 		{"source:testdata/healthy-list.txt", map[string]api.Status{
 			"dummy:healthy#sub-list":           api.StatusHealthy,
 			"dummy:healthy#healthy-list":       api.StatusHealthy,
 			"source:testdata/healthy-list.txt": api.StatusHealthy,
 		}, ""},
-		{"source:./testdata/failure-list.txt", map[string]api.Status{
-			"dummy:healthy#sub-list":             api.StatusHealthy,
-			"dummy:healthy#failure-list":         api.StatusHealthy,
-			"dummy:failure":                      api.StatusFailure,
-			"source:./testdata/failure-list.txt": api.StatusHealthy,
+		{"source:testdata/failure-list.txt", map[string]api.Status{
+			"dummy:healthy#sub-list":           api.StatusHealthy,
+			"dummy:healthy#failure-list":       api.StatusHealthy,
+			"dummy:failure":                    api.StatusFailure,
+			"source:testdata/failure-list.txt": api.StatusHealthy,
 		}, ""},
-		{"source:./testdata/invalid-list.txt", map[string]api.Status{
-			"source:./testdata/invalid-list.txt": api.StatusFailure,
-		}, "invalid source URL:\n  ::invalid host::\n  no-such-scheme:hello world\n  source:./testdata/no-such-list.txt"},
 		{"source:testdata/invalid-list.txt", map[string]api.Status{
 			"source:testdata/invalid-list.txt": api.StatusFailure,
-		}, "invalid source URL:\n  ::invalid host::\n  no-such-scheme:hello world\n  source:./testdata/no-such-list.txt"},
-		{"source:./testdata/include-invalid-list.txt", map[string]api.Status{
-			"source:./testdata/include-invalid-list.txt": api.StatusFailure,
-		}, "invalid source URL:\n  ::invalid host::\n  no-such-scheme:hello world\n  source:./testdata/no-such-list.txt"},
-		{"source:./testdata/no-such-list.txt", map[string]api.Status{
-			"source:./testdata/no-such-list.txt": api.StatusFailure,
-		}, `invalid source: open \./testdata/no-such-list\.txt: (no such file or directory|The system cannot find the file specified\.)`},
+		}, "invalid source URL:\n  ::invalid host::\n  no-such-scheme:hello world\n  source:testdata/no-such-list.txt"},
+		{"source:testdata/invalid-list.txt", map[string]api.Status{
+			"source:testdata/invalid-list.txt": api.StatusFailure,
+		}, "invalid source URL:\n  ::invalid host::\n  no-such-scheme:hello world\n  source:testdata/no-such-list.txt"},
+		{"source:testdata/include-invalid-list.txt", map[string]api.Status{
+			"source:testdata/include-invalid-list.txt": api.StatusFailure,
+		}, "invalid source URL:\n  ::invalid host::\n  no-such-scheme:hello world\n  source:testdata/no-such-list.txt"},
+		{"source:testdata/no-such-list.txt", map[string]api.Status{
+			"source:testdata/no-such-list.txt": api.StatusFailure,
+		}, `invalid source: open testdata/no-such-list\.txt: (no such file or directory|The system cannot find the file specified\.)`},
 		{"source:" + path.Join(cwd, "testdata/sub-list.txt"), map[string]api.Status{
 			"dummy:healthy#sub-list":                            api.StatusHealthy,
 			"source:" + path.Join(cwd, "testdata/sub-list.txt"): api.StatusHealthy,
