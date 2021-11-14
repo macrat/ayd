@@ -17,6 +17,27 @@ import (
 	api "github.com/macrat/ayd/lib-ayd"
 )
 
+func binSearch(length int, fn func(pos int) (isAfter bool, endPos int, err error)) (int, error) {
+	left := 0
+	right := length - 1
+
+	for left < right {
+		mid := (left + right) / 2
+		isAfter, endPos, err := fn(mid)
+		if err != nil {
+			return 0, err
+		}
+
+		if isAfter {
+			right = mid
+		} else {
+			left = endPos + 1
+		}
+	}
+
+	return right, nil
+}
+
 type LogReader struct {
 	file    io.ReadCloser
 	scanner *bufio.Scanner
