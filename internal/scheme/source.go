@@ -34,6 +34,19 @@ func normalizeSourceURL(u *url.URL) (*url.URL, error) {
 			return nil, ErrMissingHost
 		}
 		return u, nil
+	case "source+ftp", "source+ftps":
+		if u.Hostname() == "" {
+			return nil, ErrMissingHost
+		}
+		if u.Path == "" || u.Path == "/" {
+			return nil, ErrMissingFile
+		}
+		return &url.URL{
+			Scheme:   u.Scheme,
+			Host:     u.Host,
+			Path:     filepath.Clean(u.Path),
+			Fragment: u.Fragment,
+		}, nil
 	case "source+exec":
 		p := u.Opaque
 		if u.Opaque == "" {
@@ -183,6 +196,18 @@ func openHTTPSource(ctx context.Context, u *url.URL) (io.ReadCloser, error) {
 	}
 }
 
+func openFTPSource(ctx context.Context, u *url.URL) (io.ReadCloser, error) {
+	ucopy := *u
+	ucopy.Scheme = ucopy.Scheme[len("source+"):]
+	conn, _, msg := ftpConnectAndLogin(ctx, &ucopy)
+	if msg != "" {
+		return nil, errors.New(msg)
+	}
+	defer conn.Quit()
+
+	return conn.Retr(u.Path)
+}
+
 func openExecSource(ctx context.Context, u *url.URL) (io.ReadCloser, error) {
 	var args []string
 	if u.Fragment != "" {
@@ -229,6 +254,8 @@ func openSource(ctx context.Context, u *url.URL) (io.ReadCloser, error) {
 	switch u.Scheme {
 	case "source+http", "source+https":
 		return openHTTPSource(ctx, u)
+	case "source+ftp", "source+ftps":
+		return openFTPSource(ctx, u)
 	case "source+exec":
 		return openExecSource(ctx, u)
 	default:

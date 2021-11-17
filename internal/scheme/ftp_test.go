@@ -1,6 +1,8 @@
 package scheme_test
 
 import (
+	"bytes"
+	_ "embed"
 	"errors"
 	"io"
 	"io/fs"
@@ -111,7 +113,13 @@ func (d FTPTestDriver) MakeDir(path string) error {
 	return nil
 }
 
+//go:embed testdata/healthy-list.txt
+var healthySourceList []byte
+
 func (d FTPTestDriver) GetFile(path string, i int64) (int64, io.ReadCloser, error) {
+	if path == "/source.txt" {
+		return int64(len(healthySourceList)), io.NopCloser(bytes.NewBuffer(healthySourceList)), nil
+	}
 	return 0, nil, errors.New("not implemented")
 }
 
@@ -135,12 +143,15 @@ func (a FTPTestAuth) CheckPasswd(username, password string) (ok bool, err error)
 	return false, nil
 }
 
-func StartFTPServer(t *testing.T) *ftp.Server {
+// StartFTPServer starts FTP server for test.
+//
+// XXX: randomize port and avoid conflict
+func StartFTPServer(t *testing.T, port int) *ftp.Server {
 	t.Helper()
 	server := ftp.NewServer(&ftp.ServerOpts{
 		Factory: FTPTestDriver{},
 		Auth:    FTPTestAuth{},
-		Port:    21021,
+		Port:    port,
 		Logger:  &ftp.DiscardLogger{},
 	})
 	go func() {
@@ -156,7 +167,7 @@ func StartFTPServer(t *testing.T) *ftp.Server {
 
 func TestFTPProbe(t *testing.T) {
 	t.Parallel()
-	StartFTPServer(t)
+	StartFTPServer(t, 21021)
 
 	AssertProbe(t, []ProbeTest{
 		{"ftp://localhost:21021/", api.StatusHealthy, `type=directory files=1`, ""},

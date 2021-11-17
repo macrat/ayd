@@ -65,11 +65,10 @@ TARGETS:
    Lines in the file that starts with "#" will ignore as comments.
    e.g. source:/path/to/list.txt
 
-   You can load source over HTTP by "source+http" or "source+https".
+   This scheme has some variants: "source+http", "source+https", "source+ftp", "source+ftps", and "source+exec".
    e.g. source+https://example.com/list.txt
-
-   You can also load the output of external command by "source+exec".
-   e.g. source+exec:/path/to/script
+        source+ftp://example.com/list.txt
+        source+exec:/path/to/script
 
 EXAMPLES:
   Send ping to example.com in default interval(5m):

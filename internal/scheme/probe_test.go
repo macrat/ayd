@@ -30,6 +30,8 @@ func TestTargetURLNormalize(t *testing.T) {
 	server := RunDummyHTTPServer()
 	defer server.Close()
 
+	StartFTPServer(t, 2121)
+
 	tests := []struct {
 		Input string
 		Want  url.URL
@@ -109,13 +111,19 @@ func TestTargetURLNormalize(t *testing.T) {
 		{"source+abc:./testdata/healthy-list.txt", url.URL{}, scheme.ErrUnsupportedScheme},
 		{"source:", url.URL{}, scheme.ErrMissingFile},
 		{"source+http:", url.URL{}, scheme.ErrMissingHost},
+		{"source+ftp:", url.URL{}, scheme.ErrMissingHost},
+		{"source+ftps:", url.URL{}, scheme.ErrMissingHost},
 		{"source+exec:", url.URL{}, scheme.ErrMissingCommand},
+		{"source+ftp://example.com/", url.URL{}, scheme.ErrMissingFile},
+		{"source+ftps://example.com/", url.URL{}, scheme.ErrMissingFile},
 
 		{"source-" + server.URL + "/source", url.URL{}, scheme.ErrUnsupportedScheme},
 		{"source+" + server.URL + "/source", url.URL{Scheme: "source+http", Host: strings.Replace(server.URL, "http://", "", 1), Path: "/source"}, nil},
 		{"source+" + strings.ToUpper(server.URL) + "/source", url.URL{Scheme: "source+http", Host: strings.Replace(server.URL, "http://", "", 1), Path: "/source"}, nil},
 		{"source+" + server.URL + "/error", url.URL{}, scheme.ErrInvalidSource},
 		{"source+https://of-course-no-such-host/source", url.URL{}, scheme.ErrInvalidSource},
+
+		{"source+ftp://localhost:2121/source.txt", url.URL{Scheme: "source+ftp", Host: "localhost:2121", Path: "/source.txt"}, nil},
 
 		{"source+exec:./testdata/listing-script", url.URL{Scheme: "source+exec", Opaque: "./testdata/listing-script"}, nil},
 	}
