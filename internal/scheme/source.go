@@ -47,7 +47,7 @@ func normalizeSourceURL(u *url.URL) (*url.URL, error) {
 		return &url.URL{
 			Scheme:   u.Scheme,
 			Host:     u.Host,
-			Path:     filepath.Clean(u.Path),
+			Path:     path.Clean(u.Path),
 			Fragment: u.Fragment,
 		}, nil
 	case "source+exec":
