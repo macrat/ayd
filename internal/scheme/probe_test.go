@@ -122,6 +122,8 @@ func TestTargetURLNormalize(t *testing.T) {
 		{"source+" + strings.ToUpper(server.URL) + "/source", url.URL{Scheme: "source+http", Host: strings.Replace(server.URL, "http://", "", 1), Path: "/source"}, nil},
 		{"source+" + server.URL + "/error", url.URL{}, scheme.ErrInvalidSource},
 		{"source+https://of-course-no-such-host/source", url.URL{}, scheme.ErrInvalidSource},
+		{"source+" + server.URL + "/", url.URL{Scheme: "source+http", Host: strings.Replace(server.URL, "http://", "", 1), Path: "/"}, nil},
+		{"source+" + server.URL, url.URL{Scheme: "source+http", Host: strings.Replace(server.URL, "http://", "", 1), Path: "/"}, nil},
 
 		{"source+ftp://localhost:2121/source.txt", url.URL{Scheme: "source+ftp", Host: "localhost:2121", Path: "/source.txt"}, nil},
 
@@ -280,6 +282,7 @@ func AssertTimeout(t *testing.T, target string) {
 
 func RunDummyHTTPServer() *httptest.Server {
 	mux := http.NewServeMux()
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {})
 	mux.HandleFunc("/ok", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("OK"))

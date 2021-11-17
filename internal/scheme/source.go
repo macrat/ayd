@@ -33,6 +33,9 @@ func normalizeSourceURL(u *url.URL) (*url.URL, error) {
 		if u.Hostname() == "" {
 			return nil, ErrMissingHost
 		}
+		if u.Path == "" {
+			u.Path = "/"
+		}
 		return u, nil
 	case "source+ftp", "source+ftps":
 		if u.Hostname() == "" {
