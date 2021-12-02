@@ -19,9 +19,23 @@ var (
 	ErrMissingPassword = errors.New("password is required if set username")
 )
 
+// ftpOptions makes ftp.DialOptions for the ftp library.
+// 
 func ftpOptions(ctx context.Context, u *url.URL) []ftp.DialOption {
 	opts := []ftp.DialOption{
-		ftp.DialWithContext(ctx),
+		ftp.DialWithDialFunc(func(network, address string) (net.Conn, error) {
+			conn, err := (&net.Dialer{}).DialContext(ctx, network, address)
+			if err != nil {
+				return nil, err
+			}
+			go func() {
+				select {
+				case <-ctx.Done():
+					conn.SetDeadline(time.Now())
+				}
+			}()
+			return conn, nil
+		}),
 	}
 	if u.Scheme == "ftps" {
 		opts = append(opts, ftp.DialWithExplicitTLS(&tls.Config{}))
@@ -40,6 +54,10 @@ func ftpUserInfo(u *url.URL) (user, pass string) {
 	return user, pass
 }
 
+// ftpConnectAndLogin makes FTP connection by URL.
+//
+// If the context timed out, it will terminate TCP connection without QUIT command to the server.
+// This is not very graceful, but it can stop connection surely.
 func ftpConnectAndLogin(ctx context.Context, u *url.URL) (conn *ftp.ServerConn, status api.Status, message string) {
 	host := u.Host
 	if u.Port() == "" {
@@ -127,6 +145,7 @@ func (p FTPProbe) list(conn *ftp.ServerConn) (files []*ftp.Entry, status api.Sta
 	return ls, api.StatusHealthy, ""
 }
 
+// Probe checks if the target FTP server is available.
 func (p FTPProbe) Probe(ctx context.Context, r Reporter) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
 	defer cancel()
