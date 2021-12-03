@@ -35,6 +35,10 @@ TARGETS:
    You can specify HTTP method in scheme like "http-head" or "https-post".
    Supported method is GET, HEAD, POST, OPTION, and CONNECT. Default is GET method.
 
+  ftp, ftps:
+   Send LIST or MLSD command of FTP for status checking.
+   e.g. ftp://example.com/path/to/file
+
   ping, ping4, ping6:
    Send 3 ICMP echo request in 1 second.
    "ping4" and "ping6" is variants for specify IPv4 or IPv6.
@@ -61,11 +65,10 @@ TARGETS:
    Lines in the file that starts with "#" will ignore as comments.
    e.g. source:/path/to/list.txt
 
-   You can load source over HTTP by "source+http" or "source+https".
+   This scheme has some variants: "source+http", "source+https", "source+ftp", "source+ftps", and "source+exec".
    e.g. source+https://example.com/list.txt
-
-   You can also load the output of external command by "source+exec".
-   e.g. source+exec:/path/to/script
+        source+ftp://example.com/list.txt
+        source+exec:/path/to/script
 
 EXAMPLES:
   Send ping to example.com in default interval(5m):

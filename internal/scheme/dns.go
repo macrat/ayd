@@ -17,7 +17,7 @@ var (
 	ErrMissingDomainName  = errors.New("missing domain name")
 )
 
-// dnsResolver is a DNS resolver for DNSScheme.
+// dnsResolver is a DNS resolver for DNSProbe.
 type dnsResolver struct {
 	Resolver *net.Resolver
 }
@@ -112,8 +112,8 @@ func (r dnsResolver) txt(ctx context.Context, target string) (string, error) {
 	return strings.Join(texts, "\n"), err
 }
 
-// DNSScheme is a Prober and Alerter implementation for the DNS protocol.
-type DNSScheme struct {
+// DNSProbe is a Prober implementation for the DNS protocol.
+type DNSProbe struct {
 	target     *url.URL
 	targetName string
 	resolve    dnsResolveFunc
@@ -148,10 +148,9 @@ func getDNSTypeByQuery(query url.Values) string {
 	return ""
 }
 
-// NewDNSScheme creates a new DNSScheme.
-// This supports both of for Prober and for Alerter.
-func NewDNSScheme(u *url.URL) (DNSScheme, error) {
-	s := DNSScheme{
+// NewDNSProbe creates a new DNSProbe.
+func NewDNSProbe(u *url.URL) (DNSProbe, error) {
+	s := DNSProbe{
 		target: &url.URL{
 			Scheme:   "dns",
 			Opaque:   strings.ToLower(u.Opaque),
@@ -170,16 +169,16 @@ func NewDNSScheme(u *url.URL) (DNSScheme, error) {
 		}
 	}
 	if s.targetName == "" {
-		return DNSScheme{}, ErrMissingDomainName
+		return DNSProbe{}, ErrMissingDomainName
 	}
 
 	typ := getDNSTypeByQuery(u.Query())
 
 	if t, err := getDNSTypeByScheme(u.Scheme); err != nil {
-		return DNSScheme{}, err
+		return DNSProbe{}, err
 	} else if t != "" {
 		if typ != "" && typ != t {
-			return DNSScheme{}, ErrConflictDNSType
+			return DNSProbe{}, ErrConflictDNSType
 		}
 		u.RawQuery = "type=" + t
 		typ = t
@@ -188,7 +187,7 @@ func NewDNSScheme(u *url.URL) (DNSScheme, error) {
 	var err error
 	s.resolve, err = newDNSResolver(s.target.Host).getFunc(typ)
 	if err != nil {
-		return DNSScheme{}, err
+		return DNSProbe{}, err
 	}
 
 	if typ != "" {
@@ -198,7 +197,7 @@ func NewDNSScheme(u *url.URL) (DNSScheme, error) {
 	return s, nil
 }
 
-func (s DNSScheme) Target() *url.URL {
+func (s DNSProbe) Target() *url.URL {
 	return s.target
 }
 
@@ -213,7 +212,7 @@ func dnsErrorToMessage(err *net.DNSError) string {
 	return msg
 }
 
-func (s DNSScheme) Probe(ctx context.Context, r Reporter) {
+func (s DNSProbe) Probe(ctx context.Context, r Reporter) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
@@ -243,8 +242,4 @@ func (s DNSScheme) Probe(ctx context.Context, r Reporter) {
 	}
 
 	r.Report(s.target, timeoutOr(ctx, rec))
-}
-
-func (s DNSScheme) Alert(ctx context.Context, r Reporter, _ api.Record) {
-	s.Probe(ctx, AlertReporter{s.target, r})
 }

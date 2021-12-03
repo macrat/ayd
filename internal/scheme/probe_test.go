@@ -30,6 +30,8 @@ func TestTargetURLNormalize(t *testing.T) {
 	server := RunDummyHTTPServer()
 	defer server.Close()
 
+	StartFTPServer(t, 2121)
+
 	tests := []struct {
 		Input string
 		Want  url.URL
@@ -44,6 +46,8 @@ func TestTargetURLNormalize(t *testing.T) {
 		{"ping:", url.URL{}, scheme.ErrMissingHost},
 		{"ping:///test", url.URL{}, scheme.ErrMissingHost},
 
+		{"http://example.com", url.URL{Scheme: "http", Host: "example.com", Path: "/"}, nil},
+		{"http://example.com/", url.URL{Scheme: "http", Host: "example.com", Path: "/"}, nil},
 		{"http://example.com/foo/bar?hoge=fuga#piyo", url.URL{Scheme: "http", Host: "example.com", Path: "/foo/bar", RawQuery: "hoge=fuga", Fragment: "piyo"}, nil},
 		{"https://example.com/foo/bar?hoge=fuga#piyo", url.URL{Scheme: "https", Host: "example.com", Path: "/foo/bar", RawQuery: "hoge=fuga", Fragment: "piyo"}, nil},
 		{"HtTpS://eXaMpLe.CoM/fOo/BaR", url.URL{Scheme: "https", Host: "example.com", Path: "/fOo/BaR"}, nil},
@@ -55,6 +59,10 @@ func TestTargetURLNormalize(t *testing.T) {
 		{"https+get://example.com", url.URL{}, scheme.ErrUnsupportedScheme},
 		{"https:///test", url.URL{}, scheme.ErrMissingHost},
 		{"https:", url.URL{}, scheme.ErrMissingHost},
+
+		{"ftp://example.com", url.URL{Scheme: "ftp", Host: "example.com", Path: "/"}, nil},
+		{"ftp://example.com/?abc=def", url.URL{Scheme: "ftp", Host: "example.com", Path: "/"}, nil},
+		{"ftps://example.com/foo/bar/.././bar/", url.URL{Scheme: "ftps", Host: "example.com", Path: "/foo/bar"}, nil},
 
 		{"tcp:example.com:80", url.URL{Scheme: "tcp", Host: "example.com:80"}, nil},
 		{"tcp://example.com:80/foo/bar?hoge=fuga#piyo", url.URL{Scheme: "tcp", Host: "example.com:80", Fragment: "piyo"}, nil},
@@ -97,19 +105,27 @@ func TestTargetURLNormalize(t *testing.T) {
 		{"exec:", url.URL{}, scheme.ErrMissingCommand},
 		{"exec://", url.URL{}, scheme.ErrMissingCommand},
 
-		{"source:./testdata/healthy-list.txt", url.URL{Scheme: "source", Opaque: "./testdata/healthy-list.txt"}, nil},
-		{"source:./testdata/healthy-list.txt#hello", url.URL{Scheme: "source", Opaque: "./testdata/healthy-list.txt", Fragment: "hello"}, nil},
+		{"source:./testdata/healthy-list.txt", url.URL{Scheme: "source", Opaque: "testdata/healthy-list.txt"}, nil},
+		{"source:testdata/healthy-list.txt#hello", url.URL{Scheme: "source", Opaque: "testdata/healthy-list.txt", Fragment: "hello"}, nil},
 		{"source-abc:./testdata/healthy-list.txt", url.URL{}, scheme.ErrUnsupportedScheme},
 		{"source+abc:./testdata/healthy-list.txt", url.URL{}, scheme.ErrUnsupportedScheme},
 		{"source:", url.URL{}, scheme.ErrMissingFile},
 		{"source+http:", url.URL{}, scheme.ErrMissingHost},
+		{"source+ftp:", url.URL{}, scheme.ErrMissingHost},
+		{"source+ftps:", url.URL{}, scheme.ErrMissingHost},
 		{"source+exec:", url.URL{}, scheme.ErrMissingCommand},
+		{"source+ftp://example.com/", url.URL{}, scheme.ErrMissingFile},
+		{"source+ftps://example.com/", url.URL{}, scheme.ErrMissingFile},
 
 		{"source-" + server.URL + "/source", url.URL{}, scheme.ErrUnsupportedScheme},
 		{"source+" + server.URL + "/source", url.URL{Scheme: "source+http", Host: strings.Replace(server.URL, "http://", "", 1), Path: "/source"}, nil},
 		{"source+" + strings.ToUpper(server.URL) + "/source", url.URL{Scheme: "source+http", Host: strings.Replace(server.URL, "http://", "", 1), Path: "/source"}, nil},
 		{"source+" + server.URL + "/error", url.URL{}, scheme.ErrInvalidSource},
 		{"source+https://of-course-no-such-host/source", url.URL{}, scheme.ErrInvalidSource},
+		{"source+" + server.URL + "/", url.URL{Scheme: "source+http", Host: strings.Replace(server.URL, "http://", "", 1), Path: "/"}, nil},
+		{"source+" + server.URL, url.URL{Scheme: "source+http", Host: strings.Replace(server.URL, "http://", "", 1), Path: "/"}, nil},
+
+		{"source+ftp://localhost:2121/source.txt", url.URL{Scheme: "source+ftp", Host: "localhost:2121", Path: "/source.txt"}, nil},
 
 		{"source+exec:./testdata/listing-script", url.URL{Scheme: "source+exec", Opaque: "./testdata/listing-script"}, nil},
 	}
@@ -266,6 +282,7 @@ func AssertTimeout(t *testing.T, target string) {
 
 func RunDummyHTTPServer() *httptest.Server {
 	mux := http.NewServeMux()
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {})
 	mux.HandleFunc("/ok", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("OK"))

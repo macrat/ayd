@@ -11,7 +11,8 @@ import (
 )
 
 var (
-	ErrInvalidAlertURL = errors.New("invalid alert URL")
+	ErrInvalidAlertURL        = errors.New("invalid alert URL")
+	ErrUnsupportedAlertScheme = errors.New("unsupported scheme for alert")
 )
 
 // Alerter is the interface to send alerts to somewhere.
@@ -30,12 +31,14 @@ func NewAlerterFromURL(u *url.URL) (Alerter, error) {
 	switch scheme {
 	case "http", "https":
 		return NewHTTPScheme(u)
+	case "ftp", "ftps":
+		return nil, ErrUnsupportedAlertScheme
 	case "ping", "ping4", "ping6":
-		return NewPingScheme(u)
+		return nil, ErrUnsupportedAlertScheme
 	case "tcp", "tcp4", "tcp6":
-		return NewTCPScheme(u)
+		return nil, ErrUnsupportedAlertScheme
 	case "dns", "dns4", "dns6":
-		return NewDNSScheme(u)
+		return nil, ErrUnsupportedAlertScheme
 	case "exec":
 		return NewExecScheme(u)
 	case "source":

@@ -9,10 +9,10 @@ import (
 	api "github.com/macrat/ayd/lib-ayd"
 )
 
-func TestHTTPScheme_local(t *testing.T) {
+func TestFTPProbe_local(t *testing.T) {
 	t.Parallel()
 
 	AssertProbe(t, []ProbeTest{
-		{"http://of-course-no-such-host.local/", api.StatusUnknown, "lookup of-course-no-such-host.local: not found(| on .+)", ""},
+		{"ftp://of-course-no-such-host.local:21021/", api.StatusUnknown, `lookup of-course-no-such-host.local: not found(| on .+)`, ""},
 	}, 5)
 }

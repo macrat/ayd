@@ -55,15 +55,6 @@ func TestDNSScheme_Probe(t *testing.T) {
 	})
 }
 
-func TestDNSScheme_Alert(t *testing.T) {
-	t.Parallel()
-
-	AssertAlert(t, []ProbeTest{
-		{"dns:localhost", api.StatusHealthy, `ip=(127\.0\.0\.1|::1)(,(127\.0\.0\.1|::1))*`, ""},
-		{"dns://8.8.8.8/localhost", api.StatusHealthy, `ip=(127\.0\.0\.1|::1)(,(127\.0\.0\.1|::1))*`, ""},
-	}, 10)
-}
-
 func BenchmarkDNSScheme(b *testing.B) {
 	p := testutil.NewProber(b, "dns:localhost")
 
