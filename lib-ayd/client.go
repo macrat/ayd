@@ -2,7 +2,6 @@ package ayd
 
 import (
 	"encoding/json"
-	"io"
 	"net/http"
 	"net/url"
 
@@ -23,14 +22,10 @@ func Fetch(u *url.URL) (Report, error) {
 	}
 	defer resp.Body.Close()
 
-	raw, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return Report{}, ayderr.New(ErrCommunicate, err, "failed to read response")
-	}
+	dec := json.NewDecoder(resp.Body)
 
 	var r Report
-	err = json.Unmarshal(raw, &r)
-	if err != nil {
+	if err = dec.Decode(&r); err != nil {
 		return Report{}, ayderr.New(ErrCommunicate, err, "failed to parse response")
 	}
 
