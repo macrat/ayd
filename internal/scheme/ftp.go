@@ -20,7 +20,7 @@ var (
 )
 
 // ftpOptions makes ftp.DialOptions for the ftp library.
-// 
+//
 func ftpOptions(ctx context.Context, u *url.URL) []ftp.DialOption {
 	opts := []ftp.DialOption{
 		ftp.DialWithDialFunc(func(network, address string) (net.Conn, error) {
