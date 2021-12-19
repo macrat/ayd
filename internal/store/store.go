@@ -102,20 +102,23 @@ func (s *Store) ReportInternalError(scope, message string) {
 func (s *Store) handleError(err error, exportableErrorMessage string) {
 	if err != nil {
 		s.addError(exportableErrorMessage)
-		s.Console.Write([]byte(api.Record{
+		strings.NewReader(api.Record{
 			CheckedAt: time.Now(),
 			Status:    api.StatusFailure,
 			Target:    &url.URL{Scheme: "ayd", Opaque: "log"},
 			Message:   err.Error(),
-		}.String() + "\n"))
+		}.String() + "\n").WriteTo(s.Console)
 	}
 }
 
 func (s *Store) writer(ch <-chan api.Record, stopped chan struct{}) {
-	for r := range ch {
-		msg := []byte(r.String() + "\n")
+	var reader strings.Reader
 
-		s.Console.Write(msg)
+	for r := range ch {
+		msg := r.String() + "\n"
+
+		reader.Reset(msg)
+		reader.WriteTo(s.Console)
 
 		if s.path == "" {
 			continue
@@ -129,7 +132,8 @@ func (s *Store) writer(ch <-chan api.Record, stopped chan struct{}) {
 			continue
 		}
 
-		_, err = f.Write(msg)
+		reader.Seek(0, io.SeekStart)
+		_, err = reader.WriteTo(f)
 		s.handleError(err, "failed to write log file")
 
 		err = f.Close()
