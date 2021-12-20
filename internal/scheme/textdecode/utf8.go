@@ -3,8 +3,8 @@ package textdecode
 import (
 	"unicode/utf8"
 
-	"golang.org/x/text/transform"
 	"golang.org/x/text/encoding/unicode"
+	"golang.org/x/text/transform"
 )
 
 // tryUTF8 is a Transformer to try to decode as UTF8.

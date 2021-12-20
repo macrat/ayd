@@ -1,11 +1,11 @@
 package textdecode
 
 import (
-	"testing"
 	"fmt"
+	"testing"
 
-	"golang.org/x/text/transform"
 	"golang.org/x/text/encoding"
+	"golang.org/x/text/transform"
 )
 
 func TestTryUTF8(t *testing.T) {

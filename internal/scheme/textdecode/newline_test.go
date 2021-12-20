@@ -1,8 +1,8 @@
 package textdecode
 
 import (
-	"testing"
 	"fmt"
+	"testing"
 )
 
 func TestNormalizeNewline(t *testing.T) {

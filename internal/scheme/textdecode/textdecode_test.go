@@ -1,15 +1,15 @@
 package textdecode_test
 
 import (
-	"testing"
 	"os"
 	"strings"
+	"testing"
 
 	"github.com/macrat/ayd/internal/scheme/textdecode"
 )
 
 func Test_characterHandling(t *testing.T) {
-	tests := []struct{
+	tests := []struct {
 		Name   string
 		Input  string
 		Output string
@@ -35,8 +35,8 @@ func Test_characterHandling(t *testing.T) {
 
 func Test_unicode(t *testing.T) {
 	tests := []struct {
-		File     string
-		Expect   string
+		File   string
+		Expect string
 	}{
 		{"./testdata/utf8", "こんにちはWôrÏd"},
 		{"./testdata/utf8bom", "UTF8:BOM付き"},
