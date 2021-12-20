@@ -4,8 +4,6 @@
 package textdecode
 
 import (
-	"unicode/utf8"
-
 	"golang.org/x/sys/windows"
 	"golang.org/x/text/encoding"
 	"golang.org/x/text/encoding/charmap"
@@ -14,6 +12,7 @@ import (
 	"golang.org/x/text/encoding/simplifiedchinese"
 	"golang.org/x/text/encoding/traditionalchinese"
 	"golang.org/x/text/encoding/unicode"
+	"golang.org/x/text/transform"
 )
 
 var (
@@ -58,5 +57,5 @@ func getLocaleEncoding() transform.Transformer {
 
 // localeDecoder in Windows returns decoder for UTF8 or local charset that set by locale settings in OS.
 func localeDecoder() transform.Transformer {
-	return tryUTF8{Fallback: getLocaleEncoding()}
+	return &tryUTF8{Fallback: getLocaleEncoding()}
 }
