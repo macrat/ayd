@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/macrat/ayd/internal/ayderr"
+	"github.com/macrat/ayd/internal/scheme/textdecode"
 	api "github.com/macrat/ayd/lib-ayd"
 )
 
@@ -231,10 +232,14 @@ func openExecSource(ctx context.Context, u *url.URL) (io.ReadCloser, error) {
 	}
 
 	if stderr.Len() != 0 {
-		return nil, fmt.Errorf("%w: failed to execute: %s", ErrInvalidURL, autoDecode(stderr.Bytes()))
+		msg, err := textdecode.ToString(stderr)
+		if err != nil {
+			msg = stderr.String()
+		}
+		return nil, fmt.Errorf("%w: failed to execute: %s", ErrInvalidURL, msg)
 	}
 
-	return io.NopCloser(strings.NewReader(autoDecode(stdout.Bytes()))), nil
+	return io.NopCloser(textdecode.Reader(stdout)), nil
 }
 
 func openFileSource(ctx context.Context, u *url.URL) (io.ReadCloser, error) {
@@ -242,15 +247,8 @@ func openFileSource(ctx context.Context, u *url.URL) (io.ReadCloser, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer f.Close()
 
-	// XXX: can I make io.Reader instead of read all at here?
-	bs, err := io.ReadAll(f)
-	if err != nil {
-		return nil, err
-	}
-
-	return io.NopCloser(strings.NewReader(autoDecode(bs))), nil
+	return textdecode.ReadCloser(f), nil
 }
 
 func openSource(ctx context.Context, u *url.URL) (io.ReadCloser, error) {
