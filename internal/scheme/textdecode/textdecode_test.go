@@ -1,7 +1,6 @@
 package textdecode_test
 
 import (
-	"io"
 	"os"
 	"testing"
 
@@ -57,16 +56,24 @@ func Test_unicode(t *testing.T) {
 }
 
 func DecodeFile(fname string) (string, error) {
-	f, err := os.Open(fname)
-	if err != nil {
-		return "", err
-	}
-	defer f.Close()
-
-	raw, err := io.ReadAll(f)
+	raw, err := os.ReadFile(fname)
 	if err != nil {
 		return "", err
 	}
 
 	return textdecode.Bytes(raw)
+}
+
+func BenchmarkBytes(b *testing.B) {
+	raw, err := os.ReadFile("./testdata/neko.txt")
+	if err != nil {
+		b.Fatalf("failed to read test file: %s", err)
+	}
+
+	b.SetBytes(int64(len(raw)))
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		textdecode.Bytes(raw)
+	}
 }

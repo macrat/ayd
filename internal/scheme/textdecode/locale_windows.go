@@ -45,17 +45,12 @@ var (
 	}
 )
 
-// getLocaleEncoding returns a decoder for the encoding that specified in the OS settings.
-func getLocaleEncoding() transform.Transformer {
+// localeDecoder in Windows returns decoder for UTF8 or local charset that set by locale settings in OS.
+func localeDecoder() decoder {
 	enc, ok := windowsCodePages[windows.GetACP()]
 	if !ok {
 		enc = unicode.UTF8
 	}
 
-	return enc.NewDecoder()
-}
-
-// localeDecoder in Windows returns decoder for UTF8 or local charset that set by locale settings in OS.
-func localeDecoder() transform.Transformer {
-	return &tryUTF8{Fallback: getLocaleEncoding()}
+	return utf8Override(enc.NewDecoder())
 }

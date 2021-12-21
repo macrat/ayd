@@ -247,12 +247,17 @@ func openExecSource(ctx context.Context, u *url.URL) (io.ReadCloser, error) {
 }
 
 func openFileSource(ctx context.Context, u *url.URL) (io.ReadCloser, error) {
-	f, err := os.Open(u.Opaque)
+	raw, err := os.ReadFile(u.Opaque)
 	if err != nil {
 		return nil, err
 	}
 
-	return textdecode.ReadCloser(f), nil
+	s, err := textdecode.Bytes(raw)
+	if err != nil {
+		return nil, err
+	}
+
+	return io.NopCloser(strings.NewReader(s)), nil
 }
 
 func openSource(ctx context.Context, u *url.URL) (io.ReadCloser, error) {

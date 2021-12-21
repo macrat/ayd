@@ -319,7 +319,7 @@ source:./another-list.txt
 
 The line that starts with `#` will ignored as a comment.
 
-Source file should encoded by UTF-8 without BOM, but in Windows, you can use legacy encoding. Please see also [text encoding chapter](#text-encoding).
+Source file should encoded by UTF-8 with/without BOM or UTF-16 with BOM, but in Windows, you can use legacy encoding. Please see also [text encoding chapter](#text-encoding).
 
 examples:
 - `source:./targets.txt`
@@ -639,11 +639,11 @@ The output of the probe plugin will parsed the same way to [log file](#log-file)
 
 ### Text encoding
 
-Ayd expects UTF-8 without BOM as input character encoding.
+Ayd expects UTF-8 with/without BOM or UTF-8 with BOM as input character encoding.
 
 But in Windows, you can use the system's default character encoding too, for example CP1252 or CP932.
 Ayd tries to decode as UTF-8 first, and then tries to use the system's default encoding.
-Ayd follows the BOM instead of using the system's default encoding if found it.
+If the text has the BOM, Ayd always follow it.
 
 The characters couldn't decode will replaced by U+FFFD that means unrecognized character before save to the log file.
 That means;

@@ -5,10 +5,9 @@ import (
 	"testing"
 
 	"golang.org/x/text/encoding"
-	"golang.org/x/text/transform"
 )
 
-func TestTryUTF8(t *testing.T) {
+func TestUTF8Override(t *testing.T) {
 	tests := []struct {
 		Input  string
 		Output string
@@ -19,9 +18,9 @@ func TestTryUTF8(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(fmt.Sprintf("%#v", string(tt.Input)), func(t *testing.T) {
-			trans := &tryUTF8{Fallback: encoding.Replacement.NewDecoder()}
+			dec := utf8Override{encoding.Replacement.NewDecoder()}
 
-			output, _, err := transform.String(trans, tt.Input)
+			output, err := dec.Bytes([]byte(tt.Input))
 			if err != nil {
 				t.Fatalf("failed to transform: %s", err)
 			}
