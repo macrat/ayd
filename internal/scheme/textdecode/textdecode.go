@@ -7,12 +7,16 @@ import (
 	"golang.org/x/text/transform"
 )
 
-// Reader makes new io.Reader to read data as unicode string.
-func Reader(r io.Reader) io.Reader {
-	return transform.NewReader(r, transform.Chain(
+func makeTransform() transform.Transformer {
+	return transform.Chain(
 		unicode.BOMOverride(localeDecoder()),
 		newlineNormalizer{},
-	))
+	)
+}
+
+// Reader makes new io.Reader to read data as unicode string.
+func Reader(r io.Reader) io.Reader {
+	return transform.NewReader(r, makeTransform())
 }
 
 // ReadCloser is almost the same as Reader but it makes io.ReadCloser instead of io.Reader.
@@ -36,11 +40,11 @@ func (r readCloser) Close() error {
 	return r.Closer.Close()
 }
 
-// ToString decodes io.Reader to string.
-func ToString(r io.Reader) (string, error) {
-	x, err := io.ReadAll(Reader(r))
+// Bytes decodes []byte.
+func Bytes(b []byte) (string, error) {
+	s, _, err := transform.Bytes(makeTransform(), b)
 	if err != nil {
 		return "", err
 	}
-	return string(x), nil
+	return string(s), nil
 }

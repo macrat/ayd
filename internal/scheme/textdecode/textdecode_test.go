@@ -1,8 +1,8 @@
 package textdecode_test
 
 import (
+	"io"
 	"os"
-	"strings"
 	"testing"
 
 	"github.com/macrat/ayd/internal/scheme/textdecode"
@@ -23,7 +23,7 @@ func Test_characterHandling(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			output, err := textdecode.ToString(strings.NewReader(tt.Input))
+			output, err := textdecode.Bytes([]byte(tt.Input))
 			if err != nil {
 				t.Errorf("ToString: failed to decode %#v: %s", tt.Input, err)
 			} else if output != tt.Output {
@@ -63,5 +63,10 @@ func DecodeFile(fname string) (string, error) {
 	}
 	defer f.Close()
 
-	return textdecode.ToString(f)
+	raw, err := io.ReadAll(f)
+	if err != nil {
+		return "", err
+	}
+
+	return textdecode.Bytes(raw)
 }

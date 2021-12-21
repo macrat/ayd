@@ -14,8 +14,8 @@ import (
 	"strings"
 	"time"
 
-	api "github.com/macrat/ayd/lib-ayd"
 	"github.com/macrat/ayd/internal/scheme/textdecode"
+	api "github.com/macrat/ayd/lib-ayd"
 )
 
 var (
@@ -125,7 +125,7 @@ func runExternalCommand(ctx context.Context, command string, args, env []string)
 	}
 
 	var e error
-	output, e = textdecode.ToString(buf)
+	output, e = textdecode.Bytes(buf.Bytes())
 	if err == nil {
 		err = e
 	}

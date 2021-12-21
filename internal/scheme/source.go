@@ -232,14 +232,18 @@ func openExecSource(ctx context.Context, u *url.URL) (io.ReadCloser, error) {
 	}
 
 	if stderr.Len() != 0 {
-		msg, err := textdecode.ToString(stderr)
+		msg, err := textdecode.Bytes(stderr.Bytes())
 		if err != nil {
 			msg = stderr.String()
 		}
 		return nil, fmt.Errorf("%w: failed to execute: %s", ErrInvalidURL, msg)
 	}
 
-	return io.NopCloser(textdecode.Reader(stdout)), nil
+	output, err := textdecode.Bytes(stdout.Bytes())
+	if err != nil {
+		return nil, err
+	}
+	return io.NopCloser(strings.NewReader(output)), nil
 }
 
 func openFileSource(ctx context.Context, u *url.URL) (io.ReadCloser, error) {
