@@ -48,7 +48,7 @@ func StatusTextEndpoint(s Store) http.HandlerFunc {
 		default:
 			w.Header().Set("Content-Type", "text/plain")
 			w.WriteHeader(http.StatusBadRequest)
-			_, err := fmt.Fprintln(w, "error: unsupported charset:", charset)
+			_, err := fmt.Fprintln(w, "error: given unsupported charset. please use \"utf-8\", \"ascii\", or remove charset query.")
 			handleError(s, "status.txt", err)
 			return
 		}
