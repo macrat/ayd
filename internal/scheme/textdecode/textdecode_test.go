@@ -17,7 +17,7 @@ func Test_characterHandling(t *testing.T) {
 		{"CR", "hello\r\rworld\r", "hello\n\nworld\n"},
 		{"LF", "hello\n\nworld\n", "hello\n\nworld\n"},
 		{"mixed", "hello\n\r\r\nworld\r\n", "hello\n\n\nworld\n"},
-		{"invalid-character", "hello\xFF\xFFworld", "hello\uFFFD\uFFFDworld"},
+		{"invalid-character", "hello\x90\x90world", "hello\uFFFD\uFFFDworld"}, // 0x90 is an invalid character in both of UTF-8 and CP1250.
 	}
 
 	for _, tt := range tests {
