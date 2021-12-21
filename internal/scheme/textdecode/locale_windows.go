@@ -12,7 +12,6 @@ import (
 	"golang.org/x/text/encoding/simplifiedchinese"
 	"golang.org/x/text/encoding/traditionalchinese"
 	"golang.org/x/text/encoding/unicode"
-	"golang.org/x/text/transform"
 )
 
 var (
@@ -52,5 +51,5 @@ func localeDecoder() decoder {
 		enc = unicode.UTF8
 	}
 
-	return utf8Override(enc.NewDecoder())
+	return utf8Override{enc.NewDecoder()}
 }
