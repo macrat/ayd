@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/macrat/ayd/internal/scheme/textdecode"
 	api "github.com/macrat/ayd/lib-ayd"
 )
 
@@ -114,8 +115,6 @@ func runExternalCommand(ctx context.Context, command string, args, env []string)
 
 	err = cmd.Run()
 
-	output = autoDecode(buf.Bytes())
-
 	status = api.StatusHealthy
 	if err != nil {
 		status = api.StatusFailure
@@ -123,6 +122,12 @@ func runExternalCommand(ctx context.Context, command string, args, env []string)
 		if isUnknownExecutionError(err) {
 			status = api.StatusUnknown
 		}
+	}
+
+	var e error
+	output, e = textdecode.Bytes(buf.Bytes())
+	if err == nil {
+		err = e
 	}
 
 	return
