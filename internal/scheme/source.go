@@ -161,7 +161,7 @@ func NewSourceProbe(u *url.URL) (SourceScheme, error) {
 	return s, sourceLoadTest(s.loadProbers(ctx))
 }
 
-// NewSourceProbe makes a new SourceScheme instance.
+// NewSourceAlert makes a new SourceScheme instance.
 // It checks each URLs in source as an Alerter.
 func NewSourceAlert(u *url.URL) (SourceScheme, error) {
 	s, err := newSourceScheme(u)
