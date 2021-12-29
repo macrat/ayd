@@ -67,8 +67,6 @@ func (ph ProbeHistory) MarshalJSON() ([]byte, error) {
 }
 
 // byLatestStatus implements sort.Interface for ProbeHistory.
-//
-// XXX: There is very similar code in internal/store/store.go
 type byLatestStatus []ProbeHistory
 
 func (xs byLatestStatus) Len() int {
