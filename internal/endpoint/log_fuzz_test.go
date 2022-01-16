@@ -1,5 +1,5 @@
-//go:build gofuzzbeta
-// +build gofuzzbeta
+//go:build go1.18
+// +build go1.18
 
 package endpoint_test
 
