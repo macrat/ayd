@@ -50,13 +50,13 @@ func TestRecord(t *testing.T) {
 			},
 		},
 		{
-			String: "2021-01-02T15:04:05+09:00\tDEBASED\t1.234\tdummy:\t",
+			String: "2021-01-02T15:04:05+09:00\tDEBASED\t1027.821\tdummy:\t",
 			Record: ayd.Record{
 				CheckedAt: time.Date(2021, 1, 2, 15, 4, 5, 0, tokyo),
 				Target:    &url.URL{Scheme: "dummy"},
 				Status:    ayd.StatusDebased,
 				Message:   "",
-				Latency:   1234 * time.Microsecond,
+				Latency:   1027820999 * time.Nanosecond,
 			},
 		},
 		{
