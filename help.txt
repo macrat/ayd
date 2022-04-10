@@ -15,7 +15,7 @@ OPTIONS:
   -u, --user=USER[:PASS]  Username and password for HTTP endpoint.
   -c, --ssl-cert=FILE     Path to certificate file for HTTPS. Please set -k too.
   -k, --ssl-key=FILE      Path to key file for HTTPS. Please set -c too.
-  -v, --verbose           Show Ayd version and exit.
+  -v, --version           Show Ayd version and exit.
   -h, --help              Show this help message and exit.
 
 INTERVALS:

@@ -68,7 +68,7 @@ func (cmd *AydCommand) ParseArgs(args []string) (exitCode int) {
 	flags.StringVarP(&cmd.UserInfo, "user", "u", "", "Username and password for HTTP endpoint")
 	flags.StringVarP(&cmd.CertPath, "ssl-cert", "c", "", "HTTPS certificate file")
 	flags.StringVarP(&cmd.KeyPath, "ssl-key", "k", "", "HTTPS key file")
-	flags.BoolVarP(&cmd.ShowVersion, "verbose", "v", false, "Show version")
+	flags.BoolVarP(&cmd.ShowVersion, "version", "v", false, "Show version")
 	flags.BoolVarP(&cmd.ShowHelp, "help", "h", false, "Show help message")
 
 	// TODO: remove -o option before to release version 1.0.0
