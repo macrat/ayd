@@ -49,17 +49,17 @@ var defaultAydCommand = &AydCommand{
 //go:embed help.txt
 var helpText string
 
-func (cmd *AydCommand) PrintUsage() {
+func (cmd *AydCommand) PrintUsage(detail bool) {
 	tmpl := template.Must(template.New("help.txt").Parse(helpText))
 	tmpl.Execute(cmd.ErrStream, map[string]interface{}{
 		"Version":         version,
 		"HTTPRedirectMax": scheme.HTTP_REDIRECT_MAX,
+		"Short":           !detail,
 	})
 }
 
 func (cmd *AydCommand) ParseArgs(args []string) (exitCode int) {
 	flags := pflag.NewFlagSet("ayd", pflag.ContinueOnError)
-	flags.Usage = cmd.PrintUsage
 
 	flags.IntVarP(&cmd.ListenPort, "port", "p", 9000, "HTTP listen port")
 	flags.StringVarP(&cmd.StorePath, "log-file", "f", "./ayd.log", "Path to log file")
@@ -119,7 +119,7 @@ func (cmd *AydCommand) ParseArgs(args []string) (exitCode int) {
 		return 2
 	}
 	if len(cmd.Tasks) == 0 {
-		cmd.PrintUsage()
+		cmd.PrintUsage(false)
 		return 2
 	}
 
@@ -141,7 +141,7 @@ func (cmd *AydCommand) Run(args []string) (exitCode int) {
 	}
 
 	if cmd.ShowHelp {
-		cmd.PrintUsage()
+		cmd.PrintUsage(true)
 		return 0
 	}
 

@@ -2,9 +2,9 @@ Ayd? status monitoring service (version {{ .Version }})
 
 Usage:
   ayd [OPTIONS...] INTERVALS|TARGETS...
-  ayd -1 [-a URL | -f FILE] INTERVALS|TARGETS...
+  ayd -1 [-a URL] [-f FILE] INTERVALS|TARGETS...
 
-OPTIONS:
+Options:
   -1, --oneshot	          Check status only once and exit.
                           Exit code means 0=HEALTHY, 1=FAILURE, 2=UNKNOWN.
   -a, --alert=URL         The alert URL that the same format as the target URL.
@@ -12,18 +12,19 @@ OPTIONS:
   -f, --log-file=FILE     Path to log file. Log file is also used as a database.
                           Ayd won't create log file if set "-" or empty. (default "./ayd.log")
   -p, --port=PORT         Listen port of status page. (default 9000)
-  -u, --user=USER[:PASS]  Username and password for HTTP endpoint.
-  -c, --ssl-cert=FILE     Path to certificate file for HTTPS. Please set -k too.
-  -k, --ssl-key=FILE      Path to key file for HTTPS. Please set -c too.
+  -u, --user=USER[:PASS]  Username and password for HTTP basic auth.
+  -c, --ssl-cert=FILE     Path to certificate file for HTTPS. Please set also -k.
+  -k, --ssl-key=FILE      Path to key file for HTTPS. Please set also -c.
   -v, --version           Show Ayd version and exit.
-  -h, --help              Show this help message and exit.
-
-INTERVALS:
+  -h, --help              Show {{ if .Short }}detail{{ else }}this{{ end }} help message and exit.
+{{ if .Short }}
+Use `ayd -h` for more information.{{ else }}
+Intervals:
   Specify execution schedule in interval (e.g. "2m" means "every 2 minutes")
   or cron expression (e.g. "*/5 8-19 * *" means "every 5 minutes from 8 p.m. to 7 a.m.").
   Default interval is "5m" in if don't pass any interval.
 
-TARGETS:
+Targets:
   The target address for status checking.
   Specify with URL format like "ping:example.com" or "https://example.com/foo/bar".
 
@@ -70,7 +71,7 @@ TARGETS:
         source+ftp://example.com/list.txt
         source+exec:/path/to/script
 
-EXAMPLES:
+Examples:
   Send ping to example.com in default interval(5m):
    $ ayd ping:example.com
 
@@ -92,5 +93,5 @@ EXAMPLES:
   Listen on http://0.0.0.0:8080 (and connect to example.com:3306 for check):
    $ ayd -p 8080 1m tcp://example.com:3306
 
-SEEALSO:
-  https://github.com/macrat/ayd#readme
+See also:
+  https://github.com/macrat/ayd#readme{{ end }}
