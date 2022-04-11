@@ -7,6 +7,25 @@ import (
 	"github.com/NYTimes/gziphandler"
 )
 
+type CommonHeader struct {
+	Upstream http.Handler
+}
+
+func (ch CommonHeader) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Server", "ayd")
+	ch.Upstream.ServeHTTP(w, r)
+}
+
+type LinkHeader struct {
+	Upstream http.HandlerFunc
+	Link     string
+}
+
+func (lh LinkHeader) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Link", lh.Link)
+	lh.Upstream.ServeHTTP(w, r)
+}
+
 //go:embed static/favicon.ico
 var faviconIco []byte
 
@@ -20,26 +39,30 @@ var notFoundPage []byte
 func New(s Store) http.Handler {
 	m := http.NewServeMux()
 
-	m.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
+	faviconLink := `<favicon.ico>;rel="alternate";type="image/vnd.microsoft.icon", <favicon.svg>;rel="alternate";type="image/svg+xml"`
+	m.Handle("/favicon.ico", LinkHeader{func(w http.ResponseWriter, r *http.Request) {
 		w.Write(faviconIco)
-	})
-	m.HandleFunc("/favicon.svg", func(w http.ResponseWriter, r *http.Request) {
+	}, faviconLink})
+	m.Handle("/favicon.svg", LinkHeader{func(w http.ResponseWriter, r *http.Request) {
 		w.Write(faviconSvg)
-	})
+	}, faviconLink})
 
+	statusLink := `<status.html>;rel="alternate";type="text/html", <status.html>;rel="alternate";type="text/plain", <status.json>;rel="alternate";type="application/json"`
 	m.Handle("/status", http.RedirectHandler("/status.html", http.StatusMovedPermanently))
-	m.HandleFunc("/status.txt", StatusTextEndpoint(s))
-	m.HandleFunc("/status.html", StatusHTMLEndpoint(s))
-	m.HandleFunc("/status.json", StatusJSONEndpoint(s))
+	m.Handle("/status.html", LinkHeader{StatusHTMLEndpoint(s), statusLink})
+	m.Handle("/status.txt", LinkHeader{StatusTextEndpoint(s), statusLink})
+	m.Handle("/status.json", LinkHeader{StatusJSONEndpoint(s), statusLink})
 
+	logLink := `<log.tsv>;rel="alternate";type="text/tab-separated-values", <log.csv>;rel="alternate";type="text/csv", <log.json>;rel="alternate";type="application/json"`
 	m.Handle("/log", http.RedirectHandler("/log.tsv", http.StatusMovedPermanently))
-	m.HandleFunc("/log.tsv", LogTSVEndpoint(s))
-	m.HandleFunc("/log.json", LogJsonEndpoint(s))
-	m.HandleFunc("/log.csv", LogCSVEndpoint(s))
+	m.Handle("/log.tsv", LinkHeader{LogTSVEndpoint(s), logLink})
+	m.Handle("/log.csv", LinkHeader{LogCSVEndpoint(s), logLink})
+	m.Handle("/log.json", LinkHeader{LogJsonEndpoint(s), logLink})
 
+	targetsLink := `<targets.txt>;rel="alternate";type="text/plain", <targets.json>;rel="alternate";type="application/json"`
 	m.Handle("/targets", http.RedirectHandler("/targets.txt", http.StatusMovedPermanently))
-	m.HandleFunc("/targets.txt", TargetsTextEndpoint(s))
-	m.HandleFunc("/targets.json", TargetsJSONEndpoint(s))
+	m.Handle("/targets.txt", LinkHeader{TargetsTextEndpoint(s), targetsLink})
+	m.Handle("/targets.json", LinkHeader{TargetsJSONEndpoint(s), targetsLink})
 
 	m.HandleFunc("/metrics", MetricsEndpoint(s))
 	m.HandleFunc("/healthz", HealthzEndpoint(s))
@@ -53,7 +76,7 @@ func New(s Store) http.Handler {
 		}
 	})
 
-	return gziphandler.GzipHandler(m)
+	return gziphandler.GzipHandler(CommonHeader{m})
 }
 
 func handleError(s Store, scope string, err error) {
