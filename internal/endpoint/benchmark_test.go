@@ -17,6 +17,7 @@ func Benchmark_endpoints(b *testing.B) {
 		{"/status.html", endpoint.StatusHTMLEndpoint},
 		{"/status.txt", endpoint.StatusTextEndpoint},
 		{"/status.json", endpoint.StatusJSONEndpoint},
+		{"/incidents.html", endpoint.IncidentsHTMLEndpoint},
 		{"/log.tsv", endpoint.LogTSVEndpoint},
 		{"/log.csv", endpoint.LogCSVEndpoint},
 		{"/log.json", endpoint.LogJsonEndpoint},
