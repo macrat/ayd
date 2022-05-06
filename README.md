@@ -80,18 +80,19 @@ $ ayd https://your-service.example.com ping:another-host.example.com
 
 Ayd has these pages/endpoints.
 
-| path                                                | description                                                          |
-|-----------------------------------------------------|----------------------------------------------------------------------|
-| [/status.html](http://localhost:9000/status.html)   | Human friendly status page in HTML.                                  |
-| [/status.txt](http://localhost:9000/status.txt)     | Human friendly status page in plain text.                            |
-| [/status.json](http://localhost:9000/status.json)   | Machine readable status page in JSON format.                         |
-| [/log.tsv](http://localhost:9000/log.tsv)           | Raw log file in TSV format.                                          |
-| [/log.csv](http://localhost:9000/log.tsv)           | Raw log file in CSV format.                                          |
-| [/log.json](http://localhost:9000/log.json)         | Raw log file in JSON format.                                         |
-| [/targets.txt](http://localhost:9000/targets.txt)   | The list of target URLs, separated by \\n.                           |
-| [/targets.json](http://localhost:9000/targets.json) | The list of target URLs in JSON format.                              |
-| [/metrics](http://localhost:9000/metrics)           | Minimal status page for use by [Prometheus](https://prometheus.io/). |
-| [/healthz](http://localhost:9000/healthz)           | Health status page for checking status of Ayd itself.                |
+| path                                                 | description                                                          |
+|------------------------------------------------------|----------------------------------------------------------------------|
+| [/status.html](http://localhost:9000/status.html)    | Human friendly status page in HTML.                                  |
+| [/status.txt](http://localhost:9000/status.txt)      | Human friendly status page in plain text.                            |
+| [/status.json](http://localhost:9000/status.json)    | Machine readable status page in JSON format.                         |
+| [/incidents.html](http://localhost:9000/status.html) | Human friendly incident history page in HTML.                        |
+| [/log.tsv](http://localhost:9000/log.tsv)            | Raw log file in TSV format.                                          |
+| [/log.csv](http://localhost:9000/log.tsv)            | Raw log file in CSV format.                                          |
+| [/log.json](http://localhost:9000/log.json)          | Raw log file in JSON format.                                         |
+| [/targets.txt](http://localhost:9000/targets.txt)    | The list of target URLs, separated by \\n.                           |
+| [/targets.json](http://localhost:9000/targets.json)  | The list of target URLs in JSON format.                              |
+| [/metrics](http://localhost:9000/metrics)            | Minimal status page for use by [Prometheus](https://prometheus.io/). |
+| [/healthz](http://localhost:9000/healthz)            | Health status page for checking status of Ayd itself.                |
 
 #### Change encoding of `/stauts.txt`
 
