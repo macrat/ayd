@@ -1,6 +1,7 @@
 package endpoint
 
 import (
+	"bytes"
 	_ "embed"
 	"net/http"
 
@@ -32,8 +33,8 @@ var faviconIco []byte
 //go:embed static/favicon.svg
 var faviconSvg []byte
 
-//go:embed static/not-found.html
-var notFoundPage []byte
+//go:embed templates/not-found.html
+var notFoundPageTemplate string
 
 // New makes new http.Handler
 func New(s Store) http.Handler {
@@ -53,6 +54,9 @@ func New(s Store) http.Handler {
 	m.Handle("/status.txt", LinkHeader{StatusTextEndpoint(s), statusLink})
 	m.Handle("/status.json", LinkHeader{StatusJSONEndpoint(s), statusLink})
 
+	m.Handle("/incidents", http.RedirectHandler("/incidents.html", http.StatusMovedPermanently))
+	m.Handle("/incidents.html", IncidentsHTMLEndpoint(s))
+
 	logLink := `<log.tsv>;rel="alternate";type="text/tab-separated-values", <log.csv>;rel="alternate";type="text/csv", <log.json>;rel="alternate";type="application/json"`
 	m.Handle("/log", http.RedirectHandler("/log.tsv", http.StatusMovedPermanently))
 	m.Handle("/log.tsv", LinkHeader{LogTSVEndpoint(s), logLink})
@@ -67,6 +71,11 @@ func New(s Store) http.Handler {
 	m.HandleFunc("/metrics", MetricsEndpoint(s))
 	m.HandleFunc("/healthz", HealthzEndpoint(s))
 
+	buf := bytes.NewBuffer(nil)
+	if err := loadHTMLTemplate(notFoundPageTemplate).Execute(buf, nil); err != nil {
+		panic(err)
+	}
+	notFoundPage := buf.Bytes()
 	m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/" {
 			http.Redirect(w, r, "/status.html", http.StatusFound)

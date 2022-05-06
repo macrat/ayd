@@ -1,0 +1,48 @@
+{{ define "title" -}} incidents {{- end }}
+
+{{/* <style> */}}{{ define "style" }}
+hr {
+    margin: 2rem 0;
+    display: block;
+    border: none;
+    border-bottom: 1px solid rgba(var(--fg), .3);
+}
+
+.placeholder {
+    position: relative;
+    margin-top: 2rem;
+}
+.placeholder svg {
+    fill: rgba(var(--fg), .1);
+    width: 100%;
+    height: 10rem;
+}
+.placeholder span {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 130%;
+}
+{{ end }}{{/* </style> */}}
+
+{{ define "body" }}{{ if not (or .CurrentIncidents .IncidentHistory) }}
+    <div class="placeholder">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#healthy-icon"></use></svg>
+        <span>no incident recorded</span>
+    </div>
+{{ else }}
+    <article>{{ range .CurrentIncidents | invert_incidents }}
+        {{ template "incident" . }}{{ end }}
+    </article>
+
+    {{ if and .CurrentIncidents .IncidentHistory }}<hr />{{ end }}
+
+    <article>{{ range .IncidentHistory | invert_incidents }}
+        {{ template "incident" . }}{{ end }}
+    </article>
+{{ end }}{{ end }}

@@ -4,7 +4,6 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
-	htmlTemplate "html/template"
 	"io"
 	"net/http"
 	"strings"
@@ -15,12 +14,12 @@ import (
 var statusHTMLTemplate string
 
 func StatusHTMLEndpoint(s Store) http.HandlerFunc {
-	tmpl := htmlTemplate.Must(htmlTemplate.New("status.html").Funcs(templateFuncs).Parse(statusHTMLTemplate))
+	tmpl := loadHTMLTemplate(statusHTMLTemplate)
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 
-		handleError(s, "status.html", tmpl.Execute(w, s.MakeReport()))
+		handleError(s, "status.html", tmpl.Execute(w, s.MakeReport(20)))
 	}
 }
 
@@ -56,7 +55,7 @@ func StatusTextEndpoint(s Store) http.HandlerFunc {
 		contentType := "text/plain; charset=" + charset
 		w.Header().Set("Content-Type", contentType)
 
-		handleError(s, "status.txt:"+charset, execute(w, s.MakeReport()))
+		handleError(s, "status.txt:"+charset, execute(w, s.MakeReport(40)))
 	}
 }
 
@@ -69,6 +68,6 @@ func StatusJSONEndpoint(s Store) http.HandlerFunc {
 		enc := json.NewEncoder(w)
 		enc.SetIndent("", "  ")
 
-		handleError(s, "status.json", enc.Encode(s.MakeReport()))
+		handleError(s, "status.json", enc.Encode(s.MakeReport(40)))
 	}
 }

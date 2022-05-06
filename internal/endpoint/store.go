@@ -15,7 +15,7 @@ type Store interface {
 	ProbeHistory() []api.ProbeHistory
 
 	// MakeReport creates ayd.Report for exporting for endpoint.
-	MakeReport() api.Report
+	MakeReport(probeHistoryLength int) api.Report
 
 	// ReportInternalError reports Ayd internal error.
 	ReportInternalError(scope, message string)

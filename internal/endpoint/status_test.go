@@ -54,7 +54,7 @@ func TestStatusHTMLEndpoint(t *testing.T) {
 		t.Fatalf("failed to read body: %s", err)
 	}
 
-	result := string(regexp.MustCompile(`Reported by Ayd\? \(.+\)`).ReplaceAll(body, []byte("Reported by Ayd? (-- CURRENT TIME MASKED --)")))
+	result := string(regexp.MustCompile(`Reported by Ayd \(.+\)`).ReplaceAll(body, []byte("Reported by Ayd (-- CURRENT TIME MASKED --)")))
 	result = strings.ReplaceAll(result, "\r\n", "\n")
 
 	if diff := cmp.Diff(readTestFile(t, "./testdata/status.html"), result); diff != "" {
@@ -93,7 +93,7 @@ func TestStatusTextEndpoint(t *testing.T) {
 				t.Fatalf("failed to read body: %s", err)
 			}
 
-			result := string(regexp.MustCompile(` *Reported by Ayd\? \(.+\)`).ReplaceAll(body, []byte("[[ FOOTER MASKED ]]")))
+			result := string(regexp.MustCompile(` *Reported by Ayd \(.+\)`).ReplaceAll(body, []byte("[[ FOOTER MASKED ]]")))
 			result = strings.ReplaceAll(result, "\r\n", "\n")
 
 			if diff := cmp.Diff(readTestFile(t, tt.File), result); diff != "" {

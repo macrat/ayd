@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+
+{{define "incident" }}
+    <section class="incident">
+        <h1>
+            <span class="incident-status {{ .Status | to_lower }}">{{ .Status }}</span>
+            <span class="target" aria-label="incident of '{{ .Target | url_unescape }}'">{{ .Target | url_unescape }}</span>
+        </h1>
+        <div class="period">
+            <time aria-label="since {{ .CausedAt | time2str }}">{{ .CausedAt | time2str }}</time>
+            <span aria-hidden="true">-</span>
+            {{ if .ResolvedAt.IsZero -}}
+                on going
+            {{- else -}}
+                <time aria-label="until {{ .ResolvedAt | time2str }}">{{ .ResolvedAt | time2str }}</time>
+            {{- end }}
+        </div>{{ if .Message }}
+        <pre class="message">{{ .Message }}</pre>{{ end }}
+    </section>
+{{ end -}}
+
+<html lang=en>
+    <head>
+        <title>Ayd {{ block "title" . }}{{ end }}</title>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width,initial-scale=1" />
+<style>
+html {
+    --light: 246, 245, 248;
+    --dark: 69, 65, 74;
+    --bg: var(--light);
+    --fg: var(--dark);
+    --failure: 255, 45, 0;
+    --debased: 221, 161, 0;
+    --healthy: 137, 201, 35;
+}
+@media (prefers-color-scheme: dark) {
+    html {
+        --bg: var(--dark);
+        --fg: var(--light);
+    }
+}
+
+body {
+    background-color: rgb(var(--bg));
+    color: rgb(var(--fg));
+    margin: 0;
+}
+header {
+    border-bottom: 1px solid rgba(var(--fg), .2);
+    padding: 8px 0;
+    width: 100%;
+}
+main, nav {
+    max-width: 80rem;
+    width: 100%;
+    margin: auto;
+    padding: 0 1rem;
+    box-sizing: border-box;
+}
+
+a.menu-item, .menu-item a {
+    text-decoration: none;
+    color: inherit;
+}
+a.menu-item:hover, .menu-item a:hover {
+    text-decoration: underline;
+}
+.menu-item {
+    margin: 0 8px;
+}
+.logo {
+    font-weight: bold;
+}
+.menu-item ul, .menu-item li {
+    display: inline;
+    margin: 0;
+    padding: 0;
+}
+.menu-item li:first-child::before { content: '(' }
+.menu-item li::after { content: ', ' }
+.menu-item li:last-child::after { content: ')' }
+
+.icon-definition {
+    display: none;
+}
+
+article {
+    margin-top: 2rem;
+}
+section {
+    box-sizing: border-box;
+    margin: 4px;
+    padding: 12px 16px;
+    border-radius: 4px;
+    /*background-color: rgba(var(--fg), .01);*/
+    border: 1px solid rgba(var(--fg), .2);
+}
+
+h1 {
+    font-size: 1.3rem;
+    font-weight: normal;
+    font-family: monospace;
+}
+
+.incident {
+    margin: 8px 4px;
+}
+.incident h1 {
+    margin: 0 0 .5rem;
+}
+.incident-status {
+    display: inline-block;
+    padding-left: 4px;
+    font-weight: bold;
+}
+.incident-status.unknown { border-left: 8px solid rgb(var(--fg)) }
+.incident-status.aborted { border-left: 8px solid rgb(var(--bg)) }
+.incident-status.failure { border-left: 8px solid rgb(var(--failure)) }
+.incident-status.debased { border-left: 8px solid rgb(var(--debased)) }
+.message {
+    display: block;
+    border: 1px solid rgb(var(--fg));
+    border-radius: 2px;
+    padding: 16px 12px;
+}
+
+{{ block "style" . }}{{ end }}
+
+footer {
+    margin: 2rem 0;
+    text-align: center;
+}
+footer span {
+    display: inline-block;
+    padding: .5rem 2rem;
+    margin: auto;
+}
+</style>
+    </head>
+
+    <body>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon-definition"><g id="no-data-icon"><path d="M 112 240 A 16 16 0 0 0 96 256 A 16 16 0 0 0 112 272 L 400 272 A 16 16 0 0 0 416 256 A 16 16 0 0 0 400 240 L 112 240 z " /></g></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon-definition"><g id="unknown-icon"><path d="m 248,367.49023 c -17.94333,0 -32.5,14.55667 -32.5,32.5 0,17.94334 14.55667,32.5 32.5,32.5 17.94333,0 32.5,-14.55666 32.5,-32.5 0,-17.94333 -14.55667,-32.5 -32.5,-32.5 z m 0,1 c 17.40289,0 31.5,14.09711 31.5,31.5 0,17.4029 -14.09711,31.5 -31.5,31.5 -17.40289,0 -31.5,-14.0971 -31.5,-31.5 0,-17.40289 14.09711,-31.5 31.5,-31.5 z m 32,31.49976 c 0,17.67311 -14.32689,32 -32,32 -17.67311,0 -32,-14.32689 -32,-32 0,-17.67311 14.32689,-32 32,-32 17.67311,0 32,14.32689 32,32 z M 255.72656,64.001953 c -23.26399,0.317597 -51.24624,5.60235 -74.9082,25.105469 -38.17128,31.464548 -40.79883,74.021488 -40.79883,74.021488 a 20,20 0 0 0 19.10938,20.85156 20,20 0 0 0 20.85156,-19.10938 c 0,0 0.25175,-23.44325 26.2793,-44.89843 14.45539,-11.9147 32.25113,-15.73095 50.0039,-15.97461 16.31628,-0.19766 31.26166,3.27176 36.44531,5.79687 0.001,6.6e-4 0.005,0.001 0.006,0.002 7.41373,3.63365 17.736,9.71415 25.62305,18.41406 C 326.23506,136.92201 332,147.4321 332,164 c 0,18.57546 -5.05619,29.50019 -14.10352,40.36133 -9.04732,10.86113 -23.06438,20.98385 -39.57812,32.33984 C 241.42928,262.06867 228,293.95022 228,324 a 20,20 0 0 0 20,20 20,20 0 0 0 20,-20 c 0,-21.23022 3.5315,-34.08734 32.98242,-54.33984 16.65626,-11.45401 33.81326,-23.0884 47.64844,-39.69727 C 362.46604,213.35403 372,191.09454 372,164 372,137.1679 361.05994,115.77768 347.97461,101.34375 334.88928,86.90982 319.97159,78.607348 310.27734,73.859375 l -0.0176,-0.0098 -0.0156,-0.0078 C 295.40597,66.608006 276.88633,63.742452 255.75391,64.001953 h -0.0137 z" /></g></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon-definition"><g id="healthy-icon"><path d="M256 48C141.31 48 48 141.31 48 256s93.31 208 208 208 208-93.31 208-208S370.69 48 256 48zm108.25 138.29l-134.4 160a16 16 0 01-12 5.71h-.27a16 16 0 01-11.89-5.3l-57.6-64a16 16 0 1123.78-21.4l45.29 50.32 122.59-145.91a16 16 0 0124.5 20.58z"/></g></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon-definition"><g id="debased-icon"><path d="M 256,48 C 173.3301,46.864238 93.812451,100.71847 63.397436,177.45446 32.243121,251.28238 49.445929,342.15492 105.50255,399.43605 c 54.50926,58.6782 144.32154,80.2649 219.54572,52.78367 C 403.88106,425.38236 461.77167,347.39717 463.84716,264.02798 468.0509,183.03515 419.39941,102.92914 346.09586,68.542651 318.12247,55.003097 287.07301,47.959009 256,48 Z m -39.51758,23.587891 c 47.35249,2.354295 87.359,34.985699 116.10576,70.373369 41.12858,52.1379 60.0907,120.92097 53.61387,186.76057 C 377.78608,391.23629 319.11721,441.70231 256,440.41211 c -63.11721,1.2902 -121.78608,-49.17582 -130.20206,-111.69028 -8.55834,-45.07409 16.53737,-86.55416 40.63956,-122.34878 23.05829,-34.67122 49.56348,-75.66376 37.1029,-119.214063 -1.62194,-7.88073 4.8886,-15.723373 12.94202,-15.571096 z M 247.75195,264.0625 c -9.06743,0.69899 -7.05619,13.78385 -11.04056,19.01903 -12.83572,26.76977 -26.27135,56.5246 -17.72798,86.77628 3.76257,22.35638 28.55687,37.233 49.92904,28.95418 27.02604,-10.45439 29.93256,-45.30482 24.08065,-69.74099 -7.11516,-25.00341 -21.38383,-49.77776 -43.16566,-64.70554 -0.66975,-0.21096 -1.37339,-0.31367 -2.07549,-0.30296 z"/></g></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon-definition"><g id="failure-icon"><path d="M394.23 197.56a300.43 300.43 0 00-53.37-90C301.2 61.65 249.05 32 208 32a16 16 0 00-15.48 20c13.87 53-14.88 97.07-45.31 143.72C122 234.36 96 274.27 96 320c0 88.22 71.78 160 160 160s160-71.78 160-160c0-43.3-7.32-84.49-21.77-122.44zm-105.9 221.13C278 429.69 265.05 432 256 432s-22-2.31-32.33-13.31S208 390.24 208 368c0-25.14 8.82-44.28 17.34-62.78 4.95-10.74 10-21.67 13-33.37a8 8 0 0112.49-4.51A126.48 126.48 0 01275 292c18.17 24 29 52.42 29 76 0 22.24-5.42 39.77-15.67 50.69z"/></g></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon-definition"><g id="aborted-icon"><path d="m 131.55078,97.609375 -33.941405,33.941405 282.839845,282.83984 33.9414,-33.9414 z M 256,32 C 132.57249,32 32,132.57249 32,256 32,379.42751 132.57249,480 256,480 379.42751,480 480,379.42751 480,256 480,132.57249 379.42751,32 256,32 Z m 0,48 c 97.48639,0 176,78.51361 176,176 0,97.48639 -78.51361,176 -176,176 C 158.51361,432 80,353.48639 80,256 80,158.51361 158.51361,80 256,80 Z"/></g></svg>
+
+        <header>
+            <nav>
+                <a class="menu-item logo" href="/status.html">Ayd?</a>
+                <a class="menu-item" href="/status.html">Status</a>
+                <a class="menu-item" href="/incidents.html">Incidents</a>
+                <span class="menu-item">
+                    Log
+                    <ul>
+                        <li><a href="/log.csv" type="text/csv">csv</a></li>
+                        <li><a href="/log.tsv" type="text/tab-separated-values">tsv</a></li>
+                        <li><a href="/log.json" type="application/json">json</a></li>
+                    </ul>
+                </span>
+            </nav>
+        </header>
+
+        <main>
+{{ block "body" . }}{{ end }}
+        </main>{{ block "footer" . }}
+
+        <footer>
+            <span>Reported by Ayd (<time>{{ .ReportedAt | time2str }}</time>)</span>
+        </footer>{{ end }}
+    </body>
+</html>

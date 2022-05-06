@@ -16,7 +16,7 @@ import (
 
 const (
 	PROBE_HISTORY_LEN    = 40
-	INCIDENT_HISTORY_LEN = 10
+	INCIDENT_HISTORY_LEN = 20
 )
 
 var (
@@ -158,7 +158,7 @@ func (s *Store) ProbeHistory() []api.ProbeHistory {
 	var result []api.ProbeHistory
 	for _, x := range s.probeHistory {
 		if x.isActive() {
-			result = append(result, x.MakeReport())
+			result = append(result, x.MakeReport(PROBE_HISTORY_LEN))
 		}
 	}
 
@@ -394,7 +394,7 @@ func (s *Store) Errors() (healthy bool, messages []string) {
 
 // MakeReport creates ayd.Report for exporting for endpoint.
 // The result includes only information about active targets.
-func (s *Store) MakeReport() api.Report {
+func (s *Store) MakeReport(probeHistoryLength int) api.Report {
 	s.historyLock.RLock()
 	defer s.historyLock.RUnlock()
 
@@ -418,7 +418,7 @@ func (s *Store) MakeReport() api.Report {
 
 	for k, v := range s.probeHistory {
 		if v.isActive() {
-			report.ProbeHistory[k] = v.MakeReport()
+			report.ProbeHistory[k] = v.MakeReport(probeHistoryLength)
 		}
 	}
 

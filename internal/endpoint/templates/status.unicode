@@ -1,7 +1,7 @@
 ───────────────────────────────┤ Current Status ├───────────────────────────────
 {{ range .ProbeHistory | sort_history }}
 ┌─ {{ .Target | url_unescape }}
-└{{ range .Records | pad_records }}-{{ end }}{{ range .Records }}{{
+└{{ range .Records | pad_records 40 }}-{{ end }}{{ range .Records }}{{
     if .Status | is_unknown }}━{{ end }}{{
     if .Status | is_aborted }}─{{ end }}{{
     if .Status | is_failure }}!{{ end }}{{
@@ -21,7 +21,7 @@
     end
           }} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳
 ┃{{ printf "%-78s" (.Target | url_unescape)                                  }}┃
-┃ {{ printf "%-77s" (printf "%s - continue" (.CausedAt | time2str))          }}┃
+┃ {{ printf "%-77s" (printf "%s - on going" (.CausedAt | time2str))          }}┃
 ┃                                                                              ┃{{ range (break_text .Message 78) }}
 ┃{{ printf "%-78s" .                                                         }}┃{{ end }}
 ┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┻
@@ -46,4 +46,4 @@
 {{ end }}
 
                          ──────────────────────────────
-{{ align_center (printf "Reported by Ayd? (%s)" (.ReportedAt | time2str)) 80 }}
+{{ align_center (printf "Reported by Ayd (%s)" (.ReportedAt | time2str)) 80 }}

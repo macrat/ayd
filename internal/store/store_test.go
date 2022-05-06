@@ -630,7 +630,7 @@ func TestStore_MakeReport(t *testing.T) {
 	assert := func(targetCount, currentIncidentCount, incidentHistoryCount int) {
 		t.Helper()
 
-		r := s.MakeReport()
+		r := s.MakeReport(store.PROBE_HISTORY_LEN)
 
 		if len(r.ProbeHistory) != targetCount {
 			t.Errorf("unexpected target count in the report: %d != %d", len(r.ProbeHistory), targetCount)
@@ -703,6 +703,6 @@ func BenchmarkStore_MakeReport(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		s.MakeReport()
+		s.MakeReport(store.PROBE_HISTORY_LEN)
 	}
 }

@@ -16,10 +16,15 @@ type probeHistory struct {
 	sources []string
 }
 
-func (ph probeHistory) MakeReport() api.ProbeHistory {
+func (ph probeHistory) MakeReport(length int) api.ProbeHistory {
+	l := len(ph.Records) - length
+	if l < 0 {
+		l = 0
+	}
+
 	r := api.ProbeHistory{
 		Target:  ph.Target,
-		Records: ph.Records,
+		Records: ph.Records[l:],
 	}
 
 	if len(ph.Records) > 0 {

@@ -51,7 +51,7 @@ func (d DummyErrorsGetter) Targets() []string {
 	return nil
 }
 
-func (d DummyErrorsGetter) MakeReport() api.Report {
+func (d DummyErrorsGetter) MakeReport(length int) api.Report {
 	return api.Report{}
 }
 
