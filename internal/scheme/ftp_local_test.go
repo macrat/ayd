@@ -13,6 +13,6 @@ func TestFTPProbe_local(t *testing.T) {
 	t.Parallel()
 
 	AssertProbe(t, []ProbeTest{
-		{"ftp://of-course-no-such-host.local:21021/", api.StatusUnknown, `lookup of-course-no-such-host.local: not found(| on .+)`, ""},
+		{"ftp://of-course-no-such-host.local:21021/", api.StatusUnknown, `lookup of-course-no-such-host.local: .+`, ""},
 	}, 5)
 }
