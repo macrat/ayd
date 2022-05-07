@@ -86,6 +86,7 @@ Ayd has these pages/endpoints.
 | [/status.txt](http://localhost:9000/status.txt)      | Human friendly status page in plain text.                            |
 | [/status.json](http://localhost:9000/status.json)    | Machine readable status page in JSON format.                         |
 | [/incidents.html](http://localhost:9000/status.html) | Human friendly incident history page in HTML.                        |
+| [/incidents.rss](http://localhost:9000/status.rss)   | Incident history feed in RSS 2.0 format.                             |
 | [/log.tsv](http://localhost:9000/log.tsv)            | Raw log file in TSV format.                                          |
 | [/log.csv](http://localhost:9000/log.tsv)            | Raw log file in CSV format.                                          |
 | [/log.json](http://localhost:9000/log.json)          | Raw log file in JSON format.                                         |

@@ -43,3 +43,37 @@ func TestIncidentsHTMLEndpoint(t *testing.T) {
 		t.Errorf(diff)
 	}
 }
+
+func TestIncidentsRSSEndpoint(t *testing.T) {
+	srv := testutil.StartTestServer(t)
+	defer srv.Close()
+
+	if resp, err := srv.Client().Get(srv.URL + "/incidents.rss"); err != nil {
+		t.Errorf("failed to get /incidents.rss: %s", err)
+	} else if resp.StatusCode != http.StatusOK {
+		t.Errorf("unexpected status: %s", resp.Status)
+	}
+
+	resp, err := srv.Client().Get(srv.URL + "/incidents.rss")
+
+	if err != nil {
+		t.Errorf("failed to get /incidents.rss: %s", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("unexpected status: %s", resp.Status)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatalf("failed to read body: %s", err)
+	}
+
+	result := string(body)
+	result = strings.Replace(result, regexp.MustCompile(`<pubDate>.+</pubDate>`).FindString(result), "<pubDate>-- CURRENT TIME MASKED --</pubDate>", 1)
+	result = strings.ReplaceAll(result, "\r\n", "\n")
+
+	if diff := cmp.Diff(readTestFile(t, "./testdata/incidents.rss"), result); diff != "" {
+		t.Errorf(diff)
+	}
+}

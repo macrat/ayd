@@ -88,6 +88,9 @@ var (
 		"time2str": func(t time.Time) string {
 			return t.Format(time.RFC3339)
 		},
+		"time2rfc822": func(t time.Time) string {
+			return t.Format(time.RFC822)
+		},
 		"url_unescape": func(u *url.URL) string {
 			s, err := url.PathUnescape(u.String())
 			if err != nil {

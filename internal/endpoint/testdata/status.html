@@ -40,27 +40,35 @@ main, nav {
     box-sizing: border-box;
 }
 
-a.menu-item, .menu-item a {
+nav a {
     text-decoration: none;
     color: inherit;
 }
-a.menu-item:hover, .menu-item a:hover {
+nav a:hover {
     text-decoration: underline;
 }
-.menu-item {
+nav > a, .site-menu > li {
     margin: 0 8px;
+}
+.site-menu {
+    margin: 0;
+}
+.site-menu, .site-menu > li {
+    display: inline;
+    padding: 0;
 }
 .logo {
     font-weight: bold;
 }
-.menu-item ul, .menu-item li {
+.menu-types, .menu-types > li {
     display: inline;
     margin: 0;
     padding: 0;
+    font-size: 80%;
 }
-.menu-item li:first-child::before { content: '(' }
-.menu-item li::after { content: ', ' }
-.menu-item li:last-child::after { content: ')' }
+.menu-types > li:first-child::before { content: '(' }
+.menu-types > li::after { content: ', ' }
+.menu-types > li:last-child::after { content: ')' }
 
 .icon-definition {
     display: none;
@@ -281,17 +289,32 @@ footer span {
 
         <header>
             <nav>
-                <a class="menu-item logo" href="/status.html">Ayd?</a>
-                <a class="menu-item" href="/status.html">Status</a>
-                <a class="menu-item" href="/incidents.html">Incidents</a>
-                <span class="menu-item">
-                    Log
-                    <ul>
-                        <li><a href="/log.csv" type="text/csv">csv</a></li>
-                        <li><a href="/log.tsv" type="text/tab-separated-values">tsv</a></li>
-                        <li><a href="/log.json" type="application/json">json</a></li>
-                    </ul>
-                </span>
+                <a class="logo" href="/status.html">Ayd?</a>
+                <ul class="site-menu">
+                    <li>
+                        <a href="/status.html">Status</a>
+                        <ul class="menu-types">
+                            <li><a href="/status.html" type="text/html">HTML</a></li>
+                            <li><a href="/status.txt" type="text/plain">text</a></li>
+                            <li><a href="/status.json" type="application/json">json</a></li>
+                        </ul>
+                    </li>
+                    <li>
+                        <a href="/incidents.html">Incidents</a>
+                        <ul class="menu-types">
+                            <li><a href="/incidents.html" type="text/html">HTML</a></li>
+                            <li><a href="/incidents.rss" type="application/rss+xml">RSS</a></li>
+                        </ul>
+                    </li>
+                    <li>
+                        <a href="/log.csv" type="text/csv">Log</a>
+                        <ul class="menu-types">
+                            <li><a href="/log.csv" type="text/csv">CSV</a></li>
+                            <li><a href="/log.tsv" type="text/tab-separated-values">TSV</a></li>
+                            <li><a href="/log.json" type="application/json">json</a></li>
+                        </ul>
+                    </span>
+                </li>
             </nav>
         </header>
 

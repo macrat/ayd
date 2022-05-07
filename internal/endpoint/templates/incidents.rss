@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+
+<rss version="2.0">
+    <channel>
+        <title>Ayd incident history</title>
+        {{- if .ExternalURL }}<link>{{ .ExternalURL }}</link>{{ end }}
+        <description>Incident history that Ayd status monitoring tool detected.</description>
+        <docs>https://github.com/macrat/ayd#readme</docs>
+        <pubDate>{{ .Report.ReportedAt | time2rfc822 }}</pubDate>
+{{ range .Report.CurrentIncidents }}
+        <item>
+            <guid isPermaLink="false">TODO</guid>
+            <pubDate>{{ .CausedAt | time2rfc822 }}</pubDate>
+            <title>[{{ .Status }}] {{ .Target | url_unescape }}</title>
+            <category domain="status">on going</category>
+            <category domain="kind">{{ .Status | to_lower }}</category>
+            <link>{{ .Target }}</link>
+            <description><![CDATA[<b>target:</b> {{ .Target | url_unescape }}<br />
+<b>status:</b> {{ .Status }}<br />
+<b>period:</b> {{ .CausedAt | time2str }} - on going{{ if .Message }}<br />
+<br />
+<pre>{{ .Message }}</pre>{{ end }}]]></description>
+        </item>{{ end }}{{ range .Report.IncidentHistory }}
+        <item>
+            <guid isPermaLink="false">TODO</guid>
+            <pubDate>{{ .CausedAt | time2rfc822 }}</pubDate>
+            <title>[RESOLVED] {{ .Target | url_unescape }}</title>
+            <category domain="status">resolved</category>
+            <category domain="kind">{{ .Status | to_lower }}</category>
+            <link>{{ .Target }}</link>
+            <description><![CDATA[<b>target:</b> {{ .Target | url_unescape }}<br />
+<b>status:</b> {{ .Status }}<br />
+<b>period:</b> {{ .CausedAt | time2str }} - {{ .ResolvedAt | time2str }}{{ if .Message }}<br />
+<br />
+<pre>{{ .Message }}</pre>{{ end }}]]></description>
+        </item>{{ end }}
+    </channel>
+</rss>
