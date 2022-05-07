@@ -29,8 +29,8 @@ func NewDummyScheme(u *url.URL) (DummyScheme, error) {
 	switch s.target.Opaque {
 	case "", "healthy":
 		s.status = api.StatusHealthy
-	case "debased":
-		s.status = api.StatusDebased
+	case "degrade":
+		s.status = api.StatusDegrade
 	case "failure":
 		s.status = api.StatusFailure
 	case "aborted":
@@ -40,7 +40,7 @@ func NewDummyScheme(u *url.URL) (DummyScheme, error) {
 	case "random":
 		s.random = true
 	default:
-		return DummyScheme{}, errors.New("opaque must healthy, debased, failure, aborted, unknown, or random")
+		return DummyScheme{}, errors.New("opaque must healthy, degrade, failure, aborted, unknown, or random")
 	}
 
 	query := url.Values{}
@@ -71,7 +71,7 @@ func (s DummyScheme) Status() api.Status {
 
 	return []api.Status{
 		api.StatusHealthy,
-		api.StatusDebased,
+		api.StatusDegrade,
 		api.StatusFailure,
 		api.StatusUnknown,
 	}[rand.Intn(4)]

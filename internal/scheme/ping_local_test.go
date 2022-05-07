@@ -186,7 +186,7 @@ func TestPingResultToRecord(t *testing.T) {
 		},
 		{
 			aliveCtx,
-			&url.URL{Scheme: "dummy-ping", Opaque: "debased"},
+			&url.URL{Scheme: "dummy-ping", Opaque: "degrade"},
 			time.Now().Add(-20 * time.Second),
 			pinger.Result{
 				Target: &net.IPAddr{net.IPv4(127, 3, 2, 1), ""},
@@ -198,7 +198,7 @@ func TestPingResultToRecord(t *testing.T) {
 				MaxRTT: 3456 * time.Microsecond,
 			},
 			"ip=127.3.2.1 rtt(min/avg/max)=1.23/2.35/3.46 send/recv=3/2",
-			api.StatusDebased,
+			api.StatusDegrade,
 		},
 		{
 			cancelCtx,

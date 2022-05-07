@@ -8,9 +8,9 @@ const (
 	// StatusHealthy means success to status check and the target is HEALTHY.
 	StatusHealthy
 
-	// StatusDebased means success to status check and the target is worked but partially features or stability is DEBASED.
+	// StatusDegrade means success to status check and the target is worked but partially features or stability is DEGRADE.
 	// System administrators have to do something action to the target system when this status, but might not urgency.
-	StatusDebased
+	StatusDegrade
 
 	// StatusFailure means the target is in FAILURE, but status check is success.
 	// System administrators have to do something action to the target system when this status.
@@ -31,8 +31,8 @@ func ParseStatus(raw string) Status {
 	switch raw {
 	case "HEALTHY":
 		return StatusHealthy
-	case "DEBASED":
-		return StatusDebased
+	case "DEGRADE":
+		return StatusDegrade
 	case "FAILURE":
 		return StatusFailure
 	case "ABORTED":
@@ -56,8 +56,8 @@ func (s Status) String() string {
 	switch s {
 	case StatusHealthy:
 		return "HEALTHY"
-	case StatusDebased:
-		return "DEBASED"
+	case StatusDegrade:
+		return "DEGRADE"
 	case StatusFailure:
 		return "FAILURE"
 	case StatusAborted:

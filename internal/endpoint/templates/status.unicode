@@ -5,7 +5,7 @@
     if .Status | is_unknown }}━{{ end }}{{
     if .Status | is_aborted }}─{{ end }}{{
     if .Status | is_failure }}!{{ end }}{{
-    if .Status | is_debased }}!{{ end }}{{
+    if .Status | is_degrade }}!{{ end }}{{
     if .Status | is_healthy }}✓{{ end }}{{ end }}┤  updated: {{ if .Updated }}{{ .Updated | time2str }}{{ else }}(not yet){{ end }}
 {{ end }}
 
@@ -14,8 +14,8 @@
 ┳━ {{
     if .Status | is_failure
  }}!FAILURE!{{ end }}{{
-    if .Status | is_debased
- }}!DEBASED!{{ end }}{{
+    if .Status | is_degrade
+ }}!DEGRADE!{{ end }}{{
     if .Status | is_unknown
  }}━UNKNOWN━{{
     end
@@ -32,8 +32,8 @@
 ┌─ {{
     if .Status | is_failure
  }}!FAILURE!{{ end }}{{
-    if .Status | is_debased
- }}!DEBASED!{{ end }}{{
+    if .Status | is_degrade
+ }}!DEGRADE!{{ end }}{{
     if .Status | is_unknown
  }}━UNKNOWN━{{
     end

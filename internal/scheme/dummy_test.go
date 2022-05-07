@@ -15,14 +15,14 @@ func TestDummyScheme_Probe(t *testing.T) {
 	AssertProbe(t, []ProbeTest{
 		{"dummy:", api.StatusHealthy, ``, ""},
 		{"dummy:healthy", api.StatusHealthy, ``, ""},
-		{"dummy:debased", api.StatusDebased, ``, ""},
+		{"dummy:degrade", api.StatusDegrade, ``, ""},
 		{"dummy:failure", api.StatusFailure, ``, ""},
 		{"dummy:aborted", api.StatusAborted, ``, ""},
 		{"dummy:unknown", api.StatusUnknown, ``, ""},
 		{"dummy:healthy?message=hello+world", api.StatusHealthy, `hello world`, ""},
 		{"dummy:healthy#something-comment", api.StatusHealthy, ``, ""},
 
-		{"dummy:unknown-status", api.StatusUnknown, ``, `opaque must healthy, debased, failure, aborted, unknown, or random`},
+		{"dummy:unknown-status", api.StatusUnknown, ``, `opaque must healthy, degrade, failure, aborted, unknown, or random`},
 		{"dummy:?latency=1ms", api.StatusHealthy, ``, ""},
 		{"dummy:?latency=1", api.StatusUnknown, ``, `time: missing unit in duration "1"`},
 		{"dummy:?latency=1kb", api.StatusUnknown, ``, `time: unknown unit "kb" in duration "1kb"`},
@@ -38,7 +38,7 @@ func TestDummyScheme_Probe(t *testing.T) {
 				switch r.Status {
 				case api.StatusHealthy:
 					h++
-				case api.StatusDebased:
+				case api.StatusDegrade:
 					d++
 				case api.StatusFailure:
 					f++
@@ -53,7 +53,7 @@ func TestDummyScheme_Probe(t *testing.T) {
 		}
 
 		if d < 150 || 250 < d {
-			t.Errorf("number of debased records was out of expected range: %d", f)
+			t.Errorf("number of degrade records was out of expected range: %d", f)
 		}
 
 		if f < 150 || 250 < f {

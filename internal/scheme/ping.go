@@ -170,7 +170,7 @@ func pingResultToRecord(ctx context.Context, target *url.URL, startTime time.Tim
 	case result.Recv == 0:
 		rec.Status = api.StatusFailure
 	default:
-		rec.Status = api.StatusDebased
+		rec.Status = api.StatusDegrade
 	}
 
 	if ctx.Err() == context.Canceled {

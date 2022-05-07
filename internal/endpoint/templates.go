@@ -72,8 +72,8 @@ var (
 		"is_failure": func(s api.Status) bool {
 			return s == api.StatusFailure
 		},
-		"is_debased": func(s api.Status) bool {
-			return s == api.StatusDebased
+		"is_degrade": func(s api.Status) bool {
+			return s == api.StatusDegrade
 		},
 		"is_healthy": func(s api.Status) bool {
 			return s == api.StatusHealthy
