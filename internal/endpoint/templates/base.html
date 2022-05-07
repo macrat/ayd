@@ -10,7 +10,7 @@
             <time aria-label="since {{ .CausedAt | time2str }}">{{ .CausedAt | time2str }}</time>
             <span aria-hidden="true">-</span>
             {{ if .ResolvedAt.IsZero -}}
-                on going
+                ongoing
             {{- else -}}
                 <time aria-label="until {{ .ResolvedAt | time2str }}">{{ .ResolvedAt | time2str }}</time>
             {{- end }}

@@ -154,33 +154,33 @@ section.status {
 {{ end }}{{/* </style> */}}
 
 {{ define "body" }}
-    <article class="overview">{{ with .ProbeHistory | calculate_summary }}
+    <article class="overview" aria-label="overview">{{ with .ProbeHistory | calculate_summary }}
         <ul>{{ range .}}
             <li style="flex: 1 1 {{ .Percent }}%">
                 {{ .Status | to_camel }}
                 <span class="percent">{{ printf "%.0f%%" .Percent}}</span>
             </li>{{ end }}
         </ul>
-        <svg class="summary-plot" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 1" preserveAspectRatio="none">{{ range . }}
+        <svg class="summary-plot" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 1" preserveAspectRatio="none" aria-hidden="true">{{ range . }}
             <rect x="{{ .Cumulative }}" width="{{ .Percent }}" height="1" class="{{ .Status | to_lower }}" />{{ end }}
         </svg>
     {{ end }}</article>
 
-    <article class="status">{{ range .ProbeHistory | sort_history }}
+    <article class="status" aria-label="Current status">{{ range .ProbeHistory | sort_history }}
         <section class="status {{ .Status | to_lower }}">
             <h1 aria-label="'{{ .Target | url_unescape }}' is currently {{ .Status | to_lower }}">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#{{ .Status | to_lower }}-icon" /></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#{{ .Status | to_lower }}-icon" /></svg>
                 {{- .Target | url_unescape }}
             </h1>
             <figure class="status-bar">{{ range .Records | pad_records 20 }}
                 <span class="status-bit no-data" title="no data">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#no-data-icon" /></svg>
                 </span>{{ end }}{{ range .Records }}
                 <span class="status-bit {{ .Status | to_lower }}" title="{{ printf "%s\n%s in %s\n\n%s" (.CheckedAt | time2str) (.Status | to_lower) .Latency .Message }}">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#{{ .Status | to_lower }}-icon" /></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#{{ .Status | to_lower }}-icon" /></svg>
                 </span>{{ end }}
 
-                <svg class="latency-plot" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 1" preserveAspectRatio="none">
+                <svg class="latency-plot" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 1" preserveAspectRatio="none" aria-hidden="true">
                     <path d="{{ .Records | latency_graph }}" />
                 </svg>
             </figure>
@@ -188,7 +188,7 @@ section.status {
         </section>{{ end }}
     </article>
 
-    <article>{{ range .CurrentIncidents | invert_incidents }}
+    <article aria-label="Current incidents">{{ range .CurrentIncidents | invert_incidents }}
         {{ template "incident" . }}{{ end }}
     </article>
 {{ end }}

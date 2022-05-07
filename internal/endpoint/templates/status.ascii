@@ -21,7 +21,7 @@
     end
           }} ------------------------------------------------------------------+
 |{{ printf "%-78s" (.Target | url_unescape)                                  }}|
-| {{ printf "%-77s" (printf "%s - on going" (.CausedAt | time2str))          }}|
+| {{ printf "%-77s" (printf "%s - ongoing" (.CausedAt | time2str))           }}|
 |                                                                              |{{ range (break_text .Message 78) }}
 |{{ printf "%-78s" .                                                         }}|{{ end }}
 +------------------------------------------------------------------------------+

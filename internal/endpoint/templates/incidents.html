@@ -36,13 +36,13 @@ hr {
         <span>no incident recorded</span>
     </div>
 {{ else }}
-    <article>{{ range .CurrentIncidents | invert_incidents }}
+    <article aria-label="Ongoing incidents">{{ range .CurrentIncidents | invert_incidents }}
         {{ template "incident" . }}{{ end }}
     </article>
 
     {{ if and .CurrentIncidents .IncidentHistory }}<hr />{{ end }}
 
-    <article>{{ range .IncidentHistory | invert_incidents }}
+    <article aria-label="Resolved incidents">{{ range .IncidentHistory | invert_incidents }}
         {{ template "incident" . }}{{ end }}
     </article>
 {{ end }}{{ end }}
