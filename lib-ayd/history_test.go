@@ -126,7 +126,7 @@ func TestSortProbeHistories(t *testing.T) {
 
 	s := strings.Join(ss, ",")
 
-	want := "a:4,b:1,a:1,a:2,a:3,b:2"
+	want := "a:4,b:1,b:2,a:2,a:3,a:1"
 	if s != want {
 		t.Errorf("unexpected sorted result:\nexpected: %s\n but got: %s", want, s)
 	}

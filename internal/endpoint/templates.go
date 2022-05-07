@@ -141,17 +141,10 @@ var (
 			}
 			sort.Slice(result, func(i, j int) bool {
 				x, y := result[i], result[j]
-				switch {
-				case x.Percent != y.Percent:
-					return x.Percent > y.Percent
-				case x.Status == y.Status:
-					return false
-				case x.Status == api.StatusUnknown:
-					return false
-				case y.Status == api.StatusUnknown:
-					return true
-				default:
+				if x.Percent == y.Percent {
 					return x.Status < y.Status
+				} else {
+					return x.Percent > y.Percent
 				}
 			})
 			var sum float32 = 0.0

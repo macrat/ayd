@@ -73,28 +73,17 @@ func (xs byLatestStatus) Len() int {
 	return len(xs)
 }
 
-func statusTier(p ProbeHistory) int {
-	if len(p.Records) == 0 {
-		return 1
-	}
-	switch p.Status {
-	case StatusFailure, StatusUnknown:
-		return 0
-	default:
-		return 1
-	}
-}
-
 func (xs byLatestStatus) Less(i, j int) bool {
-	iTier := statusTier(xs[i])
-	jTier := statusTier(xs[j])
-	if iTier < jTier {
-		return true
-	} else if iTier > jTier {
+	switch {
+	case len(xs[i].Records) == 0 && len(xs[j].Records) > 0:
 		return false
+	case len(xs[i].Records) > 0 && len(xs[j].Records) == 0:
+		return true
+	case xs[i].Status != xs[j].Status:
+		return xs[i].Status < xs[j].Status
+	default:
+		return strings.Compare(xs[i].Target.Redacted(), xs[j].Target.Redacted()) < 0
 	}
-
-	return strings.Compare(xs[i].Target.Redacted(), xs[j].Target.Redacted()) < 0
 }
 
 func (xs byLatestStatus) Swap(i, j int) {
