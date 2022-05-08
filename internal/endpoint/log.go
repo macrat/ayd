@@ -152,7 +152,7 @@ func newLogScannerForEndpoint(s Store, r *http.Request) (scanner LogScanner, sta
 	var invalidQueries []string
 	var errors []string
 
-	since, err := getTimeQuery(qs, "since", time.Now().Add(-7*14*time.Hour))
+	since, err := getTimeQuery(qs, "since", time.Now().Add(-7*24*time.Hour))
 	if err != nil {
 		invalidQueries = append(invalidQueries, "since")
 		errors = append(errors, err.Error())
