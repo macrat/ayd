@@ -1,27 +1,8 @@
 <!DOCTYPE html>
 
-{{define "incident" }}
-    <section class="incident">
-        <h1>
-            <span class="incident-status {{ .Status | to_lower }}">{{ .Status }}</span>
-            <span class="target" aria-label="incident of '{{ .Target | url_unescape }}'">{{ .Target | url_unescape }}</span>
-        </h1>
-        <div class="period">
-            <time aria-label="since {{ .CausedAt | time2str }}">{{ .CausedAt | time2str }}</time>
-            <span aria-hidden="true">-</span>
-            {{ if .ResolvedAt.IsZero -}}
-                ongoing
-            {{- else -}}
-                <time aria-label="until {{ .ResolvedAt | time2str }}">{{ .ResolvedAt | time2str }}</time>
-            {{- end }}
-        </div>{{ if .Message }}
-        <pre class="message">{{ .Message }}</pre>{{ end }}
-    </section>
-{{ end -}}
-
 <html lang=en>
     <head>
-        <title>Ayd {{ block "title" . }}{{ end }}</title>
+        <title>Ayd log</title>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width,initial-scale=1" />
 <style>
@@ -101,7 +82,7 @@ section {
     margin: 4px;
     padding: 12px 16px;
     border-radius: 4px;
-    /*background-color: rgba(var(--fg), .01);*/
+     
     border: 1px solid rgba(var(--fg), .2);
 }
 
@@ -133,7 +114,56 @@ h1 {
     padding: 16px 12px;
 }
 
-{{ block "style" . }}{{ end }}
+
+main {
+    box-sizing: border-box;
+}
+article {
+    overflow: auto;
+}
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 2rem;
+}
+th, td {
+    border-right: 1px solid rgba(var(--fg), .1);
+}
+td:last-child {
+    border-right: none;
+}
+tbody td {
+    padding: .5em;
+    border-bottom: 1px solid rgba(var(--fg), .2);
+}
+tbody tr:last-child td {
+    border-bottom: none;
+}
+input {
+    max-width: 100%;
+}
+
+td.status::before {
+    content: '';
+    display: inline-block;
+    width: .5em;
+    height: 1em;
+}
+td.aborted::before { background-color: rgb(var(--bg)) }
+td.degrade::before { background-color: rgb(var(--degrade)) }
+td.failure::before { background-color: rgb(var(--failure)) }
+td.healthy::before { background-color: rgb(var(--healthy)) }
+td.unknown::before { background-color: rgb(var(--fg)) }
+
+.latency {
+    text-align: right;
+}
+
+.target, .message {
+    font-family: monospace;
+    white-space: pre-wrap;
+}
+
 
 footer {
     margin: 2rem 0;
@@ -188,11 +218,114 @@ footer span {
         </header>
 
         <main>
-{{ block "body" . }}{{ end }}
-        </main>{{ block "footer" . }}
 
-        <footer>
-            <span>Reported by Ayd (<time>{{ .ReportedAt | time2str }}</time>)</span>
-        </footer>{{ end }}
+    <article style="text-align: center">
+        <form>
+            <div>
+                <input id="since-date" type="date" value="2021-01-01" aria-label="since date" /><input id="since-time" type="time" value="00:00" aria-label="since time" />
+                -
+                <input id="until-date" type="date" value="2021-01-03" aria-label="until date" /><input id="until-time" type="time" value="00:00" aria-label="until time" />
+                <input id="since" type="hidden" name="since" value="2021-01-01T00:00:00Z" />
+                <input id="until" type="hidden" name="until" value="2021-01-03T00:00:00Z" />
+            </div>
+            <div>
+                <label>keywords: <input name="query" size="40" value="" /></label>
+                <button type="submit">search</button>
+            </div>
+        </form>
+    </article>
+    <article>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 25ex">timestamp</th>
+                    <th style="width: 7em">status</th>
+                    <th>latency</th>
+                    <th>target</th>
+                    <th>message</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>2021-01-02T15:04:09Z</td>
+                    <td class="status unknown">UNKNOWN</td>
+                    <td class="latency">2.345ms</td>
+                    <td class="target">http://c.example.com</td>
+                    <td class="message">this is unknown</td>
+                </tr>
+                <tr>
+                    <td>2021-01-02T15:04:08Z</td>
+                    <td class="status aborted">ABORTED</td>
+                    <td class="latency">1.234ms</td>
+                    <td class="target">http://c.example.com</td>
+                    <td class="message">this is aborted</td>
+                </tr>
+                <tr>
+                    <td>2021-01-02T15:04:07Z</td>
+                    <td class="status healthy">HEALTHY</td>
+                    <td class="latency">345.678ms</td>
+                    <td class="target">http://a.example.com</td>
+                    <td class="message">hello world!!</td>
+                </tr>
+                <tr>
+                    <td>2021-01-02T15:04:06Z</td>
+                    <td class="status healthy">HEALTHY</td>
+                    <td class="latency">54.321ms</td>
+                    <td class="target">http://b.example.com</td>
+                    <td class="message">this is healthy</td>
+                </tr>
+                <tr>
+                    <td>2021-01-02T15:04:06Z</td>
+                    <td class="status healthy">HEALTHY</td>
+                    <td class="latency">234.567ms</td>
+                    <td class="target">http://a.example.com</td>
+                    <td class="message">hello world!</td>
+                </tr>
+                <tr>
+                    <td>2021-01-02T15:04:05Z</td>
+                    <td class="status failure">FAILURE</td>
+                    <td class="latency">12.345ms</td>
+                    <td class="target">http://b.example.com</td>
+                    <td class="message">this is failure</td>
+                </tr>
+                <tr>
+                    <td>2021-01-02T15:04:05Z</td>
+                    <td class="status healthy">HEALTHY</td>
+                    <td class="latency">123.456ms</td>
+                    <td class="target">http://a.example.com</td>
+                    <td class="message">hello world</td>
+                </tr>
+            </tbody>
+        </table>
+    </article>
+
+    <script>
+const tzMinutes = -(new Date().getTimezoneOffset());
+const tz = tzMinutes === 0 ? (
+    'Z'
+) : (
+    (tzMinutes > 0 ? '+' : '') + `${Math.floor(tzMinutes/60)}`.padStart(2, '0') + ':' + `${tzMinutes%60}`.padStart(2, '0')
+);
+
+[[
+    document.getElementById('since'),
+    [document.getElementById('since-date'), document.getElementById('since-time')],
+], [
+    document.getElementById('since'),
+    [document.getElementById('until-date'), document.getElementById('until-time')],
+]].forEach(([output, [date, time]]) => {
+    [date, time].forEach((elm) => elm.addEventListener('change', () => {
+        if (!date.value) {
+            output.value = '';
+        } else if (!time.value) {
+            output.value = date.value + 'T00:00:00' +  tz;
+        } else {
+            output.value = date.value + 'T' + time.value +':00' +  tz;
+        }
+    }));
+});
+    </script>
+
+        </main>
     </body>
 </html>

@@ -15,14 +15,7 @@ func TestIncidentsHTMLEndpoint(t *testing.T) {
 	srv := testutil.StartTestServer(t)
 	defer srv.Close()
 
-	if resp, err := srv.Client().Get(srv.URL + "/incidents.html"); err != nil {
-		t.Errorf("failed to get /incidents.html: %s", err)
-	} else if resp.StatusCode != http.StatusOK {
-		t.Errorf("unexpected status: %s", resp.Status)
-	}
-
 	resp, err := srv.Client().Get(srv.URL + "/incidents.html")
-
 	if err != nil {
 		t.Errorf("failed to get /incidents.html: %s", err)
 	}
@@ -48,14 +41,7 @@ func TestIncidentsRSSEndpoint(t *testing.T) {
 	srv := testutil.StartTestServer(t)
 	defer srv.Close()
 
-	if resp, err := srv.Client().Get(srv.URL + "/incidents.rss"); err != nil {
-		t.Errorf("failed to get /incidents.rss: %s", err)
-	} else if resp.StatusCode != http.StatusOK {
-		t.Errorf("unexpected status: %s", resp.Status)
-	}
-
 	resp, err := srv.Client().Get(srv.URL + "/incidents.rss")
-
 	if err != nil {
 		t.Errorf("failed to get /incidents.rss: %s", err)
 	}

@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/macrat/ayd/internal/endpoint"
 	"github.com/macrat/ayd/internal/store"
 	"github.com/macrat/ayd/internal/testutil"
@@ -105,7 +106,7 @@ func TestLogScanner(t *testing.T) {
 			},
 		},
 		{
-			"LogFilter",
+			"LogFilter-target",
 			func(since, until time.Time) endpoint.LogScanner {
 				f := io.NopCloser(strings.NewReader(strings.Join([]string{
 					"2000-01-01T13:02:03Z\tHEALTHY\t0.123\tdummy:healthy#1\tfirst",
@@ -118,6 +119,25 @@ func TestLogScanner(t *testing.T) {
 				return endpoint.LogFilter{
 					endpoint.NewLogReaderFromReader(f, since, until),
 					[]string{"dummy:healthy#1", "dummy:healthy#2"},
+					nil,
+				}
+			},
+		},
+		{
+			"LogFilter-query",
+			func(since, until time.Time) endpoint.LogScanner {
+				f := io.NopCloser(strings.NewReader(strings.Join([]string{
+					"2000-01-01T13:02:03Z\tHEALTHY\t0.123\tdummy:healthy#1\tfirst",
+					"2000-01-02T13:02:03Z\tHEALTHY\t0.123\tdummy:healthy#1\tsecond",
+					"2000-01-02T13:02:03Z\tFAILURE\t0.123\tdummy:failure\tanother",
+					"2000-01-03T13:02:03Z\tHEALTHY\t0.123\tdummy:healthy#2\tlast",
+					"2000-01-04T13:02:03Z\tFAILURE\t0.123\tdummy:failure\tanother",
+				}, "\n")))
+
+				return endpoint.LogFilter{
+					endpoint.NewLogReaderFromReader(f, since, until),
+					nil,
+					endpoint.Query{"healthy"},
 				}
 			},
 		},
@@ -145,6 +165,72 @@ func TestLogScanner(t *testing.T) {
 						}
 					}
 				})
+			}
+		})
+	}
+}
+
+func TestQuery(t *testing.T) {
+	tests := []struct {
+		Query  string
+		Record api.Record
+		Expect bool
+	}{
+		{
+			"dummy:healthy",
+			api.Record{
+				Target:  &url.URL{Scheme: "dummy", Opaque: "healthy"},
+				Message: "foobar",
+			},
+			true,
+		},
+		{
+			"dummy:",
+			api.Record{
+				Target:  &url.URL{Scheme: "dummy", Opaque: "healthy"},
+				Message: "foobar",
+			},
+			true,
+		},
+		{
+			"foo bar",
+			api.Record{
+				Target:  &url.URL{Scheme: "dummy", Opaque: "healthy"},
+				Message: "foobar",
+			},
+			true,
+		},
+		{
+			"healthy bar",
+			api.Record{
+				Target:  &url.URL{Scheme: "dummy", Opaque: "healthy"},
+				Message: "foobar",
+			},
+			true,
+		},
+		{
+			"healthy baz",
+			api.Record{
+				Target:  &url.URL{Scheme: "dummy", Opaque: "healthy"},
+				Message: "foobar",
+			},
+			false,
+		},
+		{
+			"failure bar",
+			api.Record{
+				Target:  &url.URL{Scheme: "dummy", Opaque: "healthy"},
+				Message: "foobar",
+			},
+			false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.Query, func(t *testing.T) {
+			result := endpoint.ParseQuery(tt.Query).Match(tt.Record)
+			if result != tt.Expect {
+				t.Errorf("expected %#v but got %#v", tt.Expect, result)
 			}
 		})
 	}
@@ -209,7 +295,7 @@ func TestLogTSVEndpoint(t *testing.T) {
 			"invalid-since-and-until",
 			"?since=invalid-since&until=invalid-until",
 			http.StatusBadRequest,
-			"invalid query format: since, until\n",
+			"invalid query format: until, since\n",
 		},
 	}
 
@@ -290,7 +376,7 @@ func TestLogJsonEndpoint(t *testing.T) {
 			"?since=invalid-since&until=invalid-until",
 			http.StatusBadRequest,
 			0,
-			"invalid query format: since, until",
+			"invalid query format: until, since",
 		},
 	}
 
@@ -399,7 +485,7 @@ func TestLogCSVEndpoint(t *testing.T) {
 			"invalid-since-and-until",
 			"?since=invalid-since&until=invalid-until",
 			http.StatusBadRequest,
-			"invalid query format: since, until\n",
+			"invalid query format: until, since\n",
 		},
 	}
 
@@ -429,5 +515,28 @@ func TestLogCSVEndpoint(t *testing.T) {
 				t.Errorf("body must match to %#v but got:\n%s", tt.Pattern, string(body))
 			}
 		})
+	}
+}
+
+func TestLogHTMLEndpoint(t *testing.T) {
+	srv := testutil.StartTestServer(t)
+	defer srv.Close()
+
+	resp, err := srv.Client().Get(srv.URL + "/log.html?since=2021-01-01T00%3A00%3A00Z&until=2021-01-03T00%3A00%3A00Z")
+	if err != nil {
+		t.Errorf("failed to get /: %s", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("unexpected status: %s", resp.Status)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatalf("failed to read body: %s", err)
+	}
+
+	if diff := cmp.Diff(readTestFile(t, "./testdata/log.html"), string(body)); diff != "" {
+		t.Errorf(diff)
 	}
 }

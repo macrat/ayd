@@ -87,6 +87,7 @@ Ayd has these pages/endpoints.
 | [/status.json](http://localhost:9000/status.json)    | Machine readable status page in JSON format.                         |
 | [/incidents.html](http://localhost:9000/status.html) | Human friendly incident history page in HTML.                        |
 | [/incidents.rss](http://localhost:9000/status.rss)   | Incident history feed in RSS 2.0 format.                             |
+| [/log.html](http://localhost:9000/log.html)          | Raw log data in HTML page.                                           |
 | [/log.tsv](http://localhost:9000/log.tsv)            | Raw log file in TSV format.                                          |
 | [/log.csv](http://localhost:9000/log.tsv)            | Raw log file in CSV format.                                          |
 | [/log.json](http://localhost:9000/log.json)          | Raw log file in JSON format.                                         |
@@ -108,14 +109,16 @@ examples:
 Be careful, the target URL or the message won't convert even if set `charset=ascii`. The response could include non-ascii text.
 
 
-#### Filter log entries in `/log.tsv`, `/log.csv`, and `/log.json`
+#### Filter log entries in `/log.html`, `/log.tsv`, `/log.csv`, and `/log.json`
 
-The log endpoints accept `since`, `until`, and `target` query to filtering log entries.
+The log endpoints accept `since`, `until`, `target`, and `query` query to filtering log entries.
 
 `since` and `until` is the queries to filtering by date-time, in RFC3339 format like `2001-02-03T16:05:06+09:00`.
 In default, Ayd replies logs that from 7 days ago to current time.
 
 And, `target` is the query to filtering by target URL.
+
+`query` is space delimited keywords for filtering by target URL or message text.
 
 examples:
 - <http://localhost:9000/log.tsv?since=2000-01-01T00:00:00Z&until=2001-01-01T00:00:00Z>: Reply is logs from 2000-01-01 to 2000-12-31.

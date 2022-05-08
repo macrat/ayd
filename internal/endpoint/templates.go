@@ -91,6 +91,9 @@ var (
 		"time2rfc822": func(t time.Time) string {
 			return t.Format(time.RFC822)
 		},
+		"latency2float": func(d time.Duration) float64 {
+			return float64(d.Microseconds()) / 1000.0
+		},
 		"url_unescape": func(u *url.URL) string {
 			s, err := url.PathUnescape(u.String())
 			if err != nil {

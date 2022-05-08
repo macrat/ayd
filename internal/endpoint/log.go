@@ -2,6 +2,7 @@ package endpoint
 
 import (
 	"bufio"
+	_ "embed"
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
@@ -146,32 +147,41 @@ func getTimeQuery(queries url.Values, name string, default_ time.Time) (time.Tim
 	return t, nil
 }
 
-func newLogScannerForEndpoint(s Store, r *http.Request) (scanner LogScanner, statusCode int, err error) {
+func getTimeQueries(s Store, scope string, r *http.Request, defaultPeriod time.Duration) (since, until time.Time, err error) {
 	qs := r.URL.Query()
 
 	var invalidQueries []string
 	var errors []string
 
-	until, err := getTimeQuery(qs, "until", time.Now())
+	until, err = getTimeQuery(qs, "until", time.Now())
 	if err != nil {
 		invalidQueries = append(invalidQueries, "until")
 		errors = append(errors, err.Error())
 	}
 
-	since, err := getTimeQuery(qs, "since", until.Add(-7*24*time.Hour))
+	since, err = getTimeQuery(qs, "since", until.Add(-defaultPeriod))
 	if err != nil {
 		invalidQueries = append(invalidQueries, "since")
 		errors = append(errors, err.Error())
 	}
 
 	if len(invalidQueries) > 0 {
-		handleError(s, "log.tsv", fmt.Errorf("%s", strings.Join(errors, "\n")))
-		return nil, http.StatusBadRequest, fmt.Errorf("invalid query format: %s", strings.Join(invalidQueries, ", "))
+		handleError(s, scope, fmt.Errorf("%s", strings.Join(errors, "\n")))
+		return since, until, fmt.Errorf("invalid query format: %s", strings.Join(invalidQueries, ", "))
+	}
+
+	return since, until, nil
+}
+
+func newLogScannerForEndpoint(s Store, scope string, r *http.Request) (scanner LogScanner, statusCode int, err error) {
+	since, until, err := getTimeQueries(s, scope, r, 7*24*time.Hour)
+	if err != nil {
+		return nil, http.StatusBadRequest, err
 	}
 
 	scanner, err = NewLogScanner(s, since, until)
 	if err != nil {
-		handleError(s, "log.tsv", fmt.Errorf("failed to open log: %w", err))
+		handleError(s, scope, fmt.Errorf("failed to open log: %w", err))
 		return nil, http.StatusInternalServerError, fmt.Errorf("internal server error")
 	}
 
@@ -181,18 +191,70 @@ func newLogScannerForEndpoint(s Store, r *http.Request) (scanner LogScanner, sta
 type LogFilter struct {
 	Scanner LogScanner
 	Targets []string
+	Query   Query
+}
+
+type Query []string
+
+func ParseQuery(query string) Query {
+	var qs Query
+	for _, q := range strings.Split(strings.ToLower(query), " ") {
+		q = strings.TrimSpace(q)
+		if q != "" {
+			qs = append(qs, q)
+		}
+	}
+	return qs
+}
+
+func (qs Query) Match(r api.Record) bool {
+	target := strings.ToLower(r.Target.String())
+	message := strings.ToLower(r.Message)
+
+	for _, q := range qs {
+		if !strings.Contains(target, q) && !strings.Contains(message, q) {
+			return false
+		}
+	}
+	return true
+}
+
+func setFilter(scanner LogScanner, r *http.Request) LogScanner {
+	queries := r.URL.Query()
+
+	targets := queries["target"]
+	query := ParseQuery(queries.Get("query"))
+	if len(targets) > 0 || len(query) > 0 {
+		return LogFilter{scanner, targets, query}
+	}
+
+	return scanner
 }
 
 func (f LogFilter) Close() error {
 	return f.Scanner.Close()
 }
 
+func (f LogFilter) filterByTarget(target string) bool {
+	if len(f.Targets) == 0 {
+		return true
+	}
+	for _, t := range f.Targets {
+		if target == t {
+			return true
+		}
+	}
+	return false
+}
+
+func (f LogFilter) filterByQuery(r api.Record) bool {
+	return f.Query.Match(f.Record())
+}
+
 func (f LogFilter) Scan() bool {
 	for f.Scanner.Scan() {
-		for _, t := range f.Targets {
-			if f.Record().Target.String() == t {
-				return true
-			}
+		if f.filterByTarget(f.Record().Target.String()) && f.filterByQuery(f.Record()) {
+			return true
 		}
 	}
 	return false
@@ -212,7 +274,7 @@ func LogTSVEndpoint(s Store) http.HandlerFunc {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "GET")
 
-		scanner, code, err := newLogScannerForEndpoint(s, r)
+		scanner, code, err := newLogScannerForEndpoint(s, "log.tsv", r)
 		if err != nil {
 			w.WriteHeader(code)
 			w.Write([]byte(err.Error() + "\n"))
@@ -220,9 +282,7 @@ func LogTSVEndpoint(s Store) http.HandlerFunc {
 		}
 		defer scanner.Close()
 
-		if targets, ok := r.URL.Query()["target"]; ok {
-			scanner = LogFilter{scanner, targets}
-		}
+		scanner = setFilter(scanner, r)
 
 		for scanner.Scan() {
 			_, err := w.Write(scanner.Bytes())
@@ -242,7 +302,7 @@ func LogJsonEndpoint(s Store) http.HandlerFunc {
 
 		enc := json.NewEncoder(w)
 
-		scanner, code, err := newLogScannerForEndpoint(s, r)
+		scanner, code, err := newLogScannerForEndpoint(s, "log.json", r)
 		if err != nil {
 			msg := struct {
 				E string `json:"error"`
@@ -256,13 +316,13 @@ func LogJsonEndpoint(s Store) http.HandlerFunc {
 		}
 		defer scanner.Close()
 
-		if targets, ok := r.URL.Query()["target"]; ok {
-			scanner = LogFilter{scanner, targets}
-		}
+		scanner = setFilter(scanner, r)
 
 		records := struct {
 			R []api.Record `json:"records"`
-		}{}
+		}{
+			[]api.Record{},
+		}
 		for scanner.Scan() {
 			records.R = append(records.R, scanner.Record())
 		}
@@ -277,7 +337,7 @@ func LogCSVEndpoint(s Store) http.HandlerFunc {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "GET")
 
-		scanner, code, err := newLogScannerForEndpoint(s, r)
+		scanner, code, err := newLogScannerForEndpoint(s, "log.csv", r)
 		if err != nil {
 			w.WriteHeader(code)
 			w.Write([]byte(err.Error() + "\n"))
@@ -285,9 +345,7 @@ func LogCSVEndpoint(s Store) http.HandlerFunc {
 		}
 		defer scanner.Close()
 
-		if targets, ok := r.URL.Query()["target"]; ok {
-			scanner = LogFilter{scanner, targets}
-		}
+		scanner = setFilter(scanner, r)
 
 		c := csv.NewWriter(w)
 		c.Write([]string{"timestamp", "status", "latency", "target", "message"})
@@ -305,4 +363,54 @@ func LogCSVEndpoint(s Store) http.HandlerFunc {
 
 		c.Flush()
 	}
+}
+
+//go:embed templates/log.html
+var logHTMLTemplate string
+
+func LogHTMLEndpoint(s Store) http.HandlerFunc {
+	tmpl := loadHTMLTemplate(logHTMLTemplate)
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		since, until, err := getTimeQueries(s, "log.html", r, 1*time.Hour)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte(err.Error() + "\n"))
+			return
+		}
+
+		scanner, err := NewLogScanner(s, since, until)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte(err.Error() + "\n"))
+			return
+		}
+		defer scanner.Close()
+
+		scanner = setFilter(scanner, r)
+
+		var rs []api.Record
+		for scanner.Scan() {
+			rs = append(rs, scanner.Record())
+		}
+
+		for i := 0; i < len(rs)/2; i++ {
+			rs[i], rs[len(rs)-i-1] = rs[len(rs)-i-1], rs[i]
+		}
+
+		w.Header().Set("Content-Type", "text/html; charset=UTF-8")
+		handleError(s, "log.html", tmpl.Execute(w, logData{
+			Since: since,
+			Until: until,
+			Query: r.URL.Query().Get("query"),
+			Log:   rs,
+		}))
+	}
+}
+
+type logData struct {
+	Since time.Time
+	Until time.Time
+	Query string
+	Log   []api.Record
 }

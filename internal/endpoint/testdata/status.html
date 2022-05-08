@@ -107,7 +107,7 @@ h1 {
 .incident-status.aborted { border-left: 8px solid rgb(var(--bg)) }
 .incident-status.failure { border-left: 8px solid rgb(var(--failure)) }
 .incident-status.degrade { border-left: 8px solid rgb(var(--degrade)) }
-.message {
+.incident .message {
     display: block;
     border: 1px solid rgb(var(--fg));
     border-radius: 2px;
@@ -307,8 +307,9 @@ footer span {
                         </ul>
                     </li>
                     <li>
-                        <a href="/log.csv" type="text/csv">Log</a>
+                        <a href="/log.html">Log</a>
                         <ul class="menu-types">
+                            <li><a href="/log.html" type="text/html">HTML</a></li>
                             <li><a href="/log.csv" type="text/csv">CSV</a></li>
                             <li><a href="/log.tsv" type="text/tab-separated-values">TSV</a></li>
                             <li><a href="/log.json" type="application/json">json</a></li>

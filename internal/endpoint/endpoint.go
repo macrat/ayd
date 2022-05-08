@@ -59,8 +59,9 @@ func New(s Store) http.Handler {
 	m.Handle("/incidents.html", LinkHeader{IncidentsHTMLEndpoint(s), incidentsLink})
 	m.Handle("/incidents.rss", LinkHeader{IncidentsRSSEndpoint(s), incidentsLink})
 
-	logLink := `<log.tsv>;rel="alternate";type="text/tab-separated-values", <log.csv>;rel="alternate";type="text/csv", <log.json>;rel="alternate";type="application/json"`
-	m.Handle("/log", http.RedirectHandler("/log.tsv", http.StatusMovedPermanently))
+	logLink := `<log.html>;rel="alternate";type="text/html", <log.tsv>;rel="alternate";type="text/tab-separated-values", <log.csv>;rel="alternate";type="text/csv", <log.json>;rel="alternate";type="application/json"`
+	m.Handle("/log", http.RedirectHandler("/log.html", http.StatusMovedPermanently))
+	m.Handle("/log.html", LinkHeader{LogHTMLEndpoint(s), logLink})
 	m.Handle("/log.tsv", LinkHeader{LogTSVEndpoint(s), logLink})
 	m.Handle("/log.csv", LinkHeader{LogCSVEndpoint(s), logLink})
 	m.Handle("/log.json", LinkHeader{LogJsonEndpoint(s), logLink})
