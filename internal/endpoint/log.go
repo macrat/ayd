@@ -394,23 +394,42 @@ func LogHTMLEndpoint(s Store) http.HandlerFunc {
 			rs = append(rs, scanner.Record())
 		}
 
+		total := len(rs)
+		if total > 20 {
+			rs = rs[len(rs)-20:]
+		}
+		count := len(rs)
+
 		for i := 0; i < len(rs)/2; i++ {
 			rs[i], rs[len(rs)-i-1] = rs[len(rs)-i-1], rs[i]
 		}
 
+		query := strings.TrimSpace(r.URL.Query().Get("query"))
+
+		rawQuery := url.Values{}
+		rawQuery.Set("since", since.Format(time.RFC3339))
+		rawQuery.Set("until", until.Format(time.RFC3339))
+		rawQuery.Set("query", query)
+
 		w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 		handleError(s, "log.html", tmpl.Execute(w, logData{
-			Since: since,
-			Until: until,
-			Query: r.URL.Query().Get("query"),
-			Log:   rs,
+			Since:    since,
+			Until:    until,
+			Query:    query,
+			RawQuery: rawQuery.Encode(),
+			Log:      rs,
+			Total:    total,
+			Count:    count,
 		}))
 	}
 }
 
 type logData struct {
-	Since time.Time
-	Until time.Time
-	Query string
-	Log   []api.Record
+	Since    time.Time
+	Until    time.Time
+	Query    string
+	RawQuery string
+	Log      []api.Record
+	Total    int
+	Count    int
 }
