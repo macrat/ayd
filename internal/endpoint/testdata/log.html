@@ -124,7 +124,7 @@ article {
 table {
     width: 100%;
     border-collapse: collapse;
-    margin-bottom: 2rem;
+    margin-bottom: 1rem;
 }
 th, td {
     border-right: 1px solid rgba(var(--fg), .1);
@@ -162,6 +162,18 @@ td.unknown::before { background-color: rgb(var(--fg)) }
 .target, .message {
     font-family: monospace;
     white-space: pre-wrap;
+}
+
+.omit-indicator {
+    text-align: center;
+}
+
+.download-buttons {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+.download-buttons a {
+    margin-left: .2rem;
 }
 
 
@@ -247,39 +259,11 @@ footer span {
             </thead>
             <tbody>
                 <tr>
-                    <td>2021-01-02T15:04:09Z</td>
-                    <td class="status unknown">UNKNOWN</td>
-                    <td class="latency">2.345ms</td>
-                    <td class="target">http://c.example.com</td>
-                    <td class="message">this is unknown</td>
-                </tr>
-                <tr>
-                    <td>2021-01-02T15:04:08Z</td>
-                    <td class="status aborted">ABORTED</td>
-                    <td class="latency">1.234ms</td>
-                    <td class="target">http://c.example.com</td>
-                    <td class="message">this is aborted</td>
-                </tr>
-                <tr>
-                    <td>2021-01-02T15:04:07Z</td>
+                    <td>2021-01-02T15:04:05Z</td>
                     <td class="status healthy">HEALTHY</td>
-                    <td class="latency">345.678ms</td>
+                    <td class="latency">123.456ms</td>
                     <td class="target">http://a.example.com</td>
-                    <td class="message">hello world!!</td>
-                </tr>
-                <tr>
-                    <td>2021-01-02T15:04:06Z</td>
-                    <td class="status healthy">HEALTHY</td>
-                    <td class="latency">54.321ms</td>
-                    <td class="target">http://b.example.com</td>
-                    <td class="message">this is healthy</td>
-                </tr>
-                <tr>
-                    <td>2021-01-02T15:04:06Z</td>
-                    <td class="status healthy">HEALTHY</td>
-                    <td class="latency">234.567ms</td>
-                    <td class="target">http://a.example.com</td>
-                    <td class="message">hello world!</td>
+                    <td class="message">hello world</td>
                 </tr>
                 <tr>
                     <td>2021-01-02T15:04:05Z</td>
@@ -289,14 +273,49 @@ footer span {
                     <td class="message">this is failure</td>
                 </tr>
                 <tr>
-                    <td>2021-01-02T15:04:05Z</td>
+                    <td>2021-01-02T15:04:06Z</td>
                     <td class="status healthy">HEALTHY</td>
-                    <td class="latency">123.456ms</td>
+                    <td class="latency">234.567ms</td>
                     <td class="target">http://a.example.com</td>
-                    <td class="message">hello world</td>
+                    <td class="message">hello world!</td>
+                </tr>
+                <tr>
+                    <td>2021-01-02T15:04:06Z</td>
+                    <td class="status healthy">HEALTHY</td>
+                    <td class="latency">54.321ms</td>
+                    <td class="target">http://b.example.com</td>
+                    <td class="message">this is healthy</td>
+                </tr>
+                <tr>
+                    <td>2021-01-02T15:04:07Z</td>
+                    <td class="status healthy">HEALTHY</td>
+                    <td class="latency">345.678ms</td>
+                    <td class="target">http://a.example.com</td>
+                    <td class="message">hello world!!</td>
+                </tr>
+                <tr>
+                    <td>2021-01-02T15:04:08Z</td>
+                    <td class="status aborted">ABORTED</td>
+                    <td class="latency">1.234ms</td>
+                    <td class="target">http://c.example.com</td>
+                    <td class="message">this is aborted</td>
+                </tr>
+                <tr>
+                    <td>2021-01-02T15:04:09Z</td>
+                    <td class="status unknown">UNKNOWN</td>
+                    <td class="latency">2.345ms</td>
+                    <td class="target">http://c.example.com</td>
+                    <td class="message">this is unknown</td>
                 </tr>
             </tbody>
         </table>
+        <div class="download-buttons">
+            7 of 7 records has shown<br />
+            download all log as
+            <a href="/log.csv?query=&amp;since=2021-01-01T00%3A00%3A00Z&amp;until=2021-01-03T00%3A00%3A00Z" type="text/csv" download="ayd-log.csv">CSV</a>
+            <a href="/log.tsv?query=&amp;since=2021-01-01T00%3A00%3A00Z&amp;until=2021-01-03T00%3A00%3A00Z" type="text/tab-separated-values" download="ayd-log.tsv">TSV</a>
+            <a href="log.json?query=&amp;since=2021-01-01T00%3A00%3A00Z&amp;until=2021-01-03T00%3A00%3A00Z" type="application/json" download="ayd-log.json">JSON</a>
+        </div>
     </article>
 
     <script>
