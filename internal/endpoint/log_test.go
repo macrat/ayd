@@ -535,8 +535,9 @@ func TestLogHTMLEndpoint(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to read body: %s", err)
 	}
+	result := strings.ReplaceAll(string(body), "\r\n", "\n")
 
-	if diff := cmp.Diff(readTestFile(t, "./testdata/log.html"), string(body)); diff != "" {
+	if diff := cmp.Diff(readTestFile(t, "./testdata/log.html"), result); diff != "" {
 		t.Errorf(diff)
 	}
 }
