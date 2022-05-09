@@ -394,15 +394,17 @@ func LogHTMLEndpoint(s Store) http.HandlerFunc {
 			rs = append(rs, scanner.Record())
 		}
 
+		var head []api.Record
+		var tail []api.Record
+
 		total := len(rs)
 		if total > 20 {
-			rs = rs[len(rs)-20:]
+			head = rs[:10]
+			tail = rs[total-10:]
+		} else {
+			head = rs
 		}
-		count := len(rs)
-
-		for i := 0; i < len(rs)/2; i++ {
-			rs[i], rs[len(rs)-i-1] = rs[len(rs)-i-1], rs[i]
-		}
+		count := len(head) + len(tail)
 
 		query := strings.TrimSpace(r.URL.Query().Get("query"))
 
@@ -417,9 +419,11 @@ func LogHTMLEndpoint(s Store) http.HandlerFunc {
 			Until:    until,
 			Query:    query,
 			RawQuery: rawQuery.Encode(),
-			Log:      rs,
+			Head:     head,
+			Tail:     tail,
 			Total:    total,
 			Count:    count,
+			Omitted:  total - count,
 		}))
 	}
 }
@@ -429,7 +433,9 @@ type logData struct {
 	Until    time.Time
 	Query    string
 	RawQuery string
-	Log      []api.Record
+	Head     []api.Record
+	Tail     []api.Record
 	Total    int
 	Count    int
+	Omitted  int
 }

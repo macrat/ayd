@@ -50,6 +50,10 @@ td.unknown::before { background-color: rgb(var(--fg)) }
     white-space: pre-wrap;
 }
 
+.omit-indicator {
+    text-align: center;
+}
+
 .download-buttons {
     text-align: center;
     margin-bottom: 2rem;
@@ -86,7 +90,7 @@ td.unknown::before { background-color: rgb(var(--fg)) }
                     <th>message</th>
                 </tr>
             </thead>
-            <tbody>{{ range .Log }}
+            <tbody>{{ range .Head }}
                 <tr>
                     <td>{{ .CheckedAt | time2str }}</td>
                     <td class="status {{ .Status | to_lower }}">{{ .Status }}</td>
@@ -94,7 +98,17 @@ td.unknown::before { background-color: rgb(var(--fg)) }
                     <td class="target">{{ .Target }}</td>
                     <td class="message">{{ .Message }}</td>
                 </tr>{{ end }}
-            </tbody>
+            </tbody>{{ if .Tail }}
+            <tbody><tr><td colspan="5" class="omit-indicator">{{ .Omitted }} records has omitted</td></tr></tbody>
+            <tbody>{{ range .Tail }}
+                <tr>
+                    <td>{{ .CheckedAt | time2str }}</td>
+                    <td class="status {{ .Status | to_lower }}">{{ .Status }}</td>
+                    <td class="latency">{{ .Latency }}</td>
+                    <td class="target">{{ .Target }}</td>
+                    <td class="message">{{ .Message }}</td>
+                </tr>{{ end }}
+            </tbody>{{ end }}
         </table>
         <div class="download-buttons">
             {{ .Count }} of {{ .Total }} records has shown<br />
