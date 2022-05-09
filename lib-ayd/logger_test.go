@@ -33,12 +33,14 @@ func ExampleLogger_setExtraValues() {
 
 	// report target status with a message
 	logger.Healthy("target is healthy")
+	logger.Degrade("target is partialy working")
 	logger.Failure("target seems down")
 	logger.Unknown("failed to check, so target status is unknown")
 	logger.Aborted("the check was aborted by user or something")
 
 	// Output:
 	// 2001-02-03T16:05:06+09:00	HEALTHY	123.000	foobar:your-plugin-url	target is healthy
+	// 2001-02-03T16:05:06+09:00	DEGRADE	123.000	foobar:your-plugin-url	target is partialy working
 	// 2001-02-03T16:05:06+09:00	FAILURE	123.000	foobar:your-plugin-url	target seems down
 	// 2001-02-03T16:05:06+09:00	UNKNOWN	123.000	foobar:your-plugin-url	failed to check, so target status is unknown
 	// 2001-02-03T16:05:06+09:00	ABORTED	123.000	foobar:your-plugin-url	the check was aborted by user or something
