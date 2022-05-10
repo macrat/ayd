@@ -54,10 +54,12 @@ func New(s Store) http.Handler {
 	m.Handle("/status.txt", LinkHeader{StatusTextEndpoint(s), statusLink})
 	m.Handle("/status.json", LinkHeader{StatusJSONEndpoint(s), statusLink})
 
-	incidentsLink := `<incidents.html>;rel="alternate";type="text/html", <incidents.rss>;rel="alternate";type="application/rss+xml"`
+	incidentsLink := `<incidents.html>;rel="alternate";type="text/html", <incidents.rss>;rel="alternate";type="application/rss+xml", <incidents.csv>;rel="alternate";type="text/csv", <incidents.json>;rel="alternate";type="application/json"`
 	m.Handle("/incidents", http.RedirectHandler("/incidents.html", http.StatusMovedPermanently))
 	m.Handle("/incidents.html", LinkHeader{IncidentsHTMLEndpoint(s), incidentsLink})
 	m.Handle("/incidents.rss", LinkHeader{IncidentsRSSEndpoint(s), incidentsLink})
+	m.Handle("/incidents.csv", LinkHeader{IncidentsCSVEndpoint(s), incidentsLink})
+	m.Handle("/incidents.json", LinkHeader{IncidentsJSONEndpoint(s), incidentsLink})
 
 	logLink := `<log.html>;rel="alternate";type="text/html", <log.tsv>;rel="alternate";type="text/tab-separated-values", <log.csv>;rel="alternate";type="text/csv", <log.json>;rel="alternate";type="application/json"`
 	m.Handle("/log", http.RedirectHandler("/log.html", http.StatusMovedPermanently))

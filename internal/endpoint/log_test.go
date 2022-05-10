@@ -10,7 +10,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/go-cmp/cmp"
 	"github.com/macrat/ayd/internal/endpoint"
 	"github.com/macrat/ayd/internal/store"
 	"github.com/macrat/ayd/internal/testutil"
@@ -519,25 +518,5 @@ func TestLogCSVEndpoint(t *testing.T) {
 }
 
 func TestLogHTMLEndpoint(t *testing.T) {
-	srv := testutil.StartTestServer(t)
-	defer srv.Close()
-
-	resp, err := srv.Client().Get(srv.URL + "/log.html?since=2021-01-01T00%3A00%3A00Z&until=2021-01-03T00%3A00%3A00Z")
-	if err != nil {
-		t.Errorf("failed to get /: %s", err)
-	}
-	if resp.StatusCode != http.StatusOK {
-		t.Errorf("unexpected status: %s", resp.Status)
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		t.Fatalf("failed to read body: %s", err)
-	}
-	result := strings.ReplaceAll(string(body), "\r\n", "\n")
-
-	if diff := cmp.Diff(readTestFile(t, "./testdata/log.html"), result); diff != "" {
-		t.Errorf(diff)
-	}
+	AssertEndpoint(t, "/log.html?since=2021-01-01T00%3A00%3A00Z&until=2021-01-03T00%3A00%3A00Z", "./testdata/log.html", "")
 }

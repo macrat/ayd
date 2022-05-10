@@ -66,7 +66,6 @@ func StatusJSONEndpoint(s Store) http.HandlerFunc {
 		w.Header().Set("Access-Control-Allow-Methods", "GET")
 
 		enc := json.NewEncoder(w)
-		enc.SetIndent("", "  ")
 
 		handleError(s, "status.json", enc.Encode(s.MakeReport(40)))
 	}

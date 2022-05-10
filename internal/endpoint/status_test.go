@@ -4,68 +4,17 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
-	"os"
-	"regexp"
-	"strings"
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
 	"github.com/macrat/ayd/internal/testutil"
 )
 
-func readTestFile(t *testing.T, file string) string {
-	t.Helper()
-
-	f, err := os.Open(file)
-	if err != nil {
-		t.Fatalf("failed to open file: %s", err)
-	}
-
-	bs, err := io.ReadAll(f)
-	if err != nil {
-		t.Fatalf("failed to read file: %s", err)
-	}
-
-	return strings.ReplaceAll(string(bs), "\r\n", "\n")
-}
-
 func TestStatusHTMLEndpoint(t *testing.T) {
-	srv := testutil.StartTestServer(t)
-	defer srv.Close()
-
-	if resp, err := srv.Client().Get(srv.URL + "/status.html"); err != nil {
-		t.Errorf("failed to get /status.html: %s", err)
-	} else if resp.StatusCode != http.StatusOK {
-		t.Errorf("unexpected status: %s", resp.Status)
-	}
-
-	resp, err := srv.Client().Get(srv.URL + "/")
-
-	if err != nil {
-		t.Errorf("failed to get /: %s", err)
-	}
-	if resp.StatusCode != http.StatusOK {
-		t.Errorf("unexpected status: %s", resp.Status)
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		t.Fatalf("failed to read body: %s", err)
-	}
-
-	result := string(regexp.MustCompile(`Reported by Ayd \(.+\)`).ReplaceAll(body, []byte("Reported by Ayd (-- CURRENT TIME MASKED --)")))
-	result = strings.ReplaceAll(result, "\r\n", "\n")
-
-	if diff := cmp.Diff(readTestFile(t, "./testdata/status.html"), result); diff != "" {
-		t.Errorf(diff)
-	}
+	AssertEndpoint(t, "/status.html", "./testdata/status.html", `Reported by Ayd \(.+\)`)
+	AssertEndpoint(t, "/", "./testdata/status.html", `Reported by Ayd \(.+\)`)
 }
 
 func TestStatusTextEndpoint(t *testing.T) {
-	srv := testutil.StartTestServer(t)
-	defer srv.Close()
-
 	tests := []struct {
 		URL  string
 		File string
@@ -77,32 +26,14 @@ func TestStatusTextEndpoint(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.URL, func(t *testing.T) {
-			u := srv.URL + tt.URL
-			resp, err := srv.Client().Get(u)
-
-			if err != nil {
-				t.Errorf("failed to get %s: %s", u, err)
-			}
-			if resp.StatusCode != http.StatusOK {
-				t.Errorf("unexpected status: %s", resp.Status)
-			}
-			defer resp.Body.Close()
-
-			body, err := io.ReadAll(resp.Body)
-			if err != nil {
-				t.Fatalf("failed to read body: %s", err)
-			}
-
-			result := string(regexp.MustCompile(` *Reported by Ayd \(.+\)`).ReplaceAll(body, []byte("[[ FOOTER MASKED ]]")))
-			result = strings.ReplaceAll(result, "\r\n", "\n")
-
-			if diff := cmp.Diff(readTestFile(t, tt.File), result); diff != "" {
-				t.Errorf(diff)
-			}
+			AssertEndpoint(t, tt.URL, tt.File, ` *Reported by Ayd \(.+\)`)
 		})
 	}
 
 	t.Run("/status.txt?charset=what", func(t *testing.T) {
+		srv := testutil.StartTestServer(t)
+		defer srv.Close()
+
 		u := srv.URL + "/status.txt?charset=what"
 		if resp, err := srv.Client().Get(u); err != nil {
 			t.Errorf("failed to get %s: %s", u, err)
