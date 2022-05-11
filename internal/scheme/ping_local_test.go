@@ -168,7 +168,7 @@ func TestPingResultToRecord(t *testing.T) {
 				AvgRTT: 2345 * time.Microsecond,
 				MaxRTT: 3456 * time.Microsecond,
 			},
-			"ip=127.0.0.1 rtt(min/avg/max)=1.23/2.35/3.46 send/recv=3/3",
+			"ip=127.0.0.1 rtt(min/avg/max)=1.23/2.35/3.46 recv/sent=3/3",
 			api.StatusHealthy,
 		},
 		{
@@ -181,7 +181,7 @@ func TestPingResultToRecord(t *testing.T) {
 				Recv:   0,
 				Loss:   3,
 			},
-			"ip=127.1.2.3 rtt(min/avg/max)=0.00/0.00/0.00 send/recv=3/0",
+			"ip=127.1.2.3 rtt(min/avg/max)=0.00/0.00/0.00 recv/sent=0/3",
 			api.StatusFailure,
 		},
 		{
@@ -197,7 +197,7 @@ func TestPingResultToRecord(t *testing.T) {
 				AvgRTT: 2345 * time.Microsecond,
 				MaxRTT: 3456 * time.Microsecond,
 			},
-			"ip=127.3.2.1 rtt(min/avg/max)=1.23/2.35/3.46 send/recv=3/2",
+			"ip=127.3.2.1 rtt(min/avg/max)=1.23/2.35/3.46 recv/sent=2/3",
 			api.StatusDegrade,
 		},
 		{

@@ -193,6 +193,7 @@ examples:
 Send ICMP echo request (a.k.a. ping command) and check if the target is connected or not.
 
 Ayd sends 3 packets in 1 second and expects all packets to return.
+These parameter can changed by `AYD_PING_PACKETS` and `AYD_PING_PERIOD` environment variable.
 
 In Linux or MacOS, Ayd use non-privileged ICMP in default. So, you can use ping even if rootless.
 But this way is not work on some platforms for instance docker container.
@@ -200,7 +201,7 @@ Please set `yes` to `AYD_PRIVILEGED` environment variable to use privileged ICMP
 
 You can specify IPv4 or IPv6 with `ping4:` or `ping6:` scheme.
 
-Ping will timeout in 10 seconds and report as failure.
+Ping will timeout in 10 seconds and report as failure in default.
 
 examples:
 - `ping:example.com`

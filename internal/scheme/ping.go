@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -19,6 +20,32 @@ import (
 var (
 	ErrFailedToPreparePing = errors.New("failed to setup ping service")
 )
+
+func pingSettings() (count int, interval, timeout time.Duration) {
+	var err error
+
+	count, err = strconv.Atoi(os.Getenv("AYD_PING_PACKETS"))
+	if err != nil || count <= 0 {
+		count = 3
+	} else if count == 50 {
+		count = 100
+	}
+
+	d, err := time.ParseDuration(os.Getenv("AYD_PING_PERIOD"))
+	if err != nil || d <= 0 {
+		d = time.Second
+	} else if d > 30*time.Minute {
+		d = 30 * time.Minute
+	}
+	interval = d / time.Duration(count)
+
+	timeout = d * 2
+	if timeout < 10*time.Second {
+		timeout = 10 * time.Second
+	}
+
+	return
+}
 
 type resourceLocker struct {
 	sync.Mutex
@@ -141,8 +168,10 @@ func (p *autoPingerStruct) Ping(ctx context.Context, target *net.IPAddr) (startT
 		return time.Now(), 0, pinger.Result{}, err
 	}
 
+	packets, interval, _ := pingSettings()
+
 	startTime = time.Now()
-	result, err = ping.Ping(ctx, target, 3, 500*time.Millisecond)
+	result, err = ping.Ping(ctx, target, packets, interval)
 	duration = time.Since(startTime)
 
 	return
@@ -154,13 +183,13 @@ func pingResultToRecord(ctx context.Context, target *url.URL, startTime time.Tim
 		Latency:   result.AvgRTT,
 		Target:    target,
 		Message: fmt.Sprintf(
-			"ip=%s rtt(min/avg/max)=%.2f/%.2f/%.2f send/recv=%d/%d",
+			"ip=%s rtt(min/avg/max)=%.2f/%.2f/%.2f recv/sent=%d/%d",
 			result.Target,
 			float64(result.MinRTT.Microseconds())/1000,
 			float64(result.AvgRTT.Microseconds())/1000,
 			float64(result.MaxRTT.Microseconds())/1000,
-			result.Sent,
 			result.Recv,
+			result.Sent,
 		),
 	}
 
@@ -234,7 +263,8 @@ func (s PingProbe) proto() string {
 }
 
 func (s PingProbe) Probe(ctx context.Context, r Reporter) {
-	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	_, _, timeout := pingSettings()
+	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
 	preparingError := func(err error) {

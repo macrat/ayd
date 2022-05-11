@@ -169,7 +169,7 @@ func TestAydCommand_Run(t *testing.T) {
 		},
 		{
 			Args:     []string{"ayd", "-f", "-", "-1", "-a", "dummy:#alert", "ping:localhost"},
-			Pattern:  "^[-+:0-9TZ]+\tHEALTHY\t[0-9]+\\.[0-9]{3}\tping:localhost\tip=(127\\.0\\.0\\.1|::1) rtt\\(min/avg/max\\)=[0-9./]+ send/recv=3/3\n$",
+			Pattern:  "^[-+:0-9TZ]+\tHEALTHY\t[0-9]+\\.[0-9]{3}\tping:localhost\tip=(127\\.0\\.0\\.1|::1) rtt\\(min/avg/max\\)=[0-9./]+ recv/sent=3/3\n$",
 			ExitCode: 0,
 		},
 	}
