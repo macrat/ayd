@@ -1,0 +1,1 @@
+{"incidents":[{"target":"http://b.example.com","status":"FAILURE","message":"this is failure","caused_at":"2021-01-02T15:04:05Z","resolved_at":"2021-01-02T15:04:06Z"},{"target":"http://c.example.com","status":"UNKNOWN","message":"this is unknown","caused_at":"2021-01-02T15:04:09Z"}],[[MASKED_DATA]]}

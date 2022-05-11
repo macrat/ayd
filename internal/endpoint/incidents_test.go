@@ -11,3 +11,11 @@ func TestIncidentsHTMLEndpoint(t *testing.T) {
 func TestIncidentsRSSEndpoint(t *testing.T) {
 	AssertEndpoint(t, "/incidents.rss", "./testdata/incidents.rss", `<pubDate>.+</pubDate>`)
 }
+
+func TestIncidentsCSVEndpoint(t *testing.T) {
+	AssertEndpoint(t, "/incidents.csv", "./testdata/incidents.csv", "")
+}
+
+func TestIncidentsJsonEndpoint(t *testing.T) {
+	AssertEndpoint(t, "/incidents.json", "./testdata/incidents.json", `"reported_at":".+?"`)
+}
