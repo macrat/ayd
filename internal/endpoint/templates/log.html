@@ -74,7 +74,7 @@ td.unknown::before { background-color: rgb(var(--fg)) }
                 <input id="until" type="hidden" name="until" value="{{ .Until | time2str }}" />
             </div>
             <div>
-                <label>keywords: <input name="query" size="40" value="{{ .Query }}" /></label>
+                <input name="query" size="50" value="{{ .Query }}" placeholder="e.g. >=1s example.com" autofocus />
                 <button type="submit">search</button>
             </div>
         </form>

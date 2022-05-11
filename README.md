@@ -120,7 +120,9 @@ In default, Ayd replies logs that from 7 days ago to current time.
 
 And, `target` is the query to filtering by target URL.
 
-`query` is space delimited keywords for filtering by target URL or message text.
+`query` is space delimited query for filtering records.
+It works as perfect matching for status, partial match for target URL and message text.
+And, you can use filters for latency like `<10ms` or `>=1s`.
 
 examples:
 - <http://localhost:9000/log.tsv?since=2000-01-01T00:00:00Z&until=2001-01-01T00:00:00Z>: Reply is logs from 2000-01-01 to 2000-12-31.

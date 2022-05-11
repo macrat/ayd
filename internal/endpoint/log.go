@@ -194,25 +194,77 @@ type LogFilter struct {
 	Query   Query
 }
 
-type Query []string
+type keyword interface {
+	Match(status string, latency time.Duration, target, message string) bool
+}
+
+type strKeyword string
+
+func (k strKeyword) Match(status string, latency time.Duration, target, message string) bool {
+	q := string(k)
+	return status == q || strings.Contains(target, q) || strings.Contains(message, q)
+}
+
+type durKeyword struct {
+	operator string
+	duration time.Duration
+}
+
+func parseDurKeyword(s string) (result durKeyword, ok bool) {
+	for _, operator := range []string{"<=", "<", ">=", ">", "!=", "="} {
+		if strings.HasPrefix(s, operator) {
+			result.operator = operator
+			var err error
+			result.duration, err = time.ParseDuration(s[len(operator):])
+			return result, err == nil
+		}
+	}
+	return result, false
+}
+
+func (k durKeyword) Match(status string, latency time.Duration, target, message string) bool {
+	switch k.operator {
+	case "<":
+		return latency < k.duration
+	case "<=":
+		return latency <= k.duration
+	case ">":
+		return latency > k.duration
+	case ">=":
+		return latency >= k.duration
+	case "!=":
+		return latency != k.duration
+	case "=":
+		return latency == k.duration
+	default:
+		return false
+	}
+}
+
+type Query []keyword
 
 func ParseQuery(query string) Query {
 	var qs Query
 	for _, q := range strings.Split(strings.ToLower(query), " ") {
 		q = strings.TrimSpace(q)
 		if q != "" {
-			qs = append(qs, q)
+			if dur, ok := parseDurKeyword(q); ok {
+				qs = append(qs, dur)
+			} else {
+				qs = append(qs, strKeyword(q))
+			}
 		}
 	}
 	return qs
 }
 
 func (qs Query) Match(r api.Record) bool {
+	status := strings.ToLower(r.Status.String())
 	target := strings.ToLower(r.Target.String())
 	message := strings.ToLower(r.Message)
 
 	for _, q := range qs {
-		if !strings.Contains(target, q) && !strings.Contains(message, q) {
+		if !q.Match(status, r.Latency, target, message) {
 			return false
 		}
 	}

@@ -136,7 +136,7 @@ func TestLogScanner(t *testing.T) {
 				return endpoint.LogFilter{
 					endpoint.NewLogReaderFromReader(f, since, until),
 					nil,
-					endpoint.Query{"healthy"},
+					endpoint.ParseQuery("healthy"),
 				}
 			},
 		},
@@ -222,6 +222,51 @@ func TestQuery(t *testing.T) {
 				Message: "foobar",
 			},
 			false,
+		},
+		{
+			"failure healthy",
+			api.Record{
+				Status:  api.StatusFailure,
+				Target:  &url.URL{Scheme: "dummy", Opaque: "healthy"},
+				Message: "foobar",
+			},
+			true,
+		},
+		{
+			"<100ms",
+			api.Record{
+				Latency: 50 * time.Millisecond,
+				Target:  &url.URL{Scheme: "dummy", Opaque: "healthy"},
+				Message: "foobar",
+			},
+			true,
+		},
+		{
+			"<10ms >0s",
+			api.Record{
+				Latency: 50 * time.Millisecond,
+				Target:  &url.URL{Scheme: "dummy", Opaque: "healthy"},
+				Message: "foobar",
+			},
+			false,
+		},
+		{
+			">=50ms <=1s",
+			api.Record{
+				Latency: 50 * time.Millisecond,
+				Target:  &url.URL{Scheme: "dummy", Opaque: "healthy"},
+				Message: "foobar",
+			},
+			true,
+		},
+		{
+			"=50ms !=100ms",
+			api.Record{
+				Latency: 50 * time.Millisecond,
+				Target:  &url.URL{Scheme: "dummy", Opaque: "healthy"},
+				Message: "foobar",
+			},
+			true,
 		},
 	}
 
