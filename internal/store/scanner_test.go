@@ -17,6 +17,7 @@ func TestStore_OpenLog(t *testing.T) {
 	}
 	defer inMemory.Close()
 	inStorage := testutil.NewStoreWithLog(t)
+	defer inStorage.Close()
 
 	stores := []struct {
 		Name  string
@@ -29,6 +30,7 @@ func TestStore_OpenLog(t *testing.T) {
 	if scanner, err := inStorage.OpenLog(time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC), time.Now()); err != nil {
 		t.Fatalf("failed to prepare in-memory store: %s", err)
 	} else {
+		defer scanner.Close()
 		for scanner.Scan() {
 			inMemory.Report(scanner.Record().Target, scanner.Record())
 		}
@@ -77,6 +79,7 @@ func TestStore_OpenLog(t *testing.T) {
 					if err != nil {
 						t.Fatalf("failed to open scanner: %s", err)
 					}
+					defer scanner.Close()
 
 					var actual []string
 					for scanner.Scan() {
