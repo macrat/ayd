@@ -6,7 +6,7 @@ Usage:
 
 Options:
   -1, --oneshot	          Check status only once and exit.
-                          Exit code means 0=HEALTHY, 1=FAILURE, 2=UNKNOWN.
+                          If some of targets is not healthy, the exit code will be 1.
   -a, --alert=URL         The alert URL that the same format as the target URL.
                           You can use this option more than once.
   -f, --log-file=FILE     Path to log file. Log file is also used as a database.
