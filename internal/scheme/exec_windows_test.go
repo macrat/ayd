@@ -4,7 +4,6 @@
 package scheme_test
 
 import (
-	"net/url"
 	"testing"
 
 	"github.com/macrat/ayd/internal/scheme"
