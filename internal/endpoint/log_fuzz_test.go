@@ -31,6 +31,10 @@ func FuzzLogTSVEndpoint(f *testing.F) {
 	f.Add("since=invalid-since&until=2022-01-01T00:00:00Z")
 	f.Add("since=2021-01-01T00:00:00Z&until=invalid-until")
 	f.Add("since=invalid-since&until=invalid-until")
+	f.Add("query=%3c10ms")
+	f.Add("query=%3e10ms%20%3c20ms")
+	f.Add("target=http://a.example.com&target=http://b.example.com&query=%3e%3d100ms")
+	f.Add("target=http://a.example.com&query=healthy")
 
 	f.Fuzz(func(t *testing.T, query string) {
 		query = strings.ReplaceAll(query, ";", "%3B")
