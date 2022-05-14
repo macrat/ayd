@@ -27,10 +27,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: github/codeql-action/init@v1
+      - uses: github/codeql-action/init@v2
         with:
           languages: go
-      - uses: github/codeql-action/analyze@v1
+      - uses: github/codeql-action/analyze@v2
 
   release:
     name: Release
