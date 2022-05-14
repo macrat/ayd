@@ -3,6 +3,7 @@ package scheme
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net"
 	"testing"
 	"time"
@@ -10,6 +11,89 @@ import (
 	api "github.com/macrat/ayd/lib-ayd"
 	"github.com/macrat/go-parallel-pinger"
 )
+
+func TestPingSettings(t *testing.T) {
+	tests := []struct {
+		Env      [][]string
+		Count    int
+		Interval time.Duration
+		Timeout  time.Duration
+	}{
+		{
+			nil,
+			3,
+			time.Second / 3,
+			31 * time.Second,
+		},
+		{
+			[][]string{{"AYD_PING_PACKETS", "5"}},
+			5,
+			time.Second / 5,
+			31 * time.Second,
+		},
+		{
+			[][]string{{"AYD_PING_PACKETS", "-2"}},
+			3,
+			time.Second / 3,
+			31 * time.Second,
+		},
+		{
+			[][]string{{"AYD_PING_PACKETS", "123"}},
+			100,
+			time.Second / 100,
+			31 * time.Second,
+		},
+		{
+			[][]string{{"AYD_PING_PERIOD", "10m"}},
+			3,
+			10 * time.Minute / 3,
+			630 * time.Second,
+		},
+		{
+			[][]string{{"AYD_PING_PERIOD", "-10s"}},
+			3,
+			time.Second / 3,
+			31 * time.Second,
+		},
+		{
+			[][]string{{"AYD_PING_PERIOD", "3h"}},
+			3,
+			30 * time.Minute / 3,
+			30*time.Minute + 30*time.Second,
+		},
+		{
+			[][]string{
+				{"AYD_PING_PACKETS", "42"},
+				{"AYD_PING_PERIOD", "8m"},
+			},
+			42,
+			8 * time.Minute / 42,
+			8*time.Minute + 30*time.Second,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(fmt.Sprint(tt.Env), func(t *testing.T) {
+			for _, kv := range tt.Env {
+				t.Setenv(kv[0], kv[1])
+			}
+
+			count, interval, timeout := pingSettings()
+
+			if count != tt.Count {
+				t.Errorf("expected %d packets but got %d", tt.Count, count)
+			}
+
+			if interval != tt.Interval {
+				t.Errorf("expected %s interval but got %s", tt.Interval, interval)
+			}
+
+			if timeout != tt.Timeout {
+				t.Errorf("expected %s timeout but got %s", tt.Timeout, timeout)
+			}
+		})
+	}
+}
 
 func TestResourceLocker(t *testing.T) {
 	rl := newResourceLocker()

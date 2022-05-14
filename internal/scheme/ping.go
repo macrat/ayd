@@ -26,7 +26,7 @@ func pingSettings() (count int, interval, timeout time.Duration) {
 	count, err = strconv.Atoi(os.Getenv("AYD_PING_PACKETS"))
 	if err != nil || count <= 0 {
 		count = 3
-	} else if count == 50 {
+	} else if count >= 100 {
 		count = 100
 	}
 
