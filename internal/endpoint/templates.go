@@ -120,34 +120,18 @@ var (
 			return strings.Join(result, " ")
 		},
 		"calculate_summary": func(hs map[string]api.ProbeHistory) []statusSummary {
-			counts := make(map[api.Status]int)
-			total := 0
+			builder := newStatusSummaryBuilder()
 			for _, h := range hs {
-				if _, ok := counts[h.Status]; ok {
-					counts[h.Status]++
-				} else {
-					counts[h.Status] = 1
-				}
-				total++
+				builder.Add(h.Status)
 			}
-			result := make([]statusSummary, 0, len(counts))
-			for s, c := range counts {
-				result = append(result, statusSummary{s, float32(c) * 100 / float32(total), 0})
+			return builder.Build()
+		},
+		"target_summary": func(rs []api.Record) []statusSummary {
+			builder := newStatusSummaryBuilder()
+			for _, r := range rs {
+				builder.Add(r.Status)
 			}
-			sort.Slice(result, func(i, j int) bool {
-				x, y := result[i], result[j]
-				if x.Percent == y.Percent {
-					return x.Status < y.Status
-				} else {
-					return x.Percent > y.Percent
-				}
-			})
-			var sum float32 = 0.0
-			for i := range result {
-				result[i].Cumulative += sum
-				sum += result[i].Percent
-			}
-			return result
+			return builder.Build()
 		},
 	}
 )
@@ -156,4 +140,49 @@ type statusSummary struct {
 	Status     api.Status
 	Percent    float32
 	Cumulative float32
+	IsLast     bool
+}
+
+type statusSummaryBuilder struct {
+	Count map[api.Status]int
+	Total int
+}
+
+func newStatusSummaryBuilder() *statusSummaryBuilder {
+	return &statusSummaryBuilder{
+		Count: make(map[api.Status]int),
+	}
+}
+
+func (b *statusSummaryBuilder) Add(s api.Status) {
+	if _, ok := b.Count[s]; ok {
+		b.Count[s]++
+	} else {
+		b.Count[s] = 1
+	}
+	b.Total++
+}
+
+func (b *statusSummaryBuilder) Build() []statusSummary {
+	result := make([]statusSummary, len(b.Count))
+	i := 0
+	for s, c := range b.Count {
+		result[i] = statusSummary{s, float32(c) * 100 / float32(b.Total), 0, false}
+		i++
+	}
+	sort.Slice(result, func(i, j int) bool {
+		x, y := result[i], result[j]
+		if x.Percent == y.Percent {
+			return x.Status < y.Status
+		} else {
+			return x.Percent > y.Percent
+		}
+	})
+	var sum float32 = 0.0
+	for i := range result {
+		result[i].Cumulative += sum
+		sum += result[i].Percent
+	}
+	result[len(result)-1].IsLast = true
+	return result
 }

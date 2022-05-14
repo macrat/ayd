@@ -88,7 +88,7 @@ section.status {
     display: flex;
     position: relative;
     background-color: rgba(var(--fg), .2);
-    margin: inherit;
+    margin: 0;
 }
 .status-bit {
     flex: 1;
@@ -172,6 +172,9 @@ section.status {
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#{{ .Status | to_lower }}-icon" /></svg>
                 {{- .Target }}
             </h1>
+            <span>{{ range .Records | target_summary -}}
+                {{ .Status | to_camel }}{{ printf ": %.0f%%" .Percent }}{{ if not .IsLast }}, {{ end }}
+            {{- end }}</span>
             <figure class="status-bar">{{ range .Records | pad_records 20 }}
                 <span class="status-bit no-data" title="no data">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#no-data-icon" /></svg>

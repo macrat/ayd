@@ -202,7 +202,7 @@ section.status {
     display: flex;
     position: relative;
     background-color: rgba(var(--fg), .2);
-    margin: inherit;
+    margin: 0;
 }
 .status-bit {
     flex: 1;
@@ -342,6 +342,7 @@ footer span {
             <h1 aria-label="'http://c.example.com' is currently unknown">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#unknown-icon" /></svg>http://c.example.com
             </h1>
+            <span>Unknown: 50%, Aborted: 50%</span>
             <figure class="status-bar">
                 <span class="status-bit no-data" title="no data">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#no-data-icon" /></svg>
@@ -420,6 +421,7 @@ this is unknown">
             <h1 aria-label="'http://a.example.com' is currently healthy">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#healthy-icon" /></svg>http://a.example.com
             </h1>
+            <span>Healthy: 100%</span>
             <figure class="status-bar">
                 <span class="status-bit no-data" title="no data">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#no-data-icon" /></svg>
@@ -501,6 +503,7 @@ hello world!!">
             <h1 aria-label="'http://b.example.com' is currently healthy">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#healthy-icon" /></svg>http://b.example.com
             </h1>
+            <span>Failure: 50%, Healthy: 50%</span>
             <figure class="status-bar">
                 <span class="status-bit no-data" title="no data">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#no-data-icon" /></svg>
