@@ -11,6 +11,41 @@ import (
 	"github.com/macrat/ayd/lib-ayd"
 )
 
+func TestURLToStr(t *testing.T) {
+	tests := []struct {
+		Input  string
+		Output string
+	}{
+		{"https://examle.com/あ?い=う#え#", "https://examle.com/%E3%81%82?い=う#え%23"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.Output, func(t *testing.T) {
+			u, err := url.Parse(tt.Input)
+			if err != nil {
+				t.Fatalf("faield to prepare test input: %s", err)
+			}
+
+			s := ayd.URLToStr(u)
+			if s != tt.Output {
+				t.Errorf("expected: %s\n but got: %s", tt.Output, s)
+			}
+		})
+	}
+}
+
+func BenchmarkURLToStr(b *testing.B) {
+	u := &url.URL{
+		Scheme:   "dummy",
+		Opaque:   "healthy",
+		Fragment: "hello-world#こんにちは世界",
+	}
+
+	for i := 0; i < b.N; i++ {
+		ayd.URLToStr(u)
+	}
+}
+
 func TestRecord(t *testing.T) {
 	tokyo := time.FixedZone("UTC+9", +9*60*60)
 

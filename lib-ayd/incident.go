@@ -74,7 +74,7 @@ func (i Incident) MarshalJSON() ([]byte, error) {
 	}
 
 	return json.Marshal(jsonIncident{
-		Target:     i.Target.String(),
+		Target:     URLToStr(i.Target),
 		Status:     i.Status,
 		Message:    i.Message,
 		CausedAt:   i.CausedAt.Format(time.RFC3339),

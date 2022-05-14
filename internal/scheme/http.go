@@ -148,7 +148,7 @@ func (s HTTPScheme) Alert(ctx context.Context, r Reporter, lastRecord api.Record
 	qs.Set("ayd_checked_at", lastRecord.CheckedAt.Format(time.RFC3339))
 	qs.Set("ayd_status", lastRecord.Status.String())
 	qs.Set("ayd_latency", strconv.FormatFloat(float64(lastRecord.Latency.Microseconds())/1000.0, 'f', -1, 64))
-	qs.Set("ayd_target", lastRecord.Target.String())
+	qs.Set("ayd_target", api.URLToStr(lastRecord.Target))
 	qs.Set("ayd_message", lastRecord.Message)
 
 	u := *s.target

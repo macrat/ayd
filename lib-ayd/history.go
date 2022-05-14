@@ -59,7 +59,7 @@ func (ph *ProbeHistory) UnmarshalJSON(data []byte) error {
 // MarshalJSON implements the json.Marshaler interface.
 func (ph ProbeHistory) MarshalJSON() ([]byte, error) {
 	return json.Marshal(jsonProbeHistory{
-		Target:  ph.Target.String(),
+		Target:  URLToStr(ph.Target),
 		Status:  ph.Status,
 		Records: ph.Records,
 		Updated: ph.Updated.Format(time.RFC3339),

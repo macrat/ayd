@@ -2,9 +2,9 @@ package ayd_test
 
 import (
 	"fmt"
+	"io"
 	"strings"
 	"time"
-	"io"
 
 	"github.com/macrat/ayd/lib-ayd"
 )

@@ -95,11 +95,7 @@ var (
 			return float64(d.Microseconds()) / 1000.0
 		},
 		"url_unescape": func(u *url.URL) string {
-			s, err := url.PathUnescape(u.String())
-			if err != nil {
-				return u.String()
-			}
-			return s
+			return api.URLToStr(u)
 		},
 		"latency_graph": func(rs []api.Record) string {
 			if len(rs) == 0 {

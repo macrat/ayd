@@ -1,12 +1,12 @@
 package endpoint_test
 
 import (
-	"time"
 	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/macrat/ayd/internal/endpoint"
 	"github.com/macrat/ayd/internal/testutil"

@@ -70,7 +70,7 @@ func (r AlertReporter) Report(_ *url.URL, rec api.Record) {
 	if s, _, _ := SplitScheme(rec.Target.Scheme); s != "alert" && s != "ayd" {
 		rec.Target = &url.URL{
 			Scheme: "alert",
-			Opaque: rec.Target.String(),
+			Opaque: api.URLToStr(rec.Target),
 		}
 	}
 	r.Upstream.Report(r.Source, rec)

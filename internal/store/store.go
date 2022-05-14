@@ -176,7 +176,7 @@ func (s *Store) Targets() []string {
 	result := make([]string, len(s.probeHistory))
 	i := 0
 	for _, x := range s.probeHistory {
-		result[i] = x.Target.String()
+		result[i] = api.URLToStr(x.Target)
 		i++
 	}
 

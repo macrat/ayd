@@ -1,8 +1,8 @@
 package ayd
 
 import (
-	"io"
 	"bufio"
+	"io"
 	"time"
 )
 

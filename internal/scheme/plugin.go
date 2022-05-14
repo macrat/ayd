@@ -158,7 +158,7 @@ func (p PluginScheme) Alert(ctx context.Context, r Reporter, lastRecord api.Reco
 			lastRecord.CheckedAt.Format(time.RFC3339),
 			lastRecord.Status.String(),
 			strconv.FormatFloat(float64(lastRecord.Latency.Microseconds())/1000.0, 'f', -1, 64),
-			lastRecord.Target.String(),
+			api.URLToStr(lastRecord.Target),
 			lastRecord.Message,
 		},
 	)

@@ -10,6 +10,56 @@ import (
 	"github.com/macrat/ayd/internal/ayderr"
 )
 
+func isFragmentCodePoint(c byte) bool {
+	return (c == 0x21 ||
+		c == 0x24 ||
+		(0x26 <= c && c <= 0x3b) ||
+		c == 0x3d ||
+		(0x3f <= c && c <= 0x5a) ||
+		c == 0x5f ||
+		(0x61 <= c && c <= 0x7a) ||
+		c == 0x7e ||
+		0x80 <= c)
+}
+
+const hex = "0123456789ABCDEF"
+
+func escapeFragment(s string) string {
+	var buf [1024]byte
+	var ss []byte
+
+	if len(s)*3 <= len(buf) {
+		ss = buf[:len(s)*3]
+	} else {
+		ss = make([]byte, len(s)*3)
+	}
+
+	j := 0
+	for i := 0; i < len(s); i++ {
+		if c := s[i]; isFragmentCodePoint(c) {
+			ss[j] = c
+			j++
+		} else {
+			ss[j] = '%'
+			ss[j+1] = hex[c>>4]
+			ss[j+2] = hex[c&15]
+			j += 3
+		}
+	}
+
+	return string(ss[:j])
+}
+
+// URLToStr encodes URL to string using URL Standard format.
+func URLToStr(u *url.URL) string {
+	s := u.Redacted()
+	if u.Fragment != "" {
+		l := len(u.EscapedFragment())
+		s = s[:len(s)-l] + escapeFragment(u.Fragment)
+	}
+	return s
+}
+
 // Record is a record in Ayd log
 type Record struct {
 	// CheckedAt is the time the check started
@@ -104,7 +154,7 @@ func (r Record) String() string {
 		r.CheckedAt.Format(time.RFC3339),
 		r.Status.String(),
 		strconv.FormatFloat(float64(r.Latency)/float64(time.Millisecond), 'f', 3, 64),
-		r.Target.Redacted(),
+		URLToStr(r.Target),
 		escapeMessage(r.Message),
 	}, "\t")
 }

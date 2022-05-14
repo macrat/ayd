@@ -161,7 +161,7 @@ func TestURLUnescape(t *testing.T) {
 		},
 		{
 			url.URL{Scheme: "https", Host: "テスト.com", RawQuery: "あ=亜"},
-			"https://テスト.com?あ=亜",
+			"https://%E3%83%86%E3%82%B9%E3%83%88.com?あ=亜",
 		},
 	}
 
