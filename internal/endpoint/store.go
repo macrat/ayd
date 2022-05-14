@@ -1,6 +1,8 @@
 package endpoint
 
 import (
+	"time"
+
 	api "github.com/macrat/ayd/lib-ayd"
 )
 
@@ -25,4 +27,7 @@ type Store interface {
 
 	// IncidentCount returns the count of incident causes.
 	IncidentCount() int
+
+	// OpenLog opens ayd.LogScanner.
+	OpenLog(since, until time.Time) (api.LogScanner, error)
 }

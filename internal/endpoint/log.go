@@ -1,138 +1,18 @@
 package endpoint
 
 import (
-	"bufio"
 	_ "embed"
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
-	"os"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
 
 	api "github.com/macrat/ayd/lib-ayd"
 )
-
-type LogReader struct {
-	file    io.ReadCloser
-	scanner *bufio.Scanner
-	since   time.Time
-	until   time.Time
-	rec     api.Record
-}
-
-func NewLogReaderFromReader(f io.ReadCloser, since, until time.Time) *LogReader {
-	return &LogReader{
-		file:    f,
-		scanner: bufio.NewScanner(f),
-		since:   since,
-		until:   until,
-	}
-}
-
-func NewLogReader(path string, since, until time.Time) (*LogReader, error) {
-	f, err := os.OpenFile(path, os.O_RDONLY, 0644)
-	if err != nil {
-		return nil, err
-	}
-	return NewLogReaderFromReader(f, since, until), nil
-}
-
-func (r *LogReader) Close() error {
-	return r.file.Close()
-}
-
-func (r *LogReader) Scan() bool {
-	for r.scanner.Scan() {
-		rec, err := api.ParseRecord(r.scanner.Text())
-		if err != nil || rec.CheckedAt.Before(r.since) {
-			continue
-		}
-		if !r.until.After(rec.CheckedAt) {
-			return false
-		}
-		r.rec = rec
-		return true
-	}
-	return false
-}
-
-func (r *LogReader) Bytes() []byte {
-	return append(r.scanner.Bytes(), byte('\n'))
-}
-
-func (r *LogReader) Record() api.Record {
-	return r.rec
-}
-
-type LogGenerator struct {
-	records []api.Record
-	index   int
-}
-
-func NewLogGenerator(s Store, since, until time.Time) *LogGenerator {
-	g := &LogGenerator{index: -1}
-	for _, xs := range s.ProbeHistory() {
-		for _, x := range xs.Records {
-			if !x.CheckedAt.Before(since) && x.CheckedAt.Before(until) {
-				g.records = append(g.records, x)
-			}
-		}
-	}
-	sort.Sort(g)
-	return g
-}
-
-func (g LogGenerator) Len() int {
-	return len(g.records)
-}
-
-func (g LogGenerator) Less(i, j int) bool {
-	return g.records[i].CheckedAt.Before(g.records[j].CheckedAt)
-}
-
-func (g LogGenerator) Swap(i, j int) {
-	g.records[i], g.records[j] = g.records[j], g.records[i]
-}
-
-func (g *LogGenerator) Close() error {
-	return nil
-}
-
-func (g *LogGenerator) Scan() bool {
-	if g.index+1 >= len(g.records) {
-		return false
-	}
-	g.index++
-	return true
-}
-
-func (g *LogGenerator) Bytes() []byte {
-	return []byte(g.records[g.index].String() + "\n")
-}
-
-func (g *LogGenerator) Record() api.Record {
-	return g.records[g.index]
-}
-
-type LogScanner interface {
-	Close() error
-	Scan() bool
-	Bytes() []byte
-	Record() api.Record
-}
-
-func NewLogScanner(s Store, since, until time.Time) (LogScanner, error) {
-	if s.Path() == "" {
-		return NewLogGenerator(s, since, until), nil
-	}
-	return NewLogReader(s.Path(), since, until)
-}
 
 func getTimeQuery(queries url.Values, name string, default_ time.Time) (time.Time, error) {
 	q := queries.Get(name)
@@ -173,13 +53,13 @@ func getTimeQueries(s Store, scope string, r *http.Request, defaultPeriod time.D
 	return since, until, nil
 }
 
-func newLogScannerForEndpoint(s Store, scope string, r *http.Request) (scanner LogScanner, statusCode int, err error) {
+func newLogScanner(s Store, scope string, r *http.Request) (scanner api.LogScanner, statusCode int, err error) {
 	since, until, err := getTimeQueries(s, scope, r, 7*24*time.Hour)
 	if err != nil {
 		return nil, http.StatusBadRequest, err
 	}
 
-	scanner, err = NewLogScanner(s, since, until)
+	scanner, err = s.OpenLog(since, until)
 	if err != nil {
 		handleError(s, scope, fmt.Errorf("failed to open log: %w", err))
 		return nil, http.StatusInternalServerError, fmt.Errorf("internal server error")
@@ -189,7 +69,7 @@ func newLogScannerForEndpoint(s Store, scope string, r *http.Request) (scanner L
 }
 
 type LogFilter struct {
-	Scanner LogScanner
+	Scanner api.LogScanner
 	Targets []string
 	Query   Query
 }
@@ -271,7 +151,7 @@ func (qs Query) Match(r api.Record) bool {
 	return true
 }
 
-func setFilter(scanner LogScanner, r *http.Request) LogScanner {
+func setFilter(scanner api.LogScanner, r *http.Request) api.LogScanner {
 	queries := r.URL.Query()
 
 	targets := queries["target"]
@@ -312,10 +192,6 @@ func (f LogFilter) Scan() bool {
 	return false
 }
 
-func (f LogFilter) Bytes() []byte {
-	return f.Scanner.Bytes()
-}
-
 func (f LogFilter) Record() api.Record {
 	return f.Scanner.Record()
 }
@@ -326,7 +202,7 @@ func LogTSVEndpoint(s Store) http.HandlerFunc {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "GET")
 
-		scanner, code, err := newLogScannerForEndpoint(s, "log.tsv", r)
+		scanner, code, err := newLogScanner(s, "log.tsv", r)
 		if err != nil {
 			w.WriteHeader(code)
 			w.Write([]byte(err.Error() + "\n"))
@@ -337,7 +213,7 @@ func LogTSVEndpoint(s Store) http.HandlerFunc {
 		scanner = setFilter(scanner, r)
 
 		for scanner.Scan() {
-			_, err := w.Write(scanner.Bytes())
+			_, err := fmt.Fprintln(w, scanner.Record().String())
 			if err != nil {
 				handleError(s, "log.tsv", err)
 				break
@@ -354,7 +230,7 @@ func LogJsonEndpoint(s Store) http.HandlerFunc {
 
 		enc := json.NewEncoder(w)
 
-		scanner, code, err := newLogScannerForEndpoint(s, "log.json", r)
+		scanner, code, err := newLogScanner(s, "log.json", r)
 		if err != nil {
 			msg := struct {
 				E string `json:"error"`
@@ -389,7 +265,7 @@ func LogCSVEndpoint(s Store) http.HandlerFunc {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "GET")
 
-		scanner, code, err := newLogScannerForEndpoint(s, "log.csv", r)
+		scanner, code, err := newLogScanner(s, "log.csv", r)
 		if err != nil {
 			w.WriteHeader(code)
 			w.Write([]byte(err.Error() + "\n"))
@@ -431,7 +307,7 @@ func LogHTMLEndpoint(s Store) http.HandlerFunc {
 			return
 		}
 
-		scanner, err := NewLogScanner(s, since, until)
+		scanner, err := s.OpenLog(since, until)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte(err.Error() + "\n"))

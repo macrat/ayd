@@ -63,23 +63,23 @@ func TestLogScanner(t *testing.T) {
 
 	scanners := []struct {
 		Name string
-		F    func(since, until time.Time) endpoint.LogScanner
+		F    func(since, until time.Time) api.LogScanner
 	}{
 		{
-			"LogReader",
-			func(since, until time.Time) endpoint.LogScanner {
+			"api.NewLogScannerWithPeriod",
+			func(since, until time.Time) api.LogScanner {
 				f := io.NopCloser(strings.NewReader(strings.Join([]string{
 					"2000-01-01T13:02:03Z\tHEALTHY\t0.123\tdummy:healthy\tfirst",
 					"2000-01-02T13:02:03Z\tHEALTHY\t0.123\tdummy:healthy\tsecond",
 					"2000-01-03T13:02:03Z\tHEALTHY\t0.123\tdummy:healthy\tlast",
 				}, "\n")))
 
-				return endpoint.NewLogReaderFromReader(f, since, until)
+				return api.NewLogScannerWithPeriod(f, since, until)
 			},
 		},
 		{
 			"LogGenerator",
-			func(since, until time.Time) endpoint.LogScanner {
+			func(since, until time.Time) api.LogScanner {
 				s, err := store.New("", io.Discard)
 				if err != nil {
 					t.Fatalf("failed to create store: %s", err)
@@ -101,12 +101,16 @@ func TestLogScanner(t *testing.T) {
 					Message:   "last",
 				})
 
-				return endpoint.NewLogGenerator(s, since, until)
+				scanner, err := s.OpenLog(since, until)
+				if err != nil {
+					t.Fatalf("failed to create scanner: %s", err)
+				}
+				return scanner
 			},
 		},
 		{
 			"LogFilter-target",
-			func(since, until time.Time) endpoint.LogScanner {
+			func(since, until time.Time) api.LogScanner {
 				f := io.NopCloser(strings.NewReader(strings.Join([]string{
 					"2000-01-01T13:02:03Z\tHEALTHY\t0.123\tdummy:healthy#1\tfirst",
 					"2000-01-02T13:02:03Z\tHEALTHY\t0.123\tdummy:healthy#1\tsecond",
@@ -116,7 +120,7 @@ func TestLogScanner(t *testing.T) {
 				}, "\n")))
 
 				return endpoint.LogFilter{
-					endpoint.NewLogReaderFromReader(f, since, until),
+					api.NewLogScannerWithPeriod(f, since, until),
 					[]string{"dummy:healthy#1", "dummy:healthy#2"},
 					nil,
 				}
@@ -124,7 +128,7 @@ func TestLogScanner(t *testing.T) {
 		},
 		{
 			"LogFilter-query",
-			func(since, until time.Time) endpoint.LogScanner {
+			func(since, until time.Time) api.LogScanner {
 				f := io.NopCloser(strings.NewReader(strings.Join([]string{
 					"2000-01-01T13:02:03Z\tHEALTHY\t0.123\tdummy:healthy#1\tfirst",
 					"2000-01-02T13:02:03Z\tHEALTHY\t0.123\tdummy:healthy#1\tsecond",
@@ -134,7 +138,7 @@ func TestLogScanner(t *testing.T) {
 				}, "\n")))
 
 				return endpoint.LogFilter{
-					endpoint.NewLogReaderFromReader(f, since, until),
+					api.NewLogScannerWithPeriod(f, since, until),
 					nil,
 					endpoint.ParseQuery("healthy"),
 				}
