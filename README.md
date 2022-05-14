@@ -490,6 +490,19 @@ But, this is may useful for [use Ayd as a parts of script file](#one-shot-mode).
 In old version, before 0.10.0 or older, the `-f` option was named `-o` option.
 The `-o` option is still working in the latest version, but it will removed in the future version.
 
+If you want log file in other format, you can download in CSV or JSON via [HTTP endpoint](#status-page-and-endpoints).
+Or, you can use `ayd conv` subcommand like below.
+
+``` shell
+$ cat ayd.log | ayd conv > ayd_log.csv
+
+$ ayd conv ./ayd.log -o ayd_log.csv
+
+$ ayd conv -j ./ayd.log -o ayd_log.json
+
+$ ayd conv -J ./ayd.log -o ayd_log.jsonl
+```
+
 
 ### Alerting
 

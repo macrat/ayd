@@ -40,12 +40,12 @@ func TestAydCommand_ParseArgs(t *testing.T) {
 	}{
 		{
 			Args:     []string{"ayd"},
-			Pattern:  `^Ayd\? status monitoring service`,
+			Pattern:  `^Ayd -- Easy status monitoring tool`,
 			ExitCode: 2,
 		},
 		{
 			Args:     []string{"ayd", "-f", "-"},
-			Pattern:  `^Ayd\? status monitoring service`,
+			Pattern:  `^Ayd -- Easy status monitoring tool`,
 			ExitCode: 2,
 		},
 		{
@@ -154,17 +154,17 @@ func TestAydCommand_Run(t *testing.T) {
 	}{
 		{
 			Args:     []string{"ayd"},
-			Pattern:  `^Ayd\? status monitoring service`,
+			Pattern:  `^Ayd -- Easy status monitoring tool`,
 			ExitCode: 2,
 		},
 		{
 			Args:     []string{"ayd", "-h"},
-			Pattern:  `^Ayd\? status monitoring service`,
+			Pattern:  `^Ayd -- Easy status monitoring tool`,
 			ExitCode: 0,
 		},
 		{
 			Args:     []string{"ayd", "-v"},
-			Pattern:  `^Ayd\? version HEAD \(UNKNOWN\)` + "\n$",
+			Pattern:  `^Ayd version HEAD \(UNKNOWN\)` + "\n$",
 			ExitCode: 0,
 		},
 		{
