@@ -201,7 +201,7 @@ Please set `yes` to `AYD_PRIVILEGED` environment variable to use privileged ICMP
 
 You can specify IPv4 or IPv6 with `ping4:` or `ping6:` scheme.
 
-Ping will timeout in 10 seconds and report as failure in default.
+Ping will timeout in 30 seconds after sent all packets and report as failure.
 
 examples:
 - `ping:example.com`

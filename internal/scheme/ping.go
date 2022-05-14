@@ -38,10 +38,7 @@ func pingSettings() (count int, interval, timeout time.Duration) {
 	}
 	interval = d / time.Duration(count)
 
-	timeout = d * 2
-	if timeout < 10*time.Second {
-		timeout = 10 * time.Second
-	}
+	timeout = d + 30*time.Second
 
 	return
 }
