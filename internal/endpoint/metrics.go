@@ -33,7 +33,7 @@ func MetricsEndpoint(s Store) http.HandlerFunc {
 				m := metricInfo{
 					Timestamp: last.CheckedAt.UnixMilli(),
 					Latency:   last.Latency.Seconds(),
-					Target:    strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(api.URLToStr(hs.Target), "\\", "\\\\"), "\n", "\\\n"), "\"", "\\\""),
+					Target:    strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(hs.Target.String(), "\\", "\\\\"), "\n", "\\\n"), "\"", "\\\""),
 				}
 
 				switch last.Status {

@@ -42,7 +42,7 @@ func (r inMemoryScanner) Less(i, j int) bool {
 	if !r.records[i].CheckedAt.Equal(r.records[j].CheckedAt) {
 		return r.records[i].CheckedAt.Before(r.records[j].CheckedAt)
 	}
-	return r.records[i].Target.Redacted() < r.records[j].Target.Redacted()
+	return r.records[i].Target.String() < r.records[j].Target.String()
 }
 
 func (r inMemoryScanner) Swap(i, j int) {

@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/url"
 	"os"
 	"os/exec"
 	"strconv"
@@ -17,7 +16,7 @@ import (
 
 // PluginScheme is the plugin handler. This implements both of Prober interface and Alerter interface.
 type PluginScheme struct {
-	target  *url.URL
+	target  *api.URL
 	tracker *TargetTracker
 }
 
@@ -50,7 +49,7 @@ func findPlugin(scheme, scope string) (commandName string, err error) {
 	return "", ErrUnsupportedScheme
 }
 
-func NewPluginScheme(u *url.URL, scope string) (PluginScheme, error) {
+func NewPluginScheme(u *api.URL, scope string) (PluginScheme, error) {
 	scheme, _, _ := SplitScheme(u.Scheme)
 
 	if scheme == "ayd" || scheme == "alert" {
@@ -70,15 +69,15 @@ func NewPluginScheme(u *url.URL, scope string) (PluginScheme, error) {
 	return p, nil
 }
 
-func NewPluginProbe(u *url.URL) (PluginScheme, error) {
+func NewPluginProbe(u *api.URL) (PluginScheme, error) {
 	return NewPluginScheme(u, "probe")
 }
 
-func NewPluginAlert(u *url.URL) (PluginScheme, error) {
+func NewPluginAlert(u *api.URL) (PluginScheme, error) {
 	return NewPluginScheme(u, "alert")
 }
 
-func (p PluginScheme) Target() *url.URL {
+func (p PluginScheme) Target() *api.URL {
 	return p.target
 }
 
@@ -119,7 +118,7 @@ func (p PluginScheme) execute(ctx context.Context, r Reporter, scope string, arg
 
 		r.Report(p.target, api.Record{
 			CheckedAt: time.Now(),
-			Target:    &url.URL{Scheme: "ayd", Opaque: scope + ":plugin:" + p.target.String()},
+			Target:    &api.URL{Scheme: "ayd", Opaque: scope + ":plugin:" + p.target.String()},
 			Status:    api.StatusUnknown,
 			Message:   fmt.Sprintf("%s: %#v", err, text),
 			Latency:   latency,
@@ -151,14 +150,14 @@ func (p PluginScheme) Probe(ctx context.Context, r Reporter) {
 func (p PluginScheme) Alert(ctx context.Context, r Reporter, lastRecord api.Record) {
 	p.execute(
 		ctx,
-		AlertReporter{&url.URL{Scheme: "alert", Opaque: p.target.String()}, r},
+		AlertReporter{&api.URL{Scheme: "alert", Opaque: p.target.String()}, r},
 		"alert",
 		[]string{
 			p.target.String(),
 			lastRecord.CheckedAt.Format(time.RFC3339),
 			lastRecord.Status.String(),
 			strconv.FormatFloat(float64(lastRecord.Latency.Microseconds())/1000.0, 'f', -1, 64),
-			api.URLToStr(lastRecord.Target),
+			lastRecord.Target.String(),
 			lastRecord.Message,
 		},
 	)

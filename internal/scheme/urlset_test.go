@@ -2,14 +2,15 @@ package scheme
 
 import (
 	"fmt"
-	"net/url"
 	"testing"
+
+	api "github.com/macrat/ayd/lib-ayd"
 )
 
 func TestURLSet(t *testing.T) {
-	x, _ := url.Parse("https://example.com")
-	y, _ := url.Parse("dummy:")
-	z, _ := url.Parse("https://example.com")
+	x, _ := api.ParseURL("https://example.com")
+	y, _ := api.ParseURL("dummy:")
+	z, _ := api.ParseURL("https://example.com")
 
 	s := &urlSet{}
 
@@ -70,10 +71,10 @@ func TestURLSet(t *testing.T) {
 }
 
 func BenchmarkURLSet_Add(b *testing.B) {
-	us := make([]*url.URL, 1000)
+	us := make([]*api.URL, 1000)
 
 	for i := range us {
-		us[i] = &url.URL{Scheme: "dummy", Fragment: fmt.Sprintf("dummy-%d", i)}
+		us[i] = &api.URL{Scheme: "dummy", Fragment: fmt.Sprintf("dummy-%d", i)}
 	}
 
 	s := &urlSet{}

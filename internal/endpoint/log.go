@@ -140,7 +140,7 @@ func ParseQuery(query string) Query {
 
 func (qs Query) Match(r api.Record) bool {
 	status := strings.ToLower(r.Status.String())
-	target := strings.ToLower(api.URLToStr(r.Target))
+	target := strings.ToLower(r.Target.String())
 	message := strings.ToLower(r.Message)
 
 	for _, q := range qs {
@@ -185,7 +185,7 @@ func (f LogFilter) filterByQuery(r api.Record) bool {
 
 func (f LogFilter) Scan() bool {
 	for f.Scanner.Scan() {
-		if f.filterByTarget(api.URLToStr(f.Record().Target)) && f.filterByQuery(f.Record()) {
+		if f.filterByTarget(f.Record().Target.String()) && f.filterByQuery(f.Record()) {
 			return true
 		}
 	}
@@ -285,7 +285,7 @@ func LogCSVEndpoint(s Store) http.HandlerFunc {
 				r.CheckedAt.Format(time.RFC3339),
 				r.Status.String(),
 				strconv.FormatFloat(float64(r.Latency.Microseconds())/1000, 'f', -1, 64),
-				api.URLToStr(r.Target),
+				r.Target.String(),
 				r.Message,
 			})
 		}

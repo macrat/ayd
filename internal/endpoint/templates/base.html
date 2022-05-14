@@ -4,7 +4,7 @@
     <section class="incident">
         <h1>
             <span class="incident-status {{ .Status | to_lower }}">{{ .Status }}</span>
-            <span class="target" aria-label="incident of '{{ .Target | url_unescape }}'">{{ .Target | url_unescape }}</span>
+            <span class="target" aria-label="incident of '{{ .Target }}'">{{ .Target }}</span>
         </h1>
         <div class="period">
             <time aria-label="since {{ .CausedAt | time2str }}">{{ .CausedAt | time2str }}</time>

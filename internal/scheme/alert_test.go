@@ -2,7 +2,6 @@ package scheme_test
 
 import (
 	"context"
-	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -77,7 +76,7 @@ func TestAlerter(t *testing.T) {
 				CheckedAt: time.Date(2001, 2, 3, 16, 5, 6, 0, time.UTC),
 				Status:    api.StatusFailure,
 				Latency:   12345 * time.Microsecond,
-				Target:    &url.URL{Scheme: "dummy", Opaque: "failure"},
+				Target:    &api.URL{Scheme: "dummy", Opaque: "failure"},
 				Message:   "foobar",
 			}
 
@@ -113,7 +112,7 @@ func TestAlerter(t *testing.T) {
 		defer cancel()
 
 		rec := api.Record{
-			Target:    &url.URL{Scheme: "dummy", Opaque: "failure"},
+			Target:    &api.URL{Scheme: "dummy", Opaque: "failure"},
 			Status:    api.StatusFailure,
 			CheckedAt: time.Date(2001, 2, 3, 16, 5, 6, 0, time.UTC),
 			Message:   "foobar",
@@ -141,14 +140,14 @@ func TestAlerter(t *testing.T) {
 
 func TestAlertReporter(t *testing.T) {
 	r1 := &testutil.DummyReporter{}
-	r2 := scheme.AlertReporter{&url.URL{Scheme: "alert", Opaque: "dummy:"}, r1}
+	r2 := scheme.AlertReporter{&api.URL{Scheme: "alert", Opaque: "dummy:"}, r1}
 
-	r2.Report(&url.URL{Scheme: "dummy"}, api.Record{
-		Target:  &url.URL{Scheme: "dummy", Opaque: "another"},
+	r2.Report(&api.URL{Scheme: "dummy"}, api.Record{
+		Target:  &api.URL{Scheme: "dummy", Opaque: "another"},
 		Message: "test-message",
 	})
-	r2.Report(&url.URL{Scheme: "dummy"}, api.Record{
-		Target:  &url.URL{Scheme: "ayd", Opaque: "test:internal-log"},
+	r2.Report(&api.URL{Scheme: "dummy"}, api.Record{
+		Target:  &api.URL{Scheme: "ayd", Opaque: "test:internal-log"},
 		Message: "something log",
 	})
 
@@ -200,7 +199,7 @@ func TestAlerterSet(t *testing.T) {
 			defer cancel()
 
 			rec := api.Record{
-				Target:    &url.URL{Scheme: "dummy", Opaque: "failure"},
+				Target:    &api.URL{Scheme: "dummy", Opaque: "failure"},
 				Status:    api.StatusFailure,
 				CheckedAt: time.Date(2001, 2, 3, 16, 5, 6, 0, time.UTC),
 				Message:   "foobar",
@@ -243,7 +242,7 @@ func TestAlerterSet_blocking(t *testing.T) {
 	defer cancel()
 
 	rec := api.Record{
-		Target:    &url.URL{Scheme: "dummy", Opaque: "failure"},
+		Target:    &api.URL{Scheme: "dummy", Opaque: "failure"},
 		Status:    api.StatusFailure,
 		CheckedAt: time.Date(2001, 2, 3, 16, 5, 6, 0, time.UTC),
 		Message:   "foobar",
@@ -282,7 +281,7 @@ func AssertAlert(t *testing.T, tests []ProbeTest, timeout int) {
 
 			rs := testutil.RunAlert(ctx, a, api.Record{
 				CheckedAt: time.Date(2001, 2, 3, 16, 5, 6, 0, time.UTC),
-				Target:    &url.URL{Scheme: "dummy", Opaque: "failure"},
+				Target:    &api.URL{Scheme: "dummy", Opaque: "failure"},
 				Status:    api.StatusFailure,
 				Latency:   123456 * time.Microsecond,
 				Message:   "test-message",

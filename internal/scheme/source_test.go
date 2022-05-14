@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"net/url"
 	"os"
 	"path"
 	"path/filepath"
@@ -288,7 +287,7 @@ func TestSourceScheme_Alert(t *testing.T) {
 		CheckedAt: time.Date(2021, 1, 2, 15, 4, 5, 0, time.UTC),
 		Status:    api.StatusFailure,
 		Latency:   123456 * time.Microsecond,
-		Target:    &url.URL{Scheme: "dummy", Opaque: "hello-world"},
+		Target:    &api.URL{Scheme: "dummy", Opaque: "hello-world"},
 		Message:   "test-message",
 	})
 
@@ -324,7 +323,7 @@ func BenchmarkSourceScheme_loadProbers(b *testing.B) {
 				fmt.Fprintf(f, "ping:host-%d\n", i)
 			}
 
-			target := &url.URL{Scheme: "source", Opaque: f.Name()}
+			target := &api.URL{Scheme: "source", Opaque: f.Name()}
 
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
@@ -348,7 +347,7 @@ func BenchmarkSourceScheme(b *testing.B) {
 				fmt.Fprintf(f, "dummy:healthy?latency=0s#%d\n", i)
 			}
 
-			target := &url.URL{Scheme: "source", Opaque: f.Name()}
+			target := &api.URL{Scheme: "source", Opaque: f.Name()}
 
 			p, err := scheme.NewSourceProbe(target)
 			if err != nil {

@@ -60,7 +60,7 @@ func IncidentsCSVEndpoint(s Store) http.HandlerFunc {
 				r.CausedAt.Format(time.RFC3339),
 				resolved,
 				r.Status.String(),
-				r.Target.Redacted(),
+				r.Target.String(),
 				r.Message,
 			})
 		}
@@ -93,7 +93,7 @@ func newIncidentsInfo(s Store) incidentsInfo {
 	rs := append(report.IncidentHistory, report.CurrentIncidents...)
 	sort.Slice(rs, func(i, j int) bool {
 		if rs[i].CausedAt.Equal(rs[j].CausedAt) {
-			return rs[i].Target.Redacted() < rs[j].Target.Redacted()
+			return rs[i].Target.String() < rs[j].Target.String()
 		}
 		return rs[i].CausedAt.Before(rs[j].CausedAt)
 	})

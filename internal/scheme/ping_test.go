@@ -3,7 +3,6 @@ package scheme_test
 import (
 	"context"
 	"errors"
-	"net/url"
 	"os"
 	"runtime"
 	"testing"
@@ -17,7 +16,7 @@ import (
 func TestPingProbe_Probe(t *testing.T) {
 	t.Parallel()
 
-	if _, err := scheme.NewPingProbe(&url.URL{Scheme: "ping", Opaque: "localhost"}); err != nil {
+	if _, err := scheme.NewPingProbe(&api.URL{Scheme: "ping", Opaque: "localhost"}); err != nil {
 		t.Fatalf("failed to check ping permission: %s", err)
 	}
 
@@ -104,7 +103,7 @@ func TestPingProbe(t *testing.T) {
 	for _, tt := range tests {
 		t.Run("AYD_PRIVILEGED="+tt.Env, func(t *testing.T) {
 			os.Setenv("AYD_PRIVILEGED", tt.Env)
-			_, err := scheme.NewPingProbe(&url.URL{Scheme: "ping", Opaque: "localhost"})
+			_, err := scheme.NewPingProbe(&api.URL{Scheme: "ping", Opaque: "localhost"})
 
 			if tt.Fail && !errors.Is(err, scheme.ErrFailedToPreparePing) {
 				t.Errorf("expected permission error but got %v", err)

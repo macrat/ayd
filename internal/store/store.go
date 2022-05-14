@@ -89,10 +89,12 @@ func (s *Store) IncidentCount() int {
 }
 
 func (s *Store) ReportInternalError(scope, message string) {
-	s.Report(&url.URL{Scheme: "ayd", Opaque: scope}, api.Record{
+	u := &api.URL{Scheme: "ayd", Opaque: scope}
+
+	s.Report(u, api.Record{
 		CheckedAt: time.Now(),
 		Status:    api.StatusFailure,
-		Target:    &url.URL{Scheme: "ayd", Opaque: scope},
+		Target:    u,
 		Message:   message,
 	})
 }
@@ -105,7 +107,7 @@ func (s *Store) handleError(err error, exportableErrorMessage string) {
 		strings.NewReader(api.Record{
 			CheckedAt: time.Now(),
 			Status:    api.StatusFailure,
-			Target:    &url.URL{Scheme: "ayd", Opaque: "log"},
+			Target:    &api.URL{Scheme: "ayd", Opaque: "log"},
 			Message:   err.Error(),
 		}.String() + "\n").WriteTo(s.Console)
 	}
@@ -176,7 +178,7 @@ func (s *Store) Targets() []string {
 	result := make([]string, len(s.probeHistory))
 	i := 0
 	for _, x := range s.probeHistory {
-		result[i] = api.URLToStr(x.Target)
+		result[i] = x.Target.String()
 		i++
 	}
 
@@ -230,7 +232,7 @@ func (s *Store) setIncidentIfNeed(r api.Record, needCallback bool) {
 		return
 	}
 
-	target := r.Target.Redacted()
+	target := r.Target.String()
 	if cur, ok := s.currentIncidents[target]; ok {
 		if incidentIsContinued(cur, r) {
 			return
@@ -269,7 +271,7 @@ func (s *Store) setIncidentIfNeed(r api.Record, needCallback bool) {
 // Report reports a Record to this Store.
 //
 // See also probeHistoryMap.Append about the arguments.
-func (s *Store) Report(source *url.URL, r api.Record) {
+func (s *Store) Report(source *api.URL, r api.Record) {
 	if _, ok := r.Target.User.Password(); ok {
 		r.Target.User = url.UserPassword(r.Target.User.Username(), "xxxxx")
 	}
@@ -331,11 +333,11 @@ func (s *Store) Restore() error {
 
 // ActivateTarget marks the target will reported via specified source.
 // This method prepares a probeHistory, and mark it as active.
-func (s *Store) ActivateTarget(source, target *url.URL) {
+func (s *Store) ActivateTarget(source, target *api.URL) {
 	s.historyLock.Lock()
 	defer s.historyLock.Unlock()
 
-	t := target.Redacted()
+	t := target.String()
 
 	if _, ok := s.probeHistory[t]; !ok {
 		s.probeHistory[t] = &probeHistory{
@@ -347,12 +349,12 @@ func (s *Store) ActivateTarget(source, target *url.URL) {
 }
 
 // DeactivateTarget marks the target is no longer reported via specified source.
-func (s *Store) DeactivateTarget(source *url.URL, targets ...*url.URL) {
+func (s *Store) DeactivateTarget(source *api.URL, targets ...*api.URL) {
 	s.historyLock.Lock()
 	defer s.historyLock.Unlock()
 
 	for _, t := range targets {
-		if x, ok := s.probeHistory[t.Redacted()]; ok {
+		if x, ok := s.probeHistory[t.String()]; ok {
 			x.removeSource(source)
 		}
 	}

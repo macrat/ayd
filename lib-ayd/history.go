@@ -2,15 +2,13 @@ package ayd
 
 import (
 	"encoding/json"
-	"net/url"
 	"sort"
-	"strings"
 	"time"
 )
 
 // ProbeHistory is the status history data of single target
 type ProbeHistory struct {
-	Target *url.URL
+	Target *URL
 
 	// Status is the latest status of the target
 	Status Status
@@ -36,7 +34,7 @@ func (ph *ProbeHistory) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	target, err := url.Parse(jh.Target)
+	target, err := ParseURL(jh.Target)
 	if err != nil {
 		return err
 	}
@@ -59,7 +57,7 @@ func (ph *ProbeHistory) UnmarshalJSON(data []byte) error {
 // MarshalJSON implements the json.Marshaler interface.
 func (ph ProbeHistory) MarshalJSON() ([]byte, error) {
 	return json.Marshal(jsonProbeHistory{
-		Target:  URLToStr(ph.Target),
+		Target:  ph.Target.String(),
 		Status:  ph.Status,
 		Records: ph.Records,
 		Updated: ph.Updated.Format(time.RFC3339),
@@ -82,7 +80,7 @@ func (xs byLatestStatus) Less(i, j int) bool {
 	case xs[i].Status != xs[j].Status:
 		return xs[i].Status < xs[j].Status
 	default:
-		return strings.Compare(xs[i].Target.Redacted(), xs[j].Target.Redacted()) < 0
+		return xs[i].Target.String() < xs[j].Target.String()
 	}
 }
 

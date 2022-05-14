@@ -9,7 +9,6 @@ import (
 
 	"github.com/macrat/ayd/internal/endpoint"
 	"github.com/macrat/ayd/internal/store"
-	api "github.com/macrat/ayd/lib-ayd"
 	"github.com/robfig/cron/v3"
 )
 
@@ -43,7 +42,7 @@ func (cmd *AydCommand) RunServer(ctx context.Context, s *store.Store) (exitCode 
 
 	// this loop and below loop can't combine to single loop, for separate the log header and status check records surelly.
 	for _, t := range cmd.Tasks {
-		fmt.Fprintf(cmd.OutStream, "%s\t%s\n", t.Schedule, api.URLToStr(t.Prober.Target()))
+		fmt.Fprintf(cmd.OutStream, "%s\t%s\n", t.Schedule, t.Prober.Target().String())
 	}
 	fmt.Fprintln(cmd.OutStream)
 

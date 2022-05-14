@@ -1,7 +1,6 @@
 package ayd_test
 
 import (
-	"net/url"
 	"reflect"
 	"sort"
 	"testing"
@@ -10,7 +9,7 @@ import (
 )
 
 func TestReport_TargetURLs(t *testing.T) {
-	urls := []*url.URL{
+	urls := []*ayd.URL{
 		{Scheme: "dummy", Fragment: "hello"},
 		{Scheme: "dummy", Fragment: "world"},
 	}

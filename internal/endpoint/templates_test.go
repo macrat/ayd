@@ -2,7 +2,6 @@ package endpoint
 
 import (
 	"fmt"
-	"net/url"
 	"reflect"
 	"testing"
 	"time"
@@ -141,34 +140,6 @@ func TestToCamel(t *testing.T) {
 		tt := tt
 		t.Run(tt.Input.String(), func(t *testing.T) {
 			result := f(tt.Input)
-			if tt.Output != result {
-				t.Errorf("expected output is %s but got %s", tt.Output, result)
-			}
-		})
-	}
-}
-
-func TestURLUnescape(t *testing.T) {
-	f := templateFuncs["url_unescape"].(func(u *url.URL) string)
-
-	tests := []struct {
-		Input  url.URL
-		Output string
-	}{
-		{
-			url.URL{Scheme: "dummy", Fragment: "Aaあ亜"},
-			"dummy:#Aaあ亜",
-		},
-		{
-			url.URL{Scheme: "https", Host: "テスト.com", RawQuery: "あ=亜"},
-			"https://%E3%83%86%E3%82%B9%E3%83%88.com?あ=亜",
-		},
-	}
-
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.Input.String(), func(t *testing.T) {
-			result := f(&tt.Input)
 			if tt.Output != result {
 				t.Errorf("expected output is %s but got %s", tt.Output, result)
 			}

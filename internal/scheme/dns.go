@@ -114,7 +114,7 @@ func (r dnsResolver) txt(ctx context.Context, target string) (string, error) {
 
 // DNSProbe is a Prober implementation for the DNS protocol.
 type DNSProbe struct {
-	target     *url.URL
+	target     *api.URL
 	targetName string
 	resolve    dnsResolveFunc
 }
@@ -149,9 +149,9 @@ func getDNSTypeByQuery(query url.Values) string {
 }
 
 // NewDNSProbe creates a new DNSProbe.
-func NewDNSProbe(u *url.URL) (DNSProbe, error) {
+func NewDNSProbe(u *api.URL) (DNSProbe, error) {
 	s := DNSProbe{
-		target: &url.URL{
+		target: &api.URL{
 			Scheme:   "dns",
 			Opaque:   strings.ToLower(u.Opaque),
 			Fragment: u.Fragment,
@@ -172,7 +172,7 @@ func NewDNSProbe(u *url.URL) (DNSProbe, error) {
 		return DNSProbe{}, ErrMissingDomainName
 	}
 
-	typ := getDNSTypeByQuery(u.Query())
+	typ := getDNSTypeByQuery(u.ToURL().Query())
 
 	if t, err := getDNSTypeByScheme(u.Scheme); err != nil {
 		return DNSProbe{}, err
@@ -197,7 +197,7 @@ func NewDNSProbe(u *url.URL) (DNSProbe, error) {
 	return s, nil
 }
 
-func (s DNSProbe) Target() *url.URL {
+func (s DNSProbe) Target() *api.URL {
 	return s.target
 }
 

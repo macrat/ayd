@@ -12,15 +12,15 @@ import (
 )
 
 type DummyScheme struct {
-	target  *url.URL
+	target  *api.URL
 	random  bool
 	status  api.Status
 	latency time.Duration
 	message string
 }
 
-func NewDummyScheme(u *url.URL) (DummyScheme, error) {
-	s := DummyScheme{target: &url.URL{Scheme: u.Scheme, Opaque: u.Opaque, Fragment: u.Fragment}}
+func NewDummyScheme(u *api.URL) (DummyScheme, error) {
+	s := DummyScheme{target: &api.URL{Scheme: u.Scheme, Opaque: u.Opaque, Fragment: u.Fragment}}
 	if u.Opaque == "" {
 		s.target.Opaque = u.Host
 	}
@@ -45,7 +45,7 @@ func NewDummyScheme(u *url.URL) (DummyScheme, error) {
 
 	query := url.Values{}
 
-	if latency := u.Query().Get("latency"); latency != "" {
+	if latency := u.ToURL().Query().Get("latency"); latency != "" {
 		d, err := time.ParseDuration(latency)
 		if err != nil {
 			return DummyScheme{}, err
@@ -54,7 +54,7 @@ func NewDummyScheme(u *url.URL) (DummyScheme, error) {
 		query.Set("latency", d.String())
 	}
 
-	if message := u.Query().Get("message"); message != "" {
+	if message := u.ToURL().Query().Get("message"); message != "" {
 		s.message = message
 		query.Set("message", message)
 	}
@@ -77,7 +77,7 @@ func (s DummyScheme) Status() api.Status {
 	}[rand.Intn(4)]
 }
 
-func (s DummyScheme) Target() *url.URL {
+func (s DummyScheme) Target() *api.URL {
 	return s.target
 }
 
@@ -85,7 +85,7 @@ func (s DummyScheme) Probe(ctx context.Context, r Reporter) {
 	stime := time.Now()
 
 	latency := s.latency
-	if s.target.Query().Get("latency") == "" {
+	if s.target.ToURL().Query().Get("latency") == "" {
 		latency = time.Duration(rand.Intn(10000)) * time.Microsecond
 	}
 

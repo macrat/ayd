@@ -21,12 +21,12 @@ func TestURLToStr(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.Output, func(t *testing.T) {
-			u, err := url.Parse(tt.Input)
+			u, err := ayd.ParseURL(tt.Input)
 			if err != nil {
 				t.Fatalf("faield to prepare test input: %s", err)
 			}
 
-			s := ayd.URLToStr(u)
+			s := u.String()
 			if s != tt.Output {
 				t.Errorf("expected: %s\n but got: %s", tt.Output, s)
 			}
@@ -34,15 +34,15 @@ func TestURLToStr(t *testing.T) {
 	}
 }
 
-func BenchmarkURLToStr(b *testing.B) {
-	u := &url.URL{
+func BenchmarkURL_String(b *testing.B) {
+	u := &ayd.URL{
 		Scheme:   "dummy",
 		Opaque:   "healthy",
 		Fragment: "hello-world#こんにちは世界",
 	}
 
 	for i := 0; i < b.N; i++ {
-		ayd.URLToStr(u)
+		u.String()
 	}
 }
 
@@ -58,7 +58,7 @@ func TestRecord(t *testing.T) {
 			String: "2021-01-02T15:04:05+09:00\tHEALTHY\t123.456\tping:example.com\thello world",
 			Record: ayd.Record{
 				CheckedAt: time.Date(2021, 1, 2, 15, 4, 5, 0, tokyo),
-				Target:    &url.URL{Scheme: "ping", Opaque: "example.com"},
+				Target:    &ayd.URL{Scheme: "ping", Opaque: "example.com"},
 				Status:    ayd.StatusHealthy,
 				Message:   "hello world",
 				Latency:   123456 * time.Microsecond,
@@ -68,7 +68,7 @@ func TestRecord(t *testing.T) {
 			String: "2021-01-02T15:04:05+09:00\tFAILURE\t123.456\texec:/path/to/file.sh\thello world",
 			Record: ayd.Record{
 				CheckedAt: time.Date(2021, 1, 2, 15, 4, 5, 0, tokyo),
-				Target:    &url.URL{Scheme: "exec", Opaque: "/path/to/file.sh"},
+				Target:    &ayd.URL{Scheme: "exec", Opaque: "/path/to/file.sh"},
 				Status:    ayd.StatusFailure,
 				Message:   "hello world",
 				Latency:   123456 * time.Microsecond,
@@ -78,7 +78,7 @@ func TestRecord(t *testing.T) {
 			String: "2021-01-02T15:04:05+09:00\tABORTED\t1234.567\tdummy:#hello\thello world",
 			Record: ayd.Record{
 				CheckedAt: time.Date(2021, 1, 2, 15, 4, 5, 0, tokyo),
-				Target:    &url.URL{Scheme: "dummy", Fragment: "hello"},
+				Target:    &ayd.URL{Scheme: "dummy", Fragment: "hello"},
 				Status:    ayd.StatusAborted,
 				Message:   "hello world",
 				Latency:   1234567 * time.Microsecond,
@@ -88,7 +88,7 @@ func TestRecord(t *testing.T) {
 			String: "2021-01-02T15:04:05+09:00\tDEGRADE\t1027.821\tdummy:\t",
 			Record: ayd.Record{
 				CheckedAt: time.Date(2021, 1, 2, 15, 4, 5, 0, tokyo),
-				Target:    &url.URL{Scheme: "dummy"},
+				Target:    &ayd.URL{Scheme: "dummy"},
 				Status:    ayd.StatusDegrade,
 				Message:   "",
 				Latency:   1027820999 * time.Nanosecond,
@@ -160,7 +160,7 @@ func TestRecord(t *testing.T) {
 func TestRecord_redact(t *testing.T) {
 	record := ayd.Record{
 		CheckedAt: time.Date(2021, 1, 2, 15, 4, 5, 0, time.UTC),
-		Target:    &url.URL{Scheme: "http", Path: "/path/to/file", User: url.UserPassword("MyName", "HideMe")},
+		Target:    &ayd.URL{Scheme: "http", Path: "/path/to/file", User: url.UserPassword("MyName", "HideMe")},
 		Status:    ayd.StatusHealthy,
 		Message:   "hello world",
 		Latency:   123456 * time.Microsecond,
@@ -184,7 +184,7 @@ func TestRecord_json(t *testing.T) {
 			CheckedAt: time.Date(2021, 1, 2, 15, 4, 5, 0, time.UTC),
 			Status:    ayd.StatusHealthy,
 			Latency:   123456 * time.Microsecond,
-			Target:    &url.URL{Scheme: "dummy", Opaque: "healthy", Fragment: "hello-world"},
+			Target:    &ayd.URL{Scheme: "dummy", Opaque: "healthy", Fragment: "hello-world"},
 			Message:   "this is test",
 		}
 

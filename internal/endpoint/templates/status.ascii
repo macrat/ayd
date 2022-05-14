@@ -1,6 +1,6 @@
 -------------------------------| Current Status |-------------------------------
 {{ range .ProbeHistory | sort_history }}
-+- {{ .Target | url_unescape }}
++- {{ .Target }}
 +{{ range .Records | pad_records 40 }}-{{ end }}{{ range .Records }}{{
     if .Status | is_unknown }}?{{ end }}{{
     if .Status | is_aborted }}-{{ end }}{{
@@ -20,7 +20,7 @@
  }}?UNKNOWN?{{
     end
           }} ------------------------------------------------------------------+
-|{{ printf "%-78s" (.Target | url_unescape)                                  }}|
+|{{ printf "%-78s" .Target                                                   }}|
 | {{ printf "%-77s" (printf "%s - ongoing" (.CausedAt | time2str))           }}|
 |                                                                              |{{ range (break_text .Message 78) }}
 |{{ printf "%-78s" .                                                         }}|{{ end }}
@@ -38,7 +38,7 @@
  }}?UNKNOWN?{{
     end
           }} ------------------------------------------------------------------+
-|{{ printf "%-78s" (.Target | url_unescape)                                  }}|
+|{{ printf "%-78s" .Target                                                   }}|
 | {{ printf "%-77s" (printf "%s - %s" (.CausedAt | time2str) (.ResolvedAt | time2str))}}|
 |                                                                              |{{ range (break_text .Message 78) }}
 |{{ printf "%-78s" .                                                         }}|{{ end }}

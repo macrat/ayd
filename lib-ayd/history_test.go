@@ -2,7 +2,6 @@ package ayd_test
 
 import (
 	"encoding/json"
-	"net/url"
 	"strings"
 	"testing"
 	"time"
@@ -36,13 +35,13 @@ func TestProbeHistory(t *testing.T) {
 	}
 
 	ph1 := ayd.ProbeHistory{
-		Target: &url.URL{Scheme: "dummy", Opaque: "healthy", Fragment: "hello-world"},
+		Target: &ayd.URL{Scheme: "dummy", Opaque: "healthy", Fragment: "hello-world"},
 		Status: ayd.StatusHealthy,
 		Records: []ayd.Record{{
 			CheckedAt: time.Date(2021, 1, 2, 15, 4, 5, 0, time.UTC),
 			Status:    ayd.StatusHealthy,
 			Latency:   123456 * time.Microsecond,
-			Target:    &url.URL{Scheme: "dummy", Opaque: "healthy", Fragment: "hello-world"},
+			Target:    &ayd.URL{Scheme: "dummy", Opaque: "healthy", Fragment: "hello-world"},
 			Message:   "this is test",
 		}},
 		Updated: time.Date(2001, 1, 2, 15, 4, 5, 0, time.UTC),
@@ -80,37 +79,37 @@ func TestProbeHistory(t *testing.T) {
 func TestSortProbeHistories(t *testing.T) {
 	xs := []ayd.ProbeHistory{
 		{
-			&url.URL{Scheme: "a", Opaque: "1"},
+			&ayd.URL{Scheme: "a", Opaque: "1"},
 			ayd.StatusUnknown,
 			time.Now(),
 			[]ayd.Record{},
 		},
 		{
-			&url.URL{Scheme: "a", Opaque: "2"},
+			&ayd.URL{Scheme: "a", Opaque: "2"},
 			ayd.StatusHealthy,
 			time.Now(),
 			[]ayd.Record{{Status: ayd.StatusHealthy}},
 		},
 		{
-			&url.URL{Scheme: "a", Opaque: "3"},
+			&ayd.URL{Scheme: "a", Opaque: "3"},
 			ayd.StatusHealthy,
 			time.Now(),
 			[]ayd.Record{{Status: ayd.StatusHealthy}},
 		},
 		{
-			&url.URL{Scheme: "a", Opaque: "4"},
+			&ayd.URL{Scheme: "a", Opaque: "4"},
 			ayd.StatusFailure,
 			time.Now(),
 			[]ayd.Record{{Status: ayd.StatusFailure}},
 		},
 		{
-			&url.URL{Scheme: "b", Opaque: "1"},
+			&ayd.URL{Scheme: "b", Opaque: "1"},
 			ayd.StatusUnknown,
 			time.Now(),
 			[]ayd.Record{{Status: ayd.StatusUnknown}},
 		},
 		{
-			&url.URL{Scheme: "b", Opaque: "2"},
+			&ayd.URL{Scheme: "b", Opaque: "2"},
 			ayd.StatusAborted,
 			time.Now(),
 			[]ayd.Record{{Status: ayd.StatusAborted}},

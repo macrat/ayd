@@ -28,10 +28,10 @@ var (
 	ErrMissingFile      = errors.New("missing file")
 )
 
-func normalizeSourceURL(u *url.URL) (*url.URL, error) {
+func normalizeSourceURL(u *api.URL) (*api.URL, error) {
 	switch u.Scheme {
 	case "source+http", "source+https":
-		if u.Hostname() == "" {
+		if u.ToURL().Hostname() == "" {
 			return nil, ErrMissingHost
 		}
 		if u.Path == "" {
@@ -39,13 +39,13 @@ func normalizeSourceURL(u *url.URL) (*url.URL, error) {
 		}
 		return u, nil
 	case "source+ftp", "source+ftps":
-		if u.Hostname() == "" {
+		if u.ToURL().Hostname() == "" {
 			return nil, ErrMissingHost
 		}
 		if u.Path == "" || u.Path == "/" {
 			return nil, ErrMissingFile
 		}
-		return &url.URL{
+		return &api.URL{
 			Scheme:   u.Scheme,
 			Host:     u.Host,
 			Path:     path.Clean(u.Path),
@@ -60,7 +60,7 @@ func normalizeSourceURL(u *url.URL) (*url.URL, error) {
 				return nil, ErrMissingCommand
 			}
 		}
-		return &url.URL{
+		return &api.URL{
 			Scheme:   "source+exec",
 			Opaque:   filepath.ToSlash(p),
 			RawQuery: u.RawQuery,
@@ -75,7 +75,7 @@ func normalizeSourceURL(u *url.URL) (*url.URL, error) {
 				return nil, ErrMissingFile
 			}
 		}
-		return &url.URL{
+		return &api.URL{
 			Scheme:   "source",
 			Opaque:   path.Clean(filepath.ToSlash(p)),
 			Fragment: u.Fragment,
@@ -103,8 +103,8 @@ func (s *sourceScanner) Scan() bool {
 	}
 }
 
-func (s *sourceScanner) URL() (*url.URL, error) {
-	u, err := url.Parse(s.Text)
+func (s *sourceScanner) URL() (*api.URL, error) {
+	u, err := api.ParseURL(s.Text)
 	if err != nil {
 		return nil, err
 	}
@@ -118,11 +118,11 @@ func (s *sourceScanner) URL() (*url.URL, error) {
 
 // SourceScheme implements how to load target URLs from file, HTTP, or external command.
 type SourceScheme struct {
-	target  *url.URL
+	target  *api.URL
 	tracker *TargetTracker
 }
 
-func newSourceScheme(u *url.URL) (SourceScheme, error) {
+func newSourceScheme(u *api.URL) (SourceScheme, error) {
 	var err error
 	u, err = normalizeSourceURL(u)
 	if err != nil {
@@ -149,7 +149,7 @@ func sourceLoadTest(_ interface{}, err error) error {
 
 // NewSourceProbe makes a new SourceScheme instance.
 // It checks each URLs in source as a Prober.
-func NewSourceProbe(u *url.URL) (SourceScheme, error) {
+func NewSourceProbe(u *api.URL) (SourceScheme, error) {
 	s, err := newSourceScheme(u)
 	if err != nil {
 		return SourceScheme{}, err
@@ -163,7 +163,7 @@ func NewSourceProbe(u *url.URL) (SourceScheme, error) {
 
 // NewSourceAlert makes a new SourceScheme instance.
 // It checks each URLs in source as an Alerter.
-func NewSourceAlert(u *url.URL) (SourceScheme, error) {
+func NewSourceAlert(u *api.URL) (SourceScheme, error) {
 	s, err := newSourceScheme(u)
 	if err != nil {
 		return SourceScheme{}, err
@@ -175,12 +175,12 @@ func NewSourceAlert(u *url.URL) (SourceScheme, error) {
 	return s, sourceLoadTest(s.loadAlerters(ctx))
 }
 
-func (p SourceScheme) Target() *url.URL {
+func (p SourceScheme) Target() *api.URL {
 	return p.target
 }
 
-func openHTTPSource(ctx context.Context, u *url.URL) (io.ReadCloser, error) {
-	ucopy := *u
+func openHTTPSource(ctx context.Context, u *api.URL) (io.ReadCloser, error) {
+	var ucopy url.URL = *u.ToURL()
 	ucopy.Scheme = ucopy.Scheme[len("source+"):]
 	resp, err := httpClient.Do((&http.Request{
 		Method: "GET",
@@ -200,7 +200,7 @@ func openHTTPSource(ctx context.Context, u *url.URL) (io.ReadCloser, error) {
 	}
 }
 
-func openFTPSource(ctx context.Context, u *url.URL) (io.ReadCloser, error) {
+func openFTPSource(ctx context.Context, u *api.URL) (io.ReadCloser, error) {
 	ucopy := *u
 	ucopy.Scheme = ucopy.Scheme[len("source+"):]
 	conn, _, msg := ftpConnectAndLogin(ctx, &ucopy)
@@ -212,7 +212,7 @@ func openFTPSource(ctx context.Context, u *url.URL) (io.ReadCloser, error) {
 	return conn.Retr(u.Path)
 }
 
-func openExecSource(ctx context.Context, u *url.URL) (io.ReadCloser, error) {
+func openExecSource(ctx context.Context, u *api.URL) (io.ReadCloser, error) {
 	var args []string
 	if u.Fragment != "" {
 		args = []string{u.Fragment}
@@ -246,7 +246,7 @@ func openExecSource(ctx context.Context, u *url.URL) (io.ReadCloser, error) {
 	return io.NopCloser(strings.NewReader(output)), nil
 }
 
-func openFileSource(ctx context.Context, u *url.URL) (io.ReadCloser, error) {
+func openFileSource(ctx context.Context, u *api.URL) (io.ReadCloser, error) {
 	raw, err := os.ReadFile(u.Opaque)
 	if err != nil {
 		return nil, err
@@ -260,7 +260,7 @@ func openFileSource(ctx context.Context, u *url.URL) (io.ReadCloser, error) {
 	return io.NopCloser(strings.NewReader(s)), nil
 }
 
-func openSource(ctx context.Context, u *url.URL) (io.ReadCloser, error) {
+func openSource(ctx context.Context, u *api.URL) (io.ReadCloser, error) {
 	switch u.Scheme {
 	case "source+http", "source+https":
 		return openHTTPSource(ctx, u)
@@ -273,7 +273,7 @@ func openSource(ctx context.Context, u *url.URL) (io.ReadCloser, error) {
 	}
 }
 
-func loadSource(ctx context.Context, target *url.URL, ignores *urlSet, fn func(u *url.URL) (normalized *url.URL, err error)) error {
+func loadSource(ctx context.Context, target *api.URL, ignores *urlSet, fn func(u *api.URL) (normalized *api.URL, err error)) error {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
 	defer cancel()
 
@@ -330,7 +330,7 @@ func loadSource(ctx context.Context, target *url.URL, ignores *urlSet, fn func(u
 func (p SourceScheme) loadProbers(ctx context.Context) ([]Prober, error) {
 	var result []Prober
 
-	err := loadSource(ctx, p.target, &urlSet{}, func(u *url.URL) (*url.URL, error) {
+	err := loadSource(ctx, p.target, &urlSet{}, func(u *api.URL) (*api.URL, error) {
 		p, err := NewProberFromURL(u)
 		if err == nil {
 			result = append(result, p)
@@ -344,7 +344,7 @@ func (p SourceScheme) loadProbers(ctx context.Context) ([]Prober, error) {
 func (p SourceScheme) loadAlerters(ctx context.Context) ([]Alerter, error) {
 	var result []Alerter
 
-	err := loadSource(ctx, p.target, &urlSet{}, func(u *url.URL) (*url.URL, error) {
+	err := loadSource(ctx, p.target, &urlSet{}, func(u *api.URL) (*api.URL, error) {
 		p, err := NewAlerterFromURL(u)
 		if err == nil {
 			result = append(result, p)

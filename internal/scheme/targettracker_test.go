@@ -1,7 +1,6 @@
 package scheme_test
 
 import (
-	"net/url"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -14,28 +13,28 @@ func TestFixedSourceReporter(t *testing.T) {
 	sink := &testutil.DummyReporter{}
 
 	r := scheme.FixedSourceReporter{
-		Source:    &url.URL{Scheme: "dummy", Fragment: "fixed"},
+		Source:    &api.URL{Scheme: "dummy", Fragment: "fixed"},
 		Upstreams: []scheme.Reporter{sink},
 	}
 
 	r.Report(
-		&url.URL{Scheme: "dummy", Fragment: "source1"},
+		&api.URL{Scheme: "dummy", Fragment: "source1"},
 		api.Record{
-			Target: &url.URL{Scheme: "dummy", Fragment: "record"},
+			Target: &api.URL{Scheme: "dummy", Fragment: "record"},
 		},
 	)
 
 	r.Report(
-		&url.URL{Scheme: "dummy", Fragment: "source2"},
+		&api.URL{Scheme: "dummy", Fragment: "source2"},
 		api.Record{
-			Target: &url.URL{Scheme: "dummy", Fragment: "record"},
+			Target: &api.URL{Scheme: "dummy", Fragment: "record"},
 		},
 	)
 
 	r.Report(
-		&url.URL{Scheme: "dummy", Fragment: "source3"},
+		&api.URL{Scheme: "dummy", Fragment: "source3"},
 		api.Record{
-			Target: &url.URL{Scheme: "dummy", Fragment: "record2"},
+			Target: &api.URL{Scheme: "dummy", Fragment: "record2"},
 		},
 	)
 
@@ -70,11 +69,11 @@ func TestTargetTracker(t *testing.T) {
 	tracker := &scheme.TargetTracker{}
 
 	sink := &testutil.DummyReporter{}
-	r := tracker.PrepareReporter(&url.URL{Scheme: "dummy", Fragment: "tracker"}, sink)
-	r.Report(nil, api.Record{Target: &url.URL{Scheme: "dummy", Fragment: "record1"}})
-	r.Report(nil, api.Record{Target: &url.URL{Scheme: "dummy", Fragment: "record1"}})
-	r.Report(nil, api.Record{Target: &url.URL{Scheme: "dummy", Fragment: "record2"}})
-	r.Report(nil, api.Record{Target: &url.URL{Scheme: "dummy", Fragment: "record3"}})
+	r := tracker.PrepareReporter(&api.URL{Scheme: "dummy", Fragment: "tracker"}, sink)
+	r.Report(nil, api.Record{Target: &api.URL{Scheme: "dummy", Fragment: "record1"}})
+	r.Report(nil, api.Record{Target: &api.URL{Scheme: "dummy", Fragment: "record1"}})
+	r.Report(nil, api.Record{Target: &api.URL{Scheme: "dummy", Fragment: "record2"}})
+	r.Report(nil, api.Record{Target: &api.URL{Scheme: "dummy", Fragment: "record3"}})
 	if len(sink.Records) != 4 {
 		t.Errorf("unexpected number of reports: %v", sink.Records)
 	}
@@ -88,10 +87,10 @@ func TestTargetTracker(t *testing.T) {
 	}
 
 	sink = &testutil.DummyReporter{}
-	r = tracker.PrepareReporter(&url.URL{Scheme: "dummy", Fragment: "tracker"}, sink)
-	r.Report(nil, api.Record{Target: &url.URL{Scheme: "dummy", Fragment: "record2"}})
-	r.Report(nil, api.Record{Target: &url.URL{Scheme: "dummy", Fragment: "record1"}})
-	r.Report(nil, api.Record{Target: &url.URL{Scheme: "dummy", Fragment: "record3"}})
+	r = tracker.PrepareReporter(&api.URL{Scheme: "dummy", Fragment: "tracker"}, sink)
+	r.Report(nil, api.Record{Target: &api.URL{Scheme: "dummy", Fragment: "record2"}})
+	r.Report(nil, api.Record{Target: &api.URL{Scheme: "dummy", Fragment: "record1"}})
+	r.Report(nil, api.Record{Target: &api.URL{Scheme: "dummy", Fragment: "record3"}})
 	if len(sink.Records) != 3 {
 		t.Errorf("unexpected number of reports: %v", sink.Records)
 	}
@@ -105,9 +104,9 @@ func TestTargetTracker(t *testing.T) {
 	}
 
 	sink = &testutil.DummyReporter{}
-	r = tracker.PrepareReporter(&url.URL{Scheme: "dummy", Fragment: "tracker"}, sink)
-	r.Report(nil, api.Record{Target: &url.URL{Scheme: "dummy", Fragment: "record2"}})
-	r.Report(nil, api.Record{Target: &url.URL{Scheme: "dummy", Fragment: "record2"}})
+	r = tracker.PrepareReporter(&api.URL{Scheme: "dummy", Fragment: "tracker"}, sink)
+	r.Report(nil, api.Record{Target: &api.URL{Scheme: "dummy", Fragment: "record2"}})
+	r.Report(nil, api.Record{Target: &api.URL{Scheme: "dummy", Fragment: "record2"}})
 	if len(sink.Records) != 2 {
 		t.Errorf("unexpected number of reports: %v", sink.Records)
 	}
@@ -121,9 +120,9 @@ func TestTargetTracker(t *testing.T) {
 	}
 
 	sink = &testutil.DummyReporter{}
-	r = tracker.PrepareReporter(&url.URL{Scheme: "dummy", Fragment: "tracker"}, sink)
-	r.Report(nil, api.Record{Target: &url.URL{Scheme: "dummy", Fragment: "record2"}})
-	r.Report(nil, api.Record{Target: &url.URL{Scheme: "dummy", Fragment: "record1"}})
+	r = tracker.PrepareReporter(&api.URL{Scheme: "dummy", Fragment: "tracker"}, sink)
+	r.Report(nil, api.Record{Target: &api.URL{Scheme: "dummy", Fragment: "record2"}})
+	r.Report(nil, api.Record{Target: &api.URL{Scheme: "dummy", Fragment: "record1"}})
 	if len(sink.Records) != 2 {
 		t.Errorf("unexpected number of reports: %v", sink.Records)
 	}
@@ -137,7 +136,7 @@ func TestTargetTracker(t *testing.T) {
 	}
 
 	sink = &testutil.DummyReporter{}
-	tracker.PrepareReporter(&url.URL{Scheme: "dummy", Fragment: "tracker"}, sink)
+	tracker.PrepareReporter(&api.URL{Scheme: "dummy", Fragment: "tracker"}, sink)
 	if len(sink.Records) != 0 {
 		t.Errorf("unexpected number of reports: %v", sink.Records)
 	}

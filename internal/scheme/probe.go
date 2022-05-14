@@ -3,7 +3,6 @@ package scheme
 import (
 	"context"
 	"errors"
-	"net/url"
 
 	api "github.com/macrat/ayd/lib-ayd"
 )
@@ -19,13 +18,13 @@ var (
 type Prober interface {
 	// Target returns the target URL.
 	// This URL should not change during lifetime of the instance.
-	Target() *url.URL
+	Target() *api.URL
 
 	// Probe checks the target is dead or alive, and report result(s) to the Reporter.
 	Probe(context.Context, Reporter)
 }
 
-func NewProberFromURL(u *url.URL) (Prober, error) {
+func NewProberFromURL(u *api.URL) (Prober, error) {
 	scheme, _, _ := SplitScheme(u.Scheme)
 
 	switch scheme {
@@ -51,7 +50,7 @@ func NewProberFromURL(u *url.URL) (Prober, error) {
 }
 
 func NewProber(rawURL string) (Prober, error) {
-	u, err := url.Parse(rawURL)
+	u, err := api.ParseURL(rawURL)
 	if err != nil {
 		return nil, ErrInvalidURL
 	}

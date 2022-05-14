@@ -95,7 +95,7 @@ td.unknown::before { background-color: rgb(var(--fg)) }
                     <td>{{ .CheckedAt | time2str }}</td>
                     <td class="status {{ .Status | to_lower }}">{{ .Status }}</td>
                     <td class="latency">{{ .Latency }}</td>
-                    <td class="target">{{ .Target | url_unescape }}</td>
+                    <td class="target">{{ .Target }}</td>
                     <td class="message">{{ .Message }}</td>
                 </tr>{{ end }}
             </tbody>{{ if .Tail }}
@@ -105,7 +105,7 @@ td.unknown::before { background-color: rgb(var(--fg)) }
                     <td>{{ .CheckedAt | time2str }}</td>
                     <td class="status {{ .Status | to_lower }}">{{ .Status }}</td>
                     <td class="latency">{{ .Latency }}</td>
-                    <td class="target">{{ .Target | url_unescape }}</td>
+                    <td class="target">{{ .Target }}</td>
                     <td class="message">{{ .Message }}</td>
                 </tr>{{ end }}
             </tbody>{{ end }}

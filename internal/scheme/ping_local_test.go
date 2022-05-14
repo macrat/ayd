@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"net"
-	"net/url"
 	"testing"
 	"time"
 
@@ -149,7 +148,7 @@ func TestPingResultToRecord(t *testing.T) {
 
 	tests := []struct {
 		Context   context.Context
-		Target    *url.URL
+		Target    *api.URL
 		StartTime time.Time
 		Result    pinger.Result
 		Message   string
@@ -157,7 +156,7 @@ func TestPingResultToRecord(t *testing.T) {
 	}{
 		{
 			aliveCtx,
-			&url.URL{Scheme: "dummy-ping", Opaque: "healthy"},
+			&api.URL{Scheme: "dummy-ping", Opaque: "healthy"},
 			time.Now(),
 			pinger.Result{
 				Target: &net.IPAddr{net.IPv4(127, 0, 0, 1), ""},
@@ -173,7 +172,7 @@ func TestPingResultToRecord(t *testing.T) {
 		},
 		{
 			aliveCtx,
-			&url.URL{Scheme: "dummy-ping", Opaque: "failure"},
+			&api.URL{Scheme: "dummy-ping", Opaque: "failure"},
 			time.Now().Add(-10 * time.Second),
 			pinger.Result{
 				Target: &net.IPAddr{net.IPv4(127, 1, 2, 3), ""},
@@ -186,7 +185,7 @@ func TestPingResultToRecord(t *testing.T) {
 		},
 		{
 			aliveCtx,
-			&url.URL{Scheme: "dummy-ping", Opaque: "degrade"},
+			&api.URL{Scheme: "dummy-ping", Opaque: "degrade"},
 			time.Now().Add(-20 * time.Second),
 			pinger.Result{
 				Target: &net.IPAddr{net.IPv4(127, 3, 2, 1), ""},
@@ -202,7 +201,7 @@ func TestPingResultToRecord(t *testing.T) {
 		},
 		{
 			cancelCtx,
-			&url.URL{Scheme: "dummy-ping", Opaque: "timeout"},
+			&api.URL{Scheme: "dummy-ping", Opaque: "timeout"},
 			time.Now().Add(-30 * time.Second),
 			pinger.Result{
 				Target: &net.IPAddr{net.IPv4(127, 3, 2, 1), ""},

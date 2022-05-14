@@ -2,7 +2,6 @@ package ayd_test
 
 import (
 	"encoding/json"
-	"net/url"
 	"testing"
 	"time"
 
@@ -34,7 +33,7 @@ func TestIncident(t *testing.T) {
 
 	t.Run("marshal-and-unmarshal", func(t *testing.T) {
 		i1 := ayd.Incident{
-			Target:     &url.URL{Scheme: "dummy", Opaque: "failure", Fragment: "hello-world"},
+			Target:     &ayd.URL{Scheme: "dummy", Opaque: "failure", Fragment: "hello-world"},
 			Status:     ayd.StatusFailure,
 			Message:    "it's incident",
 			CausedAt:   time.Date(2001, 1, 2, 15, 4, 5, 0, time.UTC),
@@ -58,7 +57,7 @@ func TestIncident(t *testing.T) {
 	t.Run("unmarshal", func(t *testing.T) {
 		source := `{"target":"dummy:failure#hello-world", "status":"FAILURE", "message":"it's incident", "caused_at":"2021-01-02T15:04:05Z"}`
 		expect := ayd.Incident{
-			Target:   &url.URL{Scheme: "dummy", Opaque: "failure", Fragment: "hello-world"},
+			Target:   &ayd.URL{Scheme: "dummy", Opaque: "failure", Fragment: "hello-world"},
 			Status:   ayd.StatusFailure,
 			Message:  "it's incident",
 			CausedAt: time.Date(2021, 1, 2, 15, 4, 5, 0, time.UTC),

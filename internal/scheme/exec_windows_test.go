@@ -29,7 +29,7 @@ func TestExecScheme_Probe_windows(t *testing.T) {
 		}
 
 		for _, tt := range tests {
-			p, err := scheme.NewExecScheme(&url.URL{Scheme: "exec", Opaque: tt.From})
+			p, err := scheme.NewExecScheme(&api.URL{Scheme: "exec", Opaque: tt.From})
 			if err != nil {
 				t.Errorf("%s: failed to create probe: %s", tt.From, err)
 			}

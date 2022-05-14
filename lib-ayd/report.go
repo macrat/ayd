@@ -80,7 +80,7 @@ func (r Report) TargetURLs() []*url.URL {
 
 	i := 0
 	for _, x := range r.ProbeHistory {
-		us[i] = x.Target
+		us[i] = x.Target.ToURL()
 		i++
 	}
 

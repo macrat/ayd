@@ -4,7 +4,6 @@ import (
 	_ "embed"
 	"fmt"
 	"html/template"
-	"net/url"
 	"sort"
 	"strings"
 	"time"
@@ -93,9 +92,6 @@ var (
 		},
 		"latency2float": func(d time.Duration) float64 {
 			return float64(d.Microseconds()) / 1000.0
-		},
-		"url_unescape": func(u *url.URL) string {
-			return api.URLToStr(u)
 		},
 		"latency_graph": func(rs []api.Record) string {
 			if len(rs) == 0 {

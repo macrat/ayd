@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
-	"net/url"
 	"regexp"
 	"strings"
 	"testing"
@@ -85,19 +84,19 @@ func TestLogScanner(t *testing.T) {
 					t.Fatalf("failed to create store: %s", err)
 				}
 
-				s.Report(&url.URL{Scheme: "dummy"}, api.Record{
+				s.Report(&api.URL{Scheme: "dummy"}, api.Record{
 					CheckedAt: time.Date(2000, 1, 1, 13, 2, 3, 0, time.UTC),
-					Target:    &url.URL{Scheme: "dummy", Fragment: "hello"},
+					Target:    &api.URL{Scheme: "dummy", Fragment: "hello"},
 					Message:   "first",
 				})
-				s.Report(&url.URL{Scheme: "dummy"}, api.Record{
+				s.Report(&api.URL{Scheme: "dummy"}, api.Record{
 					CheckedAt: time.Date(2000, 1, 2, 13, 2, 3, 0, time.UTC),
-					Target:    &url.URL{Scheme: "dummy", Fragment: "world"},
+					Target:    &api.URL{Scheme: "dummy", Fragment: "world"},
 					Message:   "second",
 				})
-				s.Report(&url.URL{Scheme: "dummy"}, api.Record{
+				s.Report(&api.URL{Scheme: "dummy"}, api.Record{
 					CheckedAt: time.Date(2000, 1, 3, 13, 2, 3, 0, time.UTC),
-					Target:    &url.URL{Scheme: "dummy", Fragment: "hello"},
+					Target:    &api.URL{Scheme: "dummy", Fragment: "hello"},
 					Message:   "last",
 				})
 
@@ -182,7 +181,7 @@ func TestQuery(t *testing.T) {
 		{
 			"dummy:healthy",
 			api.Record{
-				Target:  &url.URL{Scheme: "dummy", Opaque: "healthy"},
+				Target:  &api.URL{Scheme: "dummy", Opaque: "healthy"},
 				Message: "foobar",
 			},
 			true,
@@ -190,7 +189,7 @@ func TestQuery(t *testing.T) {
 		{
 			"dummy:",
 			api.Record{
-				Target:  &url.URL{Scheme: "dummy", Opaque: "healthy"},
+				Target:  &api.URL{Scheme: "dummy", Opaque: "healthy"},
 				Message: "foobar",
 			},
 			true,
@@ -198,7 +197,7 @@ func TestQuery(t *testing.T) {
 		{
 			"foo bar",
 			api.Record{
-				Target:  &url.URL{Scheme: "dummy", Opaque: "healthy"},
+				Target:  &api.URL{Scheme: "dummy", Opaque: "healthy"},
 				Message: "foobar",
 			},
 			true,
@@ -206,7 +205,7 @@ func TestQuery(t *testing.T) {
 		{
 			"healthy bar",
 			api.Record{
-				Target:  &url.URL{Scheme: "dummy", Opaque: "healthy"},
+				Target:  &api.URL{Scheme: "dummy", Opaque: "healthy"},
 				Message: "foobar",
 			},
 			true,
@@ -214,7 +213,7 @@ func TestQuery(t *testing.T) {
 		{
 			"healthy baz",
 			api.Record{
-				Target:  &url.URL{Scheme: "dummy", Opaque: "healthy"},
+				Target:  &api.URL{Scheme: "dummy", Opaque: "healthy"},
 				Message: "foobar",
 			},
 			false,
@@ -222,7 +221,7 @@ func TestQuery(t *testing.T) {
 		{
 			"failure bar",
 			api.Record{
-				Target:  &url.URL{Scheme: "dummy", Opaque: "healthy"},
+				Target:  &api.URL{Scheme: "dummy", Opaque: "healthy"},
 				Message: "foobar",
 			},
 			false,
@@ -231,7 +230,7 @@ func TestQuery(t *testing.T) {
 			"failure healthy",
 			api.Record{
 				Status:  api.StatusFailure,
-				Target:  &url.URL{Scheme: "dummy", Opaque: "healthy"},
+				Target:  &api.URL{Scheme: "dummy", Opaque: "healthy"},
 				Message: "foobar",
 			},
 			true,
@@ -240,7 +239,7 @@ func TestQuery(t *testing.T) {
 			"<100ms",
 			api.Record{
 				Latency: 50 * time.Millisecond,
-				Target:  &url.URL{Scheme: "dummy", Opaque: "healthy"},
+				Target:  &api.URL{Scheme: "dummy", Opaque: "healthy"},
 				Message: "foobar",
 			},
 			true,
@@ -249,7 +248,7 @@ func TestQuery(t *testing.T) {
 			"<10ms >0s",
 			api.Record{
 				Latency: 50 * time.Millisecond,
-				Target:  &url.URL{Scheme: "dummy", Opaque: "healthy"},
+				Target:  &api.URL{Scheme: "dummy", Opaque: "healthy"},
 				Message: "foobar",
 			},
 			false,
@@ -258,7 +257,7 @@ func TestQuery(t *testing.T) {
 			">=50ms <=1s",
 			api.Record{
 				Latency: 50 * time.Millisecond,
-				Target:  &url.URL{Scheme: "dummy", Opaque: "healthy"},
+				Target:  &api.URL{Scheme: "dummy", Opaque: "healthy"},
 				Message: "foobar",
 			},
 			true,
@@ -267,7 +266,7 @@ func TestQuery(t *testing.T) {
 			"=50ms !=100ms",
 			api.Record{
 				Latency: 50 * time.Millisecond,
-				Target:  &url.URL{Scheme: "dummy", Opaque: "healthy"},
+				Target:  &api.URL{Scheme: "dummy", Opaque: "healthy"},
 				Message: "foobar",
 			},
 			true,

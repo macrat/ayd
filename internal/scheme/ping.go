@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net"
-	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -177,7 +176,7 @@ func (p *autoPingerStruct) Ping(ctx context.Context, target *net.IPAddr) (startT
 	return
 }
 
-func pingResultToRecord(ctx context.Context, target *url.URL, startTime time.Time, result pinger.Result) api.Record {
+func pingResultToRecord(ctx context.Context, target *api.URL, startTime time.Time, result pinger.Result) api.Record {
 	rec := api.Record{
 		CheckedAt: startTime,
 		Latency:   result.AvgRTT,
@@ -225,10 +224,10 @@ func checkPingPermission() error {
 
 // PingProbe is a Prober implementation for SNMP echo request aka ping.
 type PingProbe struct {
-	target *url.URL
+	target *api.URL
 }
 
-func NewPingProbe(u *url.URL) (PingProbe, error) {
+func NewPingProbe(u *api.URL) (PingProbe, error) {
 	scheme, separator, _ := SplitScheme(u.Scheme)
 	if separator != 0 {
 		return PingProbe{}, ErrUnsupportedScheme
@@ -239,15 +238,15 @@ func NewPingProbe(u *url.URL) (PingProbe, error) {
 	}
 
 	if u.Opaque != "" {
-		return PingProbe{&url.URL{Scheme: scheme, Opaque: strings.ToLower(u.Opaque), Fragment: u.Fragment}}, nil
-	} else if u.Hostname() != "" {
-		return PingProbe{&url.URL{Scheme: scheme, Opaque: strings.ToLower(u.Hostname()), Fragment: u.Fragment}}, nil
+		return PingProbe{&api.URL{Scheme: scheme, Opaque: strings.ToLower(u.Opaque), Fragment: u.Fragment}}, nil
+	} else if u.ToURL().Hostname() != "" {
+		return PingProbe{&api.URL{Scheme: scheme, Opaque: strings.ToLower(u.ToURL().Hostname()), Fragment: u.Fragment}}, nil
 	} else {
 		return PingProbe{}, ErrMissingHost
 	}
 }
 
-func (s PingProbe) Target() *url.URL {
+func (s PingProbe) Target() *api.URL {
 	return s.target
 }
 

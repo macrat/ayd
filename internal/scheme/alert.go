@@ -19,13 +19,13 @@ var (
 type Alerter interface {
 	// Target returns the alert target URL.
 	// This URL should not change during lifetime of the instance.
-	Target() *url.URL
+	Target() *api.URL
 
 	// Alert sends an alert to the target, and report result(s) to the Reporter.
 	Alert(context.Context, Reporter, api.Record)
 }
 
-func NewAlerterFromURL(u *url.URL) (Alerter, error) {
+func NewAlerterFromURL(u *api.URL) (Alerter, error) {
 	scheme, _, _ := SplitScheme(u.Scheme)
 
 	switch scheme {
@@ -51,7 +51,7 @@ func NewAlerterFromURL(u *url.URL) (Alerter, error) {
 }
 
 func NewAlerter(target string) (Alerter, error) {
-	u, err := url.Parse(target)
+	u, err := api.ParseURL(target)
 	if err != nil {
 		return nil, ErrInvalidURL
 	}
@@ -62,21 +62,21 @@ func NewAlerter(target string) (Alerter, error) {
 // AlertReporter is a wrapper of Reporter interface for alert schemes.
 // It replaces source URL, and puts "alert:" prefix to the target URL.
 type AlertReporter struct {
-	Source   *url.URL
+	Source   *api.URL
 	Upstream Reporter
 }
 
-func (r AlertReporter) Report(_ *url.URL, rec api.Record) {
+func (r AlertReporter) Report(_ *api.URL, rec api.Record) {
 	if s, _, _ := SplitScheme(rec.Target.Scheme); s != "alert" && s != "ayd" {
-		rec.Target = &url.URL{
+		rec.Target = &api.URL{
 			Scheme: "alert",
-			Opaque: api.URLToStr(rec.Target),
+			Opaque: rec.Target.String(),
 		}
 	}
 	r.Upstream.Report(r.Source, rec)
 }
 
-func (r AlertReporter) DeactivateTarget(source *url.URL, targets ...*url.URL) {
+func (r AlertReporter) DeactivateTarget(source *api.URL, targets ...*api.URL) {
 	r.Upstream.DeactivateTarget(source, targets...)
 }
 
@@ -104,8 +104,8 @@ func NewAlerterSet(targets []string) (AlerterSet, error) {
 
 // Target implements Alert interface.
 // This method always returns alert-set: URL.
-func (as AlerterSet) Target() *url.URL {
-	return &url.URL{Scheme: "alert-set"}
+func (as AlerterSet) Target() *api.URL {
+	return (*api.URL)(&url.URL{Scheme: "alert-set"})
 }
 
 // Alert of AlerterSet calls all Alert methods of children parallelly.

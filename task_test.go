@@ -3,7 +3,6 @@ package main_test
 import (
 	"context"
 	"errors"
-	"net/url"
 	"strings"
 	"testing"
 
@@ -16,8 +15,8 @@ import (
 
 type PanicProbe struct{}
 
-func (p PanicProbe) Target() *url.URL {
-	return &url.URL{Scheme: "test", Opaque: "panic"}
+func (p PanicProbe) Target() *api.URL {
+	return &api.URL{Scheme: "test", Opaque: "panic"}
 }
 
 func (p PanicProbe) Probe(ctx context.Context, r scheme.Reporter) {

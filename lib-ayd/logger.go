@@ -12,7 +12,7 @@ import (
 // Logger is the logger for Ayd plugin
 type Logger struct {
 	writer   io.Writer
-	target   *url.URL
+	target   *URL
 	stime    time.Time
 	latency  time.Duration
 	useTimer bool
@@ -22,7 +22,7 @@ type Logger struct {
 func NewLoggerWithWriter(w io.Writer, target *url.URL) Logger {
 	return Logger{
 		writer: w,
-		target: target,
+		target: (*URL)(target),
 	}
 }
 
@@ -120,7 +120,7 @@ func (l Logger) Failure(message string) error {
 func (l Logger) WithTarget(target *url.URL) Logger {
 	return Logger{
 		writer:   l.writer,
-		target:   target,
+		target:   (*URL)(target),
 		stime:    l.stime,
 		latency:  l.latency,
 		useTimer: l.useTimer,
