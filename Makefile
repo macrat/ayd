@@ -4,7 +4,7 @@ COMMIT = $(shell git rev-parse --short $(shell git describe))
 
 
 ayd: ${SOURCES}
-	go build -ldflags="-s -w -X main.version=${VERSION} -X main.commit=${COMMIT}" -trimpath .
+	CGO_ENABLED=0 go build -ldflags="-s -w -X main.version=${VERSION} -X main.commit=${COMMIT}" -trimpath .
 
 
 .PHONY: test cover fmt clean install
