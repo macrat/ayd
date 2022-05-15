@@ -7,6 +7,8 @@ import (
 )
 
 // Report is a report from Ayd server.
+//
+// Deprecated: this struct planed be removed in future version.
 type Report struct {
 	// ProbeHistory is the map of ProbeHistory.
 	// The key is target URL string, and the value is struct ProbeHistory.
