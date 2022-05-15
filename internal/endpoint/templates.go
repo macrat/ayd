@@ -164,6 +164,8 @@ func (b *statusSummaryBuilder) Add(s api.Status) {
 }
 
 func (b *statusSummaryBuilder) Build() []statusSummary {
+	// TODO: add test for this function
+
 	result := make([]statusSummary, len(b.Count))
 	i := 0
 	for s, c := range b.Count {
@@ -183,6 +185,8 @@ func (b *statusSummaryBuilder) Build() []statusSummary {
 		result[i].Cumulative += sum
 		sum += result[i].Percent
 	}
-	result[len(result)-1].IsLast = true
+	if len(result) > 0 {
+		result[len(result)-1].IsLast = true
+	}
 	return result
 }
