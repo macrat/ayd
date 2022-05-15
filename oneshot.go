@@ -10,15 +10,11 @@ import (
 )
 
 func (cmd *AydCommand) RunOneshot(ctx context.Context, s *store.Store) (exitCode int) {
-	var failure atomic.Value
-	var unknown atomic.Value
+	var unhealthy atomic.Value
 
 	s.OnStatusChanged = append(s.OnStatusChanged, func(r api.Record) {
-		switch r.Status {
-		case api.StatusFailure:
-			failure.Store(true)
-		case api.StatusUnknown:
-			unknown.Store(true)
+		if r.Status != api.StatusHealthy {
+			unhealthy.Store(true)
 		}
 	})
 
@@ -34,12 +30,9 @@ func (cmd *AydCommand) RunOneshot(ctx context.Context, s *store.Store) (exitCode
 	}
 	wg.Wait()
 
-	switch {
-	case failure.Load() != nil:
+	if unhealthy.Load() != nil {
 		return 1
-	case unknown.Load() != nil:
-		return 2
-	default:
+	} else {
 		return 0
 	}
 }

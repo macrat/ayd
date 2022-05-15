@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+
+<rss version="2.0">
+    <channel>
+        <title>Ayd incident history</title>
+        <description>Incident history that Ayd status monitoring tool detected.</description>
+        <docs>https://github.com/macrat/ayd#readme</docs>
+        [[MASKED_DATA]]
+
+        <item>
+            <guid isPermaLink="false">TODO</guid>
+            [[MASKED_DATA]]
+            <title>[FAILURE] http://b.example.com</title>
+            <category domain="status">2021-01-02T15:04:06Z</category>
+            <category domain="kind">failure</category>
+            <link>http://b.example.com</link>
+            <description><![CDATA[<b>target:</b> http://b.example.com<br />
+<b>status:</b> FAILURE<br />
+<b>period:</b> 2021-01-02T15:04:05Z - 2021-01-02T15:04:06Z<br />
+<br />
+<pre>this is failure</pre>]]></description>
+        </item>
+        <item>
+            <guid isPermaLink="false">TODO</guid>
+            [[MASKED_DATA]]
+            <title>[UNKNOWN] http://c.example.com</title>
+            <category domain="status">ongoing</category>
+            <category domain="kind">unknown</category>
+            <link>http://c.example.com</link>
+            <description><![CDATA[<b>target:</b> http://c.example.com<br />
+<b>status:</b> UNKNOWN<br />
+<b>period:</b> 2021-01-02T15:04:09Z - ongoing<br />
+<br />
+<pre>this is unknown</pre>]]></description>
+        </item>
+    </channel>
+</rss>

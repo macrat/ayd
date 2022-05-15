@@ -2,7 +2,6 @@ package scheme_test
 
 import (
 	"context"
-	"net/url"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -143,7 +142,7 @@ func TestPluginProbe_inactiveTargetHandling(t *testing.T) {
 	defer cancel()
 
 	r := &testutil.DummyReporter{}
-	r.Actives = []*url.URL{{Scheme: "plug", Opaque: "change"}}
+	r.Actives = []*api.URL{{Scheme: "plug", Opaque: "change"}}
 
 	p.Probe(ctx, r)
 	r.AssertActives(t, "changed:plug")

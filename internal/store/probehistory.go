@@ -1,8 +1,6 @@
 package store
 
 import (
-	"net/url"
-
 	api "github.com/macrat/ayd/lib-ayd"
 )
 
@@ -11,15 +9,20 @@ import (
 // It also records reporter URLs that called as "source" to trace this target is active or not.
 // See also isActive method.
 type probeHistory struct {
-	Target  *url.URL
+	Target  *api.URL
 	Records []api.Record
 	sources []string
 }
 
-func (ph probeHistory) MakeReport() api.ProbeHistory {
+func (ph probeHistory) MakeReport(length int) api.ProbeHistory {
+	l := len(ph.Records) - length
+	if l < 0 {
+		l = 0
+	}
+
 	r := api.ProbeHistory{
 		Target:  ph.Target,
-		Records: ph.Records,
+		Records: ph.Records[l:],
 	}
 
 	if len(ph.Records) > 0 {
@@ -33,8 +36,8 @@ func (ph probeHistory) MakeReport() api.ProbeHistory {
 
 // addSource appends reporter URL that reports to this probeHistory.
 // The sources will used to detect if is this target active or not.
-func (ph *probeHistory) addSource(source *url.URL) {
-	s := source.Redacted()
+func (ph *probeHistory) addSource(source *api.URL) {
+	s := source.String()
 	for _, x := range ph.sources {
 		if x == s {
 			return
@@ -45,8 +48,8 @@ func (ph *probeHistory) addSource(source *url.URL) {
 }
 
 // removeSource removes reporter URL, that reports to this probeHistory, from sources.
-func (ph *probeHistory) removeSource(source *url.URL) {
-	s := source.Redacted()
+func (ph *probeHistory) removeSource(source *api.URL) {
+	s := source.String()
 	for i, x := range ph.sources {
 		if x == s {
 			ph.sources = append(ph.sources[:i], ph.sources[i+1:]...)
@@ -74,8 +77,8 @@ type probeHistoryMap map[string]*probeHistory
 //
 // `source` of argument means who is reporting this record.
 // In the almost cases, it is the same as r.Target, but some cases like `source:` have another URL.
-func (hs probeHistoryMap) Append(source *url.URL, r api.Record) {
-	target := r.Target.Redacted()
+func (hs probeHistoryMap) Append(source *api.URL, r api.Record) {
+	target := r.Target.String()
 
 	if h, ok := hs[target]; ok {
 		h.Records = append(h.Records, r)
@@ -98,6 +101,6 @@ func (hs probeHistoryMap) Append(source *url.URL, r api.Record) {
 }
 
 // isActive returns if is the specified target active in current execution or not.
-func (hs probeHistoryMap) isActive(target *url.URL) bool {
-	return hs[target.Redacted()].isActive()
+func (hs probeHistoryMap) isActive(target *api.URL) bool {
+	return hs[target.String()].isActive()
 }

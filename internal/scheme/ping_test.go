@@ -3,7 +3,6 @@ package scheme_test
 import (
 	"context"
 	"errors"
-	"net/url"
 	"os"
 	"runtime"
 	"testing"
@@ -17,16 +16,16 @@ import (
 func TestPingProbe_Probe(t *testing.T) {
 	t.Parallel()
 
-	if _, err := scheme.NewPingProbe(&url.URL{Scheme: "ping", Opaque: "localhost"}); err != nil {
+	if _, err := scheme.NewPingProbe(&api.URL{Scheme: "ping", Opaque: "localhost"}); err != nil {
 		t.Fatalf("failed to check ping permission: %s", err)
 	}
 
 	AssertProbe(t, []ProbeTest{
-		{"ping:localhost", api.StatusHealthy, `ip=(127.0.0.1|::1) rtt\(min/avg/max\)=[0-9.]*/[0-9.]*/[0-9.]* send/recv=3/3`, ""},
-		{"ping:127.0.0.1", api.StatusHealthy, `ip=127.0.0.1 rtt\(min/avg/max\)=[0-9.]*/[0-9.]*/[0-9.]* send/recv=3/3`, ""},
-		{"ping:::1", api.StatusHealthy, `ip=::1 rtt\(min/avg/max\)=[0-9.]*/[0-9.]*/[0-9.]* send/recv=3/3`, ""},
-		{"ping4:localhost", api.StatusHealthy, `ip=127.0.0.1 rtt\(min/avg/max\)=[0-9.]*/[0-9.]*/[0-9.]* send/recv=3/3`, ""},
-		{"ping6:localhost", api.StatusHealthy, `ip=::1 rtt\(min/avg/max\)=[0-9.]*/[0-9.]*/[0-9.]* send/recv=3/3`, ""},
+		{"ping:localhost", api.StatusHealthy, `ip=(127.0.0.1|::1) rtt\(min/avg/max\)=[0-9.]*/[0-9.]*/[0-9.]* recv/sent=3/3`, ""},
+		{"ping:127.0.0.1", api.StatusHealthy, `ip=127.0.0.1 rtt\(min/avg/max\)=[0-9.]*/[0-9.]*/[0-9.]* recv/sent=3/3`, ""},
+		{"ping:::1", api.StatusHealthy, `ip=::1 rtt\(min/avg/max\)=[0-9.]*/[0-9.]*/[0-9.]* recv/sent=3/3`, ""},
+		{"ping4:localhost", api.StatusHealthy, `ip=127.0.0.1 rtt\(min/avg/max\)=[0-9.]*/[0-9.]*/[0-9.]* recv/sent=3/3`, ""},
+		{"ping6:localhost", api.StatusHealthy, `ip=::1 rtt\(min/avg/max\)=[0-9.]*/[0-9.]*/[0-9.]* recv/sent=3/3`, ""},
 		{"ping:of-course-definitely-no-such-host", api.StatusUnknown, `.*`, ""},
 	}, 2)
 
@@ -66,6 +65,15 @@ func TestPingProbe_Probe(t *testing.T) {
 			t.Errorf("unexpected status: %s", records[0].Status)
 		}
 	})
+
+	t.Run("with-settings", func(t *testing.T) {
+		t.Setenv("AYD_PING_PACKETS", "10")
+		t.Setenv("AYD_PING_INTERVAL", "1ms")
+
+		AssertProbe(t, []ProbeTest{
+			{"ping:localhost", api.StatusHealthy, `ip=(127.0.0.1|::1) rtt\(min/avg/max\)=[0-9.]*/[0-9.]*/[0-9.]* recv/sent=10/10`, ""},
+		}, 2)
+	})
 }
 
 func TestPingProbe(t *testing.T) {
@@ -95,7 +103,7 @@ func TestPingProbe(t *testing.T) {
 	for _, tt := range tests {
 		t.Run("AYD_PRIVILEGED="+tt.Env, func(t *testing.T) {
 			os.Setenv("AYD_PRIVILEGED", tt.Env)
-			_, err := scheme.NewPingProbe(&url.URL{Scheme: "ping", Opaque: "localhost"})
+			_, err := scheme.NewPingProbe(&api.URL{Scheme: "ping", Opaque: "localhost"})
 
 			if tt.Fail && !errors.Is(err, scheme.ErrFailedToPreparePing) {
 				t.Errorf("expected permission error but got %v", err)

@@ -18,7 +18,8 @@ func TestAydCommand_RunOneshot(t *testing.T) {
 	}{
 		{[]string{"dummy:#with-healthy", "dummy:healthy", "dummy:"}, 3, 0},
 		{[]string{"dummy:#with-failure", "dummy:failure", "dummy:"}, 3, 1},
-		{[]string{"dummy:#with-unknown", "dummy:unknown", "dummy:"}, 3, 2},
+		{[]string{"dummy:#with-unknown", "dummy:unknown", "dummy:"}, 3, 1},
+		{[]string{"dummy:#with-two-errors", "dummy:failure", "dummy:degrade"}, 3, 1},
 		{[]string{"dummy:#with-interval", "10m", "dummy:healthy"}, 2, 0},
 		{[]string{"dummy:#single-target"}, 1, 0},
 		{[]string{"dummy:?latency=10ms"}, 1, 0},

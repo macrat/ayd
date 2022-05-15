@@ -42,7 +42,7 @@ func (cmd *AydCommand) RunServer(ctx context.Context, s *store.Store) (exitCode 
 
 	// this loop and below loop can't combine to single loop, for separate the log header and status check records surelly.
 	for _, t := range cmd.Tasks {
-		fmt.Fprintf(cmd.OutStream, "%s\t%s\n", t.Schedule, t.Prober.Target().Redacted())
+		fmt.Fprintf(cmd.OutStream, "%s\t%s\n", t.Schedule, t.Prober.Target().String())
 	}
 	fmt.Fprintln(cmd.OutStream)
 

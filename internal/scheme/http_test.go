@@ -4,7 +4,6 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"strings"
 	"testing"
 	"time"
@@ -73,7 +72,7 @@ func TestHTTPScheme_Alert(t *testing.T) {
 		CheckedAt: time.Date(2021, 1, 2, 15, 4, 5, 0, time.UTC),
 		Status:    api.StatusFailure,
 		Latency:   123456 * time.Microsecond,
-		Target:    &url.URL{Scheme: "dummy", Fragment: "hello"},
+		Target:    &api.URL{Scheme: "dummy", Fragment: "hello"},
 		Message:   "hello world",
 	})
 

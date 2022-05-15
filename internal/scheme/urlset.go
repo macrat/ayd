@@ -1,22 +1,23 @@
 package scheme
 
 import (
-	"net/url"
 	"sort"
 	"strings"
+
+	api "github.com/macrat/ayd/lib-ayd"
 )
 
 // urlSet is a set of URL.
-type urlSet []*url.URL
+type urlSet []*api.URL
 
-func (s urlSet) search(u *url.URL) int {
+func (s urlSet) search(u *api.URL) int {
 	return sort.Search(len(s), func(i int) bool {
 		return strings.Compare(s[i].String(), u.String()) <= 0
 	})
 }
 
 // Has check if the URL is in this urlSet or not.
-func (s urlSet) Has(u *url.URL) bool {
+func (s urlSet) Has(u *api.URL) bool {
 	i := s.search(u)
 	if len(s) == i {
 		return false
@@ -27,7 +28,7 @@ func (s urlSet) Has(u *url.URL) bool {
 
 // Add adds a URL to urlSet.
 // If the URL is already added, it will be ignored.
-func (s *urlSet) Add(u *url.URL) {
+func (s *urlSet) Add(u *api.URL) {
 	i := s.search(u)
 	if len(*s) == i {
 		*s = append(*s, u)

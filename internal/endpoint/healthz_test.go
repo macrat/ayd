@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/macrat/ayd/internal/endpoint"
 	"github.com/macrat/ayd/internal/testutil"
@@ -51,7 +52,7 @@ func (d DummyErrorsGetter) Targets() []string {
 	return nil
 }
 
-func (d DummyErrorsGetter) MakeReport() api.Report {
+func (d DummyErrorsGetter) MakeReport(length int) api.Report {
 	return api.Report{}
 }
 
@@ -68,6 +69,10 @@ func (d DummyErrorsGetter) IncidentCount() int {
 
 func (d DummyErrorsGetter) String() string {
 	return fmt.Sprintf("healthy:%v/messages:%v", d.healthy, d.messages)
+}
+
+func (d DummyErrorsGetter) OpenLog(since, until time.Time) (api.LogScanner, error) {
+	return nil, fmt.Errorf("not implemented")
 }
 
 func TestHealthzEndpoint_errors(t *testing.T) {

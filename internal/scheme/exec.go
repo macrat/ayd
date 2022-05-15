@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -27,20 +26,20 @@ var (
 	executeStatusRe  = regexp.MustCompile("(?m)^::status::((?i:healthy|failure|aborted|unknown))(?:\n|$)")
 )
 
-func getExecuteEnvByURL(u *url.URL) []string {
+func getExecuteEnvByURL(u *api.URL) []string {
 	env := os.Environ()
-	for k, v := range u.Query() {
+	for k, v := range u.ToURL().Query() {
 		env = append(env, k+"="+v[len(v)-1])
 	}
 	return env
 }
 
 type ExecScheme struct {
-	target *url.URL
+	target *api.URL
 	env    []string
 }
 
-func NewExecScheme(u *url.URL) (ExecScheme, error) {
+func NewExecScheme(u *api.URL) (ExecScheme, error) {
 	s := ExecScheme{}
 
 	if _, separator, _ := SplitScheme(u.Scheme); separator != 0 {
@@ -51,7 +50,7 @@ func NewExecScheme(u *url.URL) (ExecScheme, error) {
 	if u.Opaque == "" {
 		path = u.Path
 	}
-	s.target = &url.URL{
+	s.target = &api.URL{
 		Scheme:   "exec",
 		Opaque:   filepath.ToSlash(path),
 		RawQuery: u.RawQuery,
@@ -71,7 +70,7 @@ func NewExecScheme(u *url.URL) (ExecScheme, error) {
 	return s, nil
 }
 
-func (s ExecScheme) Target() *url.URL {
+func (s ExecScheme) Target() *api.URL {
 	return s.target
 }
 

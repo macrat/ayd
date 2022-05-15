@@ -2,13 +2,12 @@ package ayd
 
 import (
 	"encoding/json"
-	"net/url"
 	"time"
 )
 
 // Incident is a period of failure or unknown status that has the same status and message
 type Incident struct {
-	Target *url.URL
+	Target *URL
 
 	Status Status
 
@@ -37,7 +36,7 @@ func (i *Incident) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	target, err := url.Parse(ji.Target)
+	target, err := ParseURL(ji.Target)
 	if err != nil {
 		return err
 	}

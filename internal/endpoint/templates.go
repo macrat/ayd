@@ -1,14 +1,26 @@
 package endpoint
 
 import (
+	_ "embed"
 	"fmt"
-	"net/url"
+	"html/template"
+	"sort"
 	"strings"
 	"time"
 
-	"github.com/macrat/ayd/internal/store"
 	api "github.com/macrat/ayd/lib-ayd"
 )
+
+//go:embed templates/base.html
+var baseHTMLTemplateStr string
+
+var baseHTMLTemplate = template.Must(template.New("base.html").Funcs(templateFuncs).Parse(baseHTMLTemplateStr))
+
+func loadHTMLTemplate(s string) *template.Template {
+	return template.Must(
+		template.Must(baseHTMLTemplate.Clone()).Parse(s),
+	)
+}
 
 var (
 	templateFuncs = map[string]interface{}{
@@ -44,11 +56,11 @@ var (
 			}
 			return strings.Repeat(" ", (width-len(s))/2) + s
 		},
-		"pad_records": func(rs []api.Record) []struct{} {
-			if len(rs) >= store.PROBE_HISTORY_LEN {
+		"pad_records": func(length int, rs []api.Record) []struct{} {
+			if len(rs) >= length {
 				return []struct{}{}
 			}
-			return make([]struct{}, store.PROBE_HISTORY_LEN-len(rs))
+			return make([]struct{}, length-len(rs))
 		},
 		"is_unknown": func(s api.Status) bool {
 			return s == api.StatusUnknown
@@ -59,8 +71,8 @@ var (
 		"is_failure": func(s api.Status) bool {
 			return s == api.StatusFailure
 		},
-		"is_debased": func(s api.Status) bool {
-			return s == api.StatusDebased
+		"is_degrade": func(s api.Status) bool {
+			return s == api.StatusDegrade
 		},
 		"is_healthy": func(s api.Status) bool {
 			return s == api.StatusHealthy
@@ -68,15 +80,18 @@ var (
 		"to_lower": func(s fmt.Stringer) string {
 			return strings.ToLower(s.String())
 		},
+		"to_camel": func(s fmt.Stringer) string {
+			lower := strings.ToLower(s.String())
+			return strings.ToUpper(lower[:1]) + lower[1:]
+		},
 		"time2str": func(t time.Time) string {
 			return t.Format(time.RFC3339)
 		},
-		"url_unescape": func(u *url.URL) string {
-			s, err := url.PathUnescape(u.String())
-			if err != nil {
-				return u.String()
-			}
-			return s
+		"time2rfc822": func(t time.Time) string {
+			return t.Format(time.RFC822)
+		},
+		"latency2float": func(d time.Duration) float64 {
+			return float64(d.Microseconds()) / 1000.0
 		},
 		"latency_graph": func(rs []api.Record) string {
 			if len(rs) == 0 {
@@ -91,7 +106,7 @@ var (
 				}
 			}
 
-			offset := store.PROBE_HISTORY_LEN - len(rs)
+			offset := 20 - len(rs)
 
 			result := make([]string, len(rs)+2)
 			result[0] = fmt.Sprintf("M%d,1 %d,%v", offset, offset, 1-rs[0].Latency.Seconds()/maxLatency)
@@ -104,5 +119,70 @@ var (
 
 			return strings.Join(result, " ")
 		},
+		"calculate_summary": func(hs map[string]api.ProbeHistory) []statusSummary {
+			builder := newStatusSummaryBuilder()
+			for _, h := range hs {
+				builder.Add(h.Status)
+			}
+			return builder.Build()
+		},
+		"target_summary": func(rs []api.Record) []statusSummary {
+			builder := newStatusSummaryBuilder()
+			for _, r := range rs {
+				builder.Add(r.Status)
+			}
+			return builder.Build()
+		},
 	}
 )
+
+type statusSummary struct {
+	Status     api.Status
+	Percent    float32
+	Cumulative float32
+	IsLast     bool
+}
+
+type statusSummaryBuilder struct {
+	Count map[api.Status]int
+	Total int
+}
+
+func newStatusSummaryBuilder() *statusSummaryBuilder {
+	return &statusSummaryBuilder{
+		Count: make(map[api.Status]int),
+	}
+}
+
+func (b *statusSummaryBuilder) Add(s api.Status) {
+	if _, ok := b.Count[s]; ok {
+		b.Count[s]++
+	} else {
+		b.Count[s] = 1
+	}
+	b.Total++
+}
+
+func (b *statusSummaryBuilder) Build() []statusSummary {
+	result := make([]statusSummary, len(b.Count))
+	i := 0
+	for s, c := range b.Count {
+		result[i] = statusSummary{s, float32(c) * 100 / float32(b.Total), 0, false}
+		i++
+	}
+	sort.Slice(result, func(i, j int) bool {
+		x, y := result[i], result[j]
+		if x.Percent == y.Percent {
+			return x.Status < y.Status
+		} else {
+			return x.Percent > y.Percent
+		}
+	})
+	var sum float32 = 0.0
+	for i := range result {
+		result[i].Cumulative += sum
+		sum += result[i].Percent
+	}
+	result[len(result)-1].IsLast = true
+	return result
+}

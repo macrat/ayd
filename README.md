@@ -80,18 +80,23 @@ $ ayd https://your-service.example.com ping:another-host.example.com
 
 Ayd has these pages/endpoints.
 
-| path                                                | description                                                          |
-|-----------------------------------------------------|----------------------------------------------------------------------|
-| [/status.html](http://localhost:9000/status.html)   | Human friendly status page in HTML.                                  |
-| [/status.txt](http://localhost:9000/status.txt)     | Human friendly status page in plain text.                            |
-| [/status.json](http://localhost:9000/status.json)   | Machine readable status page in JSON format.                         |
-| [/log.tsv](http://localhost:9000/log.tsv)           | Raw log file in TSV format.                                          |
-| [/log.csv](http://localhost:9000/log.tsv)           | Raw log file in CSV format.                                          |
-| [/log.json](http://localhost:9000/log.json)         | Raw log file in JSON format.                                         |
-| [/targets.txt](http://localhost:9000/targets.txt)   | The list of target URLs, separated by \\n.                           |
-| [/targets.json](http://localhost:9000/targets.json) | The list of target URLs in JSON format.                              |
-| [/metrics](http://localhost:9000/metrics)           | Minimal status page for use by [Prometheus](https://prometheus.io/). |
-| [/healthz](http://localhost:9000/healthz)           | Health status page for checking status of Ayd itself.                |
+| path                                                 | description                                                          |
+|------------------------------------------------------|----------------------------------------------------------------------|
+| [/status.html](http://localhost:9000/status.html)    | Human friendly status page in HTML.                                  |
+| [/status.txt](http://localhost:9000/status.txt)      | Human friendly status page in plain text.                            |
+| [/status.json](http://localhost:9000/status.json)    | Machine readable status page in JSON format.                         |
+| [/incidents.html](http://localhost:9000/status.html) | Human friendly incident history page in HTML.                        |
+| [/incidents.rss](http://localhost:9000/status.rss)   | Incident history feed in RSS 2.0 format.                             |
+| [/incidents.csv](http://localhost:9000/status.csv)   | Incident history in CSV format.                                      |
+| [/incidents.json](http://localhost:9000/status.json) | Incident history in JSON format.                                     |
+| [/log.html](http://localhost:9000/log.html)          | Raw log data in HTML page.                                           |
+| [/log.tsv](http://localhost:9000/log.tsv)            | Raw log file in TSV format.                                          |
+| [/log.csv](http://localhost:9000/log.tsv)            | Raw log file in CSV format.                                          |
+| [/log.json](http://localhost:9000/log.json)          | Raw log file in JSON format.                                         |
+| [/targets.txt](http://localhost:9000/targets.txt)    | The list of target URLs, separated by \\n.                           |
+| [/targets.json](http://localhost:9000/targets.json)  | The list of target URLs in JSON format.                              |
+| [/metrics](http://localhost:9000/metrics)            | Minimal status page for use by [Prometheus](https://prometheus.io/). |
+| [/healthz](http://localhost:9000/healthz)            | Health status page for checking status of Ayd itself.                |
 
 #### Change encoding of `/stauts.txt`
 
@@ -106,14 +111,18 @@ examples:
 Be careful, the target URL or the message won't convert even if set `charset=ascii`. The response could include non-ascii text.
 
 
-#### Filter log entries in `/log.tsv`, `/log.csv`, and `/log.json`
+#### Filter log entries in `/log.html`, `/log.tsv`, `/log.csv`, and `/log.json`
 
-The log endpoints accept `since`, `until`, and `target` query to filtering log entries.
+The log endpoints accept `since`, `until`, `target`, and `query` query to filtering log entries.
 
 `since` and `until` is the queries to filtering by date-time, in RFC3339 format like `2001-02-03T16:05:06+09:00`.
 In default, Ayd replies logs that from 7 days ago to current time.
 
 And, `target` is the query to filtering by target URL.
+
+`query` is space delimited query for filtering records.
+It works as perfect matching for status, partial match for target URL and message text.
+And, you can use filters for latency like `<10ms` or `>=1s`.
 
 examples:
 - <http://localhost:9000/log.tsv?since=2000-01-01T00:00:00Z&until=2001-01-01T00:00:00Z>: Reply is logs from 2000-01-01 to 2000-12-31.
@@ -161,7 +170,7 @@ In alerting, Ayd adds some queries to send information about the incident.
 | query name       | example                                    | description                        |
 |------------------|--------------------------------------------|------------------------------------|
 | `ayd_checked_at` | `2001-02-03T16:05:06+09:00`                | The timestamp when status changed  |
-| `ayd_status`     | `FAILURE`, `DEBASED`, `UNKNOWN`, `HEALTHY` | The current status of the target   |
+| `ayd_status`     | `FAILURE`, `DEGRADE`, `UNKNOWN`, `HEALTHY` | The current status of the target   |
 | `ayd_latency`    | `123.456`                                  | The latency of the latest checking |
 | `ayd_target`     | `https://target.example.com`               | The target URL                     |
 | `ayd_message`    |                                            | The latest message of the target   |
@@ -184,6 +193,7 @@ examples:
 Send ICMP echo request (a.k.a. ping command) and check if the target is connected or not.
 
 Ayd sends 3 packets in 1 second and expects all packets to return.
+These parameter can changed by `AYD_PING_PACKETS` and `AYD_PING_PERIOD` environment variable.
 
 In Linux or MacOS, Ayd use non-privileged ICMP in default. So, you can use ping even if rootless.
 But this way is not work on some platforms for instance docker container.
@@ -191,7 +201,7 @@ Please set `yes` to `AYD_PRIVILEGED` environment variable to use privileged ICMP
 
 You can specify IPv4 or IPv6 with `ping4:` or `ping6:` scheme.
 
-Ping will timeout in 10 seconds and report as failure.
+Ping will timeout in 30 seconds after sent all packets and report as failure.
 
 examples:
 - `ping:example.com`
@@ -287,7 +297,7 @@ hello world
 This output is reporting latency is `123.456ms`, status is `FAILURE`, and message is `hello world`.
 
 - `::latency::`: Reports the latency of service in milliseconds.
-- `::status::`: Reports the status of service in `healthy`, `debased`, `failure`, `aborted`, or `unknown`.
+- `::status::`: Reports the status of service in `healthy`, `degrade`, `failure`, `aborted`, or `unknown`.
 
 Ayd uses the last value if found multiple reports in single output.
 
@@ -425,11 +435,11 @@ The log has these columns.
 
 1. Timestamp in [RFC3339 format](https://tools.ietf.org/html/rfc3339) like `2001-02-30T16:05:06+00:00`.
 
-2. Status of the record that `HEALTHY`, `DEBASED`, `FAILURE`, `UNKNOWN`, or `ABORTED`.
+2. Status of the record that `HEALTHY`, `DEGRADE`, `FAILURE`, `UNKNOWN`, or `ABORTED`.
 
    * `HEALTHY` means service seems working well.
 
-   * `DEBASED` means service seems working but partially degraded.
+   * `DEGRADE` means service seems working but partially degraded.
      You should do something to the target system because the target is not completely healthy.
 
    * `FAILURE` means service seems failure or stopped.
@@ -479,6 +489,19 @@ But, this is may useful for [use Ayd as a parts of script file](#one-shot-mode).
 
 In old version, before 0.10.0 or older, the `-f` option was named `-o` option.
 The `-o` option is still working in the latest version, but it will removed in the future version.
+
+If you want log file in other format, you can download in CSV or JSON via [HTTP endpoint](#status-page-and-endpoints).
+Or, you can use `ayd conv` subcommand like below.
+
+``` shell
+$ cat ayd.log | ayd conv > ayd_log.csv
+
+$ ayd conv ./ayd.log -o ayd_log.csv
+
+$ ayd conv -j ./ayd.log -o ayd_log.json
+
+$ ayd conv -J ./ayd.log -o ayd_log.jsonl
+```
 
 
 ### Alerting

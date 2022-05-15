@@ -127,7 +127,7 @@ func (cmd *AydCommand) ParseArgs(args []string) (exitCode int) {
 }
 
 func (cmd *AydCommand) PrintVersion() {
-	fmt.Fprintf(cmd.OutStream, "Ayd? version %s (%s)\n", version, commit)
+	fmt.Fprintf(cmd.OutStream, "Ayd version %s (%s)\n", version, commit)
 }
 
 func (cmd *AydCommand) Run(args []string) (exitCode int) {
@@ -174,5 +174,15 @@ func (cmd *AydCommand) Run(args []string) (exitCode int) {
 }
 
 func main() {
+	if len(os.Args) > 1 {
+		switch os.Args[1] {
+		case "oneshot":
+			os.Args[1] = "-1"
+			os.Exit(defaultAydCommand.Run(os.Args))
+		case "conv":
+			os.Exit(defaultConvCommand.Run(os.Args))
+		}
+	}
+
 	os.Exit(defaultAydCommand.Run(os.Args))
 }

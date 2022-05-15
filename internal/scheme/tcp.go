@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"net"
-	"net/url"
 	"strings"
 	"time"
 
@@ -17,32 +16,32 @@ var (
 
 // TCPProbe is a Prober implementation for the TCP.
 type TCPProbe struct {
-	target *url.URL
+	target *api.URL
 }
 
-func NewTCPProbe(u *url.URL) (TCPProbe, error) {
+func NewTCPProbe(u *api.URL) (TCPProbe, error) {
 	scheme, separator, _ := SplitScheme(u.Scheme)
 
 	if separator != 0 {
 		return TCPProbe{}, ErrUnsupportedScheme
 	}
 
-	s := TCPProbe{&url.URL{Scheme: scheme, Host: strings.ToLower(u.Host), Fragment: u.Fragment}}
+	s := TCPProbe{&api.URL{Scheme: scheme, Host: strings.ToLower(u.Host), Fragment: u.Fragment}}
 	if u.Host == "" {
 		s.target.Host = strings.ToLower(u.Opaque)
 	}
 
-	if s.target.Hostname() == "" {
+	if s.target.ToURL().Hostname() == "" {
 		return TCPProbe{}, ErrMissingHost
 	}
-	if s.target.Port() == "" {
+	if s.target.ToURL().Port() == "" {
 		return TCPProbe{}, ErrTCPPortMissing
 	}
 
 	return s, nil
 }
 
-func (s TCPProbe) Target() *url.URL {
+func (s TCPProbe) Target() *api.URL {
 	return s.target
 }
 

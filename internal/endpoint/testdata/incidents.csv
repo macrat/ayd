@@ -1,0 +1,3 @@
+caused_at,resolved_at,status,target,message
+2021-01-02T15:04:05Z,2021-01-02T15:04:06Z,FAILURE,http://b.example.com,this is failure
+2021-01-02T15:04:09Z,,UNKNOWN,http://c.example.com,this is unknown

@@ -41,15 +41,15 @@ func checkHTTPRedirect(req *http.Request, via []*http.Request) error {
 }
 
 type HTTPScheme struct {
-	target  *url.URL
+	target  *api.URL
 	request *http.Request
 }
 
-func NewHTTPScheme(u *url.URL) (HTTPScheme, error) {
+func NewHTTPScheme(u *api.URL) (HTTPScheme, error) {
 	u.Host = strings.ToLower(u.Host)
 
-	ucopy := *u
-	requrl := &ucopy
+	var ucopy url.URL = *u.ToURL()
+	var requrl *url.URL = &ucopy
 
 	scheme, separator, method := SplitScheme(requrl.Scheme)
 	method = strings.ToUpper(method)
@@ -68,7 +68,7 @@ func NewHTTPScheme(u *url.URL) (HTTPScheme, error) {
 		}
 	}
 
-	if u.Hostname() == "" {
+	if u.ToURL().Hostname() == "" {
 		return HTTPScheme{}, ErrMissingHost
 	}
 
@@ -88,7 +88,7 @@ func NewHTTPScheme(u *url.URL) (HTTPScheme, error) {
 	}, nil
 }
 
-func (s HTTPScheme) Target() *url.URL {
+func (s HTTPScheme) Target() *api.URL {
 	return s.target
 }
 
@@ -144,14 +144,14 @@ func (s HTTPScheme) Probe(ctx context.Context, r Reporter) {
 }
 
 func (s HTTPScheme) Alert(ctx context.Context, r Reporter, lastRecord api.Record) {
-	qs := s.target.Query()
+	qs := s.target.ToURL().Query()
 	qs.Set("ayd_checked_at", lastRecord.CheckedAt.Format(time.RFC3339))
 	qs.Set("ayd_status", lastRecord.Status.String())
 	qs.Set("ayd_latency", strconv.FormatFloat(float64(lastRecord.Latency.Microseconds())/1000.0, 'f', -1, 64))
 	qs.Set("ayd_target", lastRecord.Target.String())
 	qs.Set("ayd_message", lastRecord.Message)
 
-	u := *s.target
+	var u url.URL = *s.target.ToURL()
 	u.RawQuery = qs.Encode()
 
 	req := s.request.Clone(ctx)

@@ -12,7 +12,7 @@ import (
 // Logger is the logger for Ayd plugin
 type Logger struct {
 	writer   io.Writer
-	target   *url.URL
+	target   *URL
 	stime    time.Time
 	latency  time.Duration
 	useTimer bool
@@ -22,7 +22,7 @@ type Logger struct {
 func NewLoggerWithWriter(w io.Writer, target *url.URL) Logger {
 	return Logger{
 		writer: w,
-		target: target,
+		target: (*URL)(target),
 	}
 }
 
@@ -66,17 +66,7 @@ func (l Logger) Print(r Record) error {
 	return nil
 }
 
-// Unknown prints Unknown status record
-//
-// Seealso StatusUnknown.
-func (l Logger) Unknown(message string) error {
-	return l.Print(Record{
-		Status:  StatusUnknown,
-		Message: message,
-	})
-}
-
-// Healthy prints Healthy status record
+// Healthy prints Healthy status record.
 //
 // Seealso StatusHealthy.
 func (l Logger) Healthy(message string) error {
@@ -86,17 +76,7 @@ func (l Logger) Healthy(message string) error {
 	})
 }
 
-// Failure prints Failure status record
-//
-// Seealso StatusFailure.
-func (l Logger) Failure(message string) error {
-	return l.Print(Record{
-		Status:  StatusFailure,
-		Message: message,
-	})
-}
-
-// Aborted prints Aborted status record
+// Aborted prints Aborted status record.
 //
 // Seealso StatusAborted.
 func (l Logger) Aborted(message string) error {
@@ -106,11 +86,41 @@ func (l Logger) Aborted(message string) error {
 	})
 }
 
+// Unknown prints Unknown status record.
+//
+// Seealso StatusUnknown.
+func (l Logger) Unknown(message string) error {
+	return l.Print(Record{
+		Status:  StatusUnknown,
+		Message: message,
+	})
+}
+
+// Degrade prints Degrade status record.
+//
+// Seealso StatusDegrade.
+func (l Logger) Degrade(message string) error {
+	return l.Print(Record{
+		Status:  StatusDegrade,
+		Message: message,
+	})
+}
+
+// Failure prints Failure status record.
+//
+// Seealso StatusFailure.
+func (l Logger) Failure(message string) error {
+	return l.Print(Record{
+		Status:  StatusFailure,
+		Message: message,
+	})
+}
+
 // WithTarget makes new Logger with new target URL
 func (l Logger) WithTarget(target *url.URL) Logger {
 	return Logger{
 		writer:   l.writer,
-		target:   target,
+		target:   (*URL)(target),
 		stime:    l.stime,
 		latency:  l.latency,
 		useTimer: l.useTimer,

@@ -1,0 +1,50 @@
+{{ define "title" -}} status {{- end }}
+
+{{/* <style> */}}{{ define "style" }}
+main {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background-color: rgb(var(--bg));
+    color: rgb(var(--fg));
+}
+h1 {
+    font-weight: normal;
+    font-size: 2.5rem;
+    margin: 8rem 0 4rem;
+}
+ul {
+    margin: 0;
+    padding: 0;
+}
+li {
+    margin: .5rem 0;
+}
+{{ end }}{{/* </style> */}}
+
+{{ define "body" }}
+    <h1>Not Found</h1>
+    <ul>
+        <li>
+            Current status summary<br />
+            <a href="/status.html">HTML</a>, <a href="/status.txt">plain text</a>, <a href="/status.json">JSON</a>
+        </li>
+        <li>
+            Incident history<br />
+            <a href="/incidents.html">HTML</a>, <a href="/incidents.rss">RSS</a>, <a href="/incidents.csv">CSV</a>, <a href="/incidents.json">JSON</a>
+        </li>
+        <li>
+            Raw log<br />
+            <a href="/log.csv">CSV</a>, <a href="/log.tsv">TSV</a>, <a href="/log.json">JSON</a>
+        </li>
+        <li>
+            Target URL list<br />
+            <a href="/targets.txt">plain text</a>, <a href="/targets.json">JSON</a>
+        </li>
+        <li><a href="/metrics">Prometheus metrics</a></li>
+        <li><a href="/healthz">Endpoint for health-check of ayd itself</a></li>
+    </ul>
+{{ end }}
+
+{{ define "footer" }}{{ "" }}{{ end }}

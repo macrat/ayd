@@ -2,7 +2,6 @@ package ayd
 
 import (
 	"encoding/json"
-	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -19,7 +18,7 @@ type Record struct {
 
 	Latency time.Duration
 
-	Target *url.URL
+	Target *URL
 
 	// Message is the reason of the status, or extra informations of the check
 	Message string
@@ -69,7 +68,7 @@ func ParseRecord(s string) (Record, error) {
 	r.Latency = time.Duration(latency * float64(time.Millisecond))
 
 	target = ss[3]
-	r.Target, err = url.Parse(target)
+	r.Target, err = ParseURL(target)
 	if err != nil {
 		errors.Pushf("target URL: %w", err)
 	} else {
@@ -104,7 +103,7 @@ func (r Record) String() string {
 		r.CheckedAt.Format(time.RFC3339),
 		r.Status.String(),
 		strconv.FormatFloat(float64(r.Latency)/float64(time.Millisecond), 'f', 3, 64),
-		r.Target.Redacted(),
+		r.Target.String(),
 		escapeMessage(r.Message),
 	}, "\t")
 }
@@ -141,7 +140,7 @@ func (r *Record) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	target, err := url.Parse(jr.Target)
+	target, err := ParseURL(jr.Target)
 	if err != nil {
 		return err
 	}
@@ -149,7 +148,7 @@ func (r *Record) UnmarshalJSON(data []byte) error {
 	*r = Record{
 		CheckedAt: checkedAt,
 		Status:    jr.Status,
-		Target:    target,
+		Target:    (*URL)(target),
 		Latency:   time.Duration(jr.Latency * float64(time.Millisecond)),
 		Message:   jr.Message,
 	}

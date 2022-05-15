@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"net"
-	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -19,6 +19,29 @@ import (
 var (
 	ErrFailedToPreparePing = errors.New("failed to setup ping service")
 )
+
+func pingSettings() (count int, interval, timeout time.Duration) {
+	var err error
+
+	count, err = strconv.Atoi(os.Getenv("AYD_PING_PACKETS"))
+	if err != nil || count <= 0 {
+		count = 3
+	} else if count >= 100 {
+		count = 100
+	}
+
+	d, err := time.ParseDuration(os.Getenv("AYD_PING_PERIOD"))
+	if err != nil || d <= 0 {
+		d = time.Second
+	} else if d > 30*time.Minute {
+		d = 30 * time.Minute
+	}
+	interval = d / time.Duration(count)
+
+	timeout = d + 30*time.Second
+
+	return
+}
 
 type resourceLocker struct {
 	sync.Mutex
@@ -141,26 +164,28 @@ func (p *autoPingerStruct) Ping(ctx context.Context, target *net.IPAddr) (startT
 		return time.Now(), 0, pinger.Result{}, err
 	}
 
+	packets, interval, _ := pingSettings()
+
 	startTime = time.Now()
-	result, err = ping.Ping(ctx, target, 3, 500*time.Millisecond)
+	result, err = ping.Ping(ctx, target, packets, interval)
 	duration = time.Since(startTime)
 
 	return
 }
 
-func pingResultToRecord(ctx context.Context, target *url.URL, startTime time.Time, result pinger.Result) api.Record {
+func pingResultToRecord(ctx context.Context, target *api.URL, startTime time.Time, result pinger.Result) api.Record {
 	rec := api.Record{
 		CheckedAt: startTime,
 		Latency:   result.AvgRTT,
 		Target:    target,
 		Message: fmt.Sprintf(
-			"ip=%s rtt(min/avg/max)=%.2f/%.2f/%.2f send/recv=%d/%d",
+			"ip=%s rtt(min/avg/max)=%.2f/%.2f/%.2f recv/sent=%d/%d",
 			result.Target,
 			float64(result.MinRTT.Microseconds())/1000,
 			float64(result.AvgRTT.Microseconds())/1000,
 			float64(result.MaxRTT.Microseconds())/1000,
-			result.Sent,
 			result.Recv,
+			result.Sent,
 		),
 	}
 
@@ -170,7 +195,7 @@ func pingResultToRecord(ctx context.Context, target *url.URL, startTime time.Tim
 	case result.Recv == 0:
 		rec.Status = api.StatusFailure
 	default:
-		rec.Status = api.StatusDebased
+		rec.Status = api.StatusDegrade
 	}
 
 	if ctx.Err() == context.Canceled {
@@ -196,10 +221,10 @@ func checkPingPermission() error {
 
 // PingProbe is a Prober implementation for SNMP echo request aka ping.
 type PingProbe struct {
-	target *url.URL
+	target *api.URL
 }
 
-func NewPingProbe(u *url.URL) (PingProbe, error) {
+func NewPingProbe(u *api.URL) (PingProbe, error) {
 	scheme, separator, _ := SplitScheme(u.Scheme)
 	if separator != 0 {
 		return PingProbe{}, ErrUnsupportedScheme
@@ -210,15 +235,15 @@ func NewPingProbe(u *url.URL) (PingProbe, error) {
 	}
 
 	if u.Opaque != "" {
-		return PingProbe{&url.URL{Scheme: scheme, Opaque: strings.ToLower(u.Opaque), Fragment: u.Fragment}}, nil
-	} else if u.Hostname() != "" {
-		return PingProbe{&url.URL{Scheme: scheme, Opaque: strings.ToLower(u.Hostname()), Fragment: u.Fragment}}, nil
+		return PingProbe{&api.URL{Scheme: scheme, Opaque: strings.ToLower(u.Opaque), Fragment: u.Fragment}}, nil
+	} else if u.ToURL().Hostname() != "" {
+		return PingProbe{&api.URL{Scheme: scheme, Opaque: strings.ToLower(u.ToURL().Hostname()), Fragment: u.Fragment}}, nil
 	} else {
 		return PingProbe{}, ErrMissingHost
 	}
 }
 
-func (s PingProbe) Target() *url.URL {
+func (s PingProbe) Target() *api.URL {
 	return s.target
 }
 
@@ -234,7 +259,8 @@ func (s PingProbe) proto() string {
 }
 
 func (s PingProbe) Probe(ctx context.Context, r Reporter) {
-	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	_, _, timeout := pingSettings()
+	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
 	preparingError := func(err error) {

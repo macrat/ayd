@@ -2,7 +2,7 @@
 
 <html lang=en>
     <head>
-        <title>Ayd? status</title>
+        <title>Ayd status</title>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width,initial-scale=1" />
 <style>
@@ -12,7 +12,7 @@ html {
     --bg: var(--light);
     --fg: var(--dark);
     --failure: 255, 45, 0;
-    --debased: 221, 161, 0;
+    --degrade: 221, 161, 0;
     --healthy: 137, 201, 35;
 }
 @media (prefers-color-scheme: dark) {
@@ -25,40 +25,172 @@ html {
 body {
     background-color: rgb(var(--bg));
     color: rgb(var(--fg));
+    margin: 0;
 }
-main {
+header {
+    border-bottom: 1px solid rgba(var(--fg), .2);
+    padding: 8px 0;
+    width: 100%;
+}
+main, nav {
     max-width: 80rem;
     width: 100%;
     margin: auto;
     padding: 0 1rem;
     box-sizing: border-box;
 }
+
+nav a {
+    text-decoration: none;
+    color: inherit;
+}
+nav a:hover {
+    text-decoration: underline;
+}
+nav > a, .site-menu > li {
+    margin: 0 8px;
+}
+.site-menu {
+    margin: 0;
+}
+.site-menu, .site-menu > li {
+    display: inline;
+    padding: 0;
+}
+.logo {
+    font-weight: bold;
+}
+.menu-types, .menu-types > li {
+    display: inline;
+    margin: 0;
+    padding: 0;
+    font-size: 80%;
+}
+.menu-types > li:first-child::before { content: '(' }
+.menu-types > li::after { content: ', ' }
+.menu-types > li:last-child::after { content: ')' }
+
 .icon-definition {
     display: none;
 }
 
-h1 {
-    font-size: 1.5rem;
-    font-weight: normal;
-    text-align: center;
-    margin: 2em 0 .5em;
+article {
+    margin-top: 2rem;
 }
-h2 {
+section {
+    box-sizing: border-box;
+    margin: 4px;
+    padding: 12px 16px;
+    border-radius: 4px;
+     
+    border: 1px solid rgba(var(--fg), .2);
+}
+
+h1 {
     font-size: 1.3rem;
     font-weight: normal;
+    font-family: monospace;
+}
+
+.incident {
+    margin: 8px 4px;
+}
+.incident h1 {
+    margin: 0 0 .5rem;
+}
+.incident-status {
+    display: inline-block;
+    padding-left: 4px;
+    font-weight: bold;
+}
+.incident-status.unknown { border-left: 8px solid rgb(var(--fg)) }
+.incident-status.aborted { border-left: 8px solid rgb(var(--bg)) }
+.incident-status.failure { border-left: 8px solid rgb(var(--failure)) }
+.incident-status.degrade { border-left: 8px solid rgb(var(--degrade)) }
+.incident .message {
+    display: block;
+    border: 1px solid rgb(var(--fg));
+    border-radius: 2px;
+    padding: 16px 12px;
+}
+
+
+article.status {
+    display: flex;
+    flex-wrap: wrap;
+}
+section.status {
+    flex: 0 1 calc(50% - 8px);
+}
+@media screen and (max-width: 60rem) {
+    section.status {
+        flex: 1 1 100%;
+    }
+}
+
+.overview {
+    position: relative;
+    text-align: center;
+    margin: 2rem 4px;
+    font-size: 120%;
+}
+.overview ul {
+    display: flex;
+    padding: 0 0 .2rem;
     margin: 0;
 }
-h2 svg {
+.overview li {
+    display: block;
+    white-space: nowrap;
+    padding: 0 .25rem;
+    text-transform: 
+}
+.overview .percent {
+    display: block;
+    font-size: 150%;
+}
+.summary-plot {
+    position: absolute;
+    top: calc(33% + .3ex);
+    left: 0;
+    z-index: -1;
+    height: 4px;
+    width: 100%;
+}
+.summary-plot rect.no-data { fill: rgb(var(--bg)) }
+.summary-plot rect.unknown { fill: rgb(var(--fg)) }
+.summary-plot rect.aborted { fill: rgb(var(--bg)) }
+.summary-plot rect.failure { fill: rgb(var(--failure)) }
+.summary-plot rect.degrade { fill: rgb(var(--degrade)) }
+.summary-plot rect.healthy { fill: rgb(var(--healthy)) }
+@media screen and (max-width: 720px) {
+    .overview ul {
+        display: block;
+    }
+    .overview li, .overview .percent {
+        display: inline;
+    }
+    .summary-plot {
+        top: auto;
+        bottom: 0;
+    }
+}
+
+.status h1 {
+    margin: .5rem 0;
+}
+.status h1 svg {
     display: none;
 }
 
 @media screen and (max-width: 640px) {
-    h2 {
-        margin-top: 1em;
+    .status h1 {
+        margin: .2rem 0 .5rem;
     }
-    h2 svg {
+    .status h1 svg {
         display: inline;
         position: relative;
+        margin: 0 .2rem 0 0;
         width: auto;
         height: 1em;
         top: 0.1em;
@@ -70,6 +202,7 @@ h2 svg {
     display: flex;
     position: relative;
     background-color: rgba(var(--fg), .2);
+    margin: 0;
 }
 .status-bit {
     flex: 1;
@@ -87,18 +220,13 @@ h2 svg {
 .status-bit.unknown { background-color: rgba(var(--fg), .6) }
 .status-bit.aborted { background-color: rgba(var(--bg), .8) }
 .status-bit.failure { background-color: rgba(var(--failure), .75) }
-.status-bit.debased { background-color: rgba(var(--debased), .75) }
+.status-bit.degrade { background-color: rgba(var(--degrade), .75) }
 .status-bit.healthy { background-color: rgba(var(--healthy), .8) }
 .status-bit svg         { fill: rgba(var(--light), .8) }
 .status-bit.no-data svg { fill: rgba(var(--fg), .3) }
 .status-bit.unknown svg { fill: rgba(var(--bg), .8) }
 .status-bit.aborted svg { fill: rgba(var(--fg), .4) }
 
-@media screen and (max-width: 960px) {
-    .status-bit {
-        padding: 0;
-    }
-}
 @media screen and (max-width: 640px) {
     .status-bit {
         height: 2rem;
@@ -120,70 +248,24 @@ h2 svg {
     fill: rgb(var(--fg));
 }
 
+@media (forced-colors: active) {
+    .status-bit {
+        background-color: rgb(var(--bg)) !important;
+    }
+    .status-bit svg {
+        fill: rgb(var(--fg)) !important;
+        display: initial !important;
+    }
+    .latency-plot {
+        display: none;
+    }
+}
+
 .updated {
     display: block;
     text-align: right;
 }
 
-.incident {
-    border: 2px solid rgb(var(--fg));
-    padding: .5rem 1rem 1rem;
-    margin: 0 0 1rem;
-    position: relative;
-}
-.target {
-    display: inline-block;
-    background-color: rgb(var(--fg));
-    color: rgb(var(--bg));
-    font-size: 1.2rem;
-    padding: .1rem .3rem;
-}
-.message {
-    font-size: inherit;
-    font-family: monospace;
-    border-left: 8px solid rgb(var(--fg));
-    padding: 4px 0 4px 8px;
-    white-space: pre-wrap;
-}
-
-.marker {
-    border-style: solid;
-    border-width: 0 24px 24px 0;
-    border-color: transparent rgb(var(--fg)) transparent transparent;
-    width: 0;
-    height: 0;
-    position: absolute;
-    top: 6px;
-    right: 6px;
-}
-.marker.failure {
-    border-right-color: rgb(var(--failure));
-}
-.marker.debased {
-    border-right-color: rgb(var(--debased));
-}
-
-.placeholder {
-    position: relative;
-}
-.placeholder svg {
-    fill: rgba(var(--fg), .1);
-    height: 10rem;
-    width: 100%;
-}
-.placeholder span {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 1.3rem;
-    text-align: center;
-    color: rgba(var(--fg), .7);
-}
 
 footer {
     margin: 2rem 0;
@@ -193,7 +275,6 @@ footer span {
     display: inline-block;
     padding: .5rem 2rem;
     margin: auto;
-    border-top: 2px solid rgb(var(--fg));
 }
 </style>
     </head>
@@ -202,467 +283,324 @@ footer span {
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon-definition"><g id="no-data-icon"><path d="M 112 240 A 16 16 0 0 0 96 256 A 16 16 0 0 0 112 272 L 400 272 A 16 16 0 0 0 416 256 A 16 16 0 0 0 400 240 L 112 240 z " /></g></svg>
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon-definition"><g id="unknown-icon"><path d="m 248,367.49023 c -17.94333,0 -32.5,14.55667 -32.5,32.5 0,17.94334 14.55667,32.5 32.5,32.5 17.94333,0 32.5,-14.55666 32.5,-32.5 0,-17.94333 -14.55667,-32.5 -32.5,-32.5 z m 0,1 c 17.40289,0 31.5,14.09711 31.5,31.5 0,17.4029 -14.09711,31.5 -31.5,31.5 -17.40289,0 -31.5,-14.0971 -31.5,-31.5 0,-17.40289 14.09711,-31.5 31.5,-31.5 z m 32,31.49976 c 0,17.67311 -14.32689,32 -32,32 -17.67311,0 -32,-14.32689 -32,-32 0,-17.67311 14.32689,-32 32,-32 17.67311,0 32,14.32689 32,32 z M 255.72656,64.001953 c -23.26399,0.317597 -51.24624,5.60235 -74.9082,25.105469 -38.17128,31.464548 -40.79883,74.021488 -40.79883,74.021488 a 20,20 0 0 0 19.10938,20.85156 20,20 0 0 0 20.85156,-19.10938 c 0,0 0.25175,-23.44325 26.2793,-44.89843 14.45539,-11.9147 32.25113,-15.73095 50.0039,-15.97461 16.31628,-0.19766 31.26166,3.27176 36.44531,5.79687 0.001,6.6e-4 0.005,0.001 0.006,0.002 7.41373,3.63365 17.736,9.71415 25.62305,18.41406 C 326.23506,136.92201 332,147.4321 332,164 c 0,18.57546 -5.05619,29.50019 -14.10352,40.36133 -9.04732,10.86113 -23.06438,20.98385 -39.57812,32.33984 C 241.42928,262.06867 228,293.95022 228,324 a 20,20 0 0 0 20,20 20,20 0 0 0 20,-20 c 0,-21.23022 3.5315,-34.08734 32.98242,-54.33984 16.65626,-11.45401 33.81326,-23.0884 47.64844,-39.69727 C 362.46604,213.35403 372,191.09454 372,164 372,137.1679 361.05994,115.77768 347.97461,101.34375 334.88928,86.90982 319.97159,78.607348 310.27734,73.859375 l -0.0176,-0.0098 -0.0156,-0.0078 C 295.40597,66.608006 276.88633,63.742452 255.75391,64.001953 h -0.0137 z" /></g></svg>
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon-definition"><g id="healthy-icon"><path d="M256 48C141.31 48 48 141.31 48 256s93.31 208 208 208 208-93.31 208-208S370.69 48 256 48zm108.25 138.29l-134.4 160a16 16 0 01-12 5.71h-.27a16 16 0 01-11.89-5.3l-57.6-64a16 16 0 1123.78-21.4l45.29 50.32 122.59-145.91a16 16 0 0124.5 20.58z"/></g></svg>
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon-definition"><g id="debased-icon"><path d="M 256,48 C 173.3301,46.864238 93.812451,100.71847 63.397436,177.45446 32.243121,251.28238 49.445929,342.15492 105.50255,399.43605 c 54.50926,58.6782 144.32154,80.2649 219.54572,52.78367 C 403.88106,425.38236 461.77167,347.39717 463.84716,264.02798 468.0509,183.03515 419.39941,102.92914 346.09586,68.542651 318.12247,55.003097 287.07301,47.959009 256,48 Z m -39.51758,23.587891 c 47.35249,2.354295 87.359,34.985699 116.10576,70.373369 41.12858,52.1379 60.0907,120.92097 53.61387,186.76057 C 377.78608,391.23629 319.11721,441.70231 256,440.41211 c -63.11721,1.2902 -121.78608,-49.17582 -130.20206,-111.69028 -8.55834,-45.07409 16.53737,-86.55416 40.63956,-122.34878 23.05829,-34.67122 49.56348,-75.66376 37.1029,-119.214063 -1.62194,-7.88073 4.8886,-15.723373 12.94202,-15.571096 z M 247.75195,264.0625 c -9.06743,0.69899 -7.05619,13.78385 -11.04056,19.01903 -12.83572,26.76977 -26.27135,56.5246 -17.72798,86.77628 3.76257,22.35638 28.55687,37.233 49.92904,28.95418 27.02604,-10.45439 29.93256,-45.30482 24.08065,-69.74099 -7.11516,-25.00341 -21.38383,-49.77776 -43.16566,-64.70554 -0.66975,-0.21096 -1.37339,-0.31367 -2.07549,-0.30296 z"/></g></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon-definition"><g id="degrade-icon"><path d="M 256,48 C 173.3301,46.864238 93.812451,100.71847 63.397436,177.45446 32.243121,251.28238 49.445929,342.15492 105.50255,399.43605 c 54.50926,58.6782 144.32154,80.2649 219.54572,52.78367 C 403.88106,425.38236 461.77167,347.39717 463.84716,264.02798 468.0509,183.03515 419.39941,102.92914 346.09586,68.542651 318.12247,55.003097 287.07301,47.959009 256,48 Z m -39.51758,23.587891 c 47.35249,2.354295 87.359,34.985699 116.10576,70.373369 41.12858,52.1379 60.0907,120.92097 53.61387,186.76057 C 377.78608,391.23629 319.11721,441.70231 256,440.41211 c -63.11721,1.2902 -121.78608,-49.17582 -130.20206,-111.69028 -8.55834,-45.07409 16.53737,-86.55416 40.63956,-122.34878 23.05829,-34.67122 49.56348,-75.66376 37.1029,-119.214063 -1.62194,-7.88073 4.8886,-15.723373 12.94202,-15.571096 z M 247.75195,264.0625 c -9.06743,0.69899 -7.05619,13.78385 -11.04056,19.01903 -12.83572,26.76977 -26.27135,56.5246 -17.72798,86.77628 3.76257,22.35638 28.55687,37.233 49.92904,28.95418 27.02604,-10.45439 29.93256,-45.30482 24.08065,-69.74099 -7.11516,-25.00341 -21.38383,-49.77776 -43.16566,-64.70554 -0.66975,-0.21096 -1.37339,-0.31367 -2.07549,-0.30296 z"/></g></svg>
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon-definition"><g id="failure-icon"><path d="M394.23 197.56a300.43 300.43 0 00-53.37-90C301.2 61.65 249.05 32 208 32a16 16 0 00-15.48 20c13.87 53-14.88 97.07-45.31 143.72C122 234.36 96 274.27 96 320c0 88.22 71.78 160 160 160s160-71.78 160-160c0-43.3-7.32-84.49-21.77-122.44zm-105.9 221.13C278 429.69 265.05 432 256 432s-22-2.31-32.33-13.31S208 390.24 208 368c0-25.14 8.82-44.28 17.34-62.78 4.95-10.74 10-21.67 13-33.37a8 8 0 0112.49-4.51A126.48 126.48 0 01275 292c18.17 24 29 52.42 29 76 0 22.24-5.42 39.77-15.67 50.69z"/></g></svg>
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon-definition"><g id="aborted-icon"><path d="m 131.55078,97.609375 -33.941405,33.941405 282.839845,282.83984 33.9414,-33.9414 z M 256,32 C 132.57249,32 32,132.57249 32,256 32,379.42751 132.57249,480 256,480 379.42751,480 480,379.42751 480,256 480,132.57249 379.42751,32 256,32 Z m 0,48 c 97.48639,0 176,78.51361 176,176 0,97.48639 -78.51361,176 -176,176 C 158.51361,432 80,353.48639 80,256 80,158.51361 158.51361,80 256,80 Z"/></g></svg>
 
-        <main>
-            <article>
-                <h1>Current Status</h1>
+        <header>
+            <nav>
+                <a class="logo" href="/status.html">Ayd?</a>
+                <ul class="site-menu">
+                    <li>
+                        <a href="/status.html" type="text/html">Status</a>
+                        <ul class="menu-types">
+                            <li><a href="/status.txt" type="text/plain">text</a></li>
+                            <li><a href="/status.json" type="application/json">json</a></li>
+                        </ul>
+                    </li>
+                    <li>
+                        <a href="/incidents.html" type="text/html">Incidents</a>
+                        <ul class="menu-types">
+                            <li><a href="/incidents.rss" type="application/rss+xml">RSS</a></li>
+                            <li><a href="/incidents.csv" type="text/csv">CSV</a></li>
+                            <li><a href="/incidents.json" type="application/json">json</a></li>
+                        </ul>
+                    </li>
+                    <li>
+                        <a href="/log.html" type="text/html">Log</a>
+                        <ul class="menu-types">
+                            <li><a href="/log.csv" type="text/csv">CSV</a></li>
+                            <li><a href="/log.tsv" type="text/tab-separated-values">TSV</a></li>
+                            <li><a href="/log.json" type="application/json">json</a></li>
+                        </ul>
+                    </span>
+                </li>
+            </nav>
+        </header>
 
-                <section>
-                    <h2>
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#unknown-icon" /></svg>
-                        http://c.example.com
-                    </h2>
-                    <div class="status-bar">
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit aborted" title="aborted (1.234ms)
-2021-01-02T15:04:08Z
+        <main>
+
+    <article class="overview" aria-label="overview">
+        <ul>
+            <li style="flex: 1 1 66.666664%">
+                Healthy
+                <span class="percent">67%</span>
+            </li>
+            <li style="flex: 1 1 33.333332%">
+                Unknown
+                <span class="percent">33%</span>
+            </li>
+        </ul>
+        <svg class="summary-plot" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 1" preserveAspectRatio="none" aria-hidden="true">
+            <rect x="0" width="66.666664" height="1" class="healthy" />
+            <rect x="66.666664" width="33.333332" height="1" class="unknown" />
+        </svg>
+    </article>
+
+    <article class="status" aria-label="Current status">
+        <section class="status unknown">
+            <h1 aria-label="'http://c.example.com' is currently unknown">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#unknown-icon" /></svg>http://c.example.com
+            </h1>
+            <span>Unknown: 50%, Aborted: 50%</span>
+            <figure class="status-bar">
+                <span class="status-bit no-data" title="no data">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#no-data-icon" /></svg>
+                </span>
+                <span class="status-bit no-data" title="no data">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#no-data-icon" /></svg>
+                </span>
+                <span class="status-bit no-data" title="no data">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#no-data-icon" /></svg>
+                </span>
+                <span class="status-bit no-data" title="no data">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#no-data-icon" /></svg>
+                </span>
+                <span class="status-bit no-data" title="no data">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#no-data-icon" /></svg>
+                </span>
+                <span class="status-bit no-data" title="no data">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#no-data-icon" /></svg>
+                </span>
+                <span class="status-bit no-data" title="no data">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#no-data-icon" /></svg>
+                </span>
+                <span class="status-bit no-data" title="no data">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#no-data-icon" /></svg>
+                </span>
+                <span class="status-bit no-data" title="no data">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#no-data-icon" /></svg>
+                </span>
+                <span class="status-bit no-data" title="no data">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#no-data-icon" /></svg>
+                </span>
+                <span class="status-bit no-data" title="no data">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#no-data-icon" /></svg>
+                </span>
+                <span class="status-bit no-data" title="no data">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#no-data-icon" /></svg>
+                </span>
+                <span class="status-bit no-data" title="no data">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#no-data-icon" /></svg>
+                </span>
+                <span class="status-bit no-data" title="no data">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#no-data-icon" /></svg>
+                </span>
+                <span class="status-bit no-data" title="no data">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#no-data-icon" /></svg>
+                </span>
+                <span class="status-bit no-data" title="no data">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#no-data-icon" /></svg>
+                </span>
+                <span class="status-bit no-data" title="no data">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#no-data-icon" /></svg>
+                </span>
+                <span class="status-bit no-data" title="no data">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#no-data-icon" /></svg>
+                </span>
+                <span class="status-bit aborted" title="2021-01-02T15:04:08Z
+aborted in 1.234ms
 
 this is aborted">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#aborted-icon" /></svg>
-                        </span>
-                        <span class="status-bit unknown" title="unknown (2.345ms)
-2021-01-02T15:04:09Z
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#aborted-icon" /></svg>
+                </span>
+                <span class="status-bit unknown" title="2021-01-02T15:04:09Z
+unknown in 2.345ms
 
 this is unknown">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#unknown-icon" /></svg>
-                        </span>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#unknown-icon" /></svg>
+                </span>
 
-                        <svg class="latency-plot" viewBox="0 0 40 1" preserveAspectRatio="none">
-                            <path d="M38,1 38,0.47377398720682296 38.5,0.47377398720682296 39.5,0 h0.5V1" />
-                        </svg>
-                    </div>
-                    <span class="updated">updated: <time>2021-01-02T15:04:09Z</time></span>
-                </section>
-
-                <section>
-                    <h2>
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#healthy-icon" /></svg>
-                        http://a.example.com
-                    </h2>
-                    <div class="status-bar">
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit healthy" title="healthy (123.456ms)
-2021-01-02T15:04:05Z
+                <svg class="latency-plot" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 1" preserveAspectRatio="none" aria-hidden="true">
+                    <path d="M18,1 18,0.47377398720682296 18.5,0.47377398720682296 19.5,0 h0.5V1" />
+                </svg>
+            </figure>
+            <span class="updated">updated: <time>2021-01-02T15:04:09Z</time></span>
+        </section>
+        <section class="status healthy">
+            <h1 aria-label="'http://a.example.com' is currently healthy">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#healthy-icon" /></svg>http://a.example.com
+            </h1>
+            <span>Healthy: 100%</span>
+            <figure class="status-bar">
+                <span class="status-bit no-data" title="no data">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#no-data-icon" /></svg>
+                </span>
+                <span class="status-bit no-data" title="no data">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#no-data-icon" /></svg>
+                </span>
+                <span class="status-bit no-data" title="no data">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#no-data-icon" /></svg>
+                </span>
+                <span class="status-bit no-data" title="no data">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#no-data-icon" /></svg>
+                </span>
+                <span class="status-bit no-data" title="no data">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#no-data-icon" /></svg>
+                </span>
+                <span class="status-bit no-data" title="no data">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#no-data-icon" /></svg>
+                </span>
+                <span class="status-bit no-data" title="no data">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#no-data-icon" /></svg>
+                </span>
+                <span class="status-bit no-data" title="no data">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#no-data-icon" /></svg>
+                </span>
+                <span class="status-bit no-data" title="no data">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#no-data-icon" /></svg>
+                </span>
+                <span class="status-bit no-data" title="no data">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#no-data-icon" /></svg>
+                </span>
+                <span class="status-bit no-data" title="no data">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#no-data-icon" /></svg>
+                </span>
+                <span class="status-bit no-data" title="no data">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#no-data-icon" /></svg>
+                </span>
+                <span class="status-bit no-data" title="no data">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#no-data-icon" /></svg>
+                </span>
+                <span class="status-bit no-data" title="no data">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#no-data-icon" /></svg>
+                </span>
+                <span class="status-bit no-data" title="no data">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#no-data-icon" /></svg>
+                </span>
+                <span class="status-bit no-data" title="no data">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#no-data-icon" /></svg>
+                </span>
+                <span class="status-bit no-data" title="no data">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#no-data-icon" /></svg>
+                </span>
+                <span class="status-bit healthy" title="2021-01-02T15:04:05Z
+healthy in 123.456ms
 
 hello world">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#healthy-icon" /></svg>
-                        </span>
-                        <span class="status-bit healthy" title="healthy (234.567ms)
-2021-01-02T15:04:06Z
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#healthy-icon" /></svg>
+                </span>
+                <span class="status-bit healthy" title="2021-01-02T15:04:06Z
+healthy in 234.567ms
 
 hello world!">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#healthy-icon" /></svg>
-                        </span>
-                        <span class="status-bit healthy" title="healthy (345.678ms)
-2021-01-02T15:04:07Z
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#healthy-icon" /></svg>
+                </span>
+                <span class="status-bit healthy" title="2021-01-02T15:04:07Z
+healthy in 345.678ms
 
 hello world!!">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#healthy-icon" /></svg>
-                        </span>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#healthy-icon" /></svg>
+                </span>
 
-                        <svg class="latency-plot" viewBox="0 0 40 1" preserveAspectRatio="none">
-                            <path d="M37,1 37,0.642858382656692 37.5,0.642858382656692 38.5,0.321429191328346 39.5,0 h0.5V1" />
-                        </svg>
-                    </div>
-                    <span class="updated">updated: <time>2021-01-02T15:04:07Z</time></span>
-                </section>
-
-                <section>
-                    <h2>
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#healthy-icon" /></svg>
-                        http://b.example.com
-                    </h2>
-                    <div class="status-bar">
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit no-data" title="no data">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#no-data-icon" /></svg>
-                        </span>
-                        <span class="status-bit failure" title="failure (12.345ms)
-2021-01-02T15:04:05Z
+                <svg class="latency-plot" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 1" preserveAspectRatio="none" aria-hidden="true">
+                    <path d="M17,1 17,0.642858382656692 17.5,0.642858382656692 18.5,0.321429191328346 19.5,0 h0.5V1" />
+                </svg>
+            </figure>
+            <span class="updated">updated: <time>2021-01-02T15:04:07Z</time></span>
+        </section>
+        <section class="status healthy">
+            <h1 aria-label="'http://b.example.com' is currently healthy">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#healthy-icon" /></svg>http://b.example.com
+            </h1>
+            <span>Failure: 50%, Healthy: 50%</span>
+            <figure class="status-bar">
+                <span class="status-bit no-data" title="no data">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#no-data-icon" /></svg>
+                </span>
+                <span class="status-bit no-data" title="no data">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#no-data-icon" /></svg>
+                </span>
+                <span class="status-bit no-data" title="no data">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#no-data-icon" /></svg>
+                </span>
+                <span class="status-bit no-data" title="no data">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#no-data-icon" /></svg>
+                </span>
+                <span class="status-bit no-data" title="no data">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#no-data-icon" /></svg>
+                </span>
+                <span class="status-bit no-data" title="no data">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#no-data-icon" /></svg>
+                </span>
+                <span class="status-bit no-data" title="no data">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#no-data-icon" /></svg>
+                </span>
+                <span class="status-bit no-data" title="no data">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#no-data-icon" /></svg>
+                </span>
+                <span class="status-bit no-data" title="no data">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#no-data-icon" /></svg>
+                </span>
+                <span class="status-bit no-data" title="no data">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#no-data-icon" /></svg>
+                </span>
+                <span class="status-bit no-data" title="no data">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#no-data-icon" /></svg>
+                </span>
+                <span class="status-bit no-data" title="no data">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#no-data-icon" /></svg>
+                </span>
+                <span class="status-bit no-data" title="no data">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#no-data-icon" /></svg>
+                </span>
+                <span class="status-bit no-data" title="no data">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#no-data-icon" /></svg>
+                </span>
+                <span class="status-bit no-data" title="no data">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#no-data-icon" /></svg>
+                </span>
+                <span class="status-bit no-data" title="no data">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#no-data-icon" /></svg>
+                </span>
+                <span class="status-bit no-data" title="no data">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#no-data-icon" /></svg>
+                </span>
+                <span class="status-bit no-data" title="no data">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#no-data-icon" /></svg>
+                </span>
+                <span class="status-bit failure" title="2021-01-02T15:04:05Z
+failure in 12.345ms
 
 this is failure">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#failure-icon" /></svg>
-                        </span>
-                        <span class="status-bit healthy" title="healthy (54.321ms)
-2021-01-02T15:04:06Z
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#failure-icon" /></svg>
+                </span>
+                <span class="status-bit healthy" title="2021-01-02T15:04:06Z
+healthy in 54.321ms
 
 this is healthy">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><use xlink:href="#healthy-icon" /></svg>
-                        </span>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#healthy-icon" /></svg>
+                </span>
 
-                        <svg class="latency-plot" viewBox="0 0 40 1" preserveAspectRatio="none">
-                            <path d="M38,1 38,0.7727398243773127 38.5,0.7727398243773127 39.5,0 h0.5V1" />
-                        </svg>
-                    </div>
-                    <span class="updated">updated: <time>2021-01-02T15:04:06Z</time></span>
-                </section>
-            </article>
+                <svg class="latency-plot" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 1" preserveAspectRatio="none" aria-hidden="true">
+                    <path d="M18,1 18,0.7727398243773127 18.5,0.7727398243773127 19.5,0 h0.5V1" />
+                </svg>
+            </figure>
+            <span class="updated">updated: <time>2021-01-02T15:04:06Z</time></span>
+        </section>
+    </article>
 
-            <article>
-                <h1>Current Incident</h1>
+    <article aria-label="Current incidents">
+        
+    <section class="incident">
+        <h1>
+            <span class="incident-status unknown">UNKNOWN</span>
+            <span class="target" aria-label="incident of 'http://c.example.com'">http://c.example.com</span>
+        </h1>
+        <div class="period">
+            <time aria-label="since 2021-01-02T15:04:09Z">2021-01-02T15:04:09Z</time>
+            <span aria-hidden="true">-</span>
+            ongoing
+        </div>
+        <pre class="message">this is unknown</pre>
+    </section>
 
-                <section class="incident continue">
-                    <span class="marker unknown"></span>
+    </article>
 
-                    <h2>UNKNOWN</h2>
-                    <div class="target">http://c.example.com</div>
-                    <div class="period"><time>2021-01-02T15:04:09Z</time> - <time>continue</time></div>
-                    <pre class="message">this is unknown</pre>
-                </section>
-            </article>
-
-            <article>
-                <h1>Incident History</h1>
-
-                <section class="incident resolved">
-                    <span class="marker failure"></span>
-
-                    <h2>FAILURE</h2>
-                    <div class="target">http://b.example.com</div>
-                    <div class="period"><time>2021-01-02T15:04:05Z</time> - <time>2021-01-02T15:04:06Z</time></div>
-                    <pre class="message">this is failure</pre>
-                </section>
-            </article>
-
-            <footer>
-                <span>Reported by Ayd? (-- CURRENT TIME MASKED --)</span>
-            </footer>
         </main>
+
+        <footer>
+            <span>[[MASKED_DATA]]</span>
+        </footer>
     </body>
 </html>

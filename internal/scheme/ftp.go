@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"net"
-	"net/url"
 	"path"
 	"time"
 
@@ -21,7 +20,7 @@ var (
 
 // ftpOptions makes ftp.DialOptions for the ftp library.
 //
-func ftpOptions(ctx context.Context, u *url.URL) []ftp.DialOption {
+func ftpOptions(ctx context.Context, u *api.URL) []ftp.DialOption {
 	opts := []ftp.DialOption{
 		ftp.DialWithDialFunc(func(network, address string) (net.Conn, error) {
 			conn, err := (&net.Dialer{}).DialContext(ctx, network, address)
@@ -43,7 +42,7 @@ func ftpOptions(ctx context.Context, u *url.URL) []ftp.DialOption {
 	return opts
 }
 
-func ftpUserInfo(u *url.URL) (user, pass string) {
+func ftpUserInfo(u *api.URL) (user, pass string) {
 	if u.User == nil {
 		return "anonymous", "anonymous"
 	}
@@ -58,9 +57,9 @@ func ftpUserInfo(u *url.URL) (user, pass string) {
 //
 // If the context timed out, it will terminate TCP connection without QUIT command to the server.
 // This is not very graceful, but it can stop connection surely.
-func ftpConnectAndLogin(ctx context.Context, u *url.URL) (conn *ftp.ServerConn, status api.Status, message string) {
+func ftpConnectAndLogin(ctx context.Context, u *api.URL) (conn *ftp.ServerConn, status api.Status, message string) {
 	host := u.Host
-	if u.Port() == "" {
+	if u.ToURL().Port() == "" {
 		host += ":21"
 	}
 
@@ -96,12 +95,12 @@ func ftpConnectAndLogin(ctx context.Context, u *url.URL) (conn *ftp.ServerConn, 
 
 // FTPProbe is a implementation for the FTP.
 type FTPProbe struct {
-	target *url.URL
+	target *api.URL
 }
 
-func NewFTPProbe(u *url.URL) (FTPProbe, error) {
+func NewFTPProbe(u *api.URL) (FTPProbe, error) {
 	p := FTPProbe{
-		target: &url.URL{
+		target: &api.URL{
 			Scheme:   u.Scheme,
 			User:     u.User,
 			Host:     u.Host,
@@ -130,7 +129,7 @@ func NewFTPProbe(u *url.URL) (FTPProbe, error) {
 	return p, nil
 }
 
-func (p FTPProbe) Target() *url.URL {
+func (p FTPProbe) Target() *api.URL {
 	return p.target
 }
 

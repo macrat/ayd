@@ -2,7 +2,6 @@ package testutil
 
 import (
 	"context"
-	"net/url"
 	"sort"
 	"sync"
 	"testing"
@@ -16,11 +15,11 @@ type DummyReporter struct {
 	sync.Mutex
 
 	Records []api.Record
-	Sources []*url.URL
-	Actives []*url.URL
+	Sources []*api.URL
+	Actives []*api.URL
 }
 
-func (r *DummyReporter) Report(source *url.URL, rec api.Record) {
+func (r *DummyReporter) Report(source *api.URL, rec api.Record) {
 	r.Lock()
 	defer r.Unlock()
 
@@ -35,7 +34,7 @@ func (r *DummyReporter) Report(source *url.URL, rec api.Record) {
 	r.Actives = append(r.Actives, rec.Target)
 }
 
-func (r *DummyReporter) removeTarget(t *url.URL) {
+func (r *DummyReporter) removeTarget(t *api.URL) {
 	for i, a := range r.Actives {
 		if a.String() == t.String() {
 			r.Actives = append(r.Actives[:i], r.Actives[i+1:]...)
@@ -44,7 +43,7 @@ func (r *DummyReporter) removeTarget(t *url.URL) {
 	}
 }
 
-func (r *DummyReporter) DeactivateTarget(source *url.URL, targets ...*url.URL) {
+func (r *DummyReporter) DeactivateTarget(source *api.URL, targets ...*api.URL) {
 	r.Lock()
 	defer r.Unlock()
 

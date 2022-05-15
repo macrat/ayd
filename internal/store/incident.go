@@ -26,6 +26,9 @@ func (xs byIncidentCaused) Len() int {
 }
 
 func (xs byIncidentCaused) Less(i, j int) bool {
+	if xs[i].CausedAt.Equal(xs[j].CausedAt) {
+		return xs[i].Target.String() < xs[j].Target.String()
+	}
 	return xs[i].CausedAt.Before(xs[j].CausedAt)
 }
 

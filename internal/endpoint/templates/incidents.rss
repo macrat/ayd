@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+
+<rss version="2.0">
+    <channel>
+        <title>Ayd incident history</title>
+        {{- if .ExternalURL }}<link>{{ .ExternalURL }}</link>{{ end }}
+        <description>Incident history that Ayd status monitoring tool detected.</description>
+        <docs>https://github.com/macrat/ayd#readme</docs>
+        <pubDate>{{ .ReportedAt | time2rfc822 }}</pubDate>
+{{ range .Incidents }}
+        <item>
+            <guid isPermaLink="false">TODO</guid>
+            <pubDate>{{ .CausedAt | time2rfc822 }}</pubDate>
+            <title>[{{ .Status }}] {{ .Target }}</title>
+            <category domain="status">{{ if .ResolvedAt.IsZero }}ongoing{{ else }}{{ .ResolvedAt | time2str }}{{ end }}</category>
+            <category domain="kind">{{ .Status | to_lower }}</category>
+            <link>{{ .Target }}</link>
+            <description><![CDATA[<b>target:</b> {{ .Target }}<br />
+<b>status:</b> {{ .Status }}<br />
+<b>period:</b> {{ .CausedAt | time2str }} - {{ if .ResolvedAt.IsZero }}ongoing{{ else }}{{ .ResolvedAt | time2str }}{{ end }}{{ if .Message }}<br />
+<br />
+<pre>{{ .Message }}</pre>{{ end }}]]></description>
+        </item>{{ end }}
+    </channel>
+</rss>

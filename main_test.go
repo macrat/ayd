@@ -40,12 +40,12 @@ func TestAydCommand_ParseArgs(t *testing.T) {
 	}{
 		{
 			Args:     []string{"ayd"},
-			Pattern:  `^Ayd\? status monitoring service`,
+			Pattern:  `^Ayd -- Easy status monitoring tool`,
 			ExitCode: 2,
 		},
 		{
 			Args:     []string{"ayd", "-f", "-"},
-			Pattern:  `^Ayd\? status monitoring service`,
+			Pattern:  `^Ayd -- Easy status monitoring tool`,
 			ExitCode: 2,
 		},
 		{
@@ -154,22 +154,22 @@ func TestAydCommand_Run(t *testing.T) {
 	}{
 		{
 			Args:     []string{"ayd"},
-			Pattern:  `^Ayd\? status monitoring service`,
+			Pattern:  `^Ayd -- Easy status monitoring tool`,
 			ExitCode: 2,
 		},
 		{
 			Args:     []string{"ayd", "-h"},
-			Pattern:  `^Ayd\? status monitoring service`,
+			Pattern:  `^Ayd -- Easy status monitoring tool`,
 			ExitCode: 0,
 		},
 		{
 			Args:     []string{"ayd", "-v"},
-			Pattern:  `^Ayd\? version HEAD \(UNKNOWN\)` + "\n$",
+			Pattern:  `^Ayd version HEAD \(UNKNOWN\)` + "\n$",
 			ExitCode: 0,
 		},
 		{
 			Args:     []string{"ayd", "-f", "-", "-1", "-a", "dummy:#alert", "ping:localhost"},
-			Pattern:  "^[-+:0-9TZ]+\tHEALTHY\t[0-9]+\\.[0-9]{3}\tping:localhost\tip=(127\\.0\\.0\\.1|::1) rtt\\(min/avg/max\\)=[0-9./]+ send/recv=3/3\n$",
+			Pattern:  "^[-+:0-9TZ]+\tHEALTHY\t[0-9]+\\.[0-9]{3}\tping:localhost\tip=(127\\.0\\.0\\.1|::1) rtt\\(min/avg/max\\)=[0-9./]+ recv/sent=3/3\n$",
 			ExitCode: 0,
 		},
 	}

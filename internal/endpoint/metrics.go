@@ -14,7 +14,7 @@ type metricInfo struct {
 	Target    string
 	Healthy   int
 	Unknown   int
-	Debased   int
+	Degrade   int
 	Failure   int
 	Aborted   int
 	Latency   float64
@@ -41,8 +41,8 @@ func MetricsEndpoint(s Store) http.HandlerFunc {
 					m.Healthy = 1
 				case api.StatusUnknown:
 					m.Unknown = 1
-				case api.StatusDebased:
-					m.Debased = 1
+				case api.StatusDegrade:
+					m.Degrade = 1
 				case api.StatusFailure:
 					m.Failure = 1
 				case api.StatusAborted:
@@ -58,20 +58,20 @@ func MetricsEndpoint(s Store) http.HandlerFunc {
 		for _, m := range metrics {
 			fmt.Fprintf(w, "ayd_status{target=\"%s\",status=\"healthy\"} %d %d\n", m.Target, m.Healthy, m.Timestamp)
 			fmt.Fprintf(w, "ayd_status{target=\"%s\",status=\"unknown\"} %d %d\n", m.Target, m.Unknown, m.Timestamp)
-			fmt.Fprintf(w, "ayd_status{target=\"%s\",status=\"debased\"} %d %d\n", m.Target, m.Debased, m.Timestamp)
+			fmt.Fprintf(w, "ayd_status{target=\"%s\",status=\"degrade\"} %d %d\n", m.Target, m.Degrade, m.Timestamp)
 			fmt.Fprintf(w, "ayd_status{target=\"%s\",status=\"failure\"} %d %d\n", m.Target, m.Failure, m.Timestamp)
 			fmt.Fprintf(w, "ayd_status{target=\"%s\",status=\"aborted\"} %d %d\n", m.Target, m.Aborted, m.Timestamp)
 		}
 		if healthy, _ := s.Errors(); healthy {
 			fmt.Fprintln(w, `ayd_status{target="ayd",status="healthy"} 1`)
 			fmt.Fprintln(w, `ayd_status{target="ayd",status="unknown"} 0`)
-			fmt.Fprintln(w, `ayd_status{target="ayd",status="debased"} 0`)
+			fmt.Fprintln(w, `ayd_status{target="ayd",status="degrade"} 0`)
 			fmt.Fprintln(w, `ayd_status{target="ayd",status="failure"} 0`)
 			fmt.Fprintln(w, `ayd_status{target="ayd",status="aborted"} 0`)
 		} else {
 			fmt.Fprintln(w, `ayd_status{target="ayd",status="healthy"} 0`)
 			fmt.Fprintln(w, `ayd_status{target="ayd",status="unknown"} 0`)
-			fmt.Fprintln(w, `ayd_status{target="ayd",status="debased"} 0`)
+			fmt.Fprintln(w, `ayd_status{target="ayd",status="degrade"} 0`)
 			fmt.Fprintln(w, `ayd_status{target="ayd",status="failure"} 1`)
 			fmt.Fprintln(w, `ayd_status{target="ayd",status="aborted"} 0`)
 		}

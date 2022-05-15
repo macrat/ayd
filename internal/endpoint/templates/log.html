@@ -1,0 +1,150 @@
+{{ define "title" -}} log {{- end }}
+
+{{/* <style> */}}{{ define "style" }}
+main {
+    box-sizing: border-box;
+}
+article {
+    overflow: auto;
+}
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 1rem;
+}
+th, td {
+    border-right: 1px solid rgba(var(--fg), .1);
+}
+td:last-child {
+    border-right: none;
+}
+tbody td {
+    padding: .5em;
+    border-bottom: 1px solid rgba(var(--fg), .2);
+}
+tbody tr:last-child td {
+    border-bottom: none;
+}
+input {
+    max-width: 100%;
+}
+
+td.status::before {
+    content: '';
+    display: inline-block;
+    width: .5em;
+    height: 1em;
+}
+td.aborted::before { background-color: rgb(var(--bg)) }
+td.degrade::before { background-color: rgb(var(--degrade)) }
+td.failure::before { background-color: rgb(var(--failure)) }
+td.healthy::before { background-color: rgb(var(--healthy)) }
+td.unknown::before { background-color: rgb(var(--fg)) }
+
+.latency {
+    text-align: right;
+}
+
+.target, .message {
+    font-family: monospace;
+    white-space: pre-wrap;
+}
+
+.omit-indicator {
+    text-align: center;
+}
+
+.download-buttons {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+.download-buttons a {
+    margin-left: .2rem;
+}
+{{ end }}{{/* </style> */}}
+
+{{ define "body" }}
+    <article style="text-align: center">
+        <form>
+            <div>
+                <input id="since-date" type="date" value="{{ .Since.Format "2006-01-02" }}" aria-label="since date" /><input id="since-time" type="time" value="{{ .Since.Format "15:04" }}" aria-label="since time" />
+                -
+                <input id="until-date" type="date" value="{{ .Until.Format "2006-01-02" }}" aria-label="until date" /><input id="until-time" type="time" value="{{ .Until.Format "15:04" }}" aria-label="until time" />
+                <input id="since" type="hidden" name="since" value="{{ .Since | time2str }}" />
+                <input id="until" type="hidden" name="until" value="{{ .Until | time2str }}" />
+            </div>
+            <div>
+                <input name="query" size="50" value="{{ .Query }}" placeholder="e.g. >=1s example.com" autofocus />
+                <button type="submit">search</button>
+            </div>
+        </form>
+    </article>
+    <article>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 25ex">timestamp</th>
+                    <th style="width: 7em">status</th>
+                    <th>latency</th>
+                    <th>target</th>
+                    <th>message</th>
+                </tr>
+            </thead>
+            <tbody>{{ range .Head }}
+                <tr>
+                    <td>{{ .CheckedAt | time2str }}</td>
+                    <td class="status {{ .Status | to_lower }}">{{ .Status }}</td>
+                    <td class="latency">{{ .Latency }}</td>
+                    <td class="target">{{ .Target }}</td>
+                    <td class="message">{{ .Message }}</td>
+                </tr>{{ end }}
+            </tbody>{{ if .Tail }}
+            <tbody><tr><td colspan="5" class="omit-indicator">{{ .Omitted }} records have omitted</td></tr></tbody>
+            <tbody>{{ range .Tail }}
+                <tr>
+                    <td>{{ .CheckedAt | time2str }}</td>
+                    <td class="status {{ .Status | to_lower }}">{{ .Status }}</td>
+                    <td class="latency">{{ .Latency }}</td>
+                    <td class="target">{{ .Target }}</td>
+                    <td class="message">{{ .Message }}</td>
+                </tr>{{ end }}
+            </tbody>{{ end }}
+        </table>
+        <div class="download-buttons">
+            {{ .Count }} of {{ .Total }} records have shown<br />
+            download all log as
+            <a href="{{ printf "/log.csv?%s" .RawQuery }}" type="text/csv" download="ayd-log.csv">CSV</a>
+            <a href="{{ printf "/log.tsv?%s" .RawQuery }}" type="text/tab-separated-values" download="ayd-log.tsv">TSV</a>
+            <a href="{{ printf "log.json?%s" .RawQuery }}" type="application/json" download="ayd-log.json">JSON</a>
+        </div>
+    </article>
+
+    <script>
+const tzMinutes = -(new Date().getTimezoneOffset());
+const tz = tzMinutes === 0 ? (
+    'Z'
+) : (
+    (tzMinutes > 0 ? '+' : '') + `${Math.floor(tzMinutes/60)}`.padStart(2, '0') + ':' + `${tzMinutes%60}`.padStart(2, '0')
+);
+
+[[
+    document.getElementById('since'),
+    [document.getElementById('since-date'), document.getElementById('since-time')],
+], [
+    document.getElementById('since'),
+    [document.getElementById('until-date'), document.getElementById('until-time')],
+]].forEach(([output, [date, time]]) => {
+    [date, time].forEach((elm) => elm.addEventListener('change', () => {
+        if (!date.value) {
+            output.value = '';
+        } else if (!time.value) {
+            output.value = date.value + 'T00:00:00' +  tz;
+        } else {
+            output.value = date.value + 'T' + time.value +':00' +  tz;
+        }
+    }));
+});
+    </script>
+{{ end }}
+
+{{ define "footer" }}{{ "" }}{{ end }}

@@ -2,7 +2,6 @@ package store
 
 import (
 	"fmt"
-	"net/url"
 	"testing"
 	"time"
 
@@ -14,10 +13,10 @@ func TestProbeHistory_sources(t *testing.T) {
 	ph := &probeHistory{}
 
 	add := func(opaque string) {
-		ph.addSource(&url.URL{Scheme: "dummy", Opaque: opaque})
+		ph.addSource(&api.URL{Scheme: "dummy", Opaque: opaque})
 	}
 	remove := func(opaque string) {
-		ph.removeSource(&url.URL{Scheme: "dummy", Opaque: opaque})
+		ph.removeSource(&api.URL{Scheme: "dummy", Opaque: opaque})
 	}
 	assert := func(sources ...string) {
 		t.Helper()
@@ -57,9 +56,9 @@ func TestProbeHistoryMap(t *testing.T) {
 	m := make(probeHistoryMap)
 
 	for i := 1; i <= 100; i++ {
-		m.Append(&url.URL{Scheme: "dummy"}, api.Record{
+		m.Append(&api.URL{Scheme: "dummy"}, api.Record{
 			CheckedAt: time.Now().Add(time.Duration(i) * time.Second),
-			Target:    &url.URL{Scheme: "dummy", Fragment: "append-test"},
+			Target:    &api.URL{Scheme: "dummy", Fragment: "append-test"},
 			Message:   fmt.Sprint(i),
 		})
 	}
@@ -73,9 +72,9 @@ func TestProbeHistoryMap(t *testing.T) {
 	}
 
 	for i := 1; i <= 10; i++ {
-		m.Append(&url.URL{Scheme: "dummy"}, api.Record{
+		m.Append(&api.URL{Scheme: "dummy"}, api.Record{
 			CheckedAt: time.Now().Add(time.Duration(i) * time.Second),
-			Target:    &url.URL{Scheme: "dummy", Fragment: "append-test-another"},
+			Target:    &api.URL{Scheme: "dummy", Fragment: "append-test-another"},
 			Message:   fmt.Sprint(i),
 		})
 	}
@@ -89,9 +88,9 @@ func TestProbeHistoryMap(t *testing.T) {
 	}
 
 	for i := 1; i <= 10; i++ {
-		m.Append(&url.URL{Scheme: "dummy"}, api.Record{
+		m.Append(&api.URL{Scheme: "dummy"}, api.Record{
 			CheckedAt: time.Now().Add(time.Duration(-i) * time.Second),
-			Target:    &url.URL{Scheme: "dummy", Fragment: "append-test-reverse"},
+			Target:    &api.URL{Scheme: "dummy", Fragment: "append-test-reverse"},
 			Message:   fmt.Sprint(i),
 		})
 	}
@@ -105,14 +104,14 @@ func TestProbeHistoryMap(t *testing.T) {
 	}
 
 	timestamp := time.Now()
-	m.Append(&url.URL{Scheme: "dummy"}, api.Record{
+	m.Append(&api.URL{Scheme: "dummy"}, api.Record{
 		CheckedAt: timestamp,
-		Target:    &url.URL{Scheme: "dummy", Fragment: "append-test-same-time"},
+		Target:    &api.URL{Scheme: "dummy", Fragment: "append-test-same-time"},
 		Message:   "first",
 	})
-	m.Append(&url.URL{Scheme: "dummy"}, api.Record{
+	m.Append(&api.URL{Scheme: "dummy"}, api.Record{
 		CheckedAt: timestamp,
-		Target:    &url.URL{Scheme: "dummy", Fragment: "append-test-same-time"},
+		Target:    &api.URL{Scheme: "dummy", Fragment: "append-test-same-time"},
 		Message:   "second",
 	})
 
@@ -130,9 +129,9 @@ func BenchmarkProbeHistory_sources(b *testing.B) {
 		b.Run(fmt.Sprint(n), func(b *testing.B) {
 			ph := &probeHistory{}
 
-			xs := make([]*url.URL, n)
+			xs := make([]*api.URL, n)
 			for i := range xs {
-				xs[i] = &url.URL{Scheme: "dummy", Opaque: fmt.Sprint(i)}
+				xs[i] = &api.URL{Scheme: "dummy", Opaque: fmt.Sprint(i)}
 			}
 
 			b.ResetTimer()

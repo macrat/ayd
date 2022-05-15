@@ -1,6 +1,8 @@
 package endpoint
 
 import (
+	"time"
+
 	api "github.com/macrat/ayd/lib-ayd"
 )
 
@@ -15,7 +17,7 @@ type Store interface {
 	ProbeHistory() []api.ProbeHistory
 
 	// MakeReport creates ayd.Report for exporting for endpoint.
-	MakeReport() api.Report
+	MakeReport(probeHistoryLength int) api.Report
 
 	// ReportInternalError reports Ayd internal error.
 	ReportInternalError(scope, message string)
@@ -25,4 +27,7 @@ type Store interface {
 
 	// IncidentCount returns the count of incident causes.
 	IncidentCount() int
+
+	// OpenLog opens ayd.LogScanner.
+	OpenLog(since, until time.Time) (api.LogScanner, error)
 }
