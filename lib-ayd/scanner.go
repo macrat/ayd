@@ -27,12 +27,12 @@ type fileScanner struct {
 }
 
 // NewLogScanner creates a new LogScanner from io.ReadCloser.
-func NewLogScanner(f io.ReadCloser) *fileScanner {
+func NewLogScanner(f io.ReadCloser) LogScanner {
 	return NewLogScannerWithPeriod(f, time.Time{}, time.Unix(2<<61, 0))
 }
 
 // NewLogScannerWithPeriod creates a new LogScanner from io.ReadCloser, with period specification.
-func NewLogScannerWithPeriod(f io.ReadCloser, since, until time.Time) *fileScanner {
+func NewLogScannerWithPeriod(f io.ReadCloser, since, until time.Time) LogScanner {
 	return &fileScanner{
 		file:    f,
 		scanner: bufio.NewScanner(f),
