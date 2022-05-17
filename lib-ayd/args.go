@@ -1,7 +1,6 @@
 package ayd
 
 import (
-	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -12,7 +11,7 @@ import (
 
 // ProbePluginArgs is arguments for probe plugin
 type ProbePluginArgs struct {
-	TargetURL *url.URL
+	TargetURL *URL
 }
 
 // ParseProbePluginArgsFrom is parse arguments for probe plugin
@@ -21,7 +20,7 @@ func ParseProbePluginArgsFrom(args []string) (ProbePluginArgs, error) {
 		return ProbePluginArgs{}, ayderr.New(ErrArgumentCount, nil, "invalid argument: should give just 1 argument")
 	}
 
-	target, err := url.Parse(args[1])
+	target, err := ParseURL(args[1])
 	if err != nil {
 		return ProbePluginArgs{}, ayderr.New(ErrInvalidArgumentValue, err, "invalid target URL")
 	}
@@ -38,11 +37,11 @@ func ParseProbePluginArgs() (ProbePluginArgs, error) {
 
 // AlertPluginArgs is arguments for alert plugin
 type AlertPluginArgs struct {
-	AlertURL  *url.URL
+	AlertURL  *URL
 	CheckedAt time.Time
 	Status    Status
 	Latency   time.Duration
-	TargetURL *url.URL
+	TargetURL *URL
 	Message   string
 }
 
@@ -52,7 +51,7 @@ func ParseAlertPluginArgsFrom(args []string) (AlertPluginArgs, error) {
 		return AlertPluginArgs{}, ayderr.New(ErrArgumentCount, nil, "invalid argument: should give exactly 6 arguments")
 	}
 
-	alertURL, err := url.Parse(args[1])
+	alertURL, err := ParseURL(args[1])
 	if err != nil {
 		return AlertPluginArgs{}, ayderr.New(ErrInvalidArgumentValue, err, "invalid alert URL")
 	}
@@ -69,7 +68,7 @@ func ParseAlertPluginArgsFrom(args []string) (AlertPluginArgs, error) {
 		return AlertPluginArgs{}, ayderr.New(ErrInvalidArgumentValue, err, "invalid latency")
 	}
 
-	targetURL, err := url.Parse(args[5])
+	targetURL, err := ParseURL(args[5])
 	if err != nil {
 		return AlertPluginArgs{}, ayderr.New(ErrInvalidArgumentValue, err, "invalid target URL")
 	}

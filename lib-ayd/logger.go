@@ -2,7 +2,6 @@ package ayd
 
 import (
 	"io"
-	"net/url"
 	"os"
 	"time"
 
@@ -19,17 +18,17 @@ type Logger struct {
 }
 
 // NewLoggerWithWriter makes new Logger with a io.Writer
-func NewLoggerWithWriter(w io.Writer, target *url.URL) Logger {
+func NewLoggerWithWriter(w io.Writer, target *URL) Logger {
 	return Logger{
 		writer: w,
-		target: (*URL)(target),
+		target: target,
 	}
 }
 
 // NewLogger makes new Logger
 //
 // This is the shorthand to `ayd.NewLoggerWithWriter(os.Stdout, target)`.
-func NewLogger(target *url.URL) Logger {
+func NewLogger(target *URL) Logger {
 	return NewLoggerWithWriter(os.Stdout, target)
 }
 
@@ -117,10 +116,10 @@ func (l Logger) Failure(message string) error {
 }
 
 // WithTarget makes new Logger with new target URL
-func (l Logger) WithTarget(target *url.URL) Logger {
+func (l Logger) WithTarget(target *URL) Logger {
 	return Logger{
 		writer:   l.writer,
-		target:   (*URL)(target),
+		target:   target,
 		stime:    l.stime,
 		latency:  l.latency,
 		useTimer: l.useTimer,

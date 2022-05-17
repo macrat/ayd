@@ -47,10 +47,26 @@ func escapeFragment(s string) string {
 // URL is a target URL.
 type URL url.URL
 
+func barePathInOpaque(s string) bool {
+	for i := 0; i < len(s)-len("://")-1; i++ {
+		if s[i] == ':' {
+			return s[i+1:i+3] != "//"
+		}
+	}
+	return false
+}
+
 // ParseURL parses string as a URL.
 func ParseURL(s string) (*URL, error) {
 	u, err := url.Parse(s)
-	return (*URL)(u), err
+	if err != nil {
+		return nil, err
+	}
+	if u.Opaque == "" && barePathInOpaque(s) {
+		u.Opaque = u.Path
+		u.Path = ""
+	}
+	return (*URL)(u), nil
 }
 
 // ToURL converts Ayd URL to *url.URL in standard library.

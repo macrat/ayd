@@ -3,7 +3,6 @@ package ayd_test
 import (
 	"bytes"
 	"fmt"
-	"net/url"
 	"regexp"
 	"testing"
 	"time"
@@ -12,7 +11,7 @@ import (
 )
 
 func ExampleLogger() {
-	target, _ := url.Parse("foobar:your-plugin-url")
+	target, _ := ayd.ParseURL("foobar:your-plugin-url")
 
 	logger := ayd.NewLogger(target)
 
@@ -23,7 +22,7 @@ func ExampleLogger_setExtraValues() {
 	logger := ayd.NewLogger(nil)
 
 	// change target URL
-	target, _ := url.Parse("foobar:your-plugin-url")
+	target, _ := ayd.ParseURL("foobar:your-plugin-url")
 	logger = logger.WithTarget(target)
 
 	// set check time and latency of the target
@@ -77,13 +76,13 @@ func ExampleLogger_Print() {
 func ExampleLogger_WithTarget() {
 	logger := ayd.NewLogger(nil)
 
-	target, _ := url.Parse("foobar:your-plugin-url")
+	target, _ := ayd.ParseURL("foobar:your-plugin-url")
 
 	logger.WithTarget(target).Healthy("hello world")
 }
 
 func ExampleLogger_WithTime() {
-	target, _ := url.Parse("foobar:your-plugin-url")
+	target, _ := ayd.ParseURL("foobar:your-plugin-url")
 
 	logger := ayd.NewLogger(target)
 
@@ -97,7 +96,7 @@ func ExampleLogger_WithTime() {
 }
 
 func ExampleLogger_StartTimer() {
-	target, _ := url.Parse("foobar:your-plugin-url")
+	target, _ := ayd.ParseURL("foobar:your-plugin-url")
 
 	logger := ayd.NewLogger(target)
 
@@ -107,7 +106,7 @@ func ExampleLogger_StartTimer() {
 }
 
 func ExampleLogger_StopTimer() {
-	target, _ := url.Parse("foobar:your-plugin-url")
+	target, _ := ayd.ParseURL("foobar:your-plugin-url")
 
 	logger := ayd.NewLogger(target)
 
@@ -133,7 +132,7 @@ func TestLogger_Print(t *testing.T) {
 		buf.Reset()
 	}
 
-	target, _ := url.Parse("dummy:")
+	target, _ := ayd.ParseURL("dummy:")
 	l := ayd.NewLoggerWithWriter(buf, target)
 
 	l.Healthy("hello")

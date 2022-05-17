@@ -71,11 +71,6 @@ func ParseRecord(s string) (Record, error) {
 	r.Target, err = ParseURL(target)
 	if err != nil {
 		errors.Pushf("target URL: %w", err)
-	} else {
-		if (r.Target.Scheme == "exec" || r.Target.Scheme == "source") && r.Target.Opaque == "" {
-			r.Target.Opaque = r.Target.Path
-			r.Target.Path = ""
-		}
 	}
 
 	r.Message = unescapeMessage(ss[4])

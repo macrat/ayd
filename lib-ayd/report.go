@@ -2,7 +2,6 @@ package ayd
 
 import (
 	"encoding/json"
-	"net/url"
 	"time"
 )
 
@@ -77,12 +76,12 @@ func (r Report) MarshalJSON() ([]byte, error) {
 }
 
 // TargetURLs returns target URLs that to status checking
-func (r Report) TargetURLs() []*url.URL {
-	us := make([]*url.URL, len(r.ProbeHistory))
+func (r Report) TargetURLs() []*URL {
+	us := make([]*URL, len(r.ProbeHistory))
 
 	i := 0
 	for _, x := range r.ProbeHistory {
-		us[i] = x.Target.ToURL()
+		us[i] = x.Target
 		i++
 	}
 

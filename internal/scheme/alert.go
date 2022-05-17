@@ -3,7 +3,6 @@ package scheme
 import (
 	"context"
 	"errors"
-	"net/url"
 	"sync"
 
 	"github.com/macrat/ayd/internal/ayderr"
@@ -105,7 +104,7 @@ func NewAlerterSet(targets []string) (AlerterSet, error) {
 // Target implements Alert interface.
 // This method always returns alert-set: URL.
 func (as AlerterSet) Target() *api.URL {
-	return (*api.URL)(&url.URL{Scheme: "alert-set"})
+	return &api.URL{Scheme: "alert-set"}
 }
 
 // Alert of AlerterSet calls all Alert methods of children parallelly.
