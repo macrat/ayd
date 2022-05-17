@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/macrat/ayd/internal/store"
+	api "github.com/macrat/ayd/lib-ayd"
 )
 
 func NewStoreWithConsole(t testing.TB, w io.Writer) *store.Store {
@@ -45,6 +46,9 @@ func NewStoreWithLog(t testing.TB) *store.Store {
 	if err = s.Restore(); err != nil {
 		t.Fatalf("failed to restore store: %s", err)
 	}
+
+	noRecordTarget := &api.URL{Scheme: "dummy", Fragment: "no-record-yet"}
+	s.ActivateTarget(noRecordTarget, noRecordTarget)
 
 	return s
 }

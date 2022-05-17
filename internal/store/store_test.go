@@ -656,22 +656,22 @@ func TestStore_MakeReport(t *testing.T) {
 		})
 	}
 
-	assert(0, 0, 0)
-
-	addLog("1", api.StatusHealthy)
 	assert(1, 0, 0)
 
 	addLog("1", api.StatusHealthy)
-	assert(1, 0, 0)
-
-	addLog("2", api.StatusHealthy)
 	assert(2, 0, 0)
 
+	addLog("1", api.StatusHealthy)
+	assert(2, 0, 0)
+
+	addLog("2", api.StatusHealthy)
+	assert(3, 0, 0)
+
 	addLog("1", api.StatusFailure)
-	assert(2, 1, 0)
+	assert(3, 1, 0)
 
 	addLog("1", api.StatusHealthy)
-	assert(2, 0, 1)
+	assert(3, 0, 1)
 }
 
 func BenchmarkStore_Append(b *testing.B) {
