@@ -7,7 +7,7 @@ ayd: ${SOURCES}
 	CGO_ENABLED=0 go build -ldflags="-s -w -X main.version=${VERSION} -X main.commit=${COMMIT}" -trimpath .
 
 
-.PHONY: test cover fmt clean install
+.PHONY: test cover fmt resources clean install
 
 test:
 	go test -race -cover ./...
@@ -17,6 +17,11 @@ cover:
 
 fmt:
 	gofmt -s -w ${SOURCES}
+
+resources: resource_windows_386.syso resource_windows_amd64.syso resource_windows_arm.syso resource_windows_arm64.syso
+
+%.syso: versioninfo.json
+	go run github.com/josephspurrier/goversioninfo/cmd/goversioninfo@latest -platform-specific
 
 clean:
 	-rm ayd ayd.log ayd_debug.log

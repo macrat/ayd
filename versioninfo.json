@@ -21,14 +21,14 @@
     "StringFileInfo": {
         "Comments": "",
         "CompanyName": "",
-        "FileDescription": "Ayd? status check service",
+        "FileDescription": "Ayd alive monitoring tool",
         "FileVersion": "HEAD",
         "InternalName": "ayd",
         "LegalCopyright": "MIT License (c) 2021- SHIDA Yuuma",
         "LegalTrademarks": "",
         "OriginalFilename": "ayd.exe",
         "PrivateBuild": "",
-        "ProductName": "Ayd?",
+        "ProductName": "Ayd",
         "ProductVersion": "HEAD",
         "SpecialBuild": ""
     },
