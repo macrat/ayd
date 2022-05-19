@@ -329,7 +329,7 @@ const tz = tzMinutes === 0 ? (
     document.getElementById('since'),
     [document.getElementById('since-date'), document.getElementById('since-time')],
 ], [
-    document.getElementById('since'),
+    document.getElementById('until'),
     [document.getElementById('until-date'), document.getElementById('until-time')],
 ]].forEach(([output, [date, time]]) => {
     [date, time].forEach((elm) => elm.addEventListener('change', () => {
