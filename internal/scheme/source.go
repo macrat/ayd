@@ -379,7 +379,7 @@ func (p SourceScheme) Probe(ctx context.Context, r Reporter) {
 		CheckedAt: stime,
 		Target:    p.target,
 		Status:    api.StatusHealthy,
-		Message:   fmt.Sprintf("target_count=%d", len(probes)),
+		Message:   fmt.Sprintf("targets=%d", len(probes)),
 		Latency:   d,
 	})
 
@@ -425,7 +425,7 @@ func (p SourceScheme) Alert(ctx context.Context, r Reporter, lastRecord api.Reco
 		CheckedAt: stime,
 		Target:    p.target,
 		Status:    api.StatusHealthy,
-		Message:   fmt.Sprintf("target_count=%d", len(alerters)),
+		Message:   fmt.Sprintf("targets=%d", len(alerters)),
 		Latency:   d,
 	})
 
