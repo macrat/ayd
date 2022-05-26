@@ -125,8 +125,9 @@ It works as perfect matching for status, partial match for target URL and messag
 And, you can use filters for latency like `<10ms` or `>=1s`.
 
 examples:
-- <http://localhost:9000/log.tsv?since=2000-01-01T00:00:00Z&until=2001-01-01T00:00:00Z>: Reply is logs from 2000-01-01 to 2000-12-31.
-- <http://localhost:9000/log.csv?since=2021-01-01T00:00:00Z&target=ping:localhost>: Reply is logs about `ping:localhost` since 2021-01-01.
+- <http://localhost:9000/log.tsv?since=2000-01-01T00:00:00Z&until=2001-01-01T00:00:00Z>: The logs from 2000-01-01 to 2000-12-31.
+- <http://localhost:9000/log.csv?since=2021-01-01T00:00:00Z&target=ping:localhost>: The logs about `ping:localhost` since 2021-01-01.
+- <http://localhost:9000/log.json?query=-healthy%20ping:>: The logs within recent 7 days that only about unhealthy(`-healthy`) ping(`ping:`) targets.
 
 
 ### Supported schemes

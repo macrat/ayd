@@ -85,6 +85,12 @@ func (k strKeyword) Match(status string, latency time.Duration, target, message 
 	return status == q || strings.Contains(target, q) || strings.Contains(message, q)
 }
 
+type strNotKeyword string
+
+func (k strNotKeyword) Match(status string, latency time.Duration, target, message string) bool {
+	return !strKeyword(k).Match(status, latency, target, message)
+}
+
 type durKeyword struct {
 	operator string
 	duration time.Duration
@@ -130,6 +136,8 @@ func ParseQuery(query string) Query {
 		if q != "" {
 			if dur, ok := parseDurKeyword(q); ok {
 				qs = append(qs, dur)
+			} else if len(q) > 2 && q[0] == '-' {
+				qs = append(qs, strNotKeyword(q[1:]))
 			} else {
 				qs = append(qs, strKeyword(q))
 			}

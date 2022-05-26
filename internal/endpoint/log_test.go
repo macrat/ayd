@@ -236,6 +236,24 @@ func TestQuery(t *testing.T) {
 			true,
 		},
 		{
+			"-unknown",
+			api.Record{
+				Status:  api.StatusFailure,
+				Target:  &api.URL{Scheme: "dummy", Opaque: "healthy"},
+				Message: "foobar",
+			},
+			true,
+		},
+		{
+			"-HEALTHY",
+			api.Record{
+				Status:  api.StatusFailure,
+				Target:  &api.URL{Scheme: "dummy", Opaque: "healthy"},
+				Message: "foobar",
+			},
+			false,
+		},
+		{
 			"<100ms",
 			api.Record{
 				Latency: 50 * time.Millisecond,
