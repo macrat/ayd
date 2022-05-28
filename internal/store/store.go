@@ -302,16 +302,7 @@ func (s *Store) Restore() error {
 	}
 	defer f.Close()
 	if ret, _ := f.Seek(-LogRestoreBytes, os.SEEK_END); ret != 0 {
-		u := &api.URL{Scheme: "ayd", Opaque: "log"}
-		s.Report(u, api.Record{
-			CheckedAt: time.Now(),
-			Status:    api.StatusUnknown,
-			Target:    u,
-			Message:   "WARNING: read only last 100MB from log file because it is too large",
-			Extra: map[string]interface{}{
-				"log_size": ret + LogRestoreBytes,
-			},
-		})
+		fmt.Fprint(os.Stderr, "WARNING: read only last 100MB from log file because it is too large\n\n")
 	}
 
 	s.probeHistory = make(probeHistoryMap)

@@ -42,7 +42,7 @@ func BenchmarkURL_String(b *testing.B) {
 	}
 
 	for i := 0; i < b.N; i++ {
-		_ = u.String()
+		u.String()
 	}
 }
 
@@ -55,7 +55,7 @@ func TestRecord(t *testing.T) {
 		Error  string
 	}{
 		{
-			String: `{"time":"2021-01-02T15:04:05+09:00","status":"HEALTHY","latency":123.456,"target":"ping:example.com","message":"hello world"}`,
+			String: "2021-01-02T15:04:05+09:00\tHEALTHY\t123.456\tping:example.com\thello world",
 			Record: ayd.Record{
 				CheckedAt: time.Date(2021, 1, 2, 15, 4, 5, 0, tokyo),
 				Target:    &ayd.URL{Scheme: "ping", Opaque: "example.com"},
@@ -65,7 +65,7 @@ func TestRecord(t *testing.T) {
 			},
 		},
 		{
-			String: `{"time":"2021-01-02T15:04:05+09:00","status":"FAILURE","latency":123.456,"target":"exec:/path/to/file.sh","message":"hello world"}`,
+			String: "2021-01-02T15:04:05+09:00\tFAILURE\t123.456\texec:/path/to/file.sh\thello world",
 			Record: ayd.Record{
 				CheckedAt: time.Date(2021, 1, 2, 15, 4, 5, 0, tokyo),
 				Target:    &ayd.URL{Scheme: "exec", Opaque: "/path/to/file.sh"},
@@ -75,7 +75,7 @@ func TestRecord(t *testing.T) {
 			},
 		},
 		{
-			String: `{"time":"2021-01-02T15:04:05+09:00","status":"ABORTED","latency":1234.567,"target":"dummy:#hello","message":"hello world"}`,
+			String: "2021-01-02T15:04:05+09:00\tABORTED\t1234.567\tdummy:#hello\thello world",
 			Record: ayd.Record{
 				CheckedAt: time.Date(2021, 1, 2, 15, 4, 5, 0, tokyo),
 				Target:    &ayd.URL{Scheme: "dummy", Fragment: "hello"},
@@ -85,26 +85,34 @@ func TestRecord(t *testing.T) {
 			},
 		},
 		{
-			String: `{"time":"2021-01-02T15:04:05+09:00","status":"DEGRADE","latency":1027.89,"target":"dummy:"}`,
+			String: "2021-01-02T15:04:05+09:00\tDEGRADE\t1027.821\tdummy:\t",
 			Record: ayd.Record{
 				CheckedAt: time.Date(2021, 1, 2, 15, 4, 5, 0, tokyo),
 				Target:    &ayd.URL{Scheme: "dummy"},
 				Status:    ayd.StatusDegrade,
 				Message:   "",
-				Latency:   1027890 * time.Microsecond,
+				Latency:   1027820999 * time.Nanosecond,
 			},
 		},
 		{
-			String: `{"time":"2021-01-02T15:04:05+09:00","status":"HEALTHY","latency":123abc,"target":"ping:example.com","message":"hello world"}`,
-			Error:  "invalid record: invalid character 'a' after object key:value pair",
+			String: "2021-01-02T15:04:05+09:00\tHEALTHY\t123.456",
+			Error:  "invalid record: unexpected column count",
 		},
 		{
-			String: `{"time":"2021/01/02 15:04:05","status":"HEALTHY","latency":123.456,"target":"ping:example.com","message":"hello world"}`,
-			Error:  `invalid record: parsing time "2021/01/02 15:04:05" as "2006-01-02T15:04:05Z07:00": cannot parse "/01/02 15:04:05" as "-"`,
+			String: "2021-01-02T15:04:05+09:00\tHEALTHY\t123abc\tping:example.com\thello world",
+			Error:  "invalid record:\n  latency: strconv.ParseFloat: parsing \"123abc\": invalid syntax",
 		},
 		{
-			String: `{"time":"2021-01-02T15:04:05+09:00","status":"HEALTHY","latency":123.456,"target":"::invalid target::","message":"hello world"}`,
-			Error:  `invalid record: parse "::invalid target::": missing protocol scheme`,
+			String: "2021/01/02 15:04:05\tHEALTHY\t123.456\tping:example.com\thello world",
+			Error:  "invalid record:\n  checked-at: parsing time \"2021/01/02 15:04:05\" as \"2006-01-02T15:04:05Z07:00\": cannot parse \"/01/02 15:04:05\" as \"-\"",
+		},
+		{
+			String: "2021-01-02T15:04:05+09:00\tHEALTHY\t123.456\t::invalid target::\thello world",
+			Error:  "invalid record:\n  target URL: parse \"::invalid target::\": missing protocol scheme",
+		},
+		{
+			String: "2021-01-02T15:04:05+somewhere\tHEALTHY\t123abc\tping:example.com\thello world",
+			Error:  "invalid record:\n  checked-at: parsing time \"2021-01-02T15:04:05+somewhere\" as \"2006-01-02T15:04:05Z07:00\": cannot parse \"+somewhere\" as \"Z07:00\"\n  latency: strconv.ParseFloat: parsing \"123abc\": invalid syntax",
 		},
 	}
 
@@ -197,8 +205,8 @@ func TestRecord_json(t *testing.T) {
 	})
 
 	t.Run("unmarshal", func(t *testing.T) {
-		source := `{"time":"2021-01-02T15:04:05+09:00", "status":"HEALTHY", "latency":123.456, "target":"dummy:healthy#hello-world", "message":"this is test", "extra":123}`
-		expect := `{"time":"2021-01-02T15:04:05+09:00","status":"HEALTHY","latency":123.456,"target":"dummy:healthy#hello-world","message":"this is test","extra":123}`
+		source := `{"checked_at":"2021-01-02T15:04:05+09:00", "status":"HEALTHY", "latency":123.456, "target":"dummy:healthy#hello-world", "message":"this is test"}`
+		expect := "2021-01-02T15:04:05+09:00\tHEALTHY\t123.456\tdummy:healthy#hello-world\tthis is test"
 
 		var r ayd.Record
 		if err := json.Unmarshal([]byte(source), &r); err != nil {

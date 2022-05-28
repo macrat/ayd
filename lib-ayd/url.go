@@ -84,18 +84,3 @@ func (u *URL) String() string {
 	}
 	return s
 }
-
-// MarshalText encodes a URL to []byte.
-func (u *URL) MarshalText() ([]byte, error) {
-	return []byte(u.String()), nil
-}
-
-// UnmarshalText parser raw text as a URL.
-func (u *URL) UnmarshalText(text []byte) error {
-	tmp, err := ParseURL(string(text))
-	if err != nil {
-		return err
-	}
-	*u = *tmp
-	return nil
-}

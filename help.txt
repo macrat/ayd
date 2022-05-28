@@ -4,6 +4,11 @@ Usage:
   ayd [OPTIONS...] INTERVALS|TARGETS...
   ayd -1 [-a URL] [-f FILE] INTERVALS|TARGETS...
 
+Subcommands:
+  ayd oneshot  The same as -1 option.
+  ayd conv     Convert log file to other format.
+               Please see `ayd convert -h` to more information.
+
 Options:
   -1, --oneshot	          Check status only once and exit.
                           If some of targets is not healthy, the exit code will be 1.
