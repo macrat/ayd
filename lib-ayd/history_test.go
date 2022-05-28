@@ -65,7 +65,7 @@ func TestProbeHistory(t *testing.T) {
 	})
 
 	t.Run("unmarshal", func(t *testing.T) {
-		source := `{"target":"dummy:healthy#hello-world", "status":"HEALTHY", "records":[{"checked_at":"2021-01-02T15:04:05Z", "status":"HEALTHY", "latency":123.456, "target":"dummy:healthy#hello-world", "message":"this is test"}], "updated":"2001-01-02T15:04:05Z"}`
+		source := `{"target":"dummy:healthy#hello-world", "status":"HEALTHY", "records":[{"time":"2021-01-02T15:04:05Z", "status":"HEALTHY", "latency":123.456, "target":"dummy:healthy#hello-world", "message":"this is test"}], "updated":"2001-01-02T15:04:05Z"}`
 
 		var ph2 ayd.ProbeHistory
 		if err := json.Unmarshal([]byte(source), &ph2); err != nil {

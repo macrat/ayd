@@ -87,7 +87,7 @@ func TestStore_errorLogging(t *testing.T) {
 
 	time.Sleep(10 * time.Millisecond)
 
-	if buf.Line(0) != "2001-02-03T16:05:06Z\tHEALTHY\t42.000\tdummy:#logging-test\thello world" {
+	if buf.Line(0) != `{"time":"2001-02-03T16:05:06Z","status":"HEALTHY","latency":42,"target":"dummy:#logging-test","message":"hello world"}` {
 		t.Errorf("unexpected log (line 0):\n%s", buf)
 	}
 
@@ -107,11 +107,11 @@ func TestStore_errorLogging(t *testing.T) {
 
 	time.Sleep(10 * time.Millisecond)
 
-	if buf.Line(-2) != "2001-02-03T16:05:07Z\tHEALTHY\t42.000\tdummy:#logging-test\tfoo bar" {
+	if buf.Line(-2) != `{"time":"2001-02-03T16:05:07Z","status":"HEALTHY","latency":42,"target":"dummy:#logging-test","message":"foo bar"}` {
 		t.Errorf("unexpected log (line -2):\n%s", buf)
 	}
 
-	if ok, err := regexp.MatchString("^[-+:TZ0-9]+\tFAILURE\t0.000\tayd:log\t[^\t]+$", buf.Line(-1)); err != nil {
+	if ok, err := regexp.MatchString(`^{"time":"[-+:TZ0-9]+","status":"FAILURE","latency":0,"target":"ayd:log","message":"[^"]+"}$`, buf.Line(-1)); err != nil {
 		t.Errorf("failed to compare log (line -1): %s", err)
 	} else if !ok {
 		t.Errorf("unexpected log:\n%s", buf)
@@ -326,8 +326,8 @@ func TestStore_Restore_limitBorder(t *testing.T) {
 	defer f.Close()
 
 	rawRecord := append(
-		[]byte("2001-02-03T01:02:03Z\tHEALTHY\t0.123\tdummy:healthy\tshould be ignore because this is on the border\n"),
-		[]byte("2001-02-03T02:03:04Z\tHEALTHY\t0.123\tdummy:healthy\tfirst record\n")...,
+		[]byte(`{"time":"2001-02-03T01:02:03Z","status":"HEALTHY","latency":0.123,"target":"dummy:healthy","message":"should be ignore because this is on the border\n"}`+"\n"),
+		[]byte(`{"time":"2001-02-03T02:03:04Z","status":"HEALTHY","latency":0.123,"target":"dummy:healthy","message":"first record"}`+"\n")...,
 	)
 	f.Write(rawRecord)
 
@@ -616,7 +616,7 @@ func TestStore_ReportInternalError(t *testing.T) {
 
 	time.Sleep(10 * time.Millisecond) // wait for close
 
-	if ok, err := regexp.MatchString("^[-+:ZT0-9]+\tFAILURE\t[.0-9]+\tayd:test\thello world\n$", buf.String()); err != nil {
+	if ok, err := regexp.MatchString(`^{"time":"[-+:ZT0-9]+","status":"FAILURE","latency":[.0-9]+,"target":"ayd:test","message":"hello world"}`+"\n$", buf.String()); err != nil {
 		t.Fatalf("failed to match log: %s", err)
 	} else if !ok {
 		t.Errorf("unexpected error:\n%s", buf.String())
