@@ -204,32 +204,6 @@ func (f LogFilter) Record() api.Record {
 	return f.Scanner.Record()
 }
 
-func LogTSVEndpoint(s Store) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "text/tab-separated-values; charset=UTF-8")
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "GET")
-
-		scanner, code, err := newLogScanner(s, "log.tsv", r)
-		if err != nil {
-			w.WriteHeader(code)
-			w.Write([]byte(err.Error() + "\n"))
-			return
-		}
-		defer scanner.Close()
-
-		scanner = setFilter(scanner, r)
-
-		for scanner.Scan() {
-			_, err := fmt.Fprintln(w, scanner.Record().String())
-			if err != nil {
-				handleError(s, "log.tsv", err)
-				break
-			}
-		}
-	}
-}
-
 func LogJsonEndpoint(s Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")

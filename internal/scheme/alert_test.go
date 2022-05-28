@@ -31,11 +31,11 @@ func TestAlerter(t *testing.T) {
 		Message   string
 		Error     string
 	}{
-		{"exec:ayd-foo-alert", "alert:exec:ayd-foo-alert", "2001-02-03T16:05:06Z\tHEALTHY\t123.456\t\t\"     \"", ""},
+		{"exec:ayd-foo-alert", "alert:exec:ayd-foo-alert", `{"time":"2001-02-03T16:05:06Z","status":"HEALTHY","latency":123.456,"target":"","message":"\",,,,,\""}`, ""},
 		{"exec:ayd-bar-probe", "alert:exec:ayd-bar-probe", "arg \"\"\nenv ayd_checked_at=2001-02-03T16:05:06Z ayd_status=FAILURE ayd_latency=12.345 ayd_target=dummy:failure ayd_message=foobar", ""},
-		{"foo:", "alert:foo:", "\"foo: 2001-02-03T16:05:06Z FAILURE 12.345 dummy:failure foobar\"", ""},
-		{"foo:hello-world", "alert:foo:hello-world", "\"foo:hello-world 2001-02-03T16:05:06Z FAILURE 12.345 dummy:failure foobar\"", ""},
-		{"foo-bar:hello-world", "alert:foo-bar:hello-world", "\"foo-bar:hello-world 2001-02-03T16:05:06Z FAILURE 12.345 dummy:failure foobar\"", ""},
+		{"foo:", "alert:foo:", "\"foo:,2001-02-03T16:05:06Z,FAILURE,12.345,dummy:failure,foobar\"", ""},
+		{"foo:hello-world", "alert:foo:hello-world", "\"foo:hello-world,2001-02-03T16:05:06Z,FAILURE,12.345,dummy:failure,foobar\"", ""},
+		{"foo-bar:hello-world", "alert:foo-bar:hello-world", "\"foo-bar:hello-world,2001-02-03T16:05:06Z,FAILURE,12.345,dummy:failure,foobar\"", ""},
 		{"bar:", "", "", "unsupported scheme"},
 
 		{"ftp://example.com", "", "", "unsupported scheme for alert"},
@@ -132,7 +132,7 @@ func TestAlerter(t *testing.T) {
 		if r.Records[0].Status != api.StatusUnknown {
 			t.Errorf("unexpected status of record: %s", r.Records[0].Status)
 		}
-		if r.Records[0].Message != `invalid record: unexpected column count: "this is invalid record"` {
+		if r.Records[0].Message != `invalid record: invalid character 'h' in literal true (expecting 'r'): "this is invalid record"` {
 			t.Errorf("unexpected message of record: %s", r.Records[0].Message)
 		}
 	})
@@ -155,11 +155,11 @@ func TestAlertReporter(t *testing.T) {
 		t.Fatalf("unexpected number of records: %d: %v", len(r1.Records), r1.Records)
 	}
 
-	if r1.Records[0].String() != "0001-01-01T00:00:00Z	UNKNOWN	0.000	alert:dummy:another	test-message" {
+	if r1.Records[0].String() != `{"time":"0001-01-01T00:00:00Z","status":"UNKNOWN","latency":0,"target":"alert:dummy:another","message":"test-message"}` {
 		t.Errorf("unexpected 1st record: %s", r1.Records[0])
 	}
 
-	if r1.Records[1].String() != "0001-01-01T00:00:00Z	UNKNOWN	0.000	ayd:test:internal-log	something log" {
+	if r1.Records[1].String() != `{"time":"0001-01-01T00:00:00Z","status":"UNKNOWN","latency":0,"target":"ayd:test:internal-log","message":"something log"}` {
 		t.Errorf("unexpected 2nd record: %s", r1.Records[1])
 	}
 }

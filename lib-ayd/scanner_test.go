@@ -11,9 +11,9 @@ import (
 
 func ExampleNewLogScanner() {
 	f := io.NopCloser(strings.NewReader(`
-2001-02-03T16:05:06Z	HEALTHY	1.234	https://example.com	200 OK
-2001-02-03T16:15:06Z	HEALTHY	2.345	https://example.com	200 OK
-2001-02-03T16:25:06Z	HEALTHY	3.456	https://example.com	200 OK
+{"time":"2001-02-03T16:05:06Z","status":"HEALTHY","latency":1.234,"target":"https://example.com","message":"200 OK"}
+{"time":"2001-02-03T16:15:06Z","status":"HEALTHY","latency":2.345,"target":"https://example.com","message":"200 OK"}
+{"time":"2001-02-03T16:25:06Z","status":"HEALTHY","latency":3.456,"target":"https://example.com","message":"200 OK"}
 `))
 
 	s := ayd.NewLogScanner(f)
@@ -31,9 +31,9 @@ func ExampleNewLogScanner() {
 
 func ExampleNewLogScannerWithPeriod() {
 	f := io.NopCloser(strings.NewReader(`
-2001-02-03T16:05:06Z	HEALTHY	1.234	https://example.com	200 OK
-2001-02-03T16:15:06Z	HEALTHY	2.345	https://example.com	200 OK
-2001-02-03T16:25:06Z	HEALTHY	3.456	https://example.com	200 OK
+{"time":"2001-02-03T16:05:06Z","status":"HEALTHY","latency":1.234,"target":"https://example.com","message":"200 OK"}
+{"time":"2001-02-03T16:15:06Z","status":"HEALTHY","latency":2.345,"target":"https://example.com","message":"200 OK"}
+{"time":"2001-02-03T16:25:06Z","status":"HEALTHY","latency":3.456,"target":"https://example.com","message":"200 OK"}
 `))
 
 	s := ayd.NewLogScannerWithPeriod(

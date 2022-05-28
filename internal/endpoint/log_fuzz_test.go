@@ -4,6 +4,7 @@
 package endpoint_test
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -14,10 +15,10 @@ import (
 	api "github.com/macrat/ayd/lib-ayd"
 )
 
-func FuzzLogTSVEndpoint(f *testing.F) {
+func FuzzLogJsonEndpoint(f *testing.F) {
 	s := testutil.NewStoreWithLog(f)
 	defer s.Close()
-	handler := endpoint.LogTSVEndpoint(s)
+	handler := endpoint.LogJsonEndpoint(s)
 
 	f.Add("since=2021-01-02T15:04:05+09:00")
 	f.Add("until=1999-12-31T23:59:59-12:00")
@@ -65,11 +66,12 @@ func FuzzLogTSVEndpoint(f *testing.F) {
 		}
 		body = body[:len(body)-1]
 
-		for i, line := range strings.Split(body, "\n") {
-			_, err := api.ParseRecord(line)
-			if err != nil {
-				t.Errorf("line %d is incorrect as a log line: %s\n%q", i+1, err, line)
-			}
+		var response struct {
+			R []api.Record `json:"records"`
+		}
+
+		if err := json.Unmarshal([]byte(body), &response); err != nil {
+			t.Errorf("failed to parse response: %d", err)
 		}
 	})
 }

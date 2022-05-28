@@ -34,7 +34,6 @@ Options:
 
   -c, --csv     Convert to CSV. (default format)
   -j, --json    Convert to JSON.
-  -J, --jsonl   Convert to JSON Lines.
 
   -h, --help    Show this help message and exit.
 `
@@ -46,7 +45,6 @@ func (c ConvCommand) Run(args []string) int {
 
 	toCsv := flags.BoolP("csv", "c", false, "Convert to CSV")
 	toJson := flags.BoolP("json", "j", false, "Convert to JSON")
-	toJsonl := flags.BoolP("jsonl", "J", false, "Convert to JSON Lines")
 
 	help := flags.BoolP("help", "h", false, "Show this message and exit")
 
@@ -66,9 +64,6 @@ func (c ConvCommand) Run(args []string) int {
 		count++
 	}
 	if *toJson {
-		count++
-	}
-	if *toJsonl {
 		count++
 	}
 	if count > 1 {
@@ -110,8 +105,6 @@ func (c ConvCommand) Run(args []string) int {
 	switch {
 	case *toJson:
 		err = c.toJson(scanners, output)
-	case *toJsonl:
-		err = c.toJsonL(scanners, output)
 	default:
 		err = c.toCSV(scanners, output)
 	}
@@ -147,20 +140,6 @@ func (c ConvCommand) toJson(scanners []api.LogScanner, output io.Writer) error {
 
 	if _, err := output.Write([]byte("\n]\n")); err != nil {
 		return fmt.Errorf("failed to write log: %s", err)
-	}
-
-	return nil
-}
-
-func (c ConvCommand) toJsonL(scanners []api.LogScanner, output io.Writer) error {
-	encoder := json.NewEncoder(output)
-
-	for _, s := range scanners {
-		for s.Scan() {
-			if err := encoder.Encode(s.Record()); err != nil {
-				return fmt.Errorf("failed to write log: %s", err)
-			}
-		}
 	}
 
 	return nil

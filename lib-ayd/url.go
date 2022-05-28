@@ -76,11 +76,26 @@ func (u *URL) ToURL() *url.URL {
 
 // String returns string version of the URL.
 // The password in the URL will be masked.
-func (u *URL) String() string {
+func (u URL) String() string {
 	s := u.ToURL().Redacted()
 	if u.Fragment != "" {
 		l := len(u.ToURL().EscapedFragment())
 		s = s[:len(s)-l] + escapeFragment(u.Fragment)
 	}
 	return s
+}
+
+// MarshalText encodes a URL to []byte.
+func (u URL) MarshalText() ([]byte, error) {
+	return []byte(u.String()), nil
+}
+
+// UnmarshalText parser raw text as a URL.
+func (u *URL) UnmarshalText(text []byte) error {
+	tmp, err := ParseURL(string(text))
+	if err != nil {
+		return err
+	}
+	*u = *tmp
+	return nil
 }

@@ -303,7 +303,7 @@ func TestSourceScheme_Alert(t *testing.T) {
 		r.Records[1], r.Records[2] = r.Records[2], r.Records[1]
 	}
 
-	expected := `"foo:alert-test 2021-01-02T15:04:05Z FAILURE 123.456 dummy:hello-world test-message"`
+	expected := `"foo:alert-test,2021-01-02T15:04:05Z,FAILURE,123.456,dummy:hello-world,test-message"`
 	if r.Records[1].Message != expected {
 		t.Errorf("unexpected message for foo:alert-test\n--- expected --\n%s\n--- actual ---\n%s", expected, r.Records[1].Message)
 	}

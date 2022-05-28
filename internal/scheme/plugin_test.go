@@ -69,7 +69,7 @@ func TestPluginScheme_Probe(t *testing.T) {
 		if rs[1].Status != api.StatusUnknown {
 			t.Errorf("got unexpected status: %s", rs[1].Status)
 		}
-		if rs[1].Message != "invalid record: unexpected column count: \"this is invalid\"" {
+		if rs[1].Message != `invalid record: invalid character 'h' in literal true (expecting 'r'): "this is invalid"` {
 			t.Errorf("got unexpected message: %s", rs[1].Message)
 		}
 	})
@@ -124,7 +124,7 @@ func TestPluginScheme_Alert(t *testing.T) {
 	PreparePluginPath(t)
 
 	AssertAlert(t, []ProbeTest{
-		{"foo:hello-world", api.StatusHealthy, "\"foo:hello-world 2001-02-03T16:05:06Z FAILURE 123.456 dummy:failure test-message\"", ""},
+		{"foo:hello-world", api.StatusHealthy, "\"foo:hello-world,2001-02-03T16:05:06Z,FAILURE,123.456,dummy:failure,test-message\"", ""},
 	}, 5)
 }
 
