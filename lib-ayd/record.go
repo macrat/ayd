@@ -3,6 +3,7 @@ package ayd
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/macrat/ayd/internal/ayderr"
@@ -33,82 +34,121 @@ func (r Record) String() string {
 	return string(b)
 }
 
-type jsonRecord struct {
-	CheckedAt string  `json:"time"`
-	Status    Status  `json:"status"`
-	Latency   float64 `json:"latency"`
-	Target    URL     `json:"target"`
-	Message   string  `json:"message,omitempty"`
-}
-
 // UnmarshalJSON implements the json.Unmarshaler interface.
 func (r *Record) UnmarshalJSON(data []byte) error {
-	var jr jsonRecord
+	*r = Record{}
 
-	if err := json.Unmarshal(data, &jr); err != nil {
+	var raw map[string]interface{}
+	if err := json.Unmarshal(data, &raw); err != nil {
 		return ayderr.New(ErrInvalidRecord, err, "invalid record")
 	}
 
-	checkedAt, err := time.Parse(time.RFC3339, jr.CheckedAt)
-	if err != nil {
-		return ayderr.New(ErrInvalidRecord, err, "invalid record")
-	}
+	var err error
 
-	var extra map[string]interface{}
-	if err := json.Unmarshal(data, &extra); err != nil {
-		return ayderr.New(ErrInvalidRecord, err, "invalid record")
-	}
-	for key := range extra {
-		switch key {
-		case "time", "status", "latency", "target", "message":
-			delete(extra, key)
+	if value, ok := raw["time"]; !ok {
+		return ayderr.New(ErrInvalidRecord, nil, "invalid record: time field is required")
+	} else {
+		if s, ok := value.(string); !ok {
+			return ayderr.New(ErrInvalidRecord, nil, "invalid record: time field should be a string")
+		} else if r.CheckedAt, err = time.Parse(time.RFC3339, s); err != nil {
+			return ayderr.New(ErrInvalidRecord, nil, "invalid record: %s", err)
 		}
+		delete(raw, "time")
 	}
 
-	*r = Record{
-		CheckedAt: checkedAt,
-		Status:    jr.Status,
-		Target:    &jr.Target,
-		Latency:   time.Duration(jr.Latency * float64(time.Millisecond)),
-		Message:   jr.Message,
-		Extra:     extra,
+	if value, ok := raw["status"]; !ok {
+		return ayderr.New(ErrInvalidRecord, nil, "invalid record: status field is required")
+	} else {
+		if s, ok := value.(string); !ok {
+			return ayderr.New(ErrInvalidRecord, nil, "invalid record: status field should be a string")
+		} else {
+			r.Status = ParseStatus(s)
+		}
+		delete(raw, "status")
 	}
+
+	if value, ok := raw["latency"]; !ok {
+		return ayderr.New(ErrInvalidRecord, nil, "invalid record: latency field is required")
+	} else {
+		if f, ok := value.(float64); !ok {
+			return ayderr.New(ErrInvalidRecord, nil, "invalid record: latency field should be a number")
+		} else {
+			r.Latency = time.Duration(f * float64(time.Millisecond))
+		}
+		delete(raw, "latency")
+	}
+
+	if value, ok := raw["target"]; !ok {
+		return ayderr.New(ErrInvalidRecord, nil, "invalid record: target field is required")
+	} else {
+		if s, ok := value.(string); !ok {
+			return ayderr.New(ErrInvalidRecord, nil, "invalid record: target field should be a string")
+		} else if r.Target, err = ParseURL(s); err != nil {
+			return ayderr.New(ErrInvalidRecord, nil, "invalid record: invalid target: %s", err)
+		}
+		delete(raw, "target")
+	}
+
+	if value, ok := raw["message"]; ok {
+		if s, ok := value.(string); !ok {
+			return ayderr.New(ErrInvalidRecord, nil, "invalid record: message field should be a string")
+		} else {
+			r.Message = s
+		}
+		delete(raw, "message")
+	}
+
+	r.Extra = raw
 
 	return nil
 }
 
 // MarshalJSON implements the json.Marshaler interface.
 func (r Record) MarshalJSON() ([]byte, error) {
-	var head bytes.Buffer
+	head := bytes.NewBuffer(make([]byte, 0, 256))
 
-	err := json.NewEncoder(&head).Encode(jsonRecord{
-		CheckedAt: r.CheckedAt.Format(time.RFC3339),
-		Status:    r.Status,
-		Latency:   float64(r.Latency.Microseconds()) / 1000,
-		Target:    *r.Target,
-		Message:   r.Message,
-	})
+	_, err := fmt.Fprintf(
+		head,
+		`{"time":"%s","status":"%s","latency":%v,"target":%q`,
+		r.CheckedAt.Format(time.RFC3339),
+		r.Status,
+		float64(r.Latency.Microseconds())/1000,
+		r.Target,
+	)
 	if err != nil {
 		return nil, err
 	}
 
-	if len(r.Extra) > 0 {
-		head.Truncate(len(head.Bytes()) - 2) // drop newline and last "}".
-		head.Write([]byte(","))
+	enc := json.NewEncoder(head)
 
-		var tail bytes.Buffer
-		err = json.NewEncoder(&tail).Encode(r.Extra)
-		if err != nil {
+	if r.Message != "" {
+		if _, err = head.Write([]byte(`,"message":`)); err != nil {
 			return nil, err
 		}
-		tail.ReadByte()
-		_, err = tail.WriteTo(&head)
-		if err != nil {
+		if err = enc.Encode(r.Message); err != nil {
 			return nil, err
 		}
+		head.Truncate(head.Len() - 1) // drop newline
 	}
 
-	head.Truncate(len(head.Bytes()) - 1) // drop newline
+	for k, v := range r.Extra {
+		if _, err = head.Write([]byte(",")); err != nil {
+			return nil, err
+		}
+		if err = enc.Encode(k); err != nil {
+			return nil, err
+		}
+		head.Truncate(head.Len() - 1) // drop newline
+		if _, err = head.Write([]byte(":")); err != nil {
+			return nil, err
+		}
+		if err = enc.Encode(v); err != nil {
+			return nil, err
+		}
+		head.Truncate(head.Len() - 1) // drop newline
+	}
 
-	return head.Bytes(), nil
+	_, err = head.Write([]byte("}"))
+
+	return head.Bytes(), err
 }

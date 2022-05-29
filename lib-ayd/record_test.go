@@ -104,7 +104,7 @@ func TestRecord(t *testing.T) {
 		},
 		{
 			String: `{"time":"2021-01-02T15:04:05+09:00","status":"HEALTHY","latency":123.456,"target":"::invalid target::","message":"hello world"}`,
-			Error:  `invalid record: parse "::invalid target::": missing protocol scheme`,
+			Error:  `invalid record: invalid target: parse "::invalid target::": missing protocol scheme`,
 		},
 	}
 
