@@ -22,6 +22,9 @@ var testLogCSV string
 //go:embed testdata/log.json
 var testLogJson string
 
+//go:embed testdata/log.ltsv
+var testLogLtsv string
+
 func TestConvCommand_Run(t *testing.T) {
 	tests := []struct {
 		args   []string
@@ -69,6 +72,13 @@ func TestConvCommand_Run(t *testing.T) {
 			[]string{"--json", "-o", "-"},
 			testLog,
 			testLogJson,
+			"",
+			0,
+		},
+		{
+			[]string{"-l"},
+			testLog,
+			testLogLtsv,
 			"",
 			0,
 		},
