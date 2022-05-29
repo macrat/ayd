@@ -46,32 +46,28 @@ func (r *Record) UnmarshalJSON(data []byte) error {
 	var err error
 
 	if value, ok := raw["time"]; !ok {
-		return ayderr.New(ErrInvalidRecord, nil, "invalid record: time field is required")
+		return ayderr.New(ErrInvalidRecord, nil, "invalid record: time: missing required field")
 	} else {
 		if s, ok := value.(string); !ok {
-			return ayderr.New(ErrInvalidRecord, nil, "invalid record: time field should be a string")
+			return ayderr.New(ErrInvalidRecord, nil, "invalid record: time: should be a string")
 		} else if r.CheckedAt, err = time.Parse(time.RFC3339, s); err != nil {
-			return ayderr.New(ErrInvalidRecord, nil, "invalid record: %s", err)
+			return ayderr.New(ErrInvalidRecord, err, "invalid record: time")
 		}
 		delete(raw, "time")
 	}
 
-	if value, ok := raw["status"]; !ok {
-		return ayderr.New(ErrInvalidRecord, nil, "invalid record: status field is required")
-	} else {
+	if value, ok := raw["status"]; ok {
 		if s, ok := value.(string); !ok {
-			return ayderr.New(ErrInvalidRecord, nil, "invalid record: status field should be a string")
+			return ayderr.New(ErrInvalidRecord, nil, "invalid record: status: should be a string")
 		} else {
 			r.Status = ParseStatus(s)
 		}
 		delete(raw, "status")
 	}
 
-	if value, ok := raw["latency"]; !ok {
-		return ayderr.New(ErrInvalidRecord, nil, "invalid record: latency field is required")
-	} else {
+	if value, ok := raw["latency"]; ok {
 		if f, ok := value.(float64); !ok {
-			return ayderr.New(ErrInvalidRecord, nil, "invalid record: latency field should be a number")
+			return ayderr.New(ErrInvalidRecord, nil, "invalid record: latency: should be a number")
 		} else {
 			r.Latency = time.Duration(f * float64(time.Millisecond))
 		}
@@ -79,19 +75,19 @@ func (r *Record) UnmarshalJSON(data []byte) error {
 	}
 
 	if value, ok := raw["target"]; !ok {
-		return ayderr.New(ErrInvalidRecord, nil, "invalid record: target field is required")
+		return ayderr.New(ErrInvalidRecord, nil, "invalid record: target: missing required field")
 	} else {
 		if s, ok := value.(string); !ok {
-			return ayderr.New(ErrInvalidRecord, nil, "invalid record: target field should be a string")
+			return ayderr.New(ErrInvalidRecord, nil, "invalid record: target: should be a string")
 		} else if r.Target, err = ParseURL(s); err != nil {
-			return ayderr.New(ErrInvalidRecord, nil, "invalid record: invalid target: %s", err)
+			return ayderr.New(ErrInvalidRecord, err, "invalid record: target")
 		}
 		delete(raw, "target")
 	}
 
 	if value, ok := raw["message"]; ok {
 		if s, ok := value.(string); !ok {
-			return ayderr.New(ErrInvalidRecord, nil, "invalid record: message field should be a string")
+			return ayderr.New(ErrInvalidRecord, nil, "invalid record: message: should be a string")
 		} else {
 			r.Message = s
 		}

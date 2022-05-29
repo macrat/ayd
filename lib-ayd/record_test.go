@@ -100,11 +100,49 @@ func TestRecord(t *testing.T) {
 		},
 		{
 			String: `{"time":"2021/01/02 15:04:05","status":"HEALTHY","latency":123.456,"target":"ping:example.com","message":"hello world"}`,
-			Error:  `invalid record: parsing time "2021/01/02 15:04:05" as "2006-01-02T15:04:05Z07:00": cannot parse "/01/02 15:04:05" as "-"`,
+			Error:  `invalid record: time: parsing time "2021/01/02 15:04:05" as "2006-01-02T15:04:05Z07:00": cannot parse "/01/02 15:04:05" as "-"`,
 		},
 		{
 			String: `{"time":"2021-01-02T15:04:05+09:00","status":"HEALTHY","latency":123.456,"target":"::invalid target::","message":"hello world"}`,
-			Error:  `invalid record: invalid target: parse "::invalid target::": missing protocol scheme`,
+			Error:  `invalid record: target: parse "::invalid target::": missing protocol scheme`,
+		},
+		{
+			String: `{"status":"HEALTHY","latency":123.456,"target":"ping:example.com","message":"hello world"}`,
+			Error:  `invalid record: time: missing required field`,
+		},
+		{
+			String: `{"time":123,"status":"HEALTHY","latency":123.456,"target":"ping:example.com","message":"hello world"}`,
+			Error:  `invalid record: time: should be a string`,
+		},
+		{
+			String: `{"time":"2021-01-02T15:04:05+09:00","status":null,"latency":123.456,"target":"ping:example.com","message":"hello world"}`,
+			Error:  `invalid record: status: should be a string`,
+		},
+		{
+			String: `{"time":"2021-01-02T15:04:05+09:00","status":"HEALTHY","latency":"hello","target":"ping:example.com","message":"hello world"}`,
+			Error:  `invalid record: latency: should be a number`,
+		},
+		{
+			String: `{"time":"2021-01-02T15:04:05+09:00","status":"HEALTHY","latency":123.456,"message":"hello world"}`,
+			Error:  `invalid record: target: missing required field`,
+		},
+		{
+			String: `{"time":"2021-01-02T15:04:05+09:00","status":"HEALTHY","latency":123.456,"target":1234,"message":"hello world"}`,
+			Error:  `invalid record: target: should be a string`,
+		},
+		{
+			String: `{"time":"2021-01-02T15:04:05+09:00","status":"HEALTHY","latency":123.456,"target":"ping:example.com"}`,
+			Record: ayd.Record{
+				CheckedAt: time.Date(2021, 1, 2, 15, 4, 5, 0, tokyo),
+				Status:    ayd.StatusHealthy,
+				Latency:   123456 * time.Microsecond,
+				Target:    &ayd.URL{Scheme: "ping", Opaque: "example.com"},
+				Message:   "",
+			},
+		},
+		{
+			String: `{"time":"2021-01-02T15:04:05+09:00","status":"HEALTHY","latency":123.456,"target":"ping:example.com","message":123}`,
+			Error:  `invalid record: message: should be a string`,
 		},
 	}
 
