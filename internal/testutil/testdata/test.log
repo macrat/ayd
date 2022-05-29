@@ -3,5 +3,5 @@
 {"time":"2021-01-02T15:04:06Z", "status":"HEALTHY", "latency":234.567, "target":"http://a.example.com", "message":"hello world!"}
 {"time":"2021-01-02T15:04:06Z", "status":"HEALTHY", "latency":54.321, "target":"http://b.example.com", "message":"this is healthy"}
 {"time":"2021-01-02T15:04:07Z", "status":"HEALTHY", "latency":345.678, "target":"http://a.example.com", "message":"hello world!!"}
-{"time":"2021-01-02T15:04:08Z", "status":"ABORTED", "latency":1.234, "target":"http://c.example.com", "message":"this is aborted"}
-{"time":"2021-01-02T15:04:09Z", "status":"UNKNOWN", "latency":2.345, "target":"http://c.example.com", "message":"this is unknown"}
+{"time":"2021-01-02T15:04:08Z", "status":"ABORTED", "latency":1.234, "target":"http://c.example.com", "message":"this is aborted", "hello":"world"}
+{"time":"2021-01-02T15:04:09Z", "status":"UNKNOWN", "latency":2.345, "target":"http://c.example.com", "message":"this is unknown", "hoge":"fuga"}

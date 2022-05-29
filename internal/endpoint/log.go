@@ -149,7 +149,7 @@ func ParseQuery(query string) Query {
 func (qs Query) Match(r api.Record) bool {
 	status := strings.ToLower(r.Status.String())
 	target := strings.ToLower(r.Target.String())
-	message := strings.ToLower(r.Message)
+	message := strings.ToLower(r.ReadableMessage())
 
 	for _, q := range qs {
 		if !q.Match(status, r.Latency, target, message) {
@@ -268,7 +268,7 @@ func LogCSVEndpoint(s Store) http.HandlerFunc {
 				r.Status.String(),
 				strconv.FormatFloat(float64(r.Latency.Microseconds())/1000, 'f', 3, 64),
 				r.Target.String(),
-				r.Message,
+				r.ReadableMessage(),
 			})
 		}
 

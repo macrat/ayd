@@ -12,6 +12,7 @@ require (
 	goftp.io/server v0.4.1
 	golang.org/x/sys v0.0.0-20220513210249-45d2b4557a2a
 	golang.org/x/text v0.3.7
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (

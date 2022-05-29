@@ -50,6 +50,15 @@ td.unknown::before { background-color: rgb(var(--fg)) }
     white-space: pre-wrap;
 }
 
+.extra {
+    display: inline-block;
+    padding: .1em .2em;
+    border: 1px solid rgb(var(--fg));
+}
+.extra-label {
+    font-weight: bold;
+}
+
 .omit-indicator {
     text-align: center;
 }
@@ -96,7 +105,7 @@ td.unknown::before { background-color: rgb(var(--fg)) }
                     <td class="status {{ .Status | to_lower }}">{{ .Status }}</td>
                     <td class="latency">{{ .Latency }}</td>
                     <td class="target">{{ .Target }}</td>
-                    <td class="message">{{ .Message }}</td>
+                    <td class="message">{{ .Message }}{{ range $k, $v := .Extra }} <span class="extra"><span class="extra-label">{{ $k }}</span> {{ $v }}</span>{{ end }}</td>
                 </tr>{{ end }}
             </tbody>{{ if .Tail }}
             <tbody><tr><td colspan="5" class="omit-indicator">{{ .Omitted }} records have omitted</td></tr></tbody>
@@ -106,7 +115,7 @@ td.unknown::before { background-color: rgb(var(--fg)) }
                     <td class="status {{ .Status | to_lower }}">{{ .Status }}</td>
                     <td class="latency">{{ .Latency }}</td>
                     <td class="target">{{ .Target }}</td>
-                    <td class="message">{{ .Message }}</td>
+                    <td class="message">{{ .Message }}{{ range $k, $v := .Extra }} <span class="extra"><span class="extra-label">{{ $k }}</span> {{ $v }}</span>{{ end }}</td>
                 </tr>{{ end }}
             </tbody>{{ end }}
         </table>

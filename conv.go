@@ -156,7 +156,7 @@ func (c ConvCommand) toCSV(scanners []api.LogScanner, output io.Writer) error {
 				r.Status.String(),
 				strconv.FormatFloat(float64(r.Latency.Microseconds())/1000, 'f', 3, 64),
 				r.Target.String(),
-				r.Message,
+				r.ReadableMessage(),
 			})
 			if err != nil {
 				return fmt.Errorf("failed to write log: %s", err)

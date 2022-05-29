@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/macrat/ayd/internal/ayderr"
+	"gopkg.in/yaml.v3"
 )
 
 // Record is a record in Ayd log
@@ -33,6 +34,22 @@ func (r Record) String() string {
 		return `{"error":"invalid record"}`
 	}
 	return string(b)
+}
+
+// ReadableMessage returns human readable message of the message field and extra fields.
+func (r Record) ReadableMessage() string {
+	if len(r.Extra) == 0 {
+		return r.Message
+	}
+	extra, err := yaml.Marshal(r.Extra)
+	if err != nil {
+		return r.Message
+	}
+	msg := r.Message
+	if len(msg) > 0 && msg[len(msg)-1] != '\n' {
+		msg += "\n"
+	}
+	return msg + "---\n" + string(extra)
 }
 
 // UnmarshalJSON implements the json.Unmarshaler interface.

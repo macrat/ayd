@@ -164,6 +164,15 @@ td.unknown::before { background-color: rgb(var(--fg)) }
     white-space: pre-wrap;
 }
 
+.extra {
+    display: inline-block;
+    padding: .1em .2em;
+    border: 1px solid rgb(var(--fg));
+}
+.extra-label {
+    font-weight: bold;
+}
+
 .omit-indicator {
     text-align: center;
 }
@@ -296,14 +305,14 @@ footer span {
                     <td class="status aborted">ABORTED</td>
                     <td class="latency">1.234ms</td>
                     <td class="target">http://c.example.com</td>
-                    <td class="message">this is aborted</td>
+                    <td class="message">this is aborted <span class="extra"><span class="extra-label">hello</span> world</span></td>
                 </tr>
                 <tr>
                     <td>2021-01-02T15:04:09Z</td>
                     <td class="status unknown">UNKNOWN</td>
                     <td class="latency">2.345ms</td>
                     <td class="target">http://c.example.com</td>
-                    <td class="message">this is unknown</td>
+                    <td class="message">this is unknown <span class="extra"><span class="extra-label">hoge</span> fuga</span></td>
                 </tr>
             </tbody>
         </table>
