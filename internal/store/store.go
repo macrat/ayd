@@ -305,7 +305,7 @@ func (s *Store) Restore() error {
 		u := &api.URL{Scheme: "ayd", Opaque: "log"}
 		s.Report(u, api.Record{
 			CheckedAt: time.Now(),
-			Status:    api.StatusUnknown,
+			Status:    api.StatusDegrade,
 			Target:    u,
 			Message:   "WARNING: read only last 100MB from log file because it is too large",
 			Extra: map[string]interface{}{
