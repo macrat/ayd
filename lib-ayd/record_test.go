@@ -144,6 +144,19 @@ func TestRecord(t *testing.T) {
 			String: `{"time":"2021-01-02T15:04:05+09:00","status":"HEALTHY","latency":123.456,"target":"ping:example.com","message":123}`,
 			Error:  `invalid record: message: should be a string`,
 		},
+		{
+			String: `{"time":"2021-01-02T15:04:05+09:00","status":"HEALTHY","latency":123.456,"target":"ping:example.com","message":"hello world","hello":"world"}`,
+			Record: ayd.Record{
+				CheckedAt: time.Date(2021, 1, 2, 15, 4, 5, 0, tokyo),
+				Status:    ayd.StatusHealthy,
+				Latency:   123456 * time.Microsecond,
+				Target:    &ayd.URL{Scheme: "ping", Opaque: "example.com"},
+				Message:   "hello world",
+				Extra: map[string]interface{}{
+					"hello": "world",
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -179,6 +192,10 @@ func TestRecord(t *testing.T) {
 
 		if tt.Record.Message != r.Message {
 			t.Errorf("unexpected parsed message\nexpected: %#v\n but got: %#v", tt.Record.Message, r.Message)
+		}
+
+		if diff := cmp.Diff(tt.Record.Extra, r.Extra); diff != "" {
+			t.Errorf("unexpected extra\n%s", diff)
 		}
 
 		if tt.Record.String() != tt.String {

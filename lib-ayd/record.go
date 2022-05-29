@@ -94,7 +94,9 @@ func (r *Record) UnmarshalJSON(data []byte) error {
 		delete(raw, "message")
 	}
 
-	r.Extra = raw
+	if len(raw) > 0 {
+		r.Extra = raw
+	}
 
 	return nil
 }
