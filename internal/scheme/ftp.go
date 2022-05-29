@@ -152,12 +152,12 @@ func (p FTPProbe) Probe(ctx context.Context, r Reporter) {
 	stime := time.Now()
 	report := func(status api.Status, message string, extra map[string]interface{}) {
 		r.Report(p.target, timeoutOr(ctx, api.Record{
-			CheckedAt: stime,
-			Status:    status,
-			Latency:   time.Since(stime),
-			Target:    p.target,
-			Message:   message,
-			Extra:     extra,
+			Time:    stime,
+			Status:  status,
+			Latency: time.Since(stime),
+			Target:  p.target,
+			Message: message,
+			Extra:   extra,
 		}))
 	}
 

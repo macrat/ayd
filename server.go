@@ -46,10 +46,10 @@ func (cmd *AydCommand) RunServer(ctx context.Context, s *store.Store) (exitCode 
 	fmt.Fprintln(cmd.OutStream)
 
 	s.Report(&api.URL{Scheme: "ayd", Opaque: "server"}, api.Record{
-		CheckedAt: time.Now(),
-		Status:    api.StatusHealthy,
-		Target:    &api.URL{Scheme: "ayd", Opaque: "server"},
-		Message:   fmt.Sprintf("Ayd has started"),
+		Time:    time.Now(),
+		Status:  api.StatusHealthy,
+		Target:  &api.URL{Scheme: "ayd", Opaque: "server"},
+		Message: fmt.Sprintf("Ayd has started"),
 		Extra: map[string]interface{}{
 			"url": fmt.Sprintf("%s://%s", protocol, listen),
 		},

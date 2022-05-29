@@ -49,21 +49,21 @@ func ExampleLogger_Print() {
 	logger := ayd.NewLogger(nil)
 
 	logger.Print(ayd.Record{
-		Target:    &ayd.URL{Scheme: "foo", Host: "bar"},
-		Status:    ayd.StatusHealthy,
-		CheckedAt: time.Date(2001, 2, 3, 16, 5, 6, 7, time.UTC),
-		Message:   "hello world",
+		Target:  &ayd.URL{Scheme: "foo", Host: "bar"},
+		Status:  ayd.StatusHealthy,
+		Time:    time.Date(2001, 2, 3, 16, 5, 6, 7, time.UTC),
+		Message: "hello world",
 	})
 
 	logger.Print(ayd.Record{
-		Target:    &ayd.URL{Scheme: "foo", Host: "bar"},
-		CheckedAt: time.Date(2001, 2, 3, 16, 5, 7, 0, time.UTC),
-		Message:   "without status",
+		Target:  &ayd.URL{Scheme: "foo", Host: "bar"},
+		Time:    time.Date(2001, 2, 3, 16, 5, 7, 0, time.UTC),
+		Message: "without status",
 	})
 
 	err := logger.Print(ayd.Record{
-		CheckedAt: time.Date(2001, 2, 3, 16, 5, 8, 0, time.UTC),
-		Message:   "without target",
+		Time:    time.Date(2001, 2, 3, 16, 5, 8, 0, time.UTC),
+		Message: "without target",
 	})
 	fmt.Println("error:", err)
 

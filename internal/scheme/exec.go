@@ -170,11 +170,11 @@ func (s ExecScheme) run(ctx context.Context, r Reporter, extraEnv []string) {
 	}
 
 	r.Report(s.target, timeoutOr(ctx, api.Record{
-		CheckedAt: stime,
-		Target:    s.target,
-		Status:    status,
-		Message:   message,
-		Latency:   latency,
+		Time:    stime,
+		Target:  s.target,
+		Status:  status,
+		Message: message,
+		Latency: latency,
 		Extra: map[string]interface{}{
 			"exit_code": exitCode,
 		},
@@ -187,7 +187,7 @@ func (s ExecScheme) Probe(ctx context.Context, r Reporter) {
 
 func (s ExecScheme) Alert(ctx context.Context, r Reporter, lastRecord api.Record) {
 	s.run(ctx, AlertReporter{s.target, r}, []string{
-		"ayd_checked_at=" + lastRecord.CheckedAt.Format(time.RFC3339),
+		"ayd_time=" + lastRecord.Time.Format(time.RFC3339),
 		"ayd_status=" + lastRecord.Status.String(),
 		fmt.Sprintf("ayd_latency=%.3f", float64(lastRecord.Latency.Microseconds())/1000.0),
 		"ayd_target=" + lastRecord.Target.String(),

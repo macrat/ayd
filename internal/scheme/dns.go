@@ -221,11 +221,11 @@ func (s DNSProbe) Probe(ctx context.Context, r Reporter) {
 	d := time.Since(st)
 
 	rec := api.Record{
-		CheckedAt: st,
-		Target:    s.target,
-		Status:    api.StatusHealthy,
-		Message:   msg,
-		Latency:   d,
+		Time:    st,
+		Target:  s.target,
+		Status:  api.StatusHealthy,
+		Message: msg,
+		Latency: d,
 	}
 
 	if err != nil {

@@ -92,10 +92,10 @@ func (s *Store) ReportInternalError(scope, message string) {
 	u := &api.URL{Scheme: "ayd", Opaque: scope}
 
 	s.Report(u, api.Record{
-		CheckedAt: time.Now(),
-		Status:    api.StatusFailure,
-		Target:    u,
-		Message:   message,
+		Time:    time.Now(),
+		Status:  api.StatusFailure,
+		Target:  u,
+		Message: message,
 	})
 }
 
@@ -105,10 +105,10 @@ func (s *Store) handleError(err error, exportableErrorMessage string) {
 	if err != nil {
 		s.addError(exportableErrorMessage)
 		strings.NewReader(api.Record{
-			CheckedAt: time.Now(),
-			Status:    api.StatusFailure,
-			Target:    &api.URL{Scheme: "ayd", Opaque: "log"},
-			Message:   err.Error(),
+			Time:    time.Now(),
+			Status:  api.StatusFailure,
+			Target:  &api.URL{Scheme: "ayd", Opaque: "log"},
+			Message: err.Error(),
 		}.String() + "\n").WriteTo(s.Console)
 	}
 }
@@ -238,7 +238,7 @@ func (s *Store) setIncidentIfNeed(r api.Record, needCallback bool) {
 			return
 		}
 
-		cur.ResolvedAt = r.CheckedAt
+		cur.ResolvedAt = r.Time
 		s.incidentHistory = append(s.incidentHistory, cur)
 		delete(s.currentIncidents, target)
 
@@ -304,10 +304,10 @@ func (s *Store) Restore() error {
 	if ret, _ := f.Seek(-LogRestoreBytes, os.SEEK_END); ret != 0 {
 		u := &api.URL{Scheme: "ayd", Opaque: "log"}
 		s.Report(u, api.Record{
-			CheckedAt: time.Now(),
-			Status:    api.StatusDegrade,
-			Target:    u,
-			Message:   "WARNING: read only last 100MB from log file because it is too large",
+			Time:    time.Now(),
+			Status:  api.StatusDegrade,
+			Target:  u,
+			Message: "WARNING: read only last 100MB from log file because it is too large",
 			Extra: map[string]interface{}{
 				"log_size": ret + LogRestoreBytes,
 			},

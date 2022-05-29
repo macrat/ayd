@@ -10,7 +10,7 @@ func newIncident(r api.Record) *api.Incident {
 		Target:   r.Target,
 		Status:   r.Status,
 		Message:  r.Message,
-		CausedAt: r.CheckedAt,
+		CausedAt: r.Time,
 	}
 }
 

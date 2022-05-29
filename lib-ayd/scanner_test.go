@@ -20,7 +20,7 @@ func ExampleNewLogScanner() {
 	defer s.Close()
 
 	for s.Scan() {
-		fmt.Println(s.Record().CheckedAt)
+		fmt.Println(s.Record().Time)
 	}
 
 	// OUTPUT:
@@ -44,7 +44,7 @@ func ExampleNewLogScannerWithPeriod() {
 	defer s.Close()
 
 	for s.Scan() {
-		fmt.Println(s.Record().CheckedAt)
+		fmt.Println(s.Record().Time)
 	}
 
 	// OUTPUT:

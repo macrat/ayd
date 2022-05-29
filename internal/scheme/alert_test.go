@@ -32,7 +32,7 @@ func TestAlerter(t *testing.T) {
 		Error     string
 	}{
 		{"exec:ayd-foo-alert", "alert:exec:ayd-foo-alert", `{"time":"2001-02-03T16:05:06Z","status":"HEALTHY","latency":123.456,"target":"","message":"\",,,,,\""}`, ""},
-		{"exec:ayd-bar-probe", "alert:exec:ayd-bar-probe", "arg \"\"\nenv ayd_checked_at=2001-02-03T16:05:06Z ayd_status=FAILURE ayd_latency=12.345 ayd_target=dummy:failure ayd_message=foobar", ""},
+		{"exec:ayd-bar-probe", "alert:exec:ayd-bar-probe", "arg \"\"\nenv ayd_time=2001-02-03T16:05:06Z ayd_status=FAILURE ayd_latency=12.345 ayd_target=dummy:failure ayd_message=foobar", ""},
 		{"foo:", "alert:foo:", "\"foo:,2001-02-03T16:05:06Z,FAILURE,12.345,dummy:failure,foobar\"", ""},
 		{"foo:hello-world", "alert:foo:hello-world", "\"foo:hello-world,2001-02-03T16:05:06Z,FAILURE,12.345,dummy:failure,foobar\"", ""},
 		{"foo-bar:hello-world", "alert:foo-bar:hello-world", "\"foo-bar:hello-world,2001-02-03T16:05:06Z,FAILURE,12.345,dummy:failure,foobar\"", ""},
@@ -73,11 +73,11 @@ func TestAlerter(t *testing.T) {
 			defer cancel()
 
 			rec := api.Record{
-				CheckedAt: time.Date(2001, 2, 3, 16, 5, 6, 0, time.UTC),
-				Status:    api.StatusFailure,
-				Latency:   12345 * time.Microsecond,
-				Target:    &api.URL{Scheme: "dummy", Opaque: "failure"},
-				Message:   "foobar",
+				Time:    time.Date(2001, 2, 3, 16, 5, 6, 0, time.UTC),
+				Status:  api.StatusFailure,
+				Latency: 12345 * time.Microsecond,
+				Target:  &api.URL{Scheme: "dummy", Opaque: "failure"},
+				Message: "foobar",
 			}
 
 			r := &testutil.DummyReporter{}
@@ -112,10 +112,10 @@ func TestAlerter(t *testing.T) {
 		defer cancel()
 
 		rec := api.Record{
-			Target:    &api.URL{Scheme: "dummy", Opaque: "failure"},
-			Status:    api.StatusFailure,
-			CheckedAt: time.Date(2001, 2, 3, 16, 5, 6, 0, time.UTC),
-			Message:   "foobar",
+			Target:  &api.URL{Scheme: "dummy", Opaque: "failure"},
+			Status:  api.StatusFailure,
+			Time:    time.Date(2001, 2, 3, 16, 5, 6, 0, time.UTC),
+			Message: "foobar",
 		}
 
 		r := &testutil.DummyReporter{}
@@ -199,10 +199,10 @@ func TestAlerterSet(t *testing.T) {
 			defer cancel()
 
 			rec := api.Record{
-				Target:    &api.URL{Scheme: "dummy", Opaque: "failure"},
-				Status:    api.StatusFailure,
-				CheckedAt: time.Date(2001, 2, 3, 16, 5, 6, 0, time.UTC),
-				Message:   "foobar",
+				Target:  &api.URL{Scheme: "dummy", Opaque: "failure"},
+				Status:  api.StatusFailure,
+				Time:    time.Date(2001, 2, 3, 16, 5, 6, 0, time.UTC),
+				Message: "foobar",
 			}
 
 			r := &testutil.DummyReporter{}
@@ -242,10 +242,10 @@ func TestAlerterSet_blocking(t *testing.T) {
 	defer cancel()
 
 	rec := api.Record{
-		Target:    &api.URL{Scheme: "dummy", Opaque: "failure"},
-		Status:    api.StatusFailure,
-		CheckedAt: time.Date(2001, 2, 3, 16, 5, 6, 0, time.UTC),
-		Message:   "foobar",
+		Target:  &api.URL{Scheme: "dummy", Opaque: "failure"},
+		Status:  api.StatusFailure,
+		Time:    time.Date(2001, 2, 3, 16, 5, 6, 0, time.UTC),
+		Message: "foobar",
 	}
 
 	r := &testutil.DummyReporter{}
@@ -280,11 +280,11 @@ func AssertAlert(t *testing.T, tests []ProbeTest, timeout int) {
 			defer cancel()
 
 			rs := testutil.RunAlert(ctx, a, api.Record{
-				CheckedAt: time.Date(2001, 2, 3, 16, 5, 6, 0, time.UTC),
-				Target:    &api.URL{Scheme: "dummy", Opaque: "failure"},
-				Status:    api.StatusFailure,
-				Latency:   123456 * time.Microsecond,
-				Message:   "test-message",
+				Time:    time.Date(2001, 2, 3, 16, 5, 6, 0, time.UTC),
+				Target:  &api.URL{Scheme: "dummy", Opaque: "failure"},
+				Status:  api.StatusFailure,
+				Latency: 123456 * time.Microsecond,
+				Message: "test-message",
 			})
 
 			if len(rs) != 1 {

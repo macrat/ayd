@@ -48,10 +48,10 @@ func (r *fileScanner) Close() error {
 func (r *fileScanner) Scan() bool {
 	for r.scanner.Scan() {
 		rec, err := ParseRecord(r.scanner.Text())
-		if err != nil || rec.CheckedAt.Before(r.since) {
+		if err != nil || rec.Time.Before(r.since) {
 			continue
 		}
-		if !r.until.After(rec.CheckedAt) {
+		if !r.until.After(rec.Time) {
 			return false
 		}
 		r.rec = rec

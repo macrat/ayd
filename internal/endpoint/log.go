@@ -264,7 +264,7 @@ func LogCSVEndpoint(s Store) http.HandlerFunc {
 			r := scanner.Record()
 
 			c.Write([]string{
-				r.CheckedAt.Format(time.RFC3339),
+				r.Time.Format(time.RFC3339),
 				r.Status.String(),
 				strconv.FormatFloat(float64(r.Latency.Microseconds())/1000, 'f', 3, 64),
 				r.Target.String(),

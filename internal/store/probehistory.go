@@ -28,7 +28,7 @@ func (ph probeHistory) MakeReport(length int) api.ProbeHistory {
 	if len(ph.Records) > 0 {
 		latest := ph.Records[len(ph.Records)-1]
 		r.Status = latest.Status
-		r.Updated = latest.CheckedAt
+		r.Updated = latest.Time
 	}
 
 	return r
@@ -83,7 +83,7 @@ func (hs probeHistoryMap) Append(source *api.URL, r api.Record) {
 	if h, ok := hs[target]; ok {
 		h.Records = append(h.Records, r)
 
-		for i := len(h.Records) - 1; i > 0 && h.Records[i-1].CheckedAt.After(h.Records[i].CheckedAt); i-- {
+		for i := len(h.Records) - 1; i > 0 && h.Records[i-1].Time.After(h.Records[i].Time); i-- {
 			h.Records[i], h.Records[i-1] = h.Records[i-1], h.Records[i]
 		}
 

@@ -174,9 +174,9 @@ func (p *autoPingerStruct) Ping(ctx context.Context, target *net.IPAddr) (startT
 
 func pingResultToRecord(ctx context.Context, target *api.URL, startTime time.Time, result pinger.Result) api.Record {
 	rec := api.Record{
-		CheckedAt: startTime,
-		Latency:   result.AvgRTT,
-		Target:    target,
+		Time:    startTime,
+		Latency: result.AvgRTT,
+		Target:  target,
 		Extra: map[string]interface{}{
 			"rtt_min":      float64(result.MinRTT.Microseconds()) / 1000,
 			"rtt_avg":      float64(result.AvgRTT.Microseconds()) / 1000,
@@ -265,10 +265,10 @@ func (s PingProbe) Probe(ctx context.Context, r Reporter) {
 
 	preparingError := func(err error) {
 		r.Report(s.target, api.Record{
-			CheckedAt: time.Now(),
-			Target:    s.target,
-			Status:    api.StatusUnknown,
-			Message:   err.Error(),
+			Time:    time.Now(),
+			Target:  s.target,
+			Status:  api.StatusUnknown,
+			Message: err.Error(),
 		})
 	}
 

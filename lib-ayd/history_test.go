@@ -38,11 +38,11 @@ func TestProbeHistory(t *testing.T) {
 		Target: &ayd.URL{Scheme: "dummy", Opaque: "healthy", Fragment: "hello-world"},
 		Status: ayd.StatusHealthy,
 		Records: []ayd.Record{{
-			CheckedAt: time.Date(2021, 1, 2, 15, 4, 5, 0, time.UTC),
-			Status:    ayd.StatusHealthy,
-			Latency:   123456 * time.Microsecond,
-			Target:    &ayd.URL{Scheme: "dummy", Opaque: "healthy", Fragment: "hello-world"},
-			Message:   "this is test",
+			Time:    time.Date(2021, 1, 2, 15, 4, 5, 0, time.UTC),
+			Status:  ayd.StatusHealthy,
+			Latency: 123456 * time.Microsecond,
+			Target:  &ayd.URL{Scheme: "dummy", Opaque: "healthy", Fragment: "hello-world"},
+			Message: "this is test",
 		}},
 		Updated: time.Date(2001, 1, 2, 15, 4, 5, 0, time.UTC),
 	}

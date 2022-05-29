@@ -13,12 +13,12 @@ import (
 
 // Record is a record in Ayd log
 type Record struct {
-	CheckedAt time.Time
-	Status    Status
-	Latency   time.Duration
-	Target    *URL
-	Message   string
-	Extra     map[string]interface{}
+	Time    time.Time
+	Status  Status
+	Latency time.Duration
+	Target  *URL
+	Message string
+	Extra   map[string]interface{}
 }
 
 // ParseRecord is parse string as a Record row in the log
@@ -114,7 +114,7 @@ func (r *Record) UnmarshalJSON(data []byte) error {
 	} else {
 		if s, ok := value.(string); !ok {
 			return ayderr.New(ErrInvalidRecord, nil, "invalid record: time: should be a string")
-		} else if r.CheckedAt, err = time.Parse(time.RFC3339, s); err != nil {
+		} else if r.Time, err = time.Parse(time.RFC3339, s); err != nil {
 			return ayderr.New(ErrInvalidRecord, err, "invalid record: time")
 		}
 		delete(raw, "time")
@@ -172,7 +172,7 @@ func (r Record) MarshalJSON() ([]byte, error) {
 	_, err := fmt.Fprintf(
 		head,
 		`{"time":"%s", "status":"%s", "latency":%.3f, "target":%q`,
-		r.CheckedAt.Format(time.RFC3339),
+		r.Time.Format(time.RFC3339),
 		r.Status,
 		float64(r.Latency.Microseconds())/1000,
 		r.Target,

@@ -38,8 +38,8 @@ func FuzzParseRecord(f *testing.F) {
 		r2.Target.RawPath = ""
 		r.Target.RawFragment = ""
 		r2.Target.RawFragment = ""
-		r.CheckedAt = r.CheckedAt.Round(time.Second)
-		r2.CheckedAt = r.CheckedAt.Round(time.Second)
+		r.Time = r.Time.Round(time.Second)
+		r2.Time = r.Time.Round(time.Second)
 
 		if diff := cmp.Diff(r, r2); diff != "" {
 			t.Errorf("first generated and regenerated was different\n%s", diff)

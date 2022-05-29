@@ -56,9 +56,9 @@ func (s TCPProbe) Probe(ctx context.Context, r Reporter) {
 	d := time.Since(st)
 
 	rec := api.Record{
-		CheckedAt: st,
-		Target:    s.target,
-		Latency:   d,
+		Time:    st,
+		Target:  s.target,
+		Latency: d,
 	}
 
 	if err != nil {

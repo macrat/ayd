@@ -27,10 +27,10 @@ func (t Task) MakeJob(ctx context.Context, s *store.Store) cron.Job {
 		defer func() {
 			if err := recover(); err != nil {
 				s.Report(t.Prober.Target(), api.Record{
-					CheckedAt: time.Now(),
-					Target:    t.Prober.Target(),
-					Status:    api.StatusUnknown,
-					Message:   fmt.Sprintf("panic: %s", err),
+					Time:    time.Now(),
+					Target:  t.Prober.Target(),
+					Status:  api.StatusUnknown,
+					Message: fmt.Sprintf("panic: %s", err),
 				})
 			}
 		}()

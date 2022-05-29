@@ -135,7 +135,7 @@ func (s HTTPScheme) run(ctx context.Context, r Reporter, req *http.Request) {
 	d := time.Since(st)
 
 	rec := s.responseToRecord(resp, err)
-	rec.CheckedAt = st
+	rec.Time = st
 	rec.Latency = d
 
 	r.Report(s.target, timeoutOr(ctx, rec))
@@ -152,7 +152,7 @@ func (s HTTPScheme) Probe(ctx context.Context, r Reporter) {
 
 func (s HTTPScheme) Alert(ctx context.Context, r Reporter, lastRecord api.Record) {
 	qs := s.target.ToURL().Query()
-	qs.Set("ayd_checked_at", lastRecord.CheckedAt.Format(time.RFC3339))
+	qs.Set("ayd_time", lastRecord.Time.Format(time.RFC3339))
 	qs.Set("ayd_status", lastRecord.Status.String())
 	qs.Set("ayd_latency", strconv.FormatFloat(float64(lastRecord.Latency.Microseconds())/1000.0, 'f', -1, 64))
 	qs.Set("ayd_target", lastRecord.Target.String())

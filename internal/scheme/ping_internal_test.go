@@ -335,8 +335,8 @@ func TestPingResultToRecord(t *testing.T) {
 		t.Run(tt.Target.String(), func(t *testing.T) {
 			rec := pingResultToRecord(tt.Context, tt.Target, tt.StartTime, tt.Result)
 
-			if !rec.CheckedAt.Equal(tt.StartTime) {
-				t.Errorf("unexpected checked_at: expected=%s actual=%s", tt.StartTime, rec.CheckedAt)
+			if !rec.Time.Equal(tt.StartTime) {
+				t.Errorf("unexpected time: expected=%s actual=%s", tt.StartTime, rec.Time)
 			}
 
 			if rec.Status != tt.Status {

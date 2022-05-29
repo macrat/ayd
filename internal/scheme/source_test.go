@@ -284,11 +284,11 @@ func TestSourceScheme_Alert(t *testing.T) {
 	r := &testutil.DummyReporter{}
 
 	a.Alert(ctx, r, api.Record{
-		CheckedAt: time.Date(2021, 1, 2, 15, 4, 5, 0, time.UTC),
-		Status:    api.StatusFailure,
-		Latency:   123456 * time.Microsecond,
-		Target:    &api.URL{Scheme: "dummy", Opaque: "hello-world"},
-		Message:   "test-message",
+		Time:    time.Date(2021, 1, 2, 15, 4, 5, 0, time.UTC),
+		Status:  api.StatusFailure,
+		Latency: 123456 * time.Microsecond,
+		Target:  &api.URL{Scheme: "dummy", Opaque: "hello-world"},
+		Message: "test-message",
 	})
 
 	if len(r.Records) != 3 {

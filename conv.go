@@ -160,7 +160,7 @@ func (c ConvCommand) toCSV(scanners []api.LogScanner, output io.Writer) error {
 		for s.Scan() {
 			r := s.Record()
 			err := writer.Write([]string{
-				r.CheckedAt.Format(time.RFC3339),
+				r.Time.Format(time.RFC3339),
 				r.Status.String(),
 				strconv.FormatFloat(float64(r.Latency.Microseconds())/1000, 'f', 3, 64),
 				r.Target.String(),
@@ -184,7 +184,7 @@ func (c ConvCommand) toLTSV(scanners []api.LogScanner, output io.Writer) error {
 			fmt.Fprintf(
 				output,
 				"time:%s\tstatus:%s\tlatency:%.3f\ttarget:%s",
-				r.CheckedAt.Format(time.RFC3339),
+				r.Time.Format(time.RFC3339),
 				r.Status,
 				float64(r.Latency.Microseconds())/1000,
 				r.Target,

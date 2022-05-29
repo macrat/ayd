@@ -366,21 +366,21 @@ func (p SourceScheme) Probe(ctx context.Context, r Reporter) {
 
 	if err != nil {
 		r.Report(p.target, timeoutOr(ctx, api.Record{
-			CheckedAt: stime,
-			Latency:   d,
-			Status:    api.StatusFailure,
-			Target:    p.target,
-			Message:   err.Error(),
+			Time:    stime,
+			Latency: d,
+			Status:  api.StatusFailure,
+			Target:  p.target,
+			Message: err.Error(),
 		}))
 		return
 	}
 
 	r.Report(p.target, api.Record{
-		CheckedAt: stime,
-		Status:    api.StatusHealthy,
-		Latency:   d,
-		Target:    p.target,
-		Message:   fmt.Sprintf("loaded %d targets", len(probes)),
+		Time:    stime,
+		Status:  api.StatusHealthy,
+		Latency: d,
+		Target:  p.target,
+		Message: fmt.Sprintf("loaded %d targets", len(probes)),
 		Extra: map[string]interface{}{
 			"targets": len(probes),
 		},
@@ -415,21 +415,21 @@ func (p SourceScheme) Alert(ctx context.Context, r Reporter, lastRecord api.Reco
 
 	if err != nil {
 		r.Report(p.target, timeoutOr(ctx, api.Record{
-			CheckedAt: stime,
-			Latency:   d,
-			Status:    api.StatusFailure,
-			Target:    p.target,
-			Message:   err.Error(),
+			Time:    stime,
+			Latency: d,
+			Status:  api.StatusFailure,
+			Target:  p.target,
+			Message: err.Error(),
 		}))
 		return
 	}
 
 	r.Report(p.target, api.Record{
-		CheckedAt: stime,
-		Latency:   d,
-		Status:    api.StatusHealthy,
-		Target:    p.target,
-		Message:   fmt.Sprintf("loaded %d targets", len(alerters)),
+		Time:    stime,
+		Latency: d,
+		Status:  api.StatusHealthy,
+		Target:  p.target,
+		Message: fmt.Sprintf("loaded %d targets", len(alerters)),
 		Extra: map[string]interface{}{
 			"targets": len(alerters),
 		},

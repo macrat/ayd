@@ -13,7 +13,7 @@ type ProbeHistory struct {
 	// Status is the latest status of the target
 	Status Status
 
-	// Status is the same as CheckedAt of the latest History record
+	// Status is the same as Time of the latest History record
 	Updated time.Time
 
 	Records []Record

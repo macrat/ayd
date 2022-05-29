@@ -101,7 +101,7 @@ td.unknown::before { background-color: rgb(var(--fg)) }
             </thead>
             <tbody>{{ range .Head }}
                 <tr>
-                    <td>{{ .CheckedAt | time2str }}</td>
+                    <td>{{ .Time | time2str }}</td>
                     <td class="status {{ .Status | to_lower }}">{{ .Status }}</td>
                     <td class="latency">{{ .Latency }}</td>
                     <td class="target">{{ .Target }}</td>
@@ -111,7 +111,7 @@ td.unknown::before { background-color: rgb(var(--fg)) }
             <tbody><tr><td colspan="5" class="omit-indicator">{{ .Omitted }} records have omitted</td></tr></tbody>
             <tbody>{{ range .Tail }}
                 <tr>
-                    <td>{{ .CheckedAt | time2str }}</td>
+                    <td>{{ .Time | time2str }}</td>
                     <td class="status {{ .Status | to_lower }}">{{ .Status }}</td>
                     <td class="latency">{{ .Latency }}</td>
                     <td class="target">{{ .Target }}</td>

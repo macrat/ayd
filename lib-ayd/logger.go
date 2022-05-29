@@ -42,14 +42,14 @@ func (l Logger) Print(r Record) error {
 	}
 
 	if l.useTimer {
-		r.CheckedAt = l.stime
+		r.Time = l.stime
 		r.Latency = time.Since(l.stime)
 	} else {
-		if r.CheckedAt.IsZero() {
+		if r.Time.IsZero() {
 			if l.stime.IsZero() {
-				r.CheckedAt = time.Now()
+				r.Time = time.Now()
 			} else {
-				r.CheckedAt = l.stime
+				r.Time = l.stime
 			}
 		}
 

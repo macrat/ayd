@@ -169,7 +169,7 @@ In alerting, Ayd adds some queries to send information about the incident.
 
 | query name       | example                                    | description                        |
 |------------------|--------------------------------------------|------------------------------------|
-| `ayd_checked_at` | `2001-02-03T16:05:06+09:00`                | The timestamp when status changed  |
+| `ayd_time` | `2001-02-03T16:05:06+09:00`                | The timestamp when status changed  |
 | `ayd_status`     | `FAILURE`, `DEGRADE`, `UNKNOWN`, `HEALTHY` | The current status of the target   |
 | `ayd_latency`    | `123.456`                                  | The latency of the latest checking |
 | `ayd_target`     | `https://target.example.com`               | The target URL                     |

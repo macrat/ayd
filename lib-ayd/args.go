@@ -38,7 +38,7 @@ func ParseProbePluginArgs() (ProbePluginArgs, error) {
 // AlertPluginArgs is arguments for alert plugin
 type AlertPluginArgs struct {
 	AlertURL  *URL
-	CheckedAt time.Time
+	Time      time.Time
 	Status    Status
 	Latency   time.Duration
 	TargetURL *URL
@@ -56,9 +56,9 @@ func ParseAlertPluginArgsFrom(args []string) (AlertPluginArgs, error) {
 		return AlertPluginArgs{}, ayderr.New(ErrInvalidArgumentValue, err, "invalid alert URL")
 	}
 
-	checkedAt, err := time.Parse(time.RFC3339, args[2])
+	timestamp, err := time.Parse(time.RFC3339, args[2])
 	if err != nil {
-		return AlertPluginArgs{}, ayderr.New(ErrInvalidArgumentValue, err, "invalid checked at timestamp")
+		return AlertPluginArgs{}, ayderr.New(ErrInvalidArgumentValue, err, "invalid timestamp")
 	}
 
 	status := ParseStatus(strings.ToUpper(args[3]))
@@ -75,7 +75,7 @@ func ParseAlertPluginArgsFrom(args []string) (AlertPluginArgs, error) {
 
 	return AlertPluginArgs{
 		AlertURL:  alertURL,
-		CheckedAt: checkedAt,
+		Time:      timestamp,
 		Status:    status,
 		Latency:   time.Duration(latency) * time.Millisecond,
 		TargetURL: targetURL,

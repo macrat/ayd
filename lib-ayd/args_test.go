@@ -56,14 +56,14 @@ func TestParseProbePluginArgs(t *testing.T) {
 
 func TestParseAlertPluginArgs(t *testing.T) {
 	tests := []struct {
-		Args      []string
-		Alert     string
-		CheckedAt string
-		Status    string
-		Latency   string
-		Target    string
-		Message   string
-		Error     string
+		Args    []string
+		Alert   string
+		Time    string
+		Status  string
+		Latency string
+		Target  string
+		Message string
+		Error   string
 	}{
 		{
 			[]string{"./ayd-test-alert", "foo:bar", "2001-02-03T16:05:06Z", "HEALTHY", "123.456", "bar:baz", "foo bar"},
@@ -123,7 +123,7 @@ func TestParseAlertPluginArgs(t *testing.T) {
 			"",
 			"",
 			"",
-			`invalid checked at timestamp: parsing time "this is not a time" as "2006-01-02T15:04:05Z07:00": cannot parse "this is not a time" as "2006"`,
+			`invalid timestamp: parsing time "this is not a time" as "2006-01-02T15:04:05Z07:00": cannot parse "this is not a time" as "2006"`,
 		},
 		{
 			[]string{"./ayd-test-alert", "foo:bar", "2001-02-03T16:05:06Z", "HEALTHY", "not a latency", "bar:baz", "foo bar"},
@@ -153,8 +153,8 @@ func TestParseAlertPluginArgs(t *testing.T) {
 				t.Errorf("unexpected alert URL: %s", args.AlertURL)
 			}
 
-			if args.CheckedAt.String() != tt.CheckedAt {
-				t.Errorf("unexpected checked time: %s", args.CheckedAt)
+			if args.Time.String() != tt.Time {
+				t.Errorf("unexpected checked time: %s", args.Time)
 			}
 
 			if args.Status.String() != tt.Status {
