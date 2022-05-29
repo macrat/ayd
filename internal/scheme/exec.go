@@ -159,12 +159,25 @@ func (s ExecScheme) run(ctx context.Context, r Reporter, extraEnv []string) {
 	message, latency = getLatencyByMessage(message, latency)
 	message, status = getStatusByMessage(message, status)
 
+	exitCode := 0
+	if err != nil {
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) {
+			exitCode = exitErr.ExitCode()
+		} else {
+			exitCode = -1
+		}
+	}
+
 	r.Report(s.target, timeoutOr(ctx, api.Record{
 		CheckedAt: stime,
 		Target:    s.target,
 		Status:    status,
 		Message:   message,
 		Latency:   latency,
+		Extra: map[string]interface{}{
+			"exit_code": exitCode,
+		},
 	}))
 }
 

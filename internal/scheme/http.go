@@ -95,11 +95,17 @@ func (s HTTPScheme) Target() *api.URL {
 func (s HTTPScheme) responseToRecord(resp *http.Response, err error) api.Record {
 	status := api.StatusFailure
 	message := ""
+	var extra map[string]interface{}
 
 	if err == nil {
-		message = fmt.Sprintf("proto=%s length=%d status=%s", resp.Proto, resp.ContentLength, strings.ReplaceAll(resp.Status, " ", "_"))
+		message = resp.Status
 		if 200 <= resp.StatusCode && resp.StatusCode <= 299 {
 			status = api.StatusHealthy
+		}
+		extra = map[string]interface{}{
+			"proto":       resp.Proto,
+			"length":      resp.ContentLength,
+			"status_code": resp.StatusCode,
 		}
 	} else {
 		message = err.Error()
@@ -119,6 +125,7 @@ func (s HTTPScheme) responseToRecord(resp *http.Response, err error) api.Record 
 		Target:  s.target,
 		Status:  status,
 		Message: message,
+		Extra:   extra,
 	}
 }
 

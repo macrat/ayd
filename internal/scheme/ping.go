@@ -3,7 +3,6 @@ package scheme
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net"
 	"os"
 	"strconv"
@@ -178,24 +177,25 @@ func pingResultToRecord(ctx context.Context, target *api.URL, startTime time.Tim
 		CheckedAt: startTime,
 		Latency:   result.AvgRTT,
 		Target:    target,
-		Message: fmt.Sprintf(
-			"ip=%s rtt(min/avg/max)=%.2f/%.2f/%.2f recv/sent=%d/%d",
-			result.Target,
-			float64(result.MinRTT.Microseconds())/1000,
-			float64(result.AvgRTT.Microseconds())/1000,
-			float64(result.MaxRTT.Microseconds())/1000,
-			result.Recv,
-			result.Sent,
-		),
+		Extra: map[string]interface{}{
+			"rtt_min":      float64(result.MinRTT.Microseconds()) / 1000,
+			"rtt_avg":      float64(result.AvgRTT.Microseconds()) / 1000,
+			"rtt_max":      float64(result.MaxRTT.Microseconds()) / 1000,
+			"packets_recv": result.Recv,
+			"packets_sent": result.Sent,
+		},
 	}
 
 	switch {
 	case result.Loss == 0:
 		rec.Status = api.StatusHealthy
+		rec.Message = "All packets came back"
 	case result.Recv == 0:
 		rec.Status = api.StatusFailure
+		rec.Message = "All packets has dropped"
 	default:
 		rec.Status = api.StatusDegrade
+		rec.Message = "Some packets has dropped"
 	}
 
 	if ctx.Err() == context.Canceled {

@@ -150,26 +150,27 @@ func (p FTPProbe) Probe(ctx context.Context, r Reporter) {
 	defer cancel()
 
 	stime := time.Now()
-	report := func(status api.Status, message string) {
+	report := func(status api.Status, message string, extra map[string]interface{}) {
 		r.Report(p.target, timeoutOr(ctx, api.Record{
 			CheckedAt: stime,
 			Status:    status,
 			Latency:   time.Since(stime),
 			Target:    p.target,
 			Message:   message,
+			Extra:     extra,
 		}))
 	}
 
 	conn, status, message := ftpConnectAndLogin(ctx, p.target)
 	if status != api.StatusHealthy {
-		report(status, message)
+		report(status, message, nil)
 		return
 	}
 	defer conn.Quit()
 
 	ls, status, message := p.list(conn)
 	if status != api.StatusHealthy {
-		report(status, message)
+		report(status, message, nil)
 		return
 	}
 
@@ -181,8 +182,12 @@ func (p FTPProbe) Probe(ctx context.Context, r Reporter) {
 	}
 
 	if n == 1 && ls[0].Name == path.Base(p.target.Path) {
-		report(api.StatusHealthy, fmt.Sprintf("type=file size=%d", ls[0].Size))
+		report(api.StatusHealthy, fmt.Sprintf("type=file size=%d", ls[0].Size), map[string]interface{}{
+			"file_size": ls[0].Size,
+		})
 	} else {
-		report(api.StatusHealthy, fmt.Sprintf("type=directory files=%d", n))
+		report(api.StatusHealthy, fmt.Sprintf("type=directory files=%d", n), map[string]interface{}{
+			"files": n,
+		})
 	}
 }

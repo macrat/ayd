@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	api "github.com/macrat/ayd/lib-ayd"
 	"github.com/macrat/go-parallel-pinger"
 )
@@ -236,6 +237,7 @@ func TestPingResultToRecord(t *testing.T) {
 		StartTime time.Time
 		Result    pinger.Result
 		Message   string
+		Extra     map[string]interface{}
 		Status    api.Status
 	}{
 		{
@@ -251,7 +253,14 @@ func TestPingResultToRecord(t *testing.T) {
 				AvgRTT: 2345 * time.Microsecond,
 				MaxRTT: 3456 * time.Microsecond,
 			},
-			"ip=127.0.0.1 rtt(min/avg/max)=1.23/2.35/3.46 recv/sent=3/3",
+			"All packets came back",
+			map[string]interface{}{
+				"rtt_min":      1.234,
+				"rtt_avg":      2.345,
+				"rtt_max":      3.456,
+				"packets_recv": 3,
+				"packets_sent": 3,
+			},
 			api.StatusHealthy,
 		},
 		{
@@ -264,7 +273,14 @@ func TestPingResultToRecord(t *testing.T) {
 				Recv:   0,
 				Loss:   3,
 			},
-			"ip=127.1.2.3 rtt(min/avg/max)=0.00/0.00/0.00 recv/sent=0/3",
+			"All packets has dropped",
+			map[string]interface{}{
+				"rtt_min":      0.0,
+				"rtt_avg":      0.0,
+				"rtt_max":      0.0,
+				"packets_recv": 0,
+				"packets_sent": 3,
+			},
 			api.StatusFailure,
 		},
 		{
@@ -280,7 +296,14 @@ func TestPingResultToRecord(t *testing.T) {
 				AvgRTT: 2345 * time.Microsecond,
 				MaxRTT: 3456 * time.Microsecond,
 			},
-			"ip=127.3.2.1 rtt(min/avg/max)=1.23/2.35/3.46 recv/sent=2/3",
+			"Some packets has dropped",
+			map[string]interface{}{
+				"rtt_min":      1.234,
+				"rtt_avg":      2.345,
+				"rtt_max":      3.456,
+				"packets_recv": 2,
+				"packets_sent": 3,
+			},
 			api.StatusDegrade,
 		},
 		{
@@ -297,6 +320,13 @@ func TestPingResultToRecord(t *testing.T) {
 				MaxRTT: 3456 * time.Microsecond,
 			},
 			"probe aborted",
+			map[string]interface{}{
+				"rtt_min":      1.234,
+				"rtt_avg":      2.345,
+				"rtt_max":      3.456,
+				"packets_recv": 2,
+				"packets_sent": 3,
+			},
 			api.StatusAborted,
 		},
 	}
@@ -323,6 +353,10 @@ func TestPingResultToRecord(t *testing.T) {
 
 			if rec.Message != tt.Message {
 				t.Errorf("unexpected message\n--- expected ---\n%s\n--- actual ---\n%s", tt.Message, rec.Message)
+			}
+
+			if diff := cmp.Diff(tt.Extra, rec.Extra); diff != "" {
+				t.Errorf("unexpected extra\n%s", diff)
 			}
 		})
 	}

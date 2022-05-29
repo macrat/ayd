@@ -21,11 +21,11 @@ func TestPingProbe_Probe(t *testing.T) {
 	}
 
 	AssertProbe(t, []ProbeTest{
-		{"ping:localhost", api.StatusHealthy, `ip=(127.0.0.1|::1) rtt\(min/avg/max\)=[0-9.]*/[0-9.]*/[0-9.]* recv/sent=3/3`, ""},
-		{"ping:127.0.0.1", api.StatusHealthy, `ip=127.0.0.1 rtt\(min/avg/max\)=[0-9.]*/[0-9.]*/[0-9.]* recv/sent=3/3`, ""},
-		{"ping:::1", api.StatusHealthy, `ip=::1 rtt\(min/avg/max\)=[0-9.]*/[0-9.]*/[0-9.]* recv/sent=3/3`, ""},
-		{"ping4:localhost", api.StatusHealthy, `ip=127.0.0.1 rtt\(min/avg/max\)=[0-9.]*/[0-9.]*/[0-9.]* recv/sent=3/3`, ""},
-		{"ping6:localhost", api.StatusHealthy, `ip=::1 rtt\(min/avg/max\)=[0-9.]*/[0-9.]*/[0-9.]* recv/sent=3/3`, ""},
+		{"ping:localhost", api.StatusHealthy, `All packets came back`, ""},
+		{"ping:127.0.0.1", api.StatusHealthy, `All packets came back`, ""},
+		{"ping:::1", api.StatusHealthy, `All packets came back`, ""},
+		{"ping4:localhost", api.StatusHealthy, `All packets came back`, ""},
+		{"ping6:localhost", api.StatusHealthy, `All packets came back`, ""},
 		{"ping:of-course-definitely-no-such-host", api.StatusUnknown, `.*`, ""},
 	}, 2)
 
@@ -71,7 +71,7 @@ func TestPingProbe_Probe(t *testing.T) {
 		t.Setenv("AYD_PING_INTERVAL", "1ms")
 
 		AssertProbe(t, []ProbeTest{
-			{"ping:localhost", api.StatusHealthy, `ip=(127.0.0.1|::1) rtt\(min/avg/max\)=[0-9.]*/[0-9.]*/[0-9.]* recv/sent=10/10`, ""},
+			{"ping:localhost", api.StatusHealthy, `All packets came back`, ""},
 		}, 2)
 	})
 }

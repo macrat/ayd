@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"time"
 
 	"github.com/macrat/ayd/internal/ayderr"
@@ -129,18 +130,27 @@ func (r Record) MarshalJSON() ([]byte, error) {
 		head.Truncate(head.Len() - 1) // drop newline
 	}
 
+	extras := make([]extraPair, 0, len(r.Extra))
 	for k, v := range r.Extra {
+		extras = append(extras, extraPair{k, v})
+	}
+
+	sort.Slice(extras, func(i, j int) bool {
+		return extras[i].Key < extras[j].Key
+	})
+
+	for _, e := range extras {
 		if _, err = head.Write([]byte(", ")); err != nil {
 			return nil, err
 		}
-		if err = enc.Encode(k); err != nil {
+		if err = enc.Encode(e.Key); err != nil {
 			return nil, err
 		}
 		head.Truncate(head.Len() - 1) // drop newline
 		if _, err = head.Write([]byte(":")); err != nil {
 			return nil, err
 		}
-		if err = enc.Encode(v); err != nil {
+		if err = enc.Encode(e.Value); err != nil {
 			return nil, err
 		}
 		head.Truncate(head.Len() - 1) // drop newline
@@ -149,4 +159,9 @@ func (r Record) MarshalJSON() ([]byte, error) {
 	_, err = head.Write([]byte("}"))
 
 	return head.Bytes(), err
+}
+
+type extraPair struct {
+	Key   string
+	Value interface{}
 }
