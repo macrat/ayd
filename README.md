@@ -90,8 +90,7 @@ Ayd has these pages/endpoints.
 | [/incidents.csv](http://localhost:9000/status.csv)   | Incident history in CSV format.                                      |
 | [/incidents.json](http://localhost:9000/status.json) | Incident history in JSON format.                                     |
 | [/log.html](http://localhost:9000/log.html)          | Raw log data in HTML page.                                           |
-| [/log.tsv](http://localhost:9000/log.tsv)            | Raw log file in TSV format.                                          |
-| [/log.csv](http://localhost:9000/log.tsv)            | Raw log file in CSV format.                                          |
+| [/log.csv](http://localhost:9000/log.csv)            | Raw log file in CSV format.                                          |
 | [/log.json](http://localhost:9000/log.json)          | Raw log file in JSON format.                                         |
 | [/targets.txt](http://localhost:9000/targets.txt)    | The list of target URLs, separated by \\n.                           |
 | [/targets.json](http://localhost:9000/targets.json)  | The list of target URLs in JSON format.                              |
@@ -111,7 +110,7 @@ examples:
 Be careful, the target URL or the message won't convert even if set `charset=ascii`. The response could include non-ascii text.
 
 
-#### Filter log entries in `/log.html`, `/log.tsv`, `/log.csv`, and `/log.json`
+#### Filter log entries in `/log.html`, `/log.csv`, and `/log.json`
 
 The log endpoints accept `since`, `until`, `target`, and `query` query to filtering log entries.
 
@@ -125,7 +124,7 @@ It works as perfect matching for status, partial match for target URL and messag
 And, you can use filters for latency like `<10ms` or `>=1s`.
 
 examples:
-- <http://localhost:9000/log.tsv?since=2000-01-01T00:00:00Z&until=2001-01-01T00:00:00Z>: The logs from 2000-01-01 to 2000-12-31.
+- <http://localhost:9000/log.csv?since=2000-01-01T00:00:00Z&until=2001-01-01T00:00:00Z>: The logs from 2000-01-01 to 2000-12-31.
 - <http://localhost:9000/log.csv?since=2021-01-01T00:00:00Z&target=ping:localhost>: The logs about `ping:localhost` since 2021-01-01.
 - <http://localhost:9000/log.json?query=-healthy%20ping:>: The logs within recent 7 days that only about unhealthy(`-healthy`) ping(`ping:`) targets.
 
@@ -431,12 +430,12 @@ The above command means checking `your-service.example.com` every 5 minutes from
 
 ### Log file
 
-The log file of Ayd is stored in TSV (Tab Separated Values) format, encoded UTF-8.
-The log has these columns.
+The log file of Ayd is stored in [JSON Lines](https://jsonlines.org/) format, encoded UTF-8.
+Each record has at least 4 fields.
 
-1. Timestamp in [RFC3339 format](https://tools.ietf.org/html/rfc3339) like `2001-02-30T16:05:06+00:00`.
+- `time` when status check started, in [RFC3339 format](https://tools.ietf.org/html/rfc3339) like `2001-02-30T16:05:06+00:00`.
 
-2. Status of the record that `HEALTHY`, `DEGRADE`, `FAILURE`, `UNKNOWN`, or `ABORTED`.
+- `status` of the record that `HEALTHY`, `DEGRADE`, `FAILURE`, `UNKNOWN`, or `ABORTED`.
 
    * `HEALTHY` means service seems working well.
 
@@ -454,23 +453,25 @@ The log has these columns.
      For example, Ayd reports this when terminated Ayd with Ctrl-C.
      You do not have to action about this status because it happens by your operation. (might be you have to check Ayd settings if you do not know why caused this)
 
-3. Latency of the service in milliseconds.
+- `latency` of the service in milliseconds.
 
    Some probes like [ping:](#ping) reports average latency, and other probes reports total value..
 
-4. Target URL.
+- `target` URL.
 
    This URL is the same to passed one as argument, but normalized.
    For example, `ping:somehost?hello=world` to be `ping:somehost` because [ping:](#ping) does not use query values.
 
-5. The detail of status, the reason for failure, or the output of the executed script.
+- (optional) `message`, the detail of status, the reason for failure, or the output of the executed script.
+
+Log records can have other extra fields.
 
 For example, log lines look like below.
 
 ```
-2001-02-30T16:00:00+09:00	FAILURE	0.544	http://localhost	Get "http://localhost": dial tcp [::1]:80: connect: connection refused
-2001-02-30T16:05:00+09:00	UNKNOWN	0.000	tcp:somehost:1234	lookup somehost on 192.168.1.1:53: no such host
-2001-02-30T16:10:00+09:00	HEALTHY	0.375	ping:anotherhost	rtt(min/avg/max)=0.31/0.38/0.47 send/rcv=4/4
+{"time":"2001-02-30T16:00:00+09:00","status":"FAILURE","latency":0.544,"target":"http://localhost","message":"Get \"http://localhost\": dial tcp [::1]:80: connect: connection refused"}
+{"time":"2001-02-30T16:05:00+09:00","status":"UNKNOWN","latency":0.000,"target":"tcp:somehost:1234","message":"lookup somehost on 192.168.1.1:53: no such host"}
+{"time":"2001-02-30T16:10:00+09:00","status":"HEALTHY","latency":0.375,"target":"ping:anotherhost","message":"rtt(min/avg/max)=0.31/0.38/0.47 send/rcv=4/4"}
 ```
 
 Ayd will save the log file named `ayd.log` into the current directory in default.
@@ -488,10 +489,7 @@ Please use `-f -` option for disable writing log file if you don't use log file.
 This is not recommended for production use because Ayd can't restore last status when restore if don't save log file.
 But, this is may useful for [use Ayd as a parts of script file](#one-shot-mode).
 
-In old version, before 0.10.0 or older, the `-f` option was named `-o` option.
-The `-o` option is still working in the latest version, but it will removed in the future version.
-
-If you want log file in other format, you can download in CSV or JSON via [HTTP endpoint](#status-page-and-endpoints).
+If you want log file in other format like CSV, you can download via [HTTP endpoint](#status-page-and-endpoints).
 Or, you can use `ayd conv` subcommand like below.
 
 ``` shell
@@ -500,8 +498,6 @@ $ cat ayd.log | ayd conv > ayd_log.csv
 $ ayd conv ./ayd.log -o ayd_log.csv
 
 $ ayd conv -j ./ayd.log -o ayd_log.json
-
-$ ayd conv -J ./ayd.log -o ayd_log.jsonl
 ```
 
 
@@ -618,7 +614,7 @@ And you can use `yyy` part to change plugin behavior, the same as [http:](#http-
 The longest plugin name has priority if you installed multiple plugins.
 For example, `ayd-xxx-yyy-probe` has priority than `ayd-xxx-probe`.
 
-The output of the plugin will parsed the same way to [log file](#log-file).
+The plugin have to print result to stdout, in the same format as [log file](#log-file).
 
 The differences from plugin to [`exec:`](#exec) are below.
 
@@ -644,7 +640,14 @@ ayd-foobar-probe "foobar:your-target"
 
 #### Alert plugin
 
-Alert plugin receives the URL of alert at 1st of argument, and 2nd or after arguments is the same values and order as the [log file](#log-file).
+Alert plugin receives below arguments.
+
+1. The URL of alert.
+2. The timestamp in RFC3339 format.
+3. The current status of the firing target.
+4. The current latency.
+5. The target's URL.
+6. The message from the latest probe.
 
 For example, the alert URL `foobar:your-alert` for plugin `ayd-foobar-alert` called like a below command.
 
