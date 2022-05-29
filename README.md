@@ -469,9 +469,9 @@ Log records can have other extra fields.
 For example, log lines look like below.
 
 ```
-{"time":"2001-02-30T16:00:00+09:00","status":"FAILURE","latency":0.544,"target":"http://localhost","message":"Get \"http://localhost\": dial tcp [::1]:80: connect: connection refused"}
-{"time":"2001-02-30T16:05:00+09:00","status":"UNKNOWN","latency":0.000,"target":"tcp:somehost:1234","message":"lookup somehost on 192.168.1.1:53: no such host"}
-{"time":"2001-02-30T16:10:00+09:00","status":"HEALTHY","latency":0.375,"target":"ping:anotherhost","message":"rtt(min/avg/max)=0.31/0.38/0.47 send/rcv=4/4"}
+{"time":"2001-02-30T16:00:00+09:00", "status":"FAILURE", "latency":0.544, "target":"http://localhost", "message":"Get \"http://localhost\": dial tcp [::1]:80: connect: connection refused"}
+{"time":"2001-02-30T16:05:00+09:00", "status":"UNKNOWN", "latency":0.000, "target":"tcp:somehost:1234", "message":"lookup somehost on 192.168.1.1:53: no such host"}
+{"time":"2001-02-30T16:10:00+09:00", "status":"HEALTHY", "latency":0.375, "target":"ping:anotherhost", "message":"rtt(min/avg/max)=0.31/0.38/0.47 send/rcv=4/4"}
 ```
 
 Ayd will save the log file named `ayd.log` into the current directory in default.

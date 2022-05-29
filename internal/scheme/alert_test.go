@@ -155,11 +155,11 @@ func TestAlertReporter(t *testing.T) {
 		t.Fatalf("unexpected number of records: %d: %v", len(r1.Records), r1.Records)
 	}
 
-	if r1.Records[0].String() != `{"time":"0001-01-01T00:00:00Z","status":"UNKNOWN","latency":0,"target":"alert:dummy:another","message":"test-message"}` {
+	if r1.Records[0].String() != `{"time":"0001-01-01T00:00:00Z", "status":"UNKNOWN", "latency":0.000, "target":"alert:dummy:another", "message":"test-message"}` {
 		t.Errorf("unexpected 1st record: %s", r1.Records[0])
 	}
 
-	if r1.Records[1].String() != `{"time":"0001-01-01T00:00:00Z","status":"UNKNOWN","latency":0,"target":"ayd:test:internal-log","message":"something log"}` {
+	if r1.Records[1].String() != `{"time":"0001-01-01T00:00:00Z", "status":"UNKNOWN", "latency":0.000, "target":"ayd:test:internal-log", "message":"something log"}` {
 		t.Errorf("unexpected 2nd record: %s", r1.Records[1])
 	}
 }

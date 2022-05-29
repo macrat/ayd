@@ -107,7 +107,7 @@ func (r Record) MarshalJSON() ([]byte, error) {
 
 	_, err := fmt.Fprintf(
 		head,
-		`{"time":"%s","status":"%s","latency":%v,"target":%q`,
+		`{"time":"%s", "status":"%s", "latency":%.3f, "target":%q`,
 		r.CheckedAt.Format(time.RFC3339),
 		r.Status,
 		float64(r.Latency.Microseconds())/1000,
@@ -120,7 +120,7 @@ func (r Record) MarshalJSON() ([]byte, error) {
 	enc := json.NewEncoder(head)
 
 	if r.Message != "" {
-		if _, err = head.Write([]byte(`,"message":`)); err != nil {
+		if _, err = head.Write([]byte(`, "message":`)); err != nil {
 			return nil, err
 		}
 		if err = enc.Encode(r.Message); err != nil {
@@ -130,7 +130,7 @@ func (r Record) MarshalJSON() ([]byte, error) {
 	}
 
 	for k, v := range r.Extra {
-		if _, err = head.Write([]byte(",")); err != nil {
+		if _, err = head.Write([]byte(", ")); err != nil {
 			return nil, err
 		}
 		if err = enc.Encode(k); err != nil {

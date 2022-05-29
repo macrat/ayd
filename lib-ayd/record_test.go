@@ -55,7 +55,7 @@ func TestRecord(t *testing.T) {
 		Error  string
 	}{
 		{
-			String: `{"time":"2021-01-02T15:04:05+09:00","status":"HEALTHY","latency":123.456,"target":"ping:example.com","message":"hello world"}`,
+			String: `{"time":"2021-01-02T15:04:05+09:00", "status":"HEALTHY", "latency":123.456, "target":"ping:example.com", "message":"hello world"}`,
 			Record: ayd.Record{
 				CheckedAt: time.Date(2021, 1, 2, 15, 4, 5, 0, tokyo),
 				Target:    &ayd.URL{Scheme: "ping", Opaque: "example.com"},
@@ -65,7 +65,7 @@ func TestRecord(t *testing.T) {
 			},
 		},
 		{
-			String: `{"time":"2021-01-02T15:04:05+09:00","status":"FAILURE","latency":123.456,"target":"exec:/path/to/file.sh","message":"hello world"}`,
+			String: `{"time":"2021-01-02T15:04:05+09:00", "status":"FAILURE", "latency":123.456, "target":"exec:/path/to/file.sh", "message":"hello world"}`,
 			Record: ayd.Record{
 				CheckedAt: time.Date(2021, 1, 2, 15, 4, 5, 0, tokyo),
 				Target:    &ayd.URL{Scheme: "exec", Opaque: "/path/to/file.sh"},
@@ -75,7 +75,7 @@ func TestRecord(t *testing.T) {
 			},
 		},
 		{
-			String: `{"time":"2021-01-02T15:04:05+09:00","status":"ABORTED","latency":1234.567,"target":"dummy:#hello","message":"hello world"}`,
+			String: `{"time":"2021-01-02T15:04:05+09:00", "status":"ABORTED", "latency":1234.567, "target":"dummy:#hello", "message":"hello world"}`,
 			Record: ayd.Record{
 				CheckedAt: time.Date(2021, 1, 2, 15, 4, 5, 0, tokyo),
 				Target:    &ayd.URL{Scheme: "dummy", Fragment: "hello"},
@@ -85,7 +85,7 @@ func TestRecord(t *testing.T) {
 			},
 		},
 		{
-			String: `{"time":"2021-01-02T15:04:05+09:00","status":"DEGRADE","latency":1027.89,"target":"dummy:"}`,
+			String: `{"time":"2021-01-02T15:04:05+09:00", "status":"DEGRADE", "latency":1027.890, "target":"dummy:"}`,
 			Record: ayd.Record{
 				CheckedAt: time.Date(2021, 1, 2, 15, 4, 5, 0, tokyo),
 				Target:    &ayd.URL{Scheme: "dummy"},
@@ -95,43 +95,43 @@ func TestRecord(t *testing.T) {
 			},
 		},
 		{
-			String: `{"time":"2021-01-02T15:04:05+09:00","status":"HEALTHY","latency":123abc,"target":"ping:example.com","message":"hello world"}`,
+			String: `{"time":"2021-01-02T15:04:05+09:00", "status":"HEALTHY", "latency":123abc, "target":"ping:example.com", "message":"hello world"}`,
 			Error:  "invalid record: invalid character 'a' after object key:value pair",
 		},
 		{
-			String: `{"time":"2021/01/02 15:04:05","status":"HEALTHY","latency":123.456,"target":"ping:example.com","message":"hello world"}`,
+			String: `{"time":"2021/01/02 15:04:05", "status":"HEALTHY", "latency":123.456, "target":"ping:example.com", "message":"hello world"}`,
 			Error:  `invalid record: time: parsing time "2021/01/02 15:04:05" as "2006-01-02T15:04:05Z07:00": cannot parse "/01/02 15:04:05" as "-"`,
 		},
 		{
-			String: `{"time":"2021-01-02T15:04:05+09:00","status":"HEALTHY","latency":123.456,"target":"::invalid target::","message":"hello world"}`,
+			String: `{"time":"2021-01-02T15:04:05+09:00", "status":"HEALTHY", "latency":123.456, "target":"::invalid target::", "message":"hello world"}`,
 			Error:  `invalid record: target: parse "::invalid target::": missing protocol scheme`,
 		},
 		{
-			String: `{"status":"HEALTHY","latency":123.456,"target":"ping:example.com","message":"hello world"}`,
+			String: `{"status":"HEALTHY", "latency":123.456, "target":"ping:example.com", "message":"hello world"}`,
 			Error:  `invalid record: time: missing required field`,
 		},
 		{
-			String: `{"time":123,"status":"HEALTHY","latency":123.456,"target":"ping:example.com","message":"hello world"}`,
+			String: `{"time":123, "status":"HEALTHY", "latency":123.456, "target":"ping:example.com", "message":"hello world"}`,
 			Error:  `invalid record: time: should be a string`,
 		},
 		{
-			String: `{"time":"2021-01-02T15:04:05+09:00","status":null,"latency":123.456,"target":"ping:example.com","message":"hello world"}`,
+			String: `{"time":"2021-01-02T15:04:05+09:00", "status":null, "latency":123.456, "target":"ping:example.com", "message":"hello world"}`,
 			Error:  `invalid record: status: should be a string`,
 		},
 		{
-			String: `{"time":"2021-01-02T15:04:05+09:00","status":"HEALTHY","latency":"hello","target":"ping:example.com","message":"hello world"}`,
+			String: `{"time":"2021-01-02T15:04:05+09:00", "status":"HEALTHY", "latency":"hello", "target":"ping:example.com", "message":"hello world"}`,
 			Error:  `invalid record: latency: should be a number`,
 		},
 		{
-			String: `{"time":"2021-01-02T15:04:05+09:00","status":"HEALTHY","latency":123.456,"message":"hello world"}`,
+			String: `{"time":"2021-01-02T15:04:05+09:00", "status":"HEALTHY", "latency":123.456, "message":"hello world"}`,
 			Error:  `invalid record: target: missing required field`,
 		},
 		{
-			String: `{"time":"2021-01-02T15:04:05+09:00","status":"HEALTHY","latency":123.456,"target":1234,"message":"hello world"}`,
+			String: `{"time":"2021-01-02T15:04:05+09:00", "status":"HEALTHY", "latency":123.456, "target":1234, "message":"hello world"}`,
 			Error:  `invalid record: target: should be a string`,
 		},
 		{
-			String: `{"time":"2021-01-02T15:04:05+09:00","status":"HEALTHY","latency":123.456,"target":"ping:example.com"}`,
+			String: `{"time":"2021-01-02T15:04:05+09:00", "status":"HEALTHY", "latency":123.456, "target":"ping:example.com"}`,
 			Record: ayd.Record{
 				CheckedAt: time.Date(2021, 1, 2, 15, 4, 5, 0, tokyo),
 				Status:    ayd.StatusHealthy,
@@ -141,11 +141,11 @@ func TestRecord(t *testing.T) {
 			},
 		},
 		{
-			String: `{"time":"2021-01-02T15:04:05+09:00","status":"HEALTHY","latency":123.456,"target":"ping:example.com","message":123}`,
+			String: `{"time":"2021-01-02T15:04:05+09:00", "status":"HEALTHY", "latency":123.456, "target":"ping:example.com", "message":123}`,
 			Error:  `invalid record: message: should be a string`,
 		},
 		{
-			String: `{"time":"2021-01-02T15:04:05+09:00","status":"HEALTHY","latency":123.456,"target":"ping:example.com","message":"hello world","hello":"world"}`,
+			String: `{"time":"2021-01-02T15:04:05+09:00", "status":"HEALTHY", "latency":123.456, "target":"ping:example.com", "message":"hello world", "hello":"world"}`,
 			Record: ayd.Record{
 				CheckedAt: time.Date(2021, 1, 2, 15, 4, 5, 0, tokyo),
 				Status:    ayd.StatusHealthy,
