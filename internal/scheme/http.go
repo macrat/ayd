@@ -104,8 +104,10 @@ func (s HTTPScheme) responseToRecord(resp *http.Response, err error) api.Record 
 		}
 		extra = map[string]interface{}{
 			"proto":       resp.Proto,
-			"length":      resp.ContentLength,
 			"status_code": resp.StatusCode,
+		}
+		if resp.ContentLength >= 0 {
+			extra["length"] = resp.ContentLength
 		}
 	} else {
 		message = err.Error()
