@@ -2,6 +2,7 @@ package ayd_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/url"
 	"strings"
 	"testing"
@@ -274,6 +275,78 @@ func TestRecord_json(t *testing.T) {
 			t.Fatalf("unexpected unmarshalled result\n%s", diff)
 		}
 	})
+}
+
+func TestRecord_ReadableMessage(t *testing.T) {
+	tests := []struct {
+		Message string
+		Extra   map[string]interface{}
+		Output  string
+	}{
+		{
+			"",
+			map[string]interface{}{
+				"array":  []int{1, 2, 3},
+				"hello":  "world",
+				"multi":  "hello\nworld",
+				"num":    42,
+				"object": map[string]string{"key": "value"},
+			},
+			strings.Join([]string{
+				"---",
+				"array: [1,2,3]",
+				"hello: world",
+				"multi: |",
+				"  hello",
+				"  world",
+				"num: 42",
+				`object: {"key":"value"}`,
+			}, "\n"),
+		},
+		{
+			"hello\nworld",
+			map[string]interface{}{
+				"hello": "world",
+			},
+			strings.Join([]string{
+				"hello",
+				"world",
+				"---",
+				"hello: world",
+			}, "\n"),
+		},
+		{
+			"hello\nworld\n",
+			map[string]interface{}{
+				"hello": "world",
+			},
+			strings.Join([]string{
+				"hello",
+				"world",
+				"---",
+				"hello: world",
+			}, "\n"),
+		},
+		{
+			"hello world",
+			nil,
+			"hello world",
+		},
+		{
+			"",
+			nil,
+			"",
+		},
+	}
+
+	for i, tt := range tests {
+		t.Run(fmt.Sprint(i), func(t *testing.T) {
+			actual := ayd.Record{Message: tt.Message, Extra: tt.Extra}.ReadableMessage()
+			if diff := cmp.Diff(actual, tt.Output); diff != "" {
+				t.Errorf("unexpected output\n%s", diff)
+			}
+		})
+	}
 }
 
 func BenchmarkRecord_MarshalJSON(b *testing.B) {

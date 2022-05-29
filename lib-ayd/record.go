@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/macrat/ayd/internal/ayderr"
-	"gopkg.in/yaml.v3"
 )
 
 // Record is a record in Ayd log
@@ -36,20 +36,66 @@ func (r Record) String() string {
 	return string(b)
 }
 
+// ReadableExtra returns Extra map but encode each values as string.
+func (r Record) ReadableExtra() []ExtraPair {
+	if len(r.Extra) == 0 {
+		return nil
+	}
+
+	xs := make([]ExtraPair, 0, len(r.Extra))
+	for k, v := range r.Extra {
+		s := ""
+		switch x := v.(type) {
+		case string:
+			s = x
+		case int, int32, int64, float32, float64:
+			s = fmt.Sprint(x)
+		default:
+			b, err := json.Marshal(x)
+			if err != nil {
+				s = fmt.Sprint(x)
+			} else {
+				s = string(b)
+			}
+		}
+		xs = append(xs, ExtraPair{k, s})
+	}
+
+	sort.Slice(xs, func(i, j int) bool {
+		return xs[i].Key < xs[j].Key
+	})
+
+	return xs
+}
+
+// ExtraPair is a pair of string, for Record.StringExtra..
+type ExtraPair struct {
+	Key   string
+	Value string
+}
+
 // ReadableMessage returns human readable message of the message field and extra fields.
 func (r Record) ReadableMessage() string {
 	if len(r.Extra) == 0 {
 		return r.Message
 	}
-	extra, err := yaml.Marshal(r.Extra)
-	if err != nil {
-		return r.Message
+	var buf strings.Builder
+	buf.WriteString(r.Message)
+	if len(r.Message) > 0 && r.Message[len(r.Message)-1] != '\n' {
+		buf.WriteByte('\n')
 	}
-	msg := r.Message
-	if len(msg) > 0 && msg[len(msg)-1] != '\n' {
-		msg += "\n"
+	buf.WriteString("---")
+	for _, e := range r.ReadableExtra() {
+		if !strings.Contains(e.Value, "\n") {
+			fmt.Fprintf(&buf, "\n%s: %s", e.Key, e.Value)
+		} else {
+			fmt.Fprintf(&buf, "\n%s: |", e.Key)
+			for _, line := range strings.Split(e.Value, "\n") {
+				fmt.Fprintf(&buf, "\n  %s", line)
+			}
+		}
 	}
-	return msg + "---\n" + string(extra)
+	return buf.String()
 }
 
 // UnmarshalJSON implements the json.Unmarshaler interface.

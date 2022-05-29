@@ -105,7 +105,7 @@ td.unknown::before { background-color: rgb(var(--fg)) }
                     <td class="status {{ .Status | to_lower }}">{{ .Status }}</td>
                     <td class="latency">{{ .Latency }}</td>
                     <td class="target">{{ .Target }}</td>
-                    <td class="message">{{ .Message }}{{ range $k, $v := .Extra }} <span class="extra"><span class="extra-label">{{ $k }}</span> {{ $v }}</span>{{ end }}</td>
+                    <td class="message">{{ .Message }}{{ range .ReadableExtra }} <span class="extra"><span class="extra-label">{{ .Key }}</span> {{ .Value }}</span>{{ end }}</td>
                 </tr>{{ end }}
             </tbody>{{ if .Tail }}
             <tbody><tr><td colspan="5" class="omit-indicator">{{ .Omitted }} records have omitted</td></tr></tbody>
@@ -115,7 +115,7 @@ td.unknown::before { background-color: rgb(var(--fg)) }
                     <td class="status {{ .Status | to_lower }}">{{ .Status }}</td>
                     <td class="latency">{{ .Latency }}</td>
                     <td class="target">{{ .Target }}</td>
-                    <td class="message">{{ .Message }}{{ range $k, $v := .Extra }} <span class="extra"><span class="extra-label">{{ $k }}</span> {{ $v }}</span>{{ end }}</td>
+                    <td class="message">{{ .Message }}{{ range .ReadableExtra }} <span class="extra"><span class="extra-label">{{ .Key }}</span> {{ .Value }}</span>{{ end }}</td>
                 </tr>{{ end }}
             </tbody>{{ end }}
         </table>
