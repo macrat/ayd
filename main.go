@@ -71,9 +71,6 @@ func (cmd *AydCommand) ParseArgs(args []string) (exitCode int) {
 	flags.BoolVarP(&cmd.ShowVersion, "version", "v", false, "Show version")
 	flags.BoolVarP(&cmd.ShowHelp, "help", "h", false, "Show help message")
 
-	// TODO: remove -o option before to release version 1.0.0
-	compatPath := flags.StringP("deprecated-output-file", "o", "", "DEPRECATED: This option is renamed to -f.")
-
 	if err := flags.Parse(args[1:]); err != nil {
 		fmt.Fprintln(cmd.ErrStream, err)
 		fmt.Fprintf(cmd.ErrStream, "\nPlease see `%s -h` for more information.\n", args[0])
@@ -101,12 +98,6 @@ func (cmd *AydCommand) ParseArgs(args []string) (exitCode int) {
 		}
 	}
 
-	if flags.Changed("deprecated-output-file") {
-		fmt.Fprintf(cmd.ErrStream, "\nwarning: The -o option is deprecated.\n         Please use -f option instead of -o.\n\n")
-	}
-	if !flags.Changed("log-file") && *compatPath != "" {
-		cmd.StorePath = *compatPath
-	}
 	if cmd.StorePath == "-" {
 		cmd.StorePath = ""
 	}
