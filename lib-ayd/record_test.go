@@ -220,3 +220,58 @@ func TestRecord_json(t *testing.T) {
 		}
 	})
 }
+
+func BenchmarkRecord_MarshalJSON(b *testing.B) {
+	record := ayd.Record{
+		CheckedAt: time.Date(2021, 1, 2, 15, 4, 5, 0, time.UTC),
+		Status:    ayd.StatusHealthy,
+		Latency:   123456 * time.Microsecond,
+		Target:    &ayd.URL{Scheme: "dummy", Opaque: "healthy", Fragment: "hello-world"},
+		Message:   "this is test",
+		Extra: map[string]interface{}{
+			"extra": 123.0,
+			"hello": "world",
+		},
+	}
+
+	enc, err := record.MarshalJSON()
+	if err != nil {
+		b.Fatalf("failed to marshal: %s", err)
+	}
+	b.SetBytes(int64(len(enc)))
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = record.MarshalJSON()
+	}
+}
+
+func BenchmarkRecord_UnmarshalJSON(b *testing.B) {
+	bytes, err := ayd.Record{
+		CheckedAt: time.Date(2021, 1, 2, 15, 4, 5, 0, time.UTC),
+		Status:    ayd.StatusHealthy,
+		Latency:   123456 * time.Microsecond,
+		Target:    &ayd.URL{Scheme: "dummy", Opaque: "healthy", Fragment: "hello-world"},
+		Message:   "this is test",
+		Extra: map[string]interface{}{
+			"extra": 123.0,
+			"hello": "world",
+		},
+	}.MarshalJSON()
+
+	if err != nil {
+		b.Fatalf("failed to marshal: %s", err)
+	}
+	b.SetBytes(int64(len(bytes)))
+
+	var record ayd.Record
+
+	if err = record.UnmarshalJSON(bytes); err != nil {
+		b.Fatalf("failed to unmarshal: %s", err)
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = record.UnmarshalJSON(bytes)
+	}
+}
