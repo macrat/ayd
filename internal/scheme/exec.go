@@ -164,7 +164,9 @@ func (s ExecScheme) run(ctx context.Context, r Reporter, extraEnv []string) {
 		extra = map[string]interface{}{"exit_code": 0}
 	} else {
 		var exitErr *exec.ExitError
-		if errors.As(err, &exitErr) && exitErr.ExitCode() >= 0 {
+		if ctx.Err() == context.DeadlineExceeded || ctx.Err() == context.Canceled {
+			// do not add exit_code if command cancelled by Ayd.
+		} else if errors.As(err, &exitErr) && exitErr.ExitCode() >= 0 {
 			extra = map[string]interface{}{"exit_code": exitErr.ExitCode()}
 		}
 	}
