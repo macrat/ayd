@@ -382,7 +382,7 @@ func (p SourceScheme) Probe(ctx context.Context, r Reporter) {
 		Target:  p.target,
 		Message: fmt.Sprintf("loaded %d targets", len(probes)),
 		Extra: map[string]interface{}{
-			"targets": len(probes),
+			"target_count": len(probes),
 		},
 	})
 
@@ -431,7 +431,7 @@ func (p SourceScheme) Alert(ctx context.Context, r Reporter, lastRecord api.Reco
 		Target:  p.target,
 		Message: fmt.Sprintf("loaded %d targets", len(alerters)),
 		Extra: map[string]interface{}{
-			"targets": len(alerters),
+			"target_count": len(alerters),
 		},
 	})
 

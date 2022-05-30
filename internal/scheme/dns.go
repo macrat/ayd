@@ -38,7 +38,7 @@ func newDNSResolver(server string) dnsResolver {
 	}
 }
 
-type dnsResolveFunc func(ctx context.Context, target string) (string, error)
+type dnsResolveFunc func(ctx context.Context, target string) (string, interface{}, error)
 
 // getFunc returns a function to resolve DNS for given DNS type.
 func (r dnsResolver) getFunc(typ string) (fn dnsResolveFunc, err error) {
@@ -62,54 +62,54 @@ func (r dnsResolver) getFunc(typ string) (fn dnsResolveFunc, err error) {
 	}
 }
 
-func (r dnsResolver) auto(ctx context.Context, target string) (string, error) {
+func (r dnsResolver) auto(ctx context.Context, target string) (string, interface{}, error) {
 	addrs, err := r.Resolver.LookupHost(ctx, target)
-	return "ip=" + strings.Join(addrs, ","), err
+	return "ip", addrs, err
 }
 
-func (r dnsResolver) ip(ctx context.Context, protocol, target string) (string, error) {
+func (r dnsResolver) ip(ctx context.Context, protocol, target string) (string, interface{}, error) {
 	ips, err := r.Resolver.LookupIP(ctx, protocol, target)
 	addrs := make([]string, len(ips))
 	for i, x := range ips {
 		addrs[i] = x.String()
 	}
-	return "ip=" + strings.Join(addrs, ","), err
+	return "ip", addrs, err
 }
 
-func (r dnsResolver) a(ctx context.Context, target string) (string, error) {
+func (r dnsResolver) a(ctx context.Context, target string) (string, interface{}, error) {
 	return r.ip(ctx, "ip4", target)
 }
 
-func (r dnsResolver) aaaa(ctx context.Context, target string) (string, error) {
+func (r dnsResolver) aaaa(ctx context.Context, target string) (string, interface{}, error) {
 	return r.ip(ctx, "ip6", target)
 }
 
-func (r dnsResolver) cname(ctx context.Context, target string) (string, error) {
+func (r dnsResolver) cname(ctx context.Context, target string) (string, interface{}, error) {
 	host, err := r.Resolver.LookupCNAME(ctx, target)
-	return "hostname=" + host, err
+	return "hostname", host, err
 }
 
-func (r dnsResolver) mx(ctx context.Context, target string) (string, error) {
+func (r dnsResolver) mx(ctx context.Context, target string) (string, interface{}, error) {
 	mxs, err := r.Resolver.LookupMX(ctx, target)
 	addrs := make([]string, len(mxs))
 	for i, x := range mxs {
 		addrs[i] = x.Host
 	}
-	return "mx=" + strings.Join(addrs, ","), err
+	return "mx", addrs, err
 }
 
-func (r dnsResolver) ns(ctx context.Context, target string) (string, error) {
+func (r dnsResolver) ns(ctx context.Context, target string) (string, interface{}, error) {
 	nss, err := r.Resolver.LookupNS(ctx, target)
 	addrs := make([]string, len(nss))
 	for i, x := range nss {
 		addrs[i] = x.Host
 	}
-	return "ns=" + strings.Join(addrs, ","), err
+	return "ns", addrs, err
 }
 
-func (r dnsResolver) txt(ctx context.Context, target string) (string, error) {
+func (r dnsResolver) txt(ctx context.Context, target string) (string, interface{}, error) {
 	texts, err := r.Resolver.LookupTXT(ctx, target)
-	return strings.Join(texts, "\n"), err
+	return "txt", texts, err
 }
 
 // DNSProbe is a Prober implementation for the DNS protocol.
@@ -217,18 +217,22 @@ func (s DNSProbe) Probe(ctx context.Context, r Reporter) {
 	defer cancel()
 
 	st := time.Now()
-	msg, err := s.resolve(ctx, s.targetName)
+	label, value, err := s.resolve(ctx, s.targetName)
 	d := time.Since(st)
 
 	rec := api.Record{
 		Time:    st,
-		Target:  s.target,
 		Status:  api.StatusHealthy,
-		Message: msg,
 		Latency: d,
+		Target:  s.target,
+		Message: "succeed to resolve",
 	}
 
-	if err != nil {
+	if err == nil {
+		rec.Extra = map[string]interface{}{
+			label: value,
+		}
+	} else {
 		rec.Status = api.StatusFailure
 		rec.Message = err.Error()
 

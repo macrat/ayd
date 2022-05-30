@@ -170,15 +170,15 @@ func TestFTPProbe(t *testing.T) {
 	StartFTPServer(t, 21021)
 
 	AssertProbe(t, []ProbeTest{
-		{"ftp://localhost:21021/", api.StatusHealthy, `type=directory files=1`, ""},
-		{"ftp://hoge:fuga@localhost:21021/", api.StatusHealthy, `type=directory files=1`, ""},
-		{"ftp://foo:bar@localhost:21021/", api.StatusFailure, `530 Incorrect password, not logged in`, ""},
-		{"ftp://localhost:21021/path/to", api.StatusHealthy, `type=directory files=2`, ""},
-		{"ftp://localhost:21021/path/to/file.txt", api.StatusHealthy, `type=file size=123`, ""},
-		{"ftp://localhost:21021/no/such/file.txt", api.StatusFailure, `550 no such file`, ""},
-		{"ftp://localhost:21021/slow-file", api.StatusFailure, `probe timed out`, ""},
+		{"ftp://localhost:21021/", api.StatusHealthy, "directory exists\n---\nfile_count: 1\ntype: directory", ""},
+		{"ftp://hoge:fuga@localhost:21021/", api.StatusHealthy, "directory exists\n---\nfile_count: 1\ntype: directory", ""},
+		{"ftp://foo:bar@localhost:21021/", api.StatusFailure, "530 Incorrect password, not logged in", ""},
+		{"ftp://localhost:21021/path/to", api.StatusHealthy, "directory exists\n---\nfile_count: 2\ntype: directory", ""},
+		{"ftp://localhost:21021/path/to/file.txt", api.StatusHealthy, "file exists\n---\nfile_size: 123\ntype: file", ""},
+		{"ftp://localhost:21021/no/such/file.txt", api.StatusFailure, "550 no such file", ""},
+		{"ftp://localhost:21021/slow-file", api.StatusFailure, "probe timed out", ""},
 
-		{"ftps://localhost:21021/", api.StatusFailure, `550 Action not taken`, ""},
+		{"ftps://localhost:21021/", api.StatusFailure, "550 Action not taken", ""},
 
 		{"ftp:///without-host", api.StatusUnknown, ``, "missing target host"},
 		{"ftp://hoge@localhost", api.StatusUnknown, ``, "password is required if set username"},

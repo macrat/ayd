@@ -12,25 +12,27 @@ import (
 func TestDNSScheme_Probe(t *testing.T) {
 	t.Parallel()
 
+	succeed := "succeed to resolve\n---\n"
+
 	AssertProbe(t, []ProbeTest{
-		{"dns:localhost", api.StatusHealthy, `ip=(127\.0\.0\.1|::1)(,(127\.0\.0\.1|::1))*`, ""},
-		{"dns://8.8.8.8/localhost", api.StatusHealthy, `ip=(127\.0\.0\.1|::1)(,(127\.0\.0\.1|::1))*`, ""},
-		{"dns://8.8.4.4:53/localhost", api.StatusHealthy, `ip=(127\.0\.0\.1|::1)(,(127\.0\.0\.1|::1))*`, ""},
+		{"dns:localhost", api.StatusHealthy, succeed + `ip: \["(127\.0\.0\.1|::1)"(,"(127\.0\.0\.1|::1)")*\]`, ""},
+		{"dns://8.8.8.8/localhost", api.StatusHealthy, succeed + `ip: \["(127\.0\.0\.1|::1)"(,"(127\.0\.0\.1|::1)")*\]`, ""},
+		{"dns://8.8.4.4:53/localhost", api.StatusHealthy, succeed + `ip: \["(127\.0\.0\.1|::1)"(,"(127\.0\.0\.1|::1)")*\]`, ""},
 
-		{"dns:localhost?type=AAAA", api.StatusHealthy, "ip=::1(,::1)*", ""},
-		{"dns:localhost?type=A", api.StatusHealthy, `ip=127\.0\.0\.1(,127\.0\.0\.1)*`, ""},
+		{"dns:localhost?type=AAAA", api.StatusHealthy, succeed + `ip: \["::1"(,"::1")*\]`, ""},
+		{"dns:localhost?type=A", api.StatusHealthy, succeed + `ip: \["127\.0\.0\.1"(,"127\.0\.0\.1")*\]`, ""},
 
-		{"dns:example.com?type=CNAME", api.StatusHealthy, `hostname=example\.com\.`, ""},
-		{"dns://1.1.1.1/example.com?type=CNAME", api.StatusHealthy, `hostname=example\.com\.`, ""},
+		{"dns:example.com?type=CNAME", api.StatusHealthy, succeed + `hostname: example\.com\.`, ""},
+		{"dns://1.1.1.1/example.com?type=CNAME", api.StatusHealthy, succeed + `hostname: example\.com\.`, ""},
 
-		{"dns:google.com?type=MX", api.StatusHealthy, `mx=[a-z0-9.,]+`, ""},
-		{"dns://8.8.8.8:53/google.com?type=MX", api.StatusHealthy, `mx=[a-z0-9.,]+`, ""},
+		{"dns:google.com?type=MX", api.StatusHealthy, succeed + `mx: \["[a-z0-9.]+"(,"[a-z0-9.]+")*\]`, ""},
+		{"dns://8.8.8.8:53/google.com?type=MX", api.StatusHealthy, succeed + `mx: \["[a-z0-9.]+"(,"[a-z0-9.]+")*\]`, ""},
 
-		{"dns:example.com?type=NS", api.StatusHealthy, `ns=[a-z]\.iana-servers\.net\.(,[a-z]\.iana-servers\.net\.)*`, ""},
-		{"dns://8.8.4.4/example.com?type=NS", api.StatusHealthy, `ns=[a-z]\.iana-servers\.net\.(,[a-z]\.iana-servers\.net\.)*`, ""},
+		{"dns:example.com?type=NS", api.StatusHealthy, succeed + `ns: \["[a-z]\.iana-servers\.net\."(,"[a-z]\.iana-servers\.net\.")*\]`, ""},
+		{"dns://8.8.4.4/example.com?type=NS", api.StatusHealthy, succeed + `ns: \["[a-z]\.iana-servers\.net\."(,"[a-z]\.iana-servers\.net\.")*\]`, ""},
 
-		{"dns:example.com?type=TXT", api.StatusHealthy, "(v=spf1 -all\n[0-9a-z]{32}|[0-9a-z]{32}\nv=spf1 -all)", ""},
-		{"dns://1.1.1.1/example.com?type=TXT", api.StatusHealthy, "(v=spf1 -all\n[0-9a-z]{32}|[0-9a-z]{32}\nv=spf1 -all)", ""},
+		{"dns:example.com?type=TXT", api.StatusHealthy, succeed + `txt: \[("v=spf1 -all","[0-9a-z]{32}"|"[0-9a-z]{32}","v=spf1 -all")\]`, ""},
+		{"dns://1.1.1.1/example.com?type=TXT", api.StatusHealthy, succeed + `txt: \[("v=spf1 -all","[0-9a-z]{32}"|"[0-9a-z]{32}","v=spf1 -all")\]`, ""},
 
 		{"dns:example.com?type=UNKNOWN", api.StatusUnknown, ``, "unsupported DNS type"},
 	}, 10)

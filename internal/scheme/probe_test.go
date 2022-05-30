@@ -232,8 +232,8 @@ func AssertProbe(t *testing.T, tests []ProbeTest, timeout int) {
 			if r.Status != tt.Status {
 				t.Errorf("expected status is %s but got %s", tt.Status, r.Status)
 			}
-			if ok, _ := regexp.MatchString("^"+tt.MessagePattern+"$", r.Message); !ok {
-				t.Errorf("expected message is match to %#v but got %#v", tt.MessagePattern, r.Message)
+			if ok, _ := regexp.MatchString("^"+tt.MessagePattern+"$", r.ReadableMessage()); !ok {
+				t.Errorf("unexpected message\n----- expected pattern -----\n%s\n----- actual -----\n%s", tt.MessagePattern, r.ReadableMessage())
 			}
 		})
 	}

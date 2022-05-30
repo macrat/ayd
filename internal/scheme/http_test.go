@@ -20,16 +20,16 @@ func TestHTTPScheme_Probe(t *testing.T) {
 	defer server.Close()
 
 	AssertProbe(t, []ProbeTest{
-		{server.URL + "/ok", api.StatusHealthy, `200 OK`, ""},
-		{server.URL + "/redirect/ok", api.StatusHealthy, `200 OK`, ""},
-		{server.URL + "/error", api.StatusFailure, `500 Internal Server Error`, ""},
-		{server.URL + "/redirect/error", api.StatusFailure, `500 Internal Server Error`, ""},
+		{server.URL + "/ok", api.StatusHealthy, "200 OK\n---\nlength: 2\nproto: HTTP/1\\.1\nstatus_code: 200", ""},
+		{server.URL + "/redirect/ok", api.StatusHealthy, "200 OK\n---\nlength: 2\nproto: HTTP/1\\.1\nstatus_code: 200", ""},
+		{server.URL + "/error", api.StatusFailure, "500 Internal Server Error\n---\nlength: 5\nproto: HTTP/1\\.1\nstatus_code: 500", ""},
+		{server.URL + "/redirect/error", api.StatusFailure, "500 Internal Server Error\n---\nlength: 5\nproto: HTTP/1\\.1\nstatus_code: 500", ""},
 		{server.URL + "/redirect/loop", api.StatusFailure, `Get "/redirect/loop": redirect loop detected`, ""},
-		{strings.Replace(server.URL, "http", "http-get", 1) + "/only/get", api.StatusHealthy, `200 OK`, ""},
-		{strings.Replace(server.URL, "http", "http-post", 1) + "/only/post", api.StatusHealthy, `200 OK`, ""},
-		{strings.Replace(server.URL, "http", "http-head", 1) + "/only/head", api.StatusHealthy, `200 OK`, ""},
-		{strings.Replace(server.URL, "http", "http-options", 1) + "/only/options", api.StatusHealthy, `200 OK`, ""},
-		{strings.Replace(server.URL, "http", "http-connect", 1) + "/only/connect", api.StatusHealthy, `200 OK`, ""},
+		{strings.Replace(server.URL, "http", "http-get", 1) + "/only/get", api.StatusHealthy, "200 OK\n---\nlength: 0\nproto: HTTP/1\\.1\nstatus_code: 200", ""},
+		{strings.Replace(server.URL, "http", "http-post", 1) + "/only/post", api.StatusHealthy, "200 OK\n---\nlength: 0\nproto: HTTP/1\\.1\nstatus_code: 200", ""},
+		{strings.Replace(server.URL, "http", "http-head", 1) + "/only/head", api.StatusHealthy, "200 OK\n---\nproto: HTTP/1\\.1\nstatus_code: 200", ""},
+		{strings.Replace(server.URL, "http", "http-options", 1) + "/only/options", api.StatusHealthy, "200 OK\n---\nlength: 0\nproto: HTTP/1\\.1\nstatus_code: 200", ""},
+		{strings.Replace(server.URL, "http", "http-connect", 1) + "/only/connect", api.StatusHealthy, "200 OK\n---\nlength: 0\nproto: HTTP/1\\.1\nstatus_code: 200", ""},
 		{server.URL + "/slow-page", api.StatusFailure, `probe timed out`, ""},
 		{"http://localhost:54321/", api.StatusFailure, `(127\.0\.0\.1|\[::1\]):54321: connection refused`, ""},
 	}, 5)

@@ -182,12 +182,14 @@ func (p FTPProbe) Probe(ctx context.Context, r Reporter) {
 	}
 
 	if n == 1 && ls[0].Name == path.Base(p.target.Path) {
-		report(api.StatusHealthy, fmt.Sprintf("type=file size=%d", ls[0].Size), map[string]interface{}{
+		report(api.StatusHealthy, "file exists", map[string]interface{}{
+			"type":      "file",
 			"file_size": ls[0].Size,
 		})
 	} else {
-		report(api.StatusHealthy, fmt.Sprintf("type=directory files=%d", n), map[string]interface{}{
-			"files": n,
+		report(api.StatusHealthy, "directory exists", map[string]interface{}{
+			"type":       "directory",
+			"file_count": n,
 		})
 	}
 }
