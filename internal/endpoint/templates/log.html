@@ -72,6 +72,18 @@ td.unknown::before { background-color: rgb(var(--fg)) }
 }
 {{ end }}{{/* </style> */}}
 
+{{ define "log-records" }}
+            <tbody>{{ range .}}
+                <tr>
+                    <td><time title="{{ .Time | time2humanize }}">{{ .Time | time2str }}</time></td>
+                    <td class="status {{ .Status | to_lower }}">{{ .Status }}</td>
+                    <td class="latency">{{ .Latency }}</td>
+                    <td class="target">{{ .Target }}</td>
+                    <td class="message">{{ .Message }}{{ range .ReadableExtra }} <span class="extra"><span class="extra-label">{{ .Key }}</span> {{ .Value }}</span>{{ end }}</td>
+                </tr>{{ end }}
+            </tbody>
+{{- end }}
+
 {{ define "body" }}
     <article style="text-align: center">
         <form>
@@ -99,25 +111,11 @@ td.unknown::before { background-color: rgb(var(--fg)) }
                     <th>message</th>
                 </tr>
             </thead>
-            <tbody>{{ range .Head }}
-                <tr>
-                    <td>{{ .Time | time2str }}</td>
-                    <td class="status {{ .Status | to_lower }}">{{ .Status }}</td>
-                    <td class="latency">{{ .Latency }}</td>
-                    <td class="target">{{ .Target }}</td>
-                    <td class="message">{{ .Message }}{{ range .ReadableExtra }} <span class="extra"><span class="extra-label">{{ .Key }}</span> {{ .Value }}</span>{{ end }}</td>
-                </tr>{{ end }}
-            </tbody>{{ if .Tail }}
+            {{- block "log-records" .Head }}{{ end }}
+            {{- if .Tail }}
             <tbody><tr><td colspan="5" class="omit-indicator">{{ .Omitted }} records have omitted</td></tr></tbody>
-            <tbody>{{ range .Tail }}
-                <tr>
-                    <td>{{ .Time | time2str }}</td>
-                    <td class="status {{ .Status | to_lower }}">{{ .Status }}</td>
-                    <td class="latency">{{ .Latency }}</td>
-                    <td class="target">{{ .Target }}</td>
-                    <td class="message">{{ .Message }}{{ range .ReadableExtra }} <span class="extra"><span class="extra-label">{{ .Key }}</span> {{ .Value }}</span>{{ end }}</td>
-                </tr>{{ end }}
-            </tbody>{{ end }}
+            {{- block "log-records" .Tail }}{{ end }}
+            {{- end }}
         </table>
         <div class="download-buttons">
             {{ .Count }} of {{ .Total }} records have shown<br />

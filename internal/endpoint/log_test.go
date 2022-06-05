@@ -492,5 +492,5 @@ func TestLogCSVEndpoint(t *testing.T) {
 }
 
 func TestLogHTMLEndpoint(t *testing.T) {
-	AssertEndpoint(t, "/log.html?since=2021-01-01T00%3A00%3A00Z&until=2021-01-03T00%3A00%3A00Z", "./testdata/log.html", "")
+	AssertEndpoint(t, "/log.html?since=2021-01-01T00%3A00%3A00Z&until=2021-01-03T00%3A00%3A00Z", "./testdata/log.html", "[0-9] years? ago")
 }

@@ -167,7 +167,7 @@ section.status {
 {{ define "body" }}
     <article class="overview" aria-label="overview">{{ with .ProbeHistory | calculate_summary }}
         <ul>{{ range .}}
-            <li style="flex: 1 1 {{ .Percent }}%">
+            <li style="flex: 1 1 {{ .Percent }}%" title="{{ .Status | to_camel }}: {{ .Count }} targets">
                 {{ .Status | to_camel }}
                 <span class="percent">{{ printf "%.0f%%" .Percent}}</span>
             </li>{{ end }}
