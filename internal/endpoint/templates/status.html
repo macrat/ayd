@@ -147,9 +147,20 @@ section.status {
     }
 }
 
-.updated {
-    display: block;
+.time-range {
+    border: 0 solid rgba(var(--fg), .2);
+    border-width: 0 1px;
+    padding: 0 .2em;
+    display: flex;
+}
+.time-range .oldest, .time-range .newest {
+    flex: 1 1 0;
+}
+.time-range .newest {
     text-align: right;
+}
+.time-range .no-data {
+    color: rgba(var(--fg), .7);
 }
 {{ end }}{{/* </style> */}}
 
@@ -187,7 +198,13 @@ section.status {
                     <path d="{{ .Records | latency_graph }}" />
                 </svg>
             </figure>
-            <span class="updated">updated: <time>{{ if .Updated.IsZero }}(not yet){{ else }}{{ .Updated | time2str }}{{ end }}</time></span>
+            <div class="time-range">
+                {{- with .Records | time_range }}
+                <span class="oldest {{ if .Oldest.IsZero }}no-data{{ end }}">{{ if .Oldest.IsZero }}no data{{ else }}<time datetime="{{ .Oldest | time2str }}" title="{{ .Oldest | time2str }}">{{ .Oldest | time2humanize }}</time>{{ end }}</span>
+                <span class="{{ if .Oldest.IsZero }}no-data{{ end }}">~</span>
+                <span class="newest {{ if .Newest.IsZero }}no-data{{ end }}">{{ if .Newest.IsZero }}no data{{ else }}<time datetime="{{ .Newest | time2str }}" title="{{ .Newest | time2str }}">{{ .Newest | time2humanize }}</time>{{ end }}</span>
+                {{ end -}}
+            </div>
         </section>{{ end }}
     </article>
 

@@ -10,8 +10,8 @@ import (
 )
 
 func TestStatusHTMLEndpoint(t *testing.T) {
-	AssertEndpoint(t, "/status.html", "./testdata/status.html", `Reported by Ayd \(.+\)`)
-	AssertEndpoint(t, "/", "./testdata/status.html", `Reported by Ayd \(.+\)`)
+	AssertEndpoint(t, "/status.html", "./testdata/status.html", `Reported by Ayd \(.+\)|[0-9] years? ago`)
+	AssertEndpoint(t, "/", "./testdata/status.html", `Reported by Ayd \(.+\)|[0-9] years? ago`)
 }
 
 func TestStatusTextEndpoint(t *testing.T) {

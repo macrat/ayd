@@ -261,9 +261,20 @@ section.status {
     }
 }
 
-.updated {
-    display: block;
+.time-range {
+    border: 0 solid rgba(var(--fg), .1);
+    border-width: 0 1px;
+    padding: 0 .2em;
+    display: flex;
+}
+.time-range .oldest, .time-range .newest {
+    flex: 1 1 0;
+}
+.time-range .newest {
     text-align: right;
+}
+.time-range .no-data {
+    color: rgba(var(--fg), .7);
 }
 
 
@@ -419,7 +430,11 @@ hoge: fuga">
                     <path d="M18,1 18,0.47377398720682296 18.5,0.47377398720682296 19.5,0 h0.5V1" />
                 </svg>
             </figure>
-            <span class="updated">updated: <time>2021-01-02T15:04:09Z</time></span>
+            <div class="time-range">
+                <span class="oldest "><time datetime="2021-01-02T15:04:08Z" title="2021-01-02T15:04:08Z">[[MASKED_DATA]]</time></span>
+                <span class="">~</span>
+                <span class="newest "><time datetime="2021-01-02T15:04:09Z" title="2021-01-02T15:04:09Z">[[MASKED_DATA]]</time></span>
+                </div>
         </section>
         <section class="status healthy">
             <h1 aria-label="'http://a.example.com' is currently healthy">
@@ -501,7 +516,11 @@ hello world!!">
                     <path d="M17,1 17,0.642858382656692 17.5,0.642858382656692 18.5,0.321429191328346 19.5,0 h0.5V1" />
                 </svg>
             </figure>
-            <span class="updated">updated: <time>2021-01-02T15:04:07Z</time></span>
+            <div class="time-range">
+                <span class="oldest "><time datetime="2021-01-02T15:04:05Z" title="2021-01-02T15:04:05Z">[[MASKED_DATA]]</time></span>
+                <span class="">~</span>
+                <span class="newest "><time datetime="2021-01-02T15:04:07Z" title="2021-01-02T15:04:07Z">[[MASKED_DATA]]</time></span>
+                </div>
         </section>
         <section class="status healthy">
             <h1 aria-label="'http://b.example.com' is currently healthy">
@@ -580,7 +599,11 @@ this is healthy">
                     <path d="M18,1 18,0.7727398243773127 18.5,0.7727398243773127 19.5,0 h0.5V1" />
                 </svg>
             </figure>
-            <span class="updated">updated: <time>2021-01-02T15:04:06Z</time></span>
+            <div class="time-range">
+                <span class="oldest "><time datetime="2021-01-02T15:04:05Z" title="2021-01-02T15:04:05Z">[[MASKED_DATA]]</time></span>
+                <span class="">~</span>
+                <span class="newest "><time datetime="2021-01-02T15:04:06Z" title="2021-01-02T15:04:06Z">[[MASKED_DATA]]</time></span>
+                </div>
         </section>
         <section class="status unknown">
             <h1 aria-label="'dummy:#no-record-yet' is currently unknown">
@@ -653,7 +676,11 @@ this is healthy">
                     <path d="" />
                 </svg>
             </figure>
-            <span class="updated">updated: <time>(not yet)</time></span>
+            <div class="time-range">
+                <span class="oldest no-data">no data</span>
+                <span class="no-data">~</span>
+                <span class="newest no-data">no data</span>
+                </div>
         </section>
     </article>
 
