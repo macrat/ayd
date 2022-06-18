@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -108,7 +107,7 @@ func TestTargetURLNormalize(t *testing.T) {
 		{"file:testdata/test.bat", api.URL{Scheme: "file", Opaque: "testdata/test.bat"}, nil},
 		{"file:./testdata/test.bat", api.URL{Scheme: "file", Opaque: "./testdata/test.bat"}, nil},
 		{"file:" + cwd + "/testdata/test", api.URL{Scheme: "file", Opaque: cwd + "/testdata/test"}, nil},
-		{"file://" + path.Join("/", cwd) + "/testdata/test", api.URL{Scheme: "file", Opaque: cwd + "/testdata/test"}, nil},
+		{"file:///path/to/file", api.URL{Scheme: "file", Opaque: "/path/to/file"}, nil},
 		{"file-abc:testdata/test?foo=bar#baz", api.URL{Scheme: "file", Opaque: "testdata/test", Fragment: "baz"}, nil},
 		{"file:", api.URL{Scheme: "file", Opaque: "/"}, nil},
 
