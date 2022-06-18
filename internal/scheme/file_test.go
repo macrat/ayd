@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -23,7 +24,10 @@ func TestFileScheme_Probe(t *testing.T) {
 	}
 
 	testDir := t.TempDir()
-	if err := os.Mkdir(filepath.Join(testDir, "no-permission"), 0); err != nil {
+	if err := os.Mkdir(filepath.Join(testDir, "parent"), 0755); err != nil {
+		t.Fatalf("failed to make test directory")
+	}
+	if err := os.Mkdir(filepath.Join(testDir, "parent/child"), 0); err != nil {
 		t.Fatalf("failed to make test directory")
 	}
 
@@ -35,15 +39,22 @@ func TestFileScheme_Probe(t *testing.T) {
 		"permission: 755",
 		"type: file",
 	}, "\n")
+	if runtime.GOOS == "windows" {
+		fileOutput = strings.Replace(fileOutput, "permission: 755", "permission: 666", 1)
+		fileOutput = strings.Replace(fileOutput, "file_size: 47", "file_size: 54", 1)
+	}
 
 	dirOutput := strings.Join([]string{
 		"directory exists",
 		"---",
-		"file_count: 26",
+		"file_count: 1",
 		"mtime: [-+:0-9TZ]+",
 		"permission: 755",
 		"type: directory",
 	}, "\n")
+	if runtime.GOOS == "windows" {
+		dirOutput = strings.Replace(dirOutput, "permission: 755", "permission: 777", 1)
+	}
 
 	forbiddenDirOutput := strings.Join([]string{
 		"directory exists",
@@ -53,16 +64,22 @@ func TestFileScheme_Probe(t *testing.T) {
 		"type: directory",
 	}, "\n")
 
+	hiddenDirOutput := "permission denied"
+
 	AssertProbe(t, []ProbeTest{
 		{"file:./testdata/test", api.StatusHealthy, fileOutput, ""},
 		{"file:./testdata/test#this%20is%20file", api.StatusHealthy, fileOutput, ""},
-		{"file:" + cwd + "/testdata/test", api.StatusHealthy, fileOutput, ""},
-		{"file:testdata", api.StatusHealthy, dirOutput, ""},
-		{"file:" + cwd + "/testdata", api.StatusHealthy, dirOutput, ""},
+		{"file:" + filepath.ToSlash(cwd) + "/testdata/test", api.StatusHealthy, fileOutput, ""},
 		{"file:testdata/of-course-no-such-file-or-directory", api.StatusFailure, "no such file or directory", ""},
-		{"file:" + filepath.ToSlash(testDir) + "/no-permission", api.StatusHealthy, forbiddenDirOutput, ""},
-		{"file:" + filepath.ToSlash(testDir) + "/no-permission/foobar", api.StatusFailure, "permission denied", ""},
+		{"file:" + filepath.ToSlash(testDir) + "/parent", api.StatusHealthy, dirOutput, ""},
 	}, 2)
+
+	if runtime.GOOS != "windows" {
+		AssertProbe(t, []ProbeTest{
+			{"file:" + filepath.ToSlash(testDir) + "/parent/child", api.StatusHealthy, forbiddenDirOutput, ""},
+			{"file:" + filepath.ToSlash(testDir) + "/parent/child/foobar", api.StatusFailure, hiddenDirOutput, ""},
+		}, 2)
+	}
 }
 
 func TestFileScheme_Alert(t *testing.T) {
