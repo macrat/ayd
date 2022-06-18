@@ -16,7 +16,7 @@ The easiest status monitoring service to check if your service is dead or alive.
   * [ICMP echo (ping)](#ping)
   * [TCP connect](#tcp)
   * [DNS resolve](#dns)
-  - [file/directory existance](#file)
+  * [file/directory existance](#file)
   * [execute external command (or script file)](#exec)
   * [plugin](#plugin)
 
