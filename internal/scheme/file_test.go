@@ -101,12 +101,14 @@ func TestFileScheme_Alert(t *testing.T) {
 		}
 	}
 
-	actual, err := os.ReadFile(logPath)
+	bytes, err := os.ReadFile(logPath)
 	if err != nil {
 		t.Fatalf("failed to read output file: %s", err)
 	}
 
-	if string(actual) != expected {
-		t.Errorf("unexpected output\n=== want =====\n%s\n=== actual =====\n%s", expected, string(actual))
+	actual := strings.ReplaceAll(strings.ReplaceAll(string(bytes), "\r\n", "\n"), "\r", "\n")
+
+	if actual != expected {
+		t.Errorf("unexpected output\n=== want =====\n%s\n=== actual =====\n%s", expected, actual)
 	}
 }
