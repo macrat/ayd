@@ -38,6 +38,8 @@ func NewAlerterFromURL(u *api.URL) (Alerter, error) {
 		return nil, ErrUnsupportedAlertScheme
 	case "dns", "dns4", "dns6":
 		return nil, ErrUnsupportedAlertScheme
+	case "file":
+		return NewFileScheme(u)
 	case "exec":
 		return NewExecScheme(u)
 	case "source":

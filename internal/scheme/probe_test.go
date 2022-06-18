@@ -104,6 +104,13 @@ func TestTargetURLNormalize(t *testing.T) {
 		{"exec:", api.URL{}, scheme.ErrMissingCommand},
 		{"exec://", api.URL{}, scheme.ErrMissingCommand},
 
+		{"file:testdata/test.bat", api.URL{Scheme: "file", Opaque: "testdata/test.bat"}, nil},
+		{"file:./testdata/test.bat", api.URL{Scheme: "file", Opaque: "./testdata/test.bat"}, nil},
+		{"file:" + cwd + "/testdata/test", api.URL{Scheme: "file", Opaque: cwd + "/testdata/test"}, nil},
+		{"file://" + cwd + "/testdata/test", api.URL{Scheme: "file", Opaque: cwd + "/testdata/test"}, nil},
+		{"file-abc:testdata/test?foo=bar#baz", api.URL{Scheme: "file", Opaque: "testdata/test", Fragment: "baz"}, nil},
+		{"file:", api.URL{Scheme: "file", Opaque: "/"}, nil},
+
 		{"source:./testdata/healthy-list.txt", api.URL{Scheme: "source", Opaque: "testdata/healthy-list.txt"}, nil},
 		{"source:testdata/healthy-list.txt#hello", api.URL{Scheme: "source", Opaque: "testdata/healthy-list.txt", Fragment: "hello"}, nil},
 		{"source-abc:./testdata/healthy-list.txt", api.URL{}, scheme.ErrUnsupportedScheme},

@@ -60,6 +60,10 @@ Targets:
    e.g. dns:example.com
         dns://8.8.8.8/example.com?type=AAAA
 
+  file:
+   Check the file or the directory existence.
+   e.g. file:/path/to/file
+
   exec:
    Execute external command.
    You can set 1st argument with fragment,

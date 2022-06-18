@@ -16,6 +16,7 @@ The easiest status monitoring service to check if your service is dead or alive.
   * [ICMP echo (ping)](#ping)
   * [TCP connect](#tcp)
   * [DNS resolve](#dns)
+  - [file/directory existance](#file)
   * [execute external command (or script file)](#exec)
   * [plugin](#plugin)
 
@@ -141,6 +142,7 @@ Ayd supports below schemes.
 | [`ping:`](#ping)                   | :heavy_check_mark: | :heavy_minus_sign: |
 | [`tcp:`](#tcp)                     | :heavy_check_mark: | :heavy_minus_sign: |
 | [`dns:`](#dns)                     | :heavy_check_mark: | :heavy_minus_sign: |
+| [`file:`](file)                    | :heavy_check_mark: | :heavy_check_mark: |
 | [`exec:`](#exec)                   | :heavy_check_mark: | :heavy_check_mark: |
 | [`source:`](#source)               | :heavy_check_mark: | :heavy_check_mark: |
 
@@ -242,6 +244,18 @@ examples:
 - `dns:example.com?type=AAAA`
 - `dns-cname:example.com`
 - `dns://8.8.8.8/example.com`
+
+#### file:
+
+Check the file or the directory existence.
+It only checks existence, so it does not report error even if it has no enough permission to read the target.
+
+If you use this as an alerting target, it writes a log the same as [the normal log](#log-file) to the target path, but only logs when status changed.
+
+examples:
+- `file:./path/to/something`
+- `file:/path/to/somewhere`
+- `file:/dev/sdc1#does-storage-connected?`
 
 #### exec:
 

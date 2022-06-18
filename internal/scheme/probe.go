@@ -38,6 +38,8 @@ func NewProberFromURL(u *api.URL) (Prober, error) {
 		return NewTCPProbe(u)
 	case "dns", "dns4", "dns6":
 		return NewDNSProbe(u)
+	case "file":
+		return NewFileScheme(u)
 	case "exec":
 		return NewExecScheme(u)
 	case "source":
