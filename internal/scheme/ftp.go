@@ -181,15 +181,23 @@ func (p FTPProbe) Probe(ctx context.Context, r Reporter) {
 		}
 	}
 
-	if n == 1 && ls[0].Name == path.Base(p.target.Path) {
+	if n == 1 && path.Base(ls[0].Name) == path.Base(p.target.Path) {
 		report(api.StatusHealthy, "file exists", map[string]interface{}{
-			"type":      "file",
 			"file_size": ls[0].Size,
+			"mtime":     ls[0].Time.Format(time.RFC3339),
+			"type":      "file",
 		})
 	} else {
-		report(api.StatusHealthy, "directory exists", map[string]interface{}{
-			"type":       "directory",
+		extra := map[string]interface{}{
 			"file_count": n,
-		})
+			"type":       "directory",
+		}
+		for _, f := range ls {
+			if f.Name == "." {
+				extra["mtime"] = f.Time.Format(time.RFC3339)
+				break
+			}
+		}
+		report(api.StatusHealthy, "directory exists", extra)
 	}
 }
