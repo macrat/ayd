@@ -7,6 +7,9 @@ import (
 )
 
 // LogScanner is the interface to read ayd's log format.
+//
+// Deprecated: this interface will removed in future version.
+// After version 0.15, you can read log file using combination of the bufio.Scanner and the json.Unmarshal in the standard library of Go.
 type LogScanner interface {
 	// Close closes the scanner.
 	Close() error

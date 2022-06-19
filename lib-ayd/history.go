@@ -7,6 +7,8 @@ import (
 )
 
 // ProbeHistory is the status history data of single target
+//
+// Deprecated: this struct will removed in future version.
 type ProbeHistory struct {
 	Target *URL
 
@@ -91,6 +93,8 @@ func (xs byLatestStatus) Swap(i, j int) {
 // SortProbeHistories sorts list of ProbeHistory by latest status and target URL.
 //
 // This function will edit slice directly.
+//
+// Deprecated: this struct will removed in future version.
 func SortProbeHistories(hs []ProbeHistory) {
 	sort.Sort(byLatestStatus(hs))
 }

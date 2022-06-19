@@ -6,6 +6,8 @@ import (
 )
 
 // Incident is a period of failure or unknown status that has the same status and message
+//
+// Deprecated: this struct will removed in future version.
 type Incident struct {
 	Target *URL
 
