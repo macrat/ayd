@@ -21,9 +21,9 @@ func Example_probePlugin() {
 	ok := true
 
 	if ok {
-		logger.Healthy("target is healthy!")
+		logger.Healthy("target is healthy!", nil)
 	} else {
-		logger.Failure("target is down")
+		logger.Failure("target is down", nil)
 	}
 }
 
@@ -38,7 +38,7 @@ func Example_alertPlugin() {
 
 	// send alert to somewhere
 
-	logger.Healthy("alert sent")
+	logger.Healthy("alert sent", nil)
 }
 
 func Example_apiClient() {
