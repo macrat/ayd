@@ -238,7 +238,7 @@ func (s *Store) setIncidentIfNeed(r api.Record, needCallback bool) {
 			return
 		}
 
-		cur.ResolvedAt = r.Time
+		cur.EndsAt = r.Time
 		s.incidentHistory = append(s.incidentHistory, cur)
 		delete(s.currentIncidents, target)
 

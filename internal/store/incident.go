@@ -10,13 +10,13 @@ func newIncident(r api.Record) *api.Incident {
 		Target:   r.Target,
 		Status:   r.Status,
 		Message:  r.Message,
-		CausedAt: r.Time,
+		StartsAt: r.Time,
 	}
 }
 
 // incidentIsContinued checks if an incident is stil continued or not.
 func incidentIsContinued(i *api.Incident, r api.Record) bool {
-	return i.ResolvedAt.IsZero() && i.Status == r.Status && i.Message == r.Message
+	return i.EndsAt.IsZero() && i.Status == r.Status && i.Message == r.Message
 }
 
 type byIncidentCaused []*api.Incident
@@ -26,10 +26,10 @@ func (xs byIncidentCaused) Len() int {
 }
 
 func (xs byIncidentCaused) Less(i, j int) bool {
-	if xs[i].CausedAt.Equal(xs[j].CausedAt) {
+	if xs[i].StartsAt.Equal(xs[j].StartsAt) {
 		return xs[i].Target.String() < xs[j].Target.String()
 	}
-	return xs[i].CausedAt.Before(xs[j].CausedAt)
+	return xs[i].StartsAt.Before(xs[j].StartsAt)
 }
 
 func (xs byIncidentCaused) Swap(i, j int) {
