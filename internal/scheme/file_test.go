@@ -34,14 +34,13 @@ func TestFileScheme_Probe(t *testing.T) {
 	fileOutput := strings.Join([]string{
 		"file exists",
 		"---",
-		"file_size: 47",
+		"file_size: 13",
 		"mtime: [-+:0-9TZ]+",
-		"permission: 755",
+		"permission: 644",
 		"type: file",
 	}, "\n")
 	if runtime.GOOS == "windows" {
-		fileOutput = strings.Replace(fileOutput, "permission: 755", "permission: 666", 1)
-		fileOutput = strings.Replace(fileOutput, "file_size: 47", "file_size: 54", 1)
+		fileOutput = strings.Replace(fileOutput, "permission: 644", "permission: 666", 1)
 	}
 
 	dirOutput := strings.Join([]string{
@@ -67,9 +66,9 @@ func TestFileScheme_Probe(t *testing.T) {
 	hiddenDirOutput := "permission denied"
 
 	AssertProbe(t, []ProbeTest{
-		{"file:./testdata/test", api.StatusHealthy, fileOutput, ""},
-		{"file:./testdata/test#this%20is%20file", api.StatusHealthy, fileOutput, ""},
-		{"file:" + filepath.ToSlash(cwd) + "/testdata/test", api.StatusHealthy, fileOutput, ""},
+		{"file:./testdata/file.txt", api.StatusHealthy, fileOutput, ""},
+		{"file:./testdata/file.txt#this%20is%20file", api.StatusHealthy, fileOutput, ""},
+		{"file:" + filepath.ToSlash(cwd) + "/testdata/file.txt", api.StatusHealthy, fileOutput, ""},
 		{"file:testdata/of-course-no-such-file-or-directory", api.StatusFailure, "no such file or directory", ""},
 		{"file:" + filepath.ToSlash(testDir) + "/parent", api.StatusHealthy, dirOutput, ""},
 	}, 2)
