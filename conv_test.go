@@ -123,7 +123,7 @@ func TestConvCommand_Run(t *testing.T) {
 				t.Errorf("expected exit code is %d but got %d", tt.code, code)
 			}
 
-			if diff := cmp.Diff(strings.ReplaceAll(stdout.String(), "\r\n", "\n"), strings.ReplaceAll(tt.stdout, "\r\n", "\n")); diff != "" {
+			if diff := cmp.Diff(stdout.String(), tt.stdout); diff != "" {
 				t.Errorf("unexpected stdout\n%s", diff)
 			}
 
@@ -157,7 +157,7 @@ func TestConvCommand_Run(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to read output file: %s", err)
 		}
-		if diff := cmp.Diff(strings.ReplaceAll(string(output), "\r\n", "\n"), strings.ReplaceAll(testLogCSV, "\r\n", "\n")); diff != "" {
+		if diff := cmp.Diff(string(output), testLogCSV); diff != "" {
 			t.Errorf(diff)
 		}
 	})

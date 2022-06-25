@@ -122,8 +122,7 @@ func TestFileScheme_Alert(t *testing.T) {
 		t.Fatalf("failed to read output file: %s", err)
 	}
 
-	actual := strings.ReplaceAll(strings.ReplaceAll(string(bytes), "\r\n", "\n"), "\r", "\n")
-
+	actual := string(bytes)
 	if actual != expected {
 		t.Errorf("unexpected output\n=== want =====\n%s\n=== actual =====\n%s", expected, actual)
 	}
