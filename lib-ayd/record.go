@@ -146,6 +146,9 @@ func (r *Record) UnmarshalJSON(data []byte) error {
 		} else if r.Target, err = ParseURL(s); err != nil {
 			return ayderr.New(ErrInvalidRecord, err, "invalid record: target")
 		}
+		if r.Target.Scheme == "" {
+			return ayderr.New(ErrInvalidRecord, nil, "invalid record: target: parse %q: missing protocol scheme", value)
+		}
 		delete(raw, "target")
 	}
 

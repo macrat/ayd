@@ -48,9 +48,9 @@ func escapeFragment(s string) string {
 type URL url.URL
 
 func barePathInOpaque(s string) bool {
-	for i := 0; i < len(s)-len("://")-1; i++ {
+	for i := 0; i < len(s)-1; i++ {
 		if s[i] == ':' {
-			return s[i+1:i+3] != "//"
+			return (len(s)-i < 3) || s[i+1:i+3] != "//"
 		}
 	}
 	return false

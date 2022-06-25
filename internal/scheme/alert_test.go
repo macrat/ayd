@@ -59,7 +59,7 @@ func TestAlerter(t *testing.T) {
 	if runtime.GOOS != "windows" {
 		// Windows can not run this test because bat doesn't support double quote character in argument :(
 		tests = append(
-			tests, 
+			tests,
 			Test{"foo-bar:hello-world", "alert:foo-bar:hello-world", "\"foo-bar:hello-world,2001-02-03T16:05:06Z,FAILURE,12.345,dummy:failure,foobar\"\n---\nextras: {\"hello\":\"world\"}", ""},
 			Test{"foo:", "alert:foo:", "\"foo:,2001-02-03T16:05:06Z,FAILURE,12.345,dummy:failure,foobar\"\n---\nextras: {\"hello\":\"world\"}", ""},
 			Test{"foo:hello-world", "alert:foo:hello-world", "\"foo:hello-world,2001-02-03T16:05:06Z,FAILURE,12.345,dummy:failure,foobar\"\n---\nextras: {\"hello\":\"world\"}", ""},

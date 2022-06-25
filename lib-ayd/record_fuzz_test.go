@@ -38,10 +38,19 @@ func FuzzParseRecord(f *testing.F) {
 		r2.Target.RawPath = ""
 		r.Target.RawFragment = ""
 		r2.Target.RawFragment = ""
+		r.Latency = r.Latency.Round(time.Microsecond)
+		r2.Latency = r.Latency.Round(time.Microsecond)
 		r.Time = r.Time.Round(time.Second)
 		r2.Time = r.Time.Round(time.Second)
 
 		if diff := cmp.Diff(r, r2); diff != "" {
+			t.Logf("input: %s", data)
+			t.Logf("1st parse: %#v", r)
+			t.Logf("1st parse URL: %#v", *r.Target)
+			t.Logf("1st marshal: %s", s)
+			t.Logf("2nd parse: %#v", r2)
+			t.Logf("2nd parse URL: %#v", *r2.Target)
+			t.Logf("2nd marshal: %s", r2.String())
 			t.Errorf("first generated and regenerated was different\n%s", diff)
 		}
 	})

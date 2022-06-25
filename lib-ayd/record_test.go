@@ -18,6 +18,8 @@ func TestURLToStr(t *testing.T) {
 		Output string
 	}{
 		{"https://examle.com/あ?い=う#え#", "https://examle.com/%E3%81%82?い=う#え%23"},
+		{"a:/b", "a:/b"},
+		{"a:///b", "a:///b"},
 	}
 
 	for _, tt := range tests {
@@ -106,6 +108,14 @@ func TestRecord(t *testing.T) {
 		{
 			String: `{"time":"2021-01-02T15:04:05+09:00", "status":"HEALTHY", "latency":123.456, "target":"::invalid target::", "message":"hello world"}`,
 			Error:  `invalid record: target: parse "::invalid target::": missing protocol scheme`,
+		},
+		{
+			String: `{"time":"2021-01-02T15:04:05+09:00", "status":"HEALTHY", "latency":123.456, "target":"://", "message":"hello world"}`,
+			Error:  `invalid record: target: parse "://": missing protocol scheme`,
+		},
+		{
+			String: `{"time":"2021-01-02T15:04:05+09:00", "status":"HEALTHY", "latency":123.456, "target":"/", "message":"hello world"}`,
+			Error:  `invalid record: target: parse "/": missing protocol scheme`,
 		},
 		{
 			String: `{"status":"HEALTHY", "latency":123.456, "target":"ping:example.com", "message":"hello world"}`,
