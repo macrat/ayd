@@ -125,7 +125,7 @@ func TestPluginScheme_Alert(t *testing.T) {
 	PreparePluginPath(t)
 
 	AssertAlert(t, []ProbeTest{
-		{"foo:hello-world", api.StatusHealthy, "\"foo:hello-world,2001-02-03T16:05:06Z,FAILURE,123.456,dummy:failure,test-message\"", ""},
+		{"foo:hello-world", api.StatusHealthy, "\"foo:hello-world,2001-02-03T16:05:06Z,FAILURE,123.456,dummy:failure,test-message\"\n---\nextras: {\"hello\":\"world\"}", ""},
 	}, 5)
 }
 

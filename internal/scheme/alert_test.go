@@ -31,11 +31,11 @@ func TestAlerter(t *testing.T) {
 		Message   string
 		Error     string
 	}{
-		{"exec:ayd-foo-alert", "alert:exec:ayd-foo-alert", `{"time":"2001-02-03T16:05:06Z","status":"HEALTHY","latency":123.456,"target":"","message":"\",,,,,\""}`, ""},
-		{"exec:ayd-bar-probe", "alert:exec:ayd-bar-probe", "arg \"\"\nenv ayd_time=2001-02-03T16:05:06Z ayd_status=FAILURE ayd_latency=12.345 ayd_target=dummy:failure ayd_message=foobar", ""},
-		{"foo:", "alert:foo:", "\"foo:,2001-02-03T16:05:06Z,FAILURE,12.345,dummy:failure,foobar\"", ""},
-		{"foo:hello-world", "alert:foo:hello-world", "\"foo:hello-world,2001-02-03T16:05:06Z,FAILURE,12.345,dummy:failure,foobar\"", ""},
-		{"foo-bar:hello-world", "alert:foo-bar:hello-world", "\"foo-bar:hello-world,2001-02-03T16:05:06Z,FAILURE,12.345,dummy:failure,foobar\"", ""},
+		{"exec:ayd-foo-alert", "alert:exec:ayd-foo-alert", `{"time":"2001-02-03T16:05:06Z","status":"HEALTHY","latency":123.456,"target":"","message":"\",,,,,\""}` + "\n---\nexit_code: 0", ""},
+		{"exec:ayd-bar-probe", "alert:exec:ayd-bar-probe", "arg \"\"\nenv ayd_time=2001-02-03T16:05:06Z ayd_status=FAILURE ayd_latency=12.345 ayd_target=dummy:failure ayd_message=foobar ayd_extra={\"hello\":\"world\"}\n---\nexit_code: 0", ""},
+		{"foo:", "alert:foo:", "\"foo:,2001-02-03T16:05:06Z,FAILURE,12.345,dummy:failure,foobar\"\n---\nextras: {\"hello\":\"world\"}", ""},
+		{"foo:hello-world", "alert:foo:hello-world", "\"foo:hello-world,2001-02-03T16:05:06Z,FAILURE,12.345,dummy:failure,foobar\"\n---\nextras: {\"hello\":\"world\"}", ""},
+		{"foo-bar:hello-world", "alert:foo-bar:hello-world", "\"foo-bar:hello-world,2001-02-03T16:05:06Z,FAILURE,12.345,dummy:failure,foobar\"\n---\nextras: {\"hello\":\"world\"}", ""},
 		{"bar:", "", "", "unsupported scheme"},
 
 		{"ftp://example.com", "", "", "unsupported scheme for alert"},
@@ -78,6 +78,9 @@ func TestAlerter(t *testing.T) {
 				Latency: 12345 * time.Microsecond,
 				Target:  &api.URL{Scheme: "dummy", Opaque: "failure"},
 				Message: "foobar",
+				Extra: map[string]interface{}{
+					"hello": "world",
+				},
 			}
 
 			r := &testutil.DummyReporter{}
@@ -96,8 +99,8 @@ func TestAlerter(t *testing.T) {
 				t.Errorf("unexpected status of record: %s", r.Records[0].Status)
 			}
 
-			if r.Records[0].Message != tt.Message {
-				t.Errorf("--- expected message ---\n%s\n--- actual message ---\n%s", tt.Message, r.Records[0].Message)
+			if r.Records[0].ReadableMessage() != tt.Message {
+				t.Errorf("--- expected message ---\n%s\n--- actual message ---\n%s", tt.Message, r.Records[0].ReadableMessage())
 			}
 		})
 	}
@@ -285,6 +288,9 @@ func AssertAlert(t *testing.T, tests []ProbeTest, timeout int) {
 				Status:  api.StatusFailure,
 				Latency: 123456 * time.Microsecond,
 				Message: "test-message",
+				Extra: map[string]interface{}{
+					"hello": "world",
+				},
 			})
 
 			if len(rs) != 1 {
@@ -298,8 +304,8 @@ func AssertAlert(t *testing.T, tests []ProbeTest, timeout int) {
 			if r.Status != tt.Status {
 				t.Errorf("expected status is %s but got %s", tt.Status, r.Status)
 			}
-			if ok, _ := regexp.MatchString("^"+tt.MessagePattern+"$", r.Message); !ok {
-				t.Errorf("expected message is match to %#v but got %#v", tt.MessagePattern, r.Message)
+			if ok, _ := regexp.MatchString("^"+tt.MessagePattern+"$", r.ReadableMessage()); !ok {
+				t.Errorf("unexpected message\n--- expected -----\n%s\n--- actual -----\n%s", tt.MessagePattern, r.ReadableMessage())
 			}
 		})
 	}

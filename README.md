@@ -151,7 +151,8 @@ If you use HTTP/HTTP as an alert URL, Ayd adds some queries to send information 
 | `ayd_status`     | `FAILURE`, `DEGRADE`, `UNKNOWN`, `HEALTHY` | The current status of the target   |
 | `ayd_latency`    | `123.456`                                  | The latency of the latest checking |
 | `ayd_target`     | `https://target.example.com`               | The target URL                     |
-| `ayd_message`    |                                            | The latest message of the target   |
+| `ayd_message`    | `hello world`                              | The latest message of the target   |
+| `ayd_extra`      | `{"hello":"world"}`                        | The Extra values in JSON format    |
 
 #### ftp: / ftps:
 
@@ -427,23 +428,25 @@ $ ayd-foobar-probe "foobar:your-target"
 
 Alert plugin which send alerts, receives below arguments.
 
-1. The URL of alert.
-2. The timestamp in RFC3339 format.
-3. The current status of the firing target.
-4. The current latency.
-5. The target's URL.
-6. The message from the latest probe.
+1. Alert URL alert.
+2. Timestamp in RFC3339 format.
+3. Current status of the firing target.
+4. Current latency in milliseconds.
+5. Target URL.
+6. Message from the latest probe.
+7. Extra values in JSON format.
 
 For example, the alert URL `foobar:your-alert` for plugin `ayd-foobar-alert` will be called like a below command.
 
 ``` shell
-$ ayd-foobar-alert              \
-    "foobar:your-alert"         \
-    "2001-02-30T16:05:06+09:00" \
-    "FAILURE"                   \
-    "1.234"                     \
-    "ping:your-target"          \
-    "this is message of the record"
+$ ayd-foobar-alert                      \
+    "foobar:your-alert"                 \
+    "2001-02-30T16:05:06+09:00"         \
+    "FAILURE"                           \
+    "1.234"                             \
+    "ping:your-target"                  \
+    "this is message of the record"     \
+    '{"extra values":"in json format"}'
 ```
 
 The output of the probe plugin will parsed the same way to [log file](#log-file), but all target URL will add `alert:` prefix and won't not show in status page.

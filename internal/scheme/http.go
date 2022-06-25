@@ -2,6 +2,7 @@ package scheme
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net"
@@ -159,6 +160,13 @@ func (s HTTPScheme) Alert(ctx context.Context, r Reporter, lastRecord api.Record
 	qs.Set("ayd_latency", strconv.FormatFloat(float64(lastRecord.Latency.Microseconds())/1000.0, 'f', -1, 64))
 	qs.Set("ayd_target", lastRecord.Target.String())
 	qs.Set("ayd_message", lastRecord.Message)
+	qs.Set("ayd_extra", "{}")
+
+	if lastRecord.Extra != nil {
+		if bs, err := json.Marshal(lastRecord.Extra); err == nil {
+			qs.Set("ayd_extra", string(bs))
+		}
+	}
 
 	var u url.URL = *s.target.ToURL()
 	u.RawQuery = qs.Encode()

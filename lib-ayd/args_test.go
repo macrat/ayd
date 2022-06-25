@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/macrat/ayd/lib-ayd"
 )
 
@@ -63,16 +64,18 @@ func TestParseAlertPluginArgs(t *testing.T) {
 		Latency string
 		Target  string
 		Message string
+		Extra   map[string]interface{}
 		Error   string
 	}{
 		{
-			[]string{"./ayd-test-alert", "foo:bar", "2001-02-03T16:05:06Z", "HEALTHY", "123.456", "bar:baz", "foo bar"},
+			[]string{"./ayd-test-alert", "foo:bar", "2001-02-03T16:05:06Z", "HEALTHY", "123.456", "bar:baz", "foo bar", `{"hello":"world"}`},
 			"foo:bar",
 			"2001-02-03 16:05:06 +0000 UTC",
 			"HEALTHY",
 			"123.456",
 			"bar:baz",
 			"foo bar",
+			map[string]interface{}{"hello": "world"},
 			"",
 		},
 		{
@@ -83,57 +86,74 @@ func TestParseAlertPluginArgs(t *testing.T) {
 			"",
 			"",
 			"",
-			`invalid argument: should give exactly 6 arguments`,
+			nil,
+			`invalid argument: should give exactly 7 arguments`,
 		},
 		{
-			[]string{"./ayd-test-alert", "foo:bar", "2001-02-03T16:05:06Z", "HEALTHY", "123.456", "bar:baz", "foo bar", "extra arg"},
+			[]string{"./ayd-test-alert", "foo:bar", "2001-02-03T16:05:06Z", "HEALTHY", "123.456", "bar:baz", "foo bar", "{}", "unknown extra arg"},
 			"",
 			"",
 			"",
 			"",
 			"",
 			"",
-			`invalid argument: should give exactly 6 arguments`,
+			nil,
+			`invalid argument: should give exactly 7 arguments`,
 		},
 		{
-			[]string{"./ayd-test-alert", "::invalid::", "2001-02-03T16:05:06Z", "HEALTHY", "123.456", "bar:baz", "foo bar"},
+			[]string{"./ayd-test-alert", "::invalid::", "2001-02-03T16:05:06Z", "HEALTHY", "123.456", "bar:baz", "foo bar", "{}"},
 			"",
 			"",
 			"",
 			"",
 			"",
 			"",
+			nil,
 			`invalid alert URL: parse "::invalid::": missing protocol scheme`,
 		},
 		{
-			[]string{"./ayd-test-alert", "foo:bar", "2001-02-03T16:05:06Z", "HEALTHY", "123.456", "::invalid::", "foo bar"},
+			[]string{"./ayd-test-alert", "foo:bar", "2001-02-03T16:05:06Z", "HEALTHY", "123.456", "::invalid::", "foo bar", "{}"},
 			"",
 			"",
 			"",
 			"",
 			"",
 			"",
+			nil,
 			`invalid target URL: parse "::invalid::": missing protocol scheme`,
 		},
 		{
-			[]string{"./ayd-test-alert", "foo:bar", "this is not a time", "HEALTHY", "123.456", "bar:baz", "foo bar"},
+			[]string{"./ayd-test-alert", "foo:bar", "this is not a time", "HEALTHY", "123.456", "bar:baz", "foo bar", "{}"},
 			"",
 			"",
 			"",
 			"",
 			"",
 			"",
+			nil,
 			`invalid timestamp: parsing time "this is not a time" as "2006-01-02T15:04:05Z07:00": cannot parse "this is not a time" as "2006"`,
 		},
 		{
-			[]string{"./ayd-test-alert", "foo:bar", "2001-02-03T16:05:06Z", "HEALTHY", "not a latency", "bar:baz", "foo bar"},
+			[]string{"./ayd-test-alert", "foo:bar", "2001-02-03T16:05:06Z", "HEALTHY", "not a latency", "bar:baz", "foo bar", "{}"},
 			"",
 			"",
 			"",
 			"",
 			"",
 			"",
+			nil,
 			`invalid latency: strconv.ParseFloat: parsing "not a latency": invalid syntax`,
+		},
+		{
+			[]string{"./ayd-test-alert", "foo:bar", "2001-02-03T16:05:06Z", "HEALTHY", "123.456", "bar:baz", "foo bar", `invalid extra`},
+			"",
+			"",
+			"",
+			"",
+			"",
+			"",
+			nil,
+			"invalid extra values: invalid character 'i' looking for beginning of value",
 		},
 	}
 
@@ -167,6 +187,10 @@ func TestParseAlertPluginArgs(t *testing.T) {
 
 			if args.Message != tt.Message {
 				t.Errorf("unexpected message: %s", args.Message)
+			}
+
+			if diff := cmp.Diff(args.Extra, tt.Extra); diff != "" {
+				t.Errorf("unexpected extra\n--- expected ---\n%s--- actual ---\n %s", tt.Extra, args.Extra)
 			}
 		})
 	}

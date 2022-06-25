@@ -3,6 +3,7 @@ package scheme
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -186,11 +187,20 @@ func (s ExecScheme) Probe(ctx context.Context, r Reporter) {
 }
 
 func (s ExecScheme) Alert(ctx context.Context, r Reporter, lastRecord api.Record) {
-	s.run(ctx, AlertReporter{s.target, r}, []string{
+	env := []string{
 		"ayd_time=" + lastRecord.Time.Format(time.RFC3339),
 		"ayd_status=" + lastRecord.Status.String(),
 		fmt.Sprintf("ayd_latency=%.3f", float64(lastRecord.Latency.Microseconds())/1000.0),
 		"ayd_target=" + lastRecord.Target.String(),
 		"ayd_message=" + lastRecord.Message,
-	})
+		"ayd_extra={}",
+	}
+
+	if lastRecord.Extra != nil {
+		if bs, err := json.Marshal(lastRecord.Extra); err == nil {
+			env[len(env)-1] = "ayd_extra=" + string(bs)
+		}
+	}
+
+	s.run(ctx, AlertReporter{s.target, r}, env)
 }

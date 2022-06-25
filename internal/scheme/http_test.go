@@ -74,6 +74,9 @@ func TestHTTPScheme_Alert(t *testing.T) {
 		Latency: 123456 * time.Microsecond,
 		Target:  &api.URL{Scheme: "dummy", Fragment: "hello"},
 		Message: "hello world",
+		Extra: map[string]interface{}{
+			"hello": "world",
+		},
 	})
 
 	if len(r.Records) != 1 {
@@ -84,7 +87,7 @@ func TestHTTPScheme_Alert(t *testing.T) {
 		t.Fatalf("unexpected number of request in the log\n%s", log)
 	}
 
-	expected := `/?ayd_latency=123.456&ayd_message=hello+world&ayd_status=FAILURE&ayd_target=dummy%3A%23hello&ayd_time=2021-01-02T15%3A04%3A05Z`
+	expected := `/?ayd_extra=%7B%22hello%22%3A%22world%22%7D&ayd_latency=123.456&ayd_message=hello+world&ayd_status=FAILURE&ayd_target=dummy%3A%23hello&ayd_time=2021-01-02T15%3A04%3A05Z`
 	if log[0] != expected {
 		t.Errorf("unexpected request URL\nexpected: %s\n but got: %s", expected, log[0])
 	}
