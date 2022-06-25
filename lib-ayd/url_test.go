@@ -61,6 +61,10 @@ func TestURL_String(t *testing.T) {
 			ayd.URL{Scheme: "https", Host: "テスト.com", RawQuery: "あ=亜"},
 			"https://%E3%83%86%E3%82%B9%E3%83%88.com?あ=亜",
 		},
+		{
+			ayd.URL{Scheme: "dummy", Fragment: "ああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ"},
+			"dummy:#ああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ",
+		},
 	}
 
 	for _, tt := range tests {
@@ -69,6 +73,39 @@ func TestURL_String(t *testing.T) {
 			result := tt.Input.String()
 			if tt.Output != result {
 				t.Errorf("expected output is %s but got %s", tt.Output, result)
+			}
+		})
+	}
+}
+
+func TestURL_marshalAndUnmarshal(t *testing.T) {
+	tests := []struct{
+		Input  string
+		Output string
+	} {
+		{"https://example.com", "https://example.com"},
+		{"file:/path/to/file.txt#hello world", "file:/path/to/file.txt#hello%20world"},
+		{"a:b/c?d=e#f", "a:b/c?d=e#f"},
+		{"a:/b/c?d=e#f", "a:/b/c?d=e#f"},
+		{"a://b/c?d=e#f", "a://b/c?d=e#f"},
+		{"a://b:c@d", "a://b:xxxxx@d"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.Input, func(t *testing.T) {
+			var u ayd.URL
+
+			if err := u.UnmarshalText([]byte(tt.Input)); err != nil {
+				t.Fatalf("failed to unmarshal URL: %s", err)
+			}
+
+			bs, err := u.MarshalText()
+			if err != nil {
+				t.Fatalf("failed to marshal URL: %s", err)
+			}
+
+			if string(bs) != tt.Output {
+				t.Errorf("expected output is %q but got %q", tt.Output, string(bs))
 			}
 		})
 	}
