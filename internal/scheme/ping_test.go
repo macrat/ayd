@@ -43,7 +43,7 @@ func TestPingProbe_Probe(t *testing.T) {
 	t.Run("timeout", func(t *testing.T) {
 		p := testutil.NewProber(t, "ping:localhost")
 
-		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Millisecond)
+		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Nanosecond)
 		time.Sleep(10 * time.Millisecond)
 		defer cancel()
 

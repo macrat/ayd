@@ -32,7 +32,7 @@ func TestHTTPScheme_Probe(t *testing.T) {
 		{strings.Replace(server.URL, "http", "http-connect", 1) + "/only/connect", api.StatusHealthy, "200 OK\n---\nlength: 0\nproto: HTTP/1\\.1\nstatus_code: 200", ""},
 		{server.URL + "/slow-page", api.StatusFailure, `probe timed out`, ""},
 		{"http://localhost:54321/", api.StatusFailure, `(127\.0\.0\.1|\[::1\]):54321: connection refused`, ""},
-	}, 5)
+	}, 10)
 
 	AssertTimeout(t, server.URL)
 
