@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"testing"
 	"time"
 
@@ -25,17 +26,15 @@ func TestAlerter(t *testing.T) {
 		os.Setenv("PATH", origPath)
 	})
 
-	tests := []struct {
+	type Test struct {
 		TargetIn  string
 		TargetOut string
 		Message   string
 		Error     string
-	}{
+	}
+	tests := []Test{
 		{"exec:ayd-foo-alert", "alert:exec:ayd-foo-alert", `{"time":"2001-02-03T16:05:06Z","status":"HEALTHY","latency":123.456,"target":"","message":"\",,,,,\""}` + "\n---\nexit_code: 0", ""},
 		{"exec:ayd-bar-probe", "alert:exec:ayd-bar-probe", "arg \"\"\nenv ayd_time=2001-02-03T16:05:06Z ayd_status=FAILURE ayd_latency=12.345 ayd_target=dummy:failure ayd_message=foobar ayd_extra={\"hello\":\"world\"}\n---\nexit_code: 0", ""},
-		{"foo:", "alert:foo:", "\"foo:,2001-02-03T16:05:06Z,FAILURE,12.345,dummy:failure,foobar\"\n---\nextras: {\"hello\":\"world\"}", ""},
-		{"foo:hello-world", "alert:foo:hello-world", "\"foo:hello-world,2001-02-03T16:05:06Z,FAILURE,12.345,dummy:failure,foobar\"\n---\nextras: {\"hello\":\"world\"}", ""},
-		{"foo-bar:hello-world", "alert:foo-bar:hello-world", "\"foo-bar:hello-world,2001-02-03T16:05:06Z,FAILURE,12.345,dummy:failure,foobar\"\n---\nextras: {\"hello\":\"world\"}", ""},
 		{"bar:", "", "", "unsupported scheme"},
 
 		{"ftp://example.com", "", "", "unsupported scheme for alert"},
@@ -55,6 +54,16 @@ func TestAlerter(t *testing.T) {
 		{"alert:", "", "", "unsupported scheme"},
 		{"alert-abc:", "", "", "unsupported scheme"},
 		{"of-course-no-such-plugin:", "", "", "unsupported scheme"},
+	}
+
+	if runtime.GOOS != "windows" {
+		// Windows can not run this test because bat doesn't support double quote character in argument :(
+		tests = append(
+			tests, 
+			Test{"foo-bar:hello-world", "alert:foo-bar:hello-world", "\"foo-bar:hello-world,2001-02-03T16:05:06Z,FAILURE,12.345,dummy:failure,foobar\"\n---\nextras: {\"hello\":\"world\"}", ""},
+			Test{"foo:", "alert:foo:", "\"foo:,2001-02-03T16:05:06Z,FAILURE,12.345,dummy:failure,foobar\"\n---\nextras: {\"hello\":\"world\"}", ""},
+			Test{"foo:hello-world", "alert:foo:hello-world", "\"foo:hello-world,2001-02-03T16:05:06Z,FAILURE,12.345,dummy:failure,foobar\"\n---\nextras: {\"hello\":\"world\"}", ""},
+		)
 	}
 
 	for _, tt := range tests {

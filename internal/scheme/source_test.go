@@ -309,8 +309,15 @@ func TestSourceScheme_Alert(t *testing.T) {
 		t.Errorf("unexpected message for foo:alert-test\n--- expected --\n%s\n--- actual ---\n%s", expected, r.Records[1].Message)
 	}
 
-	if diff := cmp.Diff(r.Records[1].Extra, map[string]interface{}{"extras": map[string]interface{}{}}); diff != "" {
-		t.Errorf("unexpected extra values\n%s", diff)
+	if runtime.GOOS == "windows" {
+		// Windows can not handle double quote in argument, so test on Windows does not use extra values :(
+		if r.Records[1].Extra != nil {
+			t.Errorf("unexpected extra values: %#v", r.Records[1].Extra)
+		}
+	} else {
+		if diff := cmp.Diff(r.Records[1].Extra, map[string]interface{}{"extras": map[string]interface{}{}}); diff != "" {
+			t.Errorf("unexpected extra values\n%s", diff)
+		}
 	}
 }
 
