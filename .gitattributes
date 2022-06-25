@@ -1,0 +1,10 @@
+*     text=auto
+*.csv  text eol=lf
+*.go   text eol=lf
+*.html text eol=lf
+*.json text eol=lf
+*.log  text eol=lf
+*.ltsv text eol=lf
+*.md   text eol=lf
+*.rss  text eol=lf
+*.txt  text eol=lf
