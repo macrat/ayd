@@ -11,12 +11,12 @@ require (
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/spf13/pflag v1.0.5
 	goftp.io/server v0.4.1
-	golang.org/x/sys v0.0.0-20220615213510-4f61da869c0c
+	golang.org/x/sys v0.0.0-20220624220833-87e55d714810
 	golang.org/x/text v0.3.7
 )
 
 require (
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
-	golang.org/x/net v0.0.0-20220617184016-355a448f1bc9 // indirect
+	golang.org/x/net v0.0.0-20220624214902-1bab6f366d9e // indirect
 )
