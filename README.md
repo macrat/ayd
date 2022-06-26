@@ -73,17 +73,17 @@ Ayd check the target specified as URLs if alive or not, and report to the alert 
 A command to start Ayd looks like below.
 
 ``` plain text
-$ ayd -a exec:/path/to/alert.sh 10m ping:192.168.1.1 http://example.com
-      ────────────┬──────────── ─┬─ ───────────────┬───────────────────
-                  │              │             Target URLs
-                  │              │  Check if 192.168.1.1 is responding to ping,
-                  │              │  and if http://example.com is serving.
-                  │              │
-                  │           Schedule
-                  │       Check targets every 10 minutes.
-                  │
-              Alert URL
-      Execute /path/to/alert.sh if the target status changed.
+$ ayd  -a exec:/path/to/alert.sh  10m  ping:192.168.1.1 http://example.com
+      └────────────┬────────────┘└─┬─┘└───────────────┬───────────────────┘
+                   │               │              Target URLs
+                   │               │   Check if 192.168.1.1 is responding to ping,
+                   │               │   and if http://example.com is serving.
+                   │               │
+                   │            Schedule
+                   │        Check targets every 10 minutes.
+                   │
+               Alert URL
+       Execute /path/to/alert.sh if the target status changed.
 ```
 
 The [common schemes](#url-scheme) for target URL or alrt URL, are supported by Ayd itself.
