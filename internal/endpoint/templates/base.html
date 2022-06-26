@@ -7,12 +7,12 @@
             <span class="target" aria-label="incident of '{{ .Target }}'">{{ .Target }}</span>
         </h1>
         <div class="period">
-            <time aria-label="since {{ .CausedAt | time2str }}">{{ .CausedAt | time2str }}</time>
+            <time aria-label="since {{ .StartsAt | time2str }}" title="{{ .StartsAt | time2humanize }}">{{ .StartsAt | time2str }}</time>
             <span aria-hidden="true">-</span>
-            {{ if .ResolvedAt.IsZero -}}
+            {{ if .EndsAt.IsZero -}}
                 ongoing
             {{- else -}}
-                <time aria-label="until {{ .ResolvedAt | time2str }}">{{ .ResolvedAt | time2str }}</time>
+                <time aria-label="until {{ .EndsAt | time2str }}" title="{{ .EndsAt | time2humanize }}">{{ .EndsAt | time2str }}</time>
             {{- end }}
         </div>{{ if .Message }}
         <pre class="message">{{ .Message }}</pre>{{ end }}
@@ -101,7 +101,6 @@ section {
     margin: 4px;
     padding: 12px 16px;
     border-radius: 4px;
-    /*background-color: rgba(var(--fg), .01);*/
     border: 1px solid rgba(var(--fg), .2);
 }
 
@@ -178,7 +177,6 @@ footer span {
                         <a href="/log.html" type="text/html">Log</a>
                         <ul class="menu-types">
                             <li><a href="/log.csv" type="text/csv">CSV</a></li>
-                            <li><a href="/log.tsv" type="text/tab-separated-values">TSV</a></li>
                             <li><a href="/log.json" type="application/json">json</a></li>
                         </ul>
                     </span>

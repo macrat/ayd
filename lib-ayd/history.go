@@ -7,13 +7,15 @@ import (
 )
 
 // ProbeHistory is the status history data of single target
+//
+// Deprecated: this struct will removed in future version.
 type ProbeHistory struct {
 	Target *URL
 
 	// Status is the latest status of the target
 	Status Status
 
-	// Status is the same as CheckedAt of the latest History record
+	// Status is the same as Time of the latest History record
 	Updated time.Time
 
 	Records []Record
@@ -91,6 +93,8 @@ func (xs byLatestStatus) Swap(i, j int) {
 // SortProbeHistories sorts list of ProbeHistory by latest status and target URL.
 //
 // This function will edit slice directly.
+//
+// Deprecated: this struct will removed in future version.
 func SortProbeHistories(hs []ProbeHistory) {
 	sort.Sort(byLatestStatus(hs))
 }

@@ -1,8 +1,10 @@
 package ayd
 
 import (
+	"bytes"
 	"encoding/json"
-	"strconv"
+	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -11,141 +13,156 @@ import (
 
 // Record is a record in Ayd log
 type Record struct {
-	// CheckedAt is the time the check started
-	CheckedAt time.Time
-
-	Status Status
-
+	Time    time.Time
+	Status  Status
 	Latency time.Duration
-
-	Target *URL
-
-	// Message is the reason of the status, or extra informations of the check
+	Target  *URL
 	Message string
-}
-
-func unescapeMessage(s string) string {
-	for _, x := range []struct {
-		From string
-		To   string
-	}{
-		{`\t`, "\t"},
-		{`\n`, "\n"},
-		{`\\`, `\`},
-	} {
-		s = strings.ReplaceAll(s, x.From, x.To)
-	}
-	return s
+	Extra   map[string]interface{}
 }
 
 // ParseRecord is parse string as a Record row in the log
 func ParseRecord(s string) (Record, error) {
 	var r Record
-	var timestamp string
-	var latency float64
-	var target string
-	var err error
-
-	ss := strings.SplitN(s, "\t", 5)
-	if len(ss) != 5 {
-		return Record{}, ayderr.New(ErrInvalidRecord, nil, "invalid record: unexpected column count")
-	}
-
-	errors := &ayderr.ListBuilder{What: ErrInvalidRecord}
-
-	timestamp = ss[0]
-	r.CheckedAt, err = time.Parse(time.RFC3339, timestamp)
-	if err != nil {
-		errors.Pushf("checked-at: %w", err)
-	}
-
-	r.Status.UnmarshalText([]byte(ss[1]))
-
-	latency, err = strconv.ParseFloat(ss[2], 64)
-	if err != nil {
-		errors.Pushf("latency: %w", err)
-	}
-	r.Latency = time.Duration(latency * float64(time.Millisecond))
-
-	target = ss[3]
-	r.Target, err = ParseURL(target)
-	if err != nil {
-		errors.Pushf("target URL: %w", err)
-	}
-
-	r.Message = unescapeMessage(ss[4])
-
-	return r, errors.Build()
-}
-
-func escapeMessage(s string) string {
-	for _, x := range []struct {
-		From string
-		To   string
-	}{
-		{`\`, `\\`},
-		{"\t", `\t`},
-		{"\n", `\n`},
-	} {
-		s = strings.ReplaceAll(s, x.From, x.To)
-	}
-	return s
+	return r, r.UnmarshalJSON([]byte(s))
 }
 
 // String is make Result a string for row in the log
 func (r Record) String() string {
-	return strings.Join([]string{
-		r.CheckedAt.Format(time.RFC3339),
-		r.Status.String(),
-		strconv.FormatFloat(float64(r.Latency)/float64(time.Millisecond), 'f', 3, 64),
-		r.Target.String(),
-		escapeMessage(r.Message),
-	}, "\t")
+	b, err := r.MarshalJSON()
+	if err != nil {
+		return `{"error":"invalid record"}`
+	}
+	return string(b)
 }
 
-// UnmarshalText is unmarshal from text
-func (r *Record) UnmarshalText(text []byte) (err error) {
-	*r, err = ParseRecord(string(text))
-	return
+// ReadableExtra returns Extra map but encode each values as string.
+func (r Record) ReadableExtra() []ExtraPair {
+	if len(r.Extra) == 0 {
+		return nil
+	}
+
+	xs := make([]ExtraPair, 0, len(r.Extra))
+	for k, v := range r.Extra {
+		s := ""
+		switch x := v.(type) {
+		case string:
+			s = x
+		case int, int32, int64, float32, float64:
+			s = fmt.Sprint(x)
+		default:
+			b, err := json.Marshal(x)
+			if err != nil {
+				s = fmt.Sprint(x)
+			} else {
+				s = string(b)
+			}
+		}
+		xs = append(xs, ExtraPair{k, s})
+	}
+
+	sort.Slice(xs, func(i, j int) bool {
+		return xs[i].Key < xs[j].Key
+	})
+
+	return xs
 }
 
-// MarshalText is marshal to text
-func (r Record) MarshalText() (text []byte, err error) {
-	return []byte(r.String()), nil
+// ExtraPair is a pair of string, for Record.StringExtra..
+type ExtraPair struct {
+	Key   string
+	Value string
 }
 
-type jsonRecord struct {
-	CheckedAt string  `json:"checked_at"`
-	Status    Status  `json:"status"`
-	Latency   float64 `json:"latency"`
-	Target    string  `json:"target"`
-	Message   string  `json:"message"`
+// ReadableMessage returns human readable message of the message field and extra fields.
+func (r Record) ReadableMessage() string {
+	if len(r.Extra) == 0 {
+		return r.Message
+	}
+	var buf strings.Builder
+	buf.WriteString(r.Message)
+	if len(r.Message) > 0 && r.Message[len(r.Message)-1] != '\n' {
+		buf.WriteByte('\n')
+	}
+	buf.WriteString("---")
+	for _, e := range r.ReadableExtra() {
+		if !strings.Contains(e.Value, "\n") {
+			fmt.Fprintf(&buf, "\n%s: %s", e.Key, e.Value)
+		} else {
+			fmt.Fprintf(&buf, "\n%s: |", e.Key)
+			for _, line := range strings.Split(e.Value, "\n") {
+				fmt.Fprintf(&buf, "\n  %s", line)
+			}
+		}
+	}
+	return buf.String()
 }
 
 // UnmarshalJSON implements the json.Unmarshaler interface.
 func (r *Record) UnmarshalJSON(data []byte) error {
-	var jr jsonRecord
+	*r = Record{}
 
-	if err := json.Unmarshal(data, &jr); err != nil {
-		return err
+	var raw map[string]interface{}
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return ayderr.New(ErrInvalidRecord, err, "invalid record")
 	}
 
-	checkedAt, err := time.Parse(time.RFC3339, jr.CheckedAt)
-	if err != nil {
-		return err
+	var err error
+
+	if value, ok := raw["time"]; !ok {
+		return ayderr.New(ErrInvalidRecord, nil, "invalid record: time: missing required field")
+	} else {
+		if s, ok := value.(string); !ok {
+			return ayderr.New(ErrInvalidRecord, nil, "invalid record: time: should be a string")
+		} else if r.Time, err = time.Parse(time.RFC3339, s); err != nil {
+			return ayderr.New(ErrInvalidRecord, err, "invalid record: time")
+		}
+		delete(raw, "time")
 	}
 
-	target, err := ParseURL(jr.Target)
-	if err != nil {
-		return err
+	if value, ok := raw["status"]; ok {
+		if s, ok := value.(string); !ok {
+			return ayderr.New(ErrInvalidRecord, nil, "invalid record: status: should be a string")
+		} else {
+			r.Status = ParseStatus(s)
+		}
+		delete(raw, "status")
 	}
 
-	*r = Record{
-		CheckedAt: checkedAt,
-		Status:    jr.Status,
-		Target:    (*URL)(target),
-		Latency:   time.Duration(jr.Latency * float64(time.Millisecond)),
-		Message:   jr.Message,
+	if value, ok := raw["latency"]; ok {
+		if f, ok := value.(float64); !ok {
+			return ayderr.New(ErrInvalidRecord, nil, "invalid record: latency: should be a number")
+		} else {
+			r.Latency = time.Duration(f * float64(time.Millisecond))
+		}
+		delete(raw, "latency")
+	}
+
+	if value, ok := raw["target"]; !ok {
+		return ayderr.New(ErrInvalidRecord, nil, "invalid record: target: missing required field")
+	} else {
+		if s, ok := value.(string); !ok {
+			return ayderr.New(ErrInvalidRecord, nil, "invalid record: target: should be a string")
+		} else if r.Target, err = ParseURL(s); err != nil {
+			return ayderr.New(ErrInvalidRecord, err, "invalid record: target")
+		}
+		if r.Target.Scheme == "" {
+			return ayderr.New(ErrInvalidRecord, nil, "invalid record: target: parse %q: missing protocol scheme", value)
+		}
+		delete(raw, "target")
+	}
+
+	if value, ok := raw["message"]; ok {
+		if s, ok := value.(string); !ok {
+			return ayderr.New(ErrInvalidRecord, nil, "invalid record: message: should be a string")
+		} else {
+			r.Message = s
+		}
+		delete(raw, "message")
+	}
+
+	if len(raw) > 0 {
+		r.Extra = raw
 	}
 
 	return nil
@@ -153,11 +170,64 @@ func (r *Record) UnmarshalJSON(data []byte) error {
 
 // MarshalJSON implements the json.Marshaler interface.
 func (r Record) MarshalJSON() ([]byte, error) {
-	return json.Marshal(jsonRecord{
-		CheckedAt: r.CheckedAt.Format(time.RFC3339),
-		Status:    r.Status,
-		Latency:   float64(r.Latency.Microseconds()) / 1000,
-		Target:    r.Target.String(),
-		Message:   r.Message,
+	head := bytes.NewBuffer(make([]byte, 0, 256))
+
+	_, err := fmt.Fprintf(
+		head,
+		`{"time":"%s", "status":"%s", "latency":%.3f, "target":%q`,
+		r.Time.Format(time.RFC3339),
+		r.Status,
+		float64(r.Latency.Microseconds())/1000,
+		r.Target,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	enc := json.NewEncoder(head)
+
+	if r.Message != "" {
+		if _, err = head.Write([]byte(`, "message":`)); err != nil {
+			return nil, err
+		}
+		if err = enc.Encode(r.Message); err != nil {
+			return nil, err
+		}
+		head.Truncate(head.Len() - 1) // drop newline
+	}
+
+	extras := make([]extraPair, 0, len(r.Extra))
+	for k, v := range r.Extra {
+		extras = append(extras, extraPair{k, v})
+	}
+
+	sort.Slice(extras, func(i, j int) bool {
+		return extras[i].Key < extras[j].Key
 	})
+
+	for _, e := range extras {
+		if _, err = head.Write([]byte(", ")); err != nil {
+			return nil, err
+		}
+		if err = enc.Encode(e.Key); err != nil {
+			return nil, err
+		}
+		head.Truncate(head.Len() - 1) // drop newline
+		if _, err = head.Write([]byte(":")); err != nil {
+			return nil, err
+		}
+		if err = enc.Encode(e.Value); err != nil {
+			return nil, err
+		}
+		head.Truncate(head.Len() - 1) // drop newline
+	}
+
+	_, err = head.Write([]byte("}"))
+
+	return head.Bytes(), err
+}
+
+type extraPair struct {
+	Key   string
+	Value interface{}
 }

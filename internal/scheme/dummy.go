@@ -90,11 +90,11 @@ func (s DummyScheme) Probe(ctx context.Context, r Reporter) {
 	}
 
 	rec := api.Record{
-		CheckedAt: stime,
-		Status:    s.Status(),
-		Target:    s.target,
-		Latency:   latency,
-		Message:   s.message,
+		Time:    stime,
+		Status:  s.Status(),
+		Target:  s.target,
+		Latency: latency,
+		Message: s.message,
 	}
 
 	select {

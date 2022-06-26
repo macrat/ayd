@@ -54,7 +54,7 @@ func readTestFile(t *testing.T, file string) string {
 		t.Fatalf("failed to read file: %s", err)
 	}
 
-	return strings.ReplaceAll(string(bs), "\r\n", "\n")
+	return string(bs)
 }
 
 func AssertEndpoint(t *testing.T, endpoint, expectFile, maskPattern string) {

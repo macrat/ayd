@@ -68,9 +68,9 @@ func TestLogScanner(t *testing.T) {
 			"api.NewLogScannerWithPeriod",
 			func(since, until time.Time) api.LogScanner {
 				f := io.NopCloser(strings.NewReader(strings.Join([]string{
-					"2000-01-01T13:02:03Z\tHEALTHY\t0.123\tdummy:healthy\tfirst",
-					"2000-01-02T13:02:03Z\tHEALTHY\t0.123\tdummy:healthy\tsecond",
-					"2000-01-03T13:02:03Z\tHEALTHY\t0.123\tdummy:healthy\tlast",
+					`{"time":"2000-01-01T13:02:03Z","status":"HEALTHY","latency":0.123,"target":"dummy:healthy","message":"first"}`,
+					`{"time":"2000-01-02T13:02:03Z","status":"HEALTHY","latency":0.123,"target":"dummy:healthy","message":"second"}`,
+					`{"time":"2000-01-03T13:02:03Z","status":"HEALTHY","latency":0.123,"target":"dummy:healthy","message":"last"}`,
 				}, "\n")))
 
 				return api.NewLogScannerWithPeriod(f, since, until)
@@ -85,19 +85,19 @@ func TestLogScanner(t *testing.T) {
 				}
 
 				s.Report(&api.URL{Scheme: "dummy"}, api.Record{
-					CheckedAt: time.Date(2000, 1, 1, 13, 2, 3, 0, time.UTC),
-					Target:    &api.URL{Scheme: "dummy", Fragment: "hello"},
-					Message:   "first",
+					Time:    time.Date(2000, 1, 1, 13, 2, 3, 0, time.UTC),
+					Target:  &api.URL{Scheme: "dummy", Fragment: "hello"},
+					Message: "first",
 				})
 				s.Report(&api.URL{Scheme: "dummy"}, api.Record{
-					CheckedAt: time.Date(2000, 1, 2, 13, 2, 3, 0, time.UTC),
-					Target:    &api.URL{Scheme: "dummy", Fragment: "world"},
-					Message:   "second",
+					Time:    time.Date(2000, 1, 2, 13, 2, 3, 0, time.UTC),
+					Target:  &api.URL{Scheme: "dummy", Fragment: "world"},
+					Message: "second",
 				})
 				s.Report(&api.URL{Scheme: "dummy"}, api.Record{
-					CheckedAt: time.Date(2000, 1, 3, 13, 2, 3, 0, time.UTC),
-					Target:    &api.URL{Scheme: "dummy", Fragment: "hello"},
-					Message:   "last",
+					Time:    time.Date(2000, 1, 3, 13, 2, 3, 0, time.UTC),
+					Target:  &api.URL{Scheme: "dummy", Fragment: "hello"},
+					Message: "last",
 				})
 
 				scanner, err := s.OpenLog(since, until)
@@ -111,11 +111,11 @@ func TestLogScanner(t *testing.T) {
 			"LogFilter-target",
 			func(since, until time.Time) api.LogScanner {
 				f := io.NopCloser(strings.NewReader(strings.Join([]string{
-					"2000-01-01T13:02:03Z\tHEALTHY\t0.123\tdummy:healthy#1\tfirst",
-					"2000-01-02T13:02:03Z\tHEALTHY\t0.123\tdummy:healthy#1\tsecond",
-					"2000-01-02T13:02:03Z\tFAILURE\t0.123\tdummy:failure\tanother",
-					"2000-01-03T13:02:03Z\tHEALTHY\t0.123\tdummy:healthy#2\tlast",
-					"2000-01-04T13:02:03Z\tFAILURE\t0.123\tdummy:failure\tanother",
+					`{"time":"2000-01-01T13:02:03Z","status":"HEALTHY","latency":0.123,"target":"dummy:healthy#1","message":"first"}`,
+					`{"time":"2000-01-02T13:02:03Z","status":"HEALTHY","latency":0.123,"target":"dummy:healthy#1","message":"second"}`,
+					`{"time":"2000-01-02T13:02:03Z","status":"FAILURE","latency":0.123,"target":"dummy:failure","message":"another"}`,
+					`{"time":"2000-01-03T13:02:03Z","status":"HEALTHY","latency":0.123,"target":"dummy:healthy#2","message":"last"}`,
+					`{"time":"2000-01-04T13:02:03Z","status":"FAILURE","latency":0.123,"target":"dummy:failure","message":"another"}`,
 				}, "\n")))
 
 				return endpoint.LogFilter{
@@ -129,11 +129,11 @@ func TestLogScanner(t *testing.T) {
 			"LogFilter-query",
 			func(since, until time.Time) api.LogScanner {
 				f := io.NopCloser(strings.NewReader(strings.Join([]string{
-					"2000-01-01T13:02:03Z\tHEALTHY\t0.123\tdummy:healthy#1\tfirst",
-					"2000-01-02T13:02:03Z\tHEALTHY\t0.123\tdummy:healthy#1\tsecond",
-					"2000-01-02T13:02:03Z\tFAILURE\t0.123\tdummy:failure\tanother",
-					"2000-01-03T13:02:03Z\tHEALTHY\t0.123\tdummy:healthy#2\tlast",
-					"2000-01-04T13:02:03Z\tFAILURE\t0.123\tdummy:failure\tanother",
+					`{"time":"2000-01-01T13:02:03Z","status":"HEALTHY","latency":0.123,"target":"dummy:healthy#1","message":"first"}`,
+					`{"time":"2000-01-02T13:02:03Z","status":"HEALTHY","latency":0.123,"target":"dummy:healthy#1","message":"second"}`,
+					`{"time":"2000-01-02T13:02:03Z","status":"FAILURE","latency":0.123,"target":"dummy:failure","message":"another"}`,
+					`{"time":"2000-01-03T13:02:03Z","status":"HEALTHY","latency":0.123,"target":"dummy:healthy#2","message":"last"}`,
+					`{"time":"2000-01-04T13:02:03Z","status":"FAILURE","latency":0.123,"target":"dummy:failure","message":"another"}`,
 				}, "\n")))
 
 				return endpoint.LogFilter{
@@ -236,6 +236,24 @@ func TestQuery(t *testing.T) {
 			true,
 		},
 		{
+			"-unknown",
+			api.Record{
+				Status:  api.StatusFailure,
+				Target:  &api.URL{Scheme: "dummy", Opaque: "healthy"},
+				Message: "foobar",
+			},
+			true,
+		},
+		{
+			"-HEALTHY",
+			api.Record{
+				Status:  api.StatusFailure,
+				Target:  &api.URL{Scheme: "dummy", Opaque: "healthy"},
+				Message: "foobar",
+			},
+			false,
+		},
+		{
 			"<100ms",
 			api.Record{
 				Latency: 50 * time.Millisecond,
@@ -278,98 +296,6 @@ func TestQuery(t *testing.T) {
 			result := endpoint.ParseQuery(tt.Query).Match(tt.Record)
 			if result != tt.Expect {
 				t.Errorf("expected %#v but got %#v", tt.Expect, result)
-			}
-		})
-	}
-}
-
-func TestLogTSVEndpoint(t *testing.T) {
-	tests := []struct {
-		Name       string
-		Query      string
-		StatusCode int
-		Pattern    string
-	}{
-		{
-			"without-query",
-			"",
-			http.StatusOK,
-			"",
-		},
-		{
-			"fetch-all",
-			"?since=2021-01-01T00:00:00Z&until=2022-01-01T00:00:00Z&target=http://a.example.com",
-			http.StatusOK,
-			"(.*\n){3}",
-		},
-		{
-			"drop-with-time-range",
-			"?since=2021-01-02T15:04:06Z&until=2021-01-02T15:04:07Z&target=http://a.example.com",
-			http.StatusOK,
-			"2021-01-02T15:04:06Z\t.*\n",
-		},
-		{
-			"drop-all-with-time-range",
-			"?since=2001-01-01T00:00:00Z&until=2002-01-01T00:00:00Z&target=http://a.example.com",
-			http.StatusOK,
-			"",
-		},
-		{
-			"drop-with-target",
-			"?since=2021-01-01T00:00:00Z&until=2022-01-01T00:00:00Z&target=http://b.example.com",
-			http.StatusOK,
-			"(.*\n){2}",
-		},
-		{
-			"drop-all-with-target",
-			"?since=2021-01-01T00:00:00Z&until=2022-01-01T00:00:00Z&target=http://no-such.example.com",
-			http.StatusOK,
-			"",
-		},
-		{
-			"invalid-since",
-			"?since=invalid-since&until=2022-01-01T00:00:00Z",
-			http.StatusBadRequest,
-			"invalid query format: since\n",
-		},
-		{
-			"invalid-until",
-			"?since=2021-01-01T00:00:00Z&until=invalid-until",
-			http.StatusBadRequest,
-			"invalid query format: until\n",
-		},
-		{
-			"invalid-since-and-until",
-			"?since=invalid-since&until=invalid-until",
-			http.StatusBadRequest,
-			"invalid query format: until, since\n",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.Name, func(t *testing.T) {
-			srv := testutil.StartTestServer(t)
-			defer srv.Close()
-
-			resp, err := srv.Client().Get(srv.URL + "/log.tsv" + tt.Query)
-			if err != nil {
-				t.Fatalf("failed to get /log.tsv: %s", err)
-			}
-			defer resp.Body.Close()
-
-			if resp.StatusCode != tt.StatusCode {
-				t.Errorf("unexpected status: %s", resp.Status)
-			}
-
-			body, err := io.ReadAll(resp.Body)
-			if err != nil {
-				t.Fatalf("failed to read body: %s", err)
-			}
-
-			if ok, err := regexp.Match("^"+tt.Pattern+"$", body); err != nil {
-				t.Errorf("failed to check body: %s", err)
-			} else if !ok {
-				t.Errorf("body must match to %#v but got:\n%s", tt.Pattern, string(body))
 			}
 		})
 	}
@@ -566,5 +492,5 @@ func TestLogCSVEndpoint(t *testing.T) {
 }
 
 func TestLogHTMLEndpoint(t *testing.T) {
-	AssertEndpoint(t, "/log.html?since=2021-01-01T00%3A00%3A00Z&until=2021-01-03T00%3A00%3A00Z", "./testdata/log.html", "")
+	AssertEndpoint(t, "/log.html?since=2021-01-01T00%3A00%3A00Z&until=2021-01-03T00%3A00%3A00Z", "./testdata/log.html", "[0-9] years? ago")
 }

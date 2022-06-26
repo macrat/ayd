@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"runtime"
+	"strings"
 	"testing"
 	"time"
 
@@ -20,20 +21,35 @@ func TestPingProbe_Probe(t *testing.T) {
 		t.Fatalf("failed to check ping permission: %s", err)
 	}
 
+	pattern := strings.Join([]string{
+		`All packets came back`,
+		`---`,
+		`packets_recv: 3`,
+		`packets_sent: 3`,
+		`rtt_avg: [0-9]+(\.[0-9]+)?`,
+		`rtt_max: [0-9]+(\.[0-9]+)?`,
+		`rtt_min: [0-9]+(\.[0-9]+)?`,
+	}, "\n")
+
 	AssertProbe(t, []ProbeTest{
-		{"ping:localhost", api.StatusHealthy, `ip=(127.0.0.1|::1) rtt\(min/avg/max\)=[0-9.]*/[0-9.]*/[0-9.]* recv/sent=3/3`, ""},
-		{"ping:127.0.0.1", api.StatusHealthy, `ip=127.0.0.1 rtt\(min/avg/max\)=[0-9.]*/[0-9.]*/[0-9.]* recv/sent=3/3`, ""},
-		{"ping:::1", api.StatusHealthy, `ip=::1 rtt\(min/avg/max\)=[0-9.]*/[0-9.]*/[0-9.]* recv/sent=3/3`, ""},
-		{"ping4:localhost", api.StatusHealthy, `ip=127.0.0.1 rtt\(min/avg/max\)=[0-9.]*/[0-9.]*/[0-9.]* recv/sent=3/3`, ""},
-		{"ping6:localhost", api.StatusHealthy, `ip=::1 rtt\(min/avg/max\)=[0-9.]*/[0-9.]*/[0-9.]* recv/sent=3/3`, ""},
-		{"ping:of-course-definitely-no-such-host", api.StatusUnknown, `.*`, ""},
+		{"ping:localhost", api.StatusHealthy, pattern, ""},
+		{"ping:127.0.0.1", api.StatusHealthy, pattern, ""},
+		{"ping:::1", api.StatusHealthy, pattern, ""},
+		{"ping4:localhost", api.StatusHealthy, pattern, ""},
+		{"ping6:localhost", api.StatusHealthy, pattern, ""},
+		{"ping:of-course-definitely-no-such-host", api.StatusUnknown, "[^\n]*", ""},
 	}, 2)
 
 	t.Run("timeout", func(t *testing.T) {
 		p := testutil.NewProber(t, "ping:localhost")
 
-		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Millisecond)
-		time.Sleep(10 * time.Millisecond)
+		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Nanosecond)
+		if runtime.GOOS == "windows" {
+			// Windows on GitHub Actions is incredible slow so I need more time to make sure that completely timed out
+			time.Sleep(100 * time.Millisecond)
+		} else {
+			time.Sleep(10 * time.Millisecond)
+		}
 		defer cancel()
 
 		records := testutil.RunProbe(ctx, p)
@@ -70,8 +86,18 @@ func TestPingProbe_Probe(t *testing.T) {
 		t.Setenv("AYD_PING_PACKETS", "10")
 		t.Setenv("AYD_PING_INTERVAL", "1ms")
 
+		pattern := strings.Join([]string{
+			`All packets came back`,
+			`---`,
+			`packets_recv: 10`,
+			`packets_sent: 10`,
+			`rtt_avg: [0-9]+(\.[0-9]+)?`,
+			`rtt_max: [0-9]+(\.[0-9]+)?`,
+			`rtt_min: [0-9]+(\.[0-9]+)?`,
+		}, "\n")
+
 		AssertProbe(t, []ProbeTest{
-			{"ping:localhost", api.StatusHealthy, `ip=(127.0.0.1|::1) rtt\(min/avg/max\)=[0-9.]*/[0-9.]*/[0-9.]* recv/sent=10/10`, ""},
+			{"ping:localhost", api.StatusHealthy, pattern, ""},
 		}, 2)
 	})
 }

@@ -21,7 +21,7 @@
     end
           }} ------------------------------------------------------------------+
 |{{ printf "%-78s" .Target                                                   }}|
-| {{ printf "%-77s" (printf "%s - ongoing" (.CausedAt | time2str))           }}|
+| {{ printf "%-77s" (printf "%s - ongoing" (.StartsAt | time2str))           }}|
 |                                                                              |{{ range (break_text .Message 78) }}
 |{{ printf "%-78s" .                                                         }}|{{ end }}
 +------------------------------------------------------------------------------+
@@ -39,7 +39,7 @@
     end
           }} ------------------------------------------------------------------+
 |{{ printf "%-78s" .Target                                                   }}|
-| {{ printf "%-77s" (printf "%s - %s" (.CausedAt | time2str) (.ResolvedAt | time2str))}}|
+| {{ printf "%-77s" (printf "%s - %s" (.StartsAt | time2str) (.EndsAt | time2str))}}|
 |                                                                              |{{ range (break_text .Message 78) }}
 |{{ printf "%-78s" .                                                         }}|{{ end }}
 +------------------------------------------------------------------------------+

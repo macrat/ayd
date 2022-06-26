@@ -2,6 +2,7 @@ package ayd_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/url"
 	"strings"
 	"testing"
@@ -17,6 +18,8 @@ func TestURLToStr(t *testing.T) {
 		Output string
 	}{
 		{"https://examle.com/あ?い=う#え#", "https://examle.com/%E3%81%82?い=う#え%23"},
+		{"a:/b", "a:/b"},
+		{"a:///b", "a:///b"},
 	}
 
 	for _, tt := range tests {
@@ -42,7 +45,7 @@ func BenchmarkURL_String(b *testing.B) {
 	}
 
 	for i := 0; i < b.N; i++ {
-		u.String()
+		_ = u.String()
 	}
 }
 
@@ -55,64 +58,115 @@ func TestRecord(t *testing.T) {
 		Error  string
 	}{
 		{
-			String: "2021-01-02T15:04:05+09:00\tHEALTHY\t123.456\tping:example.com\thello world",
+			String: `{"time":"2021-01-02T15:04:05+09:00", "status":"HEALTHY", "latency":123.456, "target":"ping:example.com", "message":"hello world"}`,
 			Record: ayd.Record{
-				CheckedAt: time.Date(2021, 1, 2, 15, 4, 5, 0, tokyo),
-				Target:    &ayd.URL{Scheme: "ping", Opaque: "example.com"},
-				Status:    ayd.StatusHealthy,
-				Message:   "hello world",
-				Latency:   123456 * time.Microsecond,
+				Time:    time.Date(2021, 1, 2, 15, 4, 5, 0, tokyo),
+				Target:  &ayd.URL{Scheme: "ping", Opaque: "example.com"},
+				Status:  ayd.StatusHealthy,
+				Message: "hello world",
+				Latency: 123456 * time.Microsecond,
 			},
 		},
 		{
-			String: "2021-01-02T15:04:05+09:00\tFAILURE\t123.456\texec:/path/to/file.sh\thello world",
+			String: `{"time":"2021-01-02T15:04:05+09:00", "status":"FAILURE", "latency":123.456, "target":"exec:/path/to/file.sh", "message":"hello world"}`,
 			Record: ayd.Record{
-				CheckedAt: time.Date(2021, 1, 2, 15, 4, 5, 0, tokyo),
-				Target:    &ayd.URL{Scheme: "exec", Opaque: "/path/to/file.sh"},
-				Status:    ayd.StatusFailure,
-				Message:   "hello world",
-				Latency:   123456 * time.Microsecond,
+				Time:    time.Date(2021, 1, 2, 15, 4, 5, 0, tokyo),
+				Target:  &ayd.URL{Scheme: "exec", Opaque: "/path/to/file.sh"},
+				Status:  ayd.StatusFailure,
+				Message: "hello world",
+				Latency: 123456 * time.Microsecond,
 			},
 		},
 		{
-			String: "2021-01-02T15:04:05+09:00\tABORTED\t1234.567\tdummy:#hello\thello world",
+			String: `{"time":"2021-01-02T15:04:05+09:00", "status":"ABORTED", "latency":1234.567, "target":"dummy:#hello", "message":"hello world"}`,
 			Record: ayd.Record{
-				CheckedAt: time.Date(2021, 1, 2, 15, 4, 5, 0, tokyo),
-				Target:    &ayd.URL{Scheme: "dummy", Fragment: "hello"},
-				Status:    ayd.StatusAborted,
-				Message:   "hello world",
-				Latency:   1234567 * time.Microsecond,
+				Time:    time.Date(2021, 1, 2, 15, 4, 5, 0, tokyo),
+				Target:  &ayd.URL{Scheme: "dummy", Fragment: "hello"},
+				Status:  ayd.StatusAborted,
+				Message: "hello world",
+				Latency: 1234567 * time.Microsecond,
 			},
 		},
 		{
-			String: "2021-01-02T15:04:05+09:00\tDEGRADE\t1027.821\tdummy:\t",
+			String: `{"time":"2021-01-02T15:04:05+09:00", "status":"DEGRADE", "latency":1027.890, "target":"dummy:"}`,
 			Record: ayd.Record{
-				CheckedAt: time.Date(2021, 1, 2, 15, 4, 5, 0, tokyo),
-				Target:    &ayd.URL{Scheme: "dummy"},
-				Status:    ayd.StatusDegrade,
-				Message:   "",
-				Latency:   1027820999 * time.Nanosecond,
+				Time:    time.Date(2021, 1, 2, 15, 4, 5, 0, tokyo),
+				Target:  &ayd.URL{Scheme: "dummy"},
+				Status:  ayd.StatusDegrade,
+				Message: "",
+				Latency: 1027890 * time.Microsecond,
 			},
 		},
 		{
-			String: "2021-01-02T15:04:05+09:00\tHEALTHY\t123.456",
-			Error:  "invalid record: unexpected column count",
+			String: `{"time":"2021-01-02T15:04:05+09:00", "status":"HEALTHY", "latency":123abc, "target":"ping:example.com", "message":"hello world"}`,
+			Error:  "invalid record: invalid character 'a' after object key:value pair",
 		},
 		{
-			String: "2021-01-02T15:04:05+09:00\tHEALTHY\t123abc\tping:example.com\thello world",
-			Error:  "invalid record:\n  latency: strconv.ParseFloat: parsing \"123abc\": invalid syntax",
+			String: `{"time":"2021/01/02 15:04:05", "status":"HEALTHY", "latency":123.456, "target":"ping:example.com", "message":"hello world"}`,
+			Error:  `invalid record: time: parsing time "2021/01/02 15:04:05" as "2006-01-02T15:04:05Z07:00": cannot parse "/01/02 15:04:05" as "-"`,
 		},
 		{
-			String: "2021/01/02 15:04:05\tHEALTHY\t123.456\tping:example.com\thello world",
-			Error:  "invalid record:\n  checked-at: parsing time \"2021/01/02 15:04:05\" as \"2006-01-02T15:04:05Z07:00\": cannot parse \"/01/02 15:04:05\" as \"-\"",
+			String: `{"time":"2021-01-02T15:04:05+09:00", "status":"HEALTHY", "latency":123.456, "target":"::invalid target::", "message":"hello world"}`,
+			Error:  `invalid record: target: parse "::invalid target::": missing protocol scheme`,
 		},
 		{
-			String: "2021-01-02T15:04:05+09:00\tHEALTHY\t123.456\t::invalid target::\thello world",
-			Error:  "invalid record:\n  target URL: parse \"::invalid target::\": missing protocol scheme",
+			String: `{"time":"2021-01-02T15:04:05+09:00", "status":"HEALTHY", "latency":123.456, "target":"://", "message":"hello world"}`,
+			Error:  `invalid record: target: parse "://": missing protocol scheme`,
 		},
 		{
-			String: "2021-01-02T15:04:05+somewhere\tHEALTHY\t123abc\tping:example.com\thello world",
-			Error:  "invalid record:\n  checked-at: parsing time \"2021-01-02T15:04:05+somewhere\" as \"2006-01-02T15:04:05Z07:00\": cannot parse \"+somewhere\" as \"Z07:00\"\n  latency: strconv.ParseFloat: parsing \"123abc\": invalid syntax",
+			String: `{"time":"2021-01-02T15:04:05+09:00", "status":"HEALTHY", "latency":123.456, "target":"/", "message":"hello world"}`,
+			Error:  `invalid record: target: parse "/": missing protocol scheme`,
+		},
+		{
+			String: `{"status":"HEALTHY", "latency":123.456, "target":"ping:example.com", "message":"hello world"}`,
+			Error:  `invalid record: time: missing required field`,
+		},
+		{
+			String: `{"time":123, "status":"HEALTHY", "latency":123.456, "target":"ping:example.com", "message":"hello world"}`,
+			Error:  `invalid record: time: should be a string`,
+		},
+		{
+			String: `{"time":"2021-01-02T15:04:05+09:00", "status":null, "latency":123.456, "target":"ping:example.com", "message":"hello world"}`,
+			Error:  `invalid record: status: should be a string`,
+		},
+		{
+			String: `{"time":"2021-01-02T15:04:05+09:00", "status":"HEALTHY", "latency":"hello", "target":"ping:example.com", "message":"hello world"}`,
+			Error:  `invalid record: latency: should be a number`,
+		},
+		{
+			String: `{"time":"2021-01-02T15:04:05+09:00", "status":"HEALTHY", "latency":123.456, "message":"hello world"}`,
+			Error:  `invalid record: target: missing required field`,
+		},
+		{
+			String: `{"time":"2021-01-02T15:04:05+09:00", "status":"HEALTHY", "latency":123.456, "target":1234, "message":"hello world"}`,
+			Error:  `invalid record: target: should be a string`,
+		},
+		{
+			String: `{"time":"2021-01-02T15:04:05+09:00", "status":"HEALTHY", "latency":123.456, "target":"ping:example.com"}`,
+			Record: ayd.Record{
+				Time:    time.Date(2021, 1, 2, 15, 4, 5, 0, tokyo),
+				Status:  ayd.StatusHealthy,
+				Latency: 123456 * time.Microsecond,
+				Target:  &ayd.URL{Scheme: "ping", Opaque: "example.com"},
+				Message: "",
+			},
+		},
+		{
+			String: `{"time":"2021-01-02T15:04:05+09:00", "status":"HEALTHY", "latency":123.456, "target":"ping:example.com", "message":123}`,
+			Error:  `invalid record: message: should be a string`,
+		},
+		{
+			String: `{"time":"2021-01-02T15:04:05+09:00", "status":"HEALTHY", "latency":123.456, "target":"ping:example.com", "message":"hello world", "hello":"world"}`,
+			Record: ayd.Record{
+				Time:    time.Date(2021, 1, 2, 15, 4, 5, 0, tokyo),
+				Status:  ayd.StatusHealthy,
+				Latency: 123456 * time.Microsecond,
+				Target:  &ayd.URL{Scheme: "ping", Opaque: "example.com"},
+				Message: "hello world",
+				Extra: map[string]interface{}{
+					"hello": "world",
+				},
+			},
 		},
 	}
 
@@ -131,8 +185,8 @@ func TestRecord(t *testing.T) {
 			continue
 		}
 
-		if !r.CheckedAt.Equal(tt.Record.CheckedAt) {
-			t.Errorf("unexpected parsed timestamp\nexpected: %#v\n but got: %#v", tt.Record.CheckedAt, r.CheckedAt)
+		if !r.Time.Equal(tt.Record.Time) {
+			t.Errorf("unexpected parsed timestamp\nexpected: %#v\n but got: %#v", tt.Record.Time, r.Time)
 		}
 
 		if tt.Record.Target.String() != r.Target.String() {
@@ -151,6 +205,10 @@ func TestRecord(t *testing.T) {
 			t.Errorf("unexpected parsed message\nexpected: %#v\n but got: %#v", tt.Record.Message, r.Message)
 		}
 
+		if diff := cmp.Diff(tt.Record.Extra, r.Extra); diff != "" {
+			t.Errorf("unexpected extra\n%s", diff)
+		}
+
 		if tt.Record.String() != tt.String {
 			t.Errorf("expected: %#v\n but got: %#v", tt.String, tt.Record.String())
 		}
@@ -159,11 +217,11 @@ func TestRecord(t *testing.T) {
 
 func TestRecord_redact(t *testing.T) {
 	record := ayd.Record{
-		CheckedAt: time.Date(2021, 1, 2, 15, 4, 5, 0, time.UTC),
-		Target:    &ayd.URL{Scheme: "http", Path: "/path/to/file", User: url.UserPassword("MyName", "HideMe")},
-		Status:    ayd.StatusHealthy,
-		Message:   "hello world",
-		Latency:   123456 * time.Microsecond,
+		Time:    time.Date(2021, 1, 2, 15, 4, 5, 0, time.UTC),
+		Target:  &ayd.URL{Scheme: "http", Path: "/path/to/file", User: url.UserPassword("MyName", "HideMe")},
+		Status:  ayd.StatusHealthy,
+		Message: "hello world",
+		Latency: 123456 * time.Microsecond,
 	}
 
 	str := record.String()
@@ -181,11 +239,11 @@ func TestRecord_redact(t *testing.T) {
 func TestRecord_json(t *testing.T) {
 	t.Run("marshal-and-unmarshal", func(t *testing.T) {
 		r1 := ayd.Record{
-			CheckedAt: time.Date(2021, 1, 2, 15, 4, 5, 0, time.UTC),
-			Status:    ayd.StatusHealthy,
-			Latency:   123456 * time.Microsecond,
-			Target:    &ayd.URL{Scheme: "dummy", Opaque: "healthy", Fragment: "hello-world"},
-			Message:   "this is test",
+			Time:    time.Date(2021, 1, 2, 15, 4, 5, 0, time.UTC),
+			Status:  ayd.StatusHealthy,
+			Latency: 123456 * time.Microsecond,
+			Target:  &ayd.URL{Scheme: "dummy", Opaque: "healthy", Fragment: "hello-world"},
+			Message: "this is test",
 		}
 
 		j, err := json.Marshal(r1)
@@ -205,16 +263,153 @@ func TestRecord_json(t *testing.T) {
 	})
 
 	t.Run("unmarshal", func(t *testing.T) {
-		source := `{"checked_at":"2021-01-02T15:04:05+09:00", "status":"HEALTHY", "latency":123.456, "target":"dummy:healthy#hello-world", "message":"this is test"}`
-		expect := "2021-01-02T15:04:05+09:00\tHEALTHY\t123.456\tdummy:healthy#hello-world\tthis is test"
+		source := `{"time":"2021-01-02T15:04:05Z", "status":"HEALTHY", "latency":123.456, "target":"dummy:healthy#hello-world", "message":"this is test", "extra":123, "hello":"world"}`
+		expect := ayd.Record{
+			Time:    time.Date(2021, 1, 2, 15, 4, 5, 0, time.UTC),
+			Status:  ayd.StatusHealthy,
+			Latency: 123456 * time.Microsecond,
+			Target:  &ayd.URL{Scheme: "dummy", Opaque: "healthy", Fragment: "hello-world"},
+			Message: "this is test",
+			Extra: map[string]interface{}{
+				"extra": 123.0,
+				"hello": "world",
+			},
+		}
 
 		var r ayd.Record
 		if err := json.Unmarshal([]byte(source), &r); err != nil {
 			t.Fatalf("failed to unmarshal: %s", err)
 		}
 
-		if r.String() != expect {
-			t.Fatalf("unexpected unmarshalled result\nexpected: %s\n but got: %s", expect, r)
+		if diff := cmp.Diff(r, expect); diff != "" {
+			t.Fatalf("unexpected unmarshalled result\n%s", diff)
 		}
 	})
+}
+
+func TestRecord_ReadableMessage(t *testing.T) {
+	tests := []struct {
+		Message string
+		Extra   map[string]interface{}
+		Output  string
+	}{
+		{
+			"",
+			map[string]interface{}{
+				"array":  []int{1, 2, 3},
+				"hello":  "world",
+				"multi":  "hello\nworld",
+				"num":    42,
+				"object": map[string]string{"key": "value"},
+			},
+			strings.Join([]string{
+				"---",
+				"array: [1,2,3]",
+				"hello: world",
+				"multi: |",
+				"  hello",
+				"  world",
+				"num: 42",
+				`object: {"key":"value"}`,
+			}, "\n"),
+		},
+		{
+			"hello\nworld",
+			map[string]interface{}{
+				"hello": "world",
+			},
+			strings.Join([]string{
+				"hello",
+				"world",
+				"---",
+				"hello: world",
+			}, "\n"),
+		},
+		{
+			"hello\nworld\n",
+			map[string]interface{}{
+				"hello": "world",
+			},
+			strings.Join([]string{
+				"hello",
+				"world",
+				"---",
+				"hello: world",
+			}, "\n"),
+		},
+		{
+			"hello world",
+			nil,
+			"hello world",
+		},
+		{
+			"",
+			nil,
+			"",
+		},
+	}
+
+	for i, tt := range tests {
+		t.Run(fmt.Sprint(i), func(t *testing.T) {
+			actual := ayd.Record{Message: tt.Message, Extra: tt.Extra}.ReadableMessage()
+			if diff := cmp.Diff(actual, tt.Output); diff != "" {
+				t.Errorf("unexpected output\n%s", diff)
+			}
+		})
+	}
+}
+
+func BenchmarkRecord_MarshalJSON(b *testing.B) {
+	record := ayd.Record{
+		Time:    time.Date(2021, 1, 2, 15, 4, 5, 0, time.UTC),
+		Status:  ayd.StatusHealthy,
+		Latency: 123456 * time.Microsecond,
+		Target:  &ayd.URL{Scheme: "dummy", Opaque: "healthy", Fragment: "hello-world"},
+		Message: "this is test",
+		Extra: map[string]interface{}{
+			"extra": 123.0,
+			"hello": "world",
+		},
+	}
+
+	enc, err := record.MarshalJSON()
+	if err != nil {
+		b.Fatalf("failed to marshal: %s", err)
+	}
+	b.SetBytes(int64(len(enc)))
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = record.MarshalJSON()
+	}
+}
+
+func BenchmarkRecord_UnmarshalJSON(b *testing.B) {
+	bytes, err := ayd.Record{
+		Time:    time.Date(2021, 1, 2, 15, 4, 5, 0, time.UTC),
+		Status:  ayd.StatusHealthy,
+		Latency: 123456 * time.Microsecond,
+		Target:  &ayd.URL{Scheme: "dummy", Opaque: "healthy", Fragment: "hello-world"},
+		Message: "this is test",
+		Extra: map[string]interface{}{
+			"extra": 123.0,
+			"hello": "world",
+		},
+	}.MarshalJSON()
+
+	if err != nil {
+		b.Fatalf("failed to marshal: %s", err)
+	}
+	b.SetBytes(int64(len(bytes)))
+
+	var record ayd.Record
+
+	if err = record.UnmarshalJSON(bytes); err != nil {
+		b.Fatalf("failed to unmarshal: %s", err)
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = record.UnmarshalJSON(bytes)
+	}
 }

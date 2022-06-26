@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	api "github.com/macrat/ayd/lib-ayd"
@@ -34,7 +35,7 @@ Options:
 
   -c, --csv     Convert to CSV. (default format)
   -j, --json    Convert to JSON.
-  -J, --jsonl   Convert to JSON Lines.
+  -l, --ltsv    Convert to LTSV.
 
   -h, --help    Show this help message and exit.
 `
@@ -46,7 +47,7 @@ func (c ConvCommand) Run(args []string) int {
 
 	toCsv := flags.BoolP("csv", "c", false, "Convert to CSV")
 	toJson := flags.BoolP("json", "j", false, "Convert to JSON")
-	toJsonl := flags.BoolP("jsonl", "J", false, "Convert to JSON Lines")
+	toLtsv := flags.BoolP("ltsv", "l", false, "Convert to LTSV")
 
 	help := flags.BoolP("help", "h", false, "Show this message and exit")
 
@@ -68,7 +69,7 @@ func (c ConvCommand) Run(args []string) int {
 	if *toJson {
 		count++
 	}
-	if *toJsonl {
+	if *toLtsv {
 		count++
 	}
 	if count > 1 {
@@ -110,8 +111,8 @@ func (c ConvCommand) Run(args []string) int {
 	switch {
 	case *toJson:
 		err = c.toJson(scanners, output)
-	case *toJsonl:
-		err = c.toJsonL(scanners, output)
+	case *toLtsv:
+		err = c.toLTSV(scanners, output)
 	default:
 		err = c.toCSV(scanners, output)
 	}
@@ -152,20 +153,6 @@ func (c ConvCommand) toJson(scanners []api.LogScanner, output io.Writer) error {
 	return nil
 }
 
-func (c ConvCommand) toJsonL(scanners []api.LogScanner, output io.Writer) error {
-	encoder := json.NewEncoder(output)
-
-	for _, s := range scanners {
-		for s.Scan() {
-			if err := encoder.Encode(s.Record()); err != nil {
-				return fmt.Errorf("failed to write log: %s", err)
-			}
-		}
-	}
-
-	return nil
-}
-
 func (c ConvCommand) toCSV(scanners []api.LogScanner, output io.Writer) error {
 	writer := csv.NewWriter(output)
 
@@ -173,11 +160,11 @@ func (c ConvCommand) toCSV(scanners []api.LogScanner, output io.Writer) error {
 		for s.Scan() {
 			r := s.Record()
 			err := writer.Write([]string{
-				r.CheckedAt.Format(time.RFC3339),
+				r.Time.Format(time.RFC3339),
 				r.Status.String(),
 				strconv.FormatFloat(float64(r.Latency.Microseconds())/1000, 'f', 3, 64),
 				r.Target.String(),
-				r.Message,
+				r.ReadableMessage(),
 			})
 			if err != nil {
 				return fmt.Errorf("failed to write log: %s", err)
@@ -186,6 +173,46 @@ func (c ConvCommand) toCSV(scanners []api.LogScanner, output io.Writer) error {
 	}
 
 	writer.Flush()
+
+	return nil
+}
+
+func (c ConvCommand) toLTSV(scanners []api.LogScanner, output io.Writer) error {
+	for _, s := range scanners {
+		for s.Scan() {
+			r := s.Record()
+			fmt.Fprintf(
+				output,
+				"time:%s\tstatus:%s\tlatency:%.3f\ttarget:%s",
+				r.Time.Format(time.RFC3339),
+				r.Status,
+				float64(r.Latency.Microseconds())/1000,
+				r.Target,
+			)
+
+			if r.Message != "" {
+				fmt.Fprintf(output, "\tmessage:%s", r.Message)
+			}
+
+			extra := r.ReadableExtra()
+
+			for _, e := range extra {
+				s := e.Value
+				if _, ok := r.Extra[e.Key].(string); ok {
+					// You should escape if the value is string. Otherwise, it's already escaped as a JSON value.
+					s = strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(e.Value, `\`, `\\`), "\t", `\t`), "\n", `\n`), "\r", `\r`)
+				}
+				fmt.Fprintf(
+					output,
+					"\t%s:%s",
+					e.Key,
+					s,
+				)
+			}
+
+			fmt.Fprintln(output)
+		}
+	}
 
 	return nil
 }

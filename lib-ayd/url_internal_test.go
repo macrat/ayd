@@ -11,6 +11,7 @@ func TestBarePathInOpaque(t *testing.T) {
 	}{
 		{"exec:///path/to/file", false},
 		{"exec:/path/to/file", true},
+		{"file:/a", true},
 		{"dummy:", false},
 		{"dummy:healthy", true},
 		{"http://example.com/path/to/file", false},

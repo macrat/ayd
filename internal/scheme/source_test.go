@@ -13,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/macrat/ayd/internal/scheme"
 	"github.com/macrat/ayd/internal/testutil"
 	api "github.com/macrat/ayd/lib-ayd"
@@ -284,11 +285,11 @@ func TestSourceScheme_Alert(t *testing.T) {
 	r := &testutil.DummyReporter{}
 
 	a.Alert(ctx, r, api.Record{
-		CheckedAt: time.Date(2021, 1, 2, 15, 4, 5, 0, time.UTC),
-		Status:    api.StatusFailure,
-		Latency:   123456 * time.Microsecond,
-		Target:    &api.URL{Scheme: "dummy", Opaque: "hello-world"},
-		Message:   "test-message",
+		Time:    time.Date(2021, 1, 2, 15, 4, 5, 0, time.UTC),
+		Status:  api.StatusFailure,
+		Latency: 123456 * time.Microsecond,
+		Target:  &api.URL{Scheme: "dummy", Opaque: "hello-world"},
+		Message: "test-message",
 	})
 
 	if len(r.Records) != 3 {
@@ -303,9 +304,20 @@ func TestSourceScheme_Alert(t *testing.T) {
 		r.Records[1], r.Records[2] = r.Records[2], r.Records[1]
 	}
 
-	expected := `"foo:alert-test 2021-01-02T15:04:05Z FAILURE 123.456 dummy:hello-world test-message"`
+	expected := `"foo:alert-test,2021-01-02T15:04:05Z,FAILURE,123.456,dummy:hello-world,test-message"`
 	if r.Records[1].Message != expected {
 		t.Errorf("unexpected message for foo:alert-test\n--- expected --\n%s\n--- actual ---\n%s", expected, r.Records[1].Message)
+	}
+
+	if runtime.GOOS == "windows" {
+		// Windows can not handle double quote in argument, so test on Windows does not use extra values :(
+		if r.Records[1].Extra != nil {
+			t.Errorf("unexpected extra values: %#v", r.Records[1].Extra)
+		}
+	} else {
+		if diff := cmp.Diff(r.Records[1].Extra, map[string]interface{}{"extras": map[string]interface{}{}}); diff != "" {
+			t.Errorf("unexpected extra values\n%s", diff)
+		}
 	}
 }
 

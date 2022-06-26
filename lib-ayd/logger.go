@@ -42,14 +42,14 @@ func (l Logger) Print(r Record) error {
 	}
 
 	if l.useTimer {
-		r.CheckedAt = l.stime
+		r.Time = l.stime
 		r.Latency = time.Since(l.stime)
 	} else {
-		if r.CheckedAt.IsZero() {
+		if r.Time.IsZero() {
 			if l.stime.IsZero() {
-				r.CheckedAt = time.Now()
+				r.Time = time.Now()
 			} else {
-				r.CheckedAt = l.stime
+				r.Time = l.stime
 			}
 		}
 
@@ -68,50 +68,55 @@ func (l Logger) Print(r Record) error {
 // Healthy prints Healthy status record.
 //
 // Seealso StatusHealthy.
-func (l Logger) Healthy(message string) error {
+func (l Logger) Healthy(message string, extra map[string]interface{}) error {
 	return l.Print(Record{
 		Status:  StatusHealthy,
 		Message: message,
+		Extra:   extra,
 	})
 }
 
 // Aborted prints Aborted status record.
 //
 // Seealso StatusAborted.
-func (l Logger) Aborted(message string) error {
+func (l Logger) Aborted(message string, extra map[string]interface{}) error {
 	return l.Print(Record{
 		Status:  StatusAborted,
 		Message: message,
+		Extra:   extra,
 	})
 }
 
 // Unknown prints Unknown status record.
 //
 // Seealso StatusUnknown.
-func (l Logger) Unknown(message string) error {
+func (l Logger) Unknown(message string, extra map[string]interface{}) error {
 	return l.Print(Record{
 		Status:  StatusUnknown,
 		Message: message,
+		Extra:   extra,
 	})
 }
 
 // Degrade prints Degrade status record.
 //
 // Seealso StatusDegrade.
-func (l Logger) Degrade(message string) error {
+func (l Logger) Degrade(message string, extra map[string]interface{}) error {
 	return l.Print(Record{
 		Status:  StatusDegrade,
 		Message: message,
+		Extra:   extra,
 	})
 }
 
 // Failure prints Failure status record.
 //
 // Seealso StatusFailure.
-func (l Logger) Failure(message string) error {
+func (l Logger) Failure(message string, extra map[string]interface{}) error {
 	return l.Print(Record{
 		Status:  StatusFailure,
 		Message: message,
+		Extra:   extra,
 	})
 }
 

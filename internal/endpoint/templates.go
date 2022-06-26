@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dustin/go-humanize"
 	api "github.com/macrat/ayd/lib-ayd"
 )
 
@@ -62,6 +63,21 @@ var (
 			}
 			return make([]struct{}, length-len(rs))
 		},
+		"time_range": func(rs []api.Record) timeRange {
+			switch len(rs) {
+			case 0:
+				return timeRange{}
+			case 1:
+				return timeRange{
+					Newest: rs[0].Time,
+				}
+			default:
+				return timeRange{
+					Oldest: rs[0].Time,
+					Newest: rs[len(rs)-1].Time,
+				}
+			}
+		},
 		"is_unknown": func(s api.Status) bool {
 			return s == api.StatusUnknown
 		},
@@ -89,6 +105,9 @@ var (
 		},
 		"time2rfc822": func(t time.Time) string {
 			return t.Format(time.RFC822)
+		},
+		"time2humanize": func(t time.Time) string {
+			return humanize.Time(t)
 		},
 		"latency2float": func(d time.Duration) float64 {
 			return float64(d.Microseconds()) / 1000.0
@@ -138,6 +157,7 @@ var (
 
 type statusSummary struct {
 	Status     api.Status
+	Count      int
 	Percent    float32
 	Cumulative float32
 	IsLast     bool
@@ -169,7 +189,7 @@ func (b *statusSummaryBuilder) Build() []statusSummary {
 	result := make([]statusSummary, len(b.Count))
 	i := 0
 	for s, c := range b.Count {
-		result[i] = statusSummary{s, float32(c) * 100 / float32(b.Total), 0, false}
+		result[i] = statusSummary{s, c, float32(c) * 100 / float32(b.Total), 0, false}
 		i++
 	}
 	sort.Slice(result, func(i, j int) bool {
@@ -189,4 +209,9 @@ func (b *statusSummaryBuilder) Build() []statusSummary {
 		result[len(result)-1].IsLast = true
 	}
 	return result
+}
+
+type timeRange struct {
+	Oldest time.Time
+	Newest time.Time
 }

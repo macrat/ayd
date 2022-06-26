@@ -25,7 +25,7 @@ func newInMemoryScanner(s *Store, since, until time.Time) *inMemoryScanner {
 	r := &inMemoryScanner{index: -1}
 	for _, xs := range s.ProbeHistory() {
 		for _, x := range xs.Records {
-			if !x.CheckedAt.Before(since) && x.CheckedAt.Before(until) {
+			if !x.Time.Before(since) && x.Time.Before(until) {
 				r.records = append(r.records, x)
 			}
 		}
@@ -39,8 +39,8 @@ func (r inMemoryScanner) Len() int {
 }
 
 func (r inMemoryScanner) Less(i, j int) bool {
-	if !r.records[i].CheckedAt.Equal(r.records[j].CheckedAt) {
-		return r.records[i].CheckedAt.Before(r.records[j].CheckedAt)
+	if !r.records[i].Time.Equal(r.records[j].Time) {
+		return r.records[i].Time.Before(r.records[j].Time)
 	}
 	return r.records[i].Target.String() < r.records[j].Target.String()
 }

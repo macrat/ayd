@@ -5,7 +5,7 @@ import (
 )
 
 func TestIncidentsHTMLEndpoint(t *testing.T) {
-	AssertEndpoint(t, "/incidents.html", "./testdata/incidents.html", `Reported by Ayd \(.+\)`)
+	AssertEndpoint(t, "/incidents.html", "./testdata/incidents.html", `Reported by Ayd \(.+\)|[0-9] years? ago`)
 }
 
 func TestIncidentsRSSEndpoint(t *testing.T) {

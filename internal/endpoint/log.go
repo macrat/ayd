@@ -85,6 +85,12 @@ func (k strKeyword) Match(status string, latency time.Duration, target, message 
 	return status == q || strings.Contains(target, q) || strings.Contains(message, q)
 }
 
+type strNotKeyword string
+
+func (k strNotKeyword) Match(status string, latency time.Duration, target, message string) bool {
+	return !strKeyword(k).Match(status, latency, target, message)
+}
+
 type durKeyword struct {
 	operator string
 	duration time.Duration
@@ -130,6 +136,8 @@ func ParseQuery(query string) Query {
 		if q != "" {
 			if dur, ok := parseDurKeyword(q); ok {
 				qs = append(qs, dur)
+			} else if len(q) > 2 && q[0] == '-' {
+				qs = append(qs, strNotKeyword(q[1:]))
 			} else {
 				qs = append(qs, strKeyword(q))
 			}
@@ -141,7 +149,7 @@ func ParseQuery(query string) Query {
 func (qs Query) Match(r api.Record) bool {
 	status := strings.ToLower(r.Status.String())
 	target := strings.ToLower(r.Target.String())
-	message := strings.ToLower(r.Message)
+	message := strings.ToLower(r.ReadableMessage())
 
 	for _, q := range qs {
 		if !q.Match(status, r.Latency, target, message) {
@@ -194,32 +202,6 @@ func (f LogFilter) Scan() bool {
 
 func (f LogFilter) Record() api.Record {
 	return f.Scanner.Record()
-}
-
-func LogTSVEndpoint(s Store) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "text/tab-separated-values; charset=UTF-8")
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "GET")
-
-		scanner, code, err := newLogScanner(s, "log.tsv", r)
-		if err != nil {
-			w.WriteHeader(code)
-			w.Write([]byte(err.Error() + "\n"))
-			return
-		}
-		defer scanner.Close()
-
-		scanner = setFilter(scanner, r)
-
-		for scanner.Scan() {
-			_, err := fmt.Fprintln(w, scanner.Record().String())
-			if err != nil {
-				handleError(s, "log.tsv", err)
-				break
-			}
-		}
-	}
 }
 
 func LogJsonEndpoint(s Store) http.HandlerFunc {
@@ -282,11 +264,11 @@ func LogCSVEndpoint(s Store) http.HandlerFunc {
 			r := scanner.Record()
 
 			c.Write([]string{
-				r.CheckedAt.Format(time.RFC3339),
+				r.Time.Format(time.RFC3339),
 				r.Status.String(),
 				strconv.FormatFloat(float64(r.Latency.Microseconds())/1000, 'f', 3, 64),
 				r.Target.String(),
-				r.Message,
+				r.ReadableMessage(),
 			})
 		}
 

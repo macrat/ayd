@@ -38,11 +38,11 @@ func TestProbeHistory(t *testing.T) {
 		Target: &ayd.URL{Scheme: "dummy", Opaque: "healthy", Fragment: "hello-world"},
 		Status: ayd.StatusHealthy,
 		Records: []ayd.Record{{
-			CheckedAt: time.Date(2021, 1, 2, 15, 4, 5, 0, time.UTC),
-			Status:    ayd.StatusHealthy,
-			Latency:   123456 * time.Microsecond,
-			Target:    &ayd.URL{Scheme: "dummy", Opaque: "healthy", Fragment: "hello-world"},
-			Message:   "this is test",
+			Time:    time.Date(2021, 1, 2, 15, 4, 5, 0, time.UTC),
+			Status:  ayd.StatusHealthy,
+			Latency: 123456 * time.Microsecond,
+			Target:  &ayd.URL{Scheme: "dummy", Opaque: "healthy", Fragment: "hello-world"},
+			Message: "this is test",
 		}},
 		Updated: time.Date(2001, 1, 2, 15, 4, 5, 0, time.UTC),
 	}
@@ -65,7 +65,7 @@ func TestProbeHistory(t *testing.T) {
 	})
 
 	t.Run("unmarshal", func(t *testing.T) {
-		source := `{"target":"dummy:healthy#hello-world", "status":"HEALTHY", "records":[{"checked_at":"2021-01-02T15:04:05Z", "status":"HEALTHY", "latency":123.456, "target":"dummy:healthy#hello-world", "message":"this is test"}], "updated":"2001-01-02T15:04:05Z"}`
+		source := `{"target":"dummy:healthy#hello-world", "status":"HEALTHY", "records":[{"time":"2021-01-02T15:04:05Z", "status":"HEALTHY", "latency":123.456, "target":"dummy:healthy#hello-world", "message":"this is test"}], "updated":"2001-01-02T15:04:05Z"}`
 
 		var ph2 ayd.ProbeHistory
 		if err := json.Unmarshal([]byte(source), &ph2); err != nil {

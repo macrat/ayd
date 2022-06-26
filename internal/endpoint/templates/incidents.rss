@@ -10,14 +10,14 @@
 {{ range .Incidents }}
         <item>
             <guid isPermaLink="false">TODO</guid>
-            <pubDate>{{ .CausedAt | time2rfc822 }}</pubDate>
+            <pubDate>{{ .StartsAt | time2rfc822 }}</pubDate>
             <title>[{{ .Status }}] {{ .Target }}</title>
-            <category domain="status">{{ if .ResolvedAt.IsZero }}ongoing{{ else }}{{ .ResolvedAt | time2str }}{{ end }}</category>
+            <category domain="status">{{ if .EndsAt.IsZero }}ongoing{{ else }}{{ .EndsAt | time2str }}{{ end }}</category>
             <category domain="kind">{{ .Status | to_lower }}</category>
             <link>{{ .Target }}</link>
             <description><![CDATA[<b>target:</b> {{ .Target }}<br />
 <b>status:</b> {{ .Status }}<br />
-<b>period:</b> {{ .CausedAt | time2str }} - {{ if .ResolvedAt.IsZero }}ongoing{{ else }}{{ .ResolvedAt | time2str }}{{ end }}{{ if .Message }}<br />
+<b>period:</b> {{ .StartsAt | time2str }} - {{ if .EndsAt.IsZero }}ongoing{{ else }}{{ .EndsAt | time2str }}{{ end }}{{ if .Message }}<br />
 <br />
 <pre>{{ .Message }}</pre>{{ end }}]]></description>
         </item>{{ end }}

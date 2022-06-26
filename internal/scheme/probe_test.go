@@ -104,6 +104,13 @@ func TestTargetURLNormalize(t *testing.T) {
 		{"exec:", api.URL{}, scheme.ErrMissingCommand},
 		{"exec://", api.URL{}, scheme.ErrMissingCommand},
 
+		{"file:testdata/test.bat", api.URL{Scheme: "file", Opaque: "testdata/test.bat"}, nil},
+		{"file:./testdata/test.bat", api.URL{Scheme: "file", Opaque: "./testdata/test.bat"}, nil},
+		{"file:" + cwd + "/testdata/test", api.URL{Scheme: "file", Opaque: cwd + "/testdata/test"}, nil},
+		{"file:///path/to/file", api.URL{Scheme: "file", Opaque: "/path/to/file"}, nil},
+		{"file-abc:testdata/test?foo=bar#baz", api.URL{Scheme: "file", Opaque: "testdata/test", Fragment: "baz"}, nil},
+		{"file:", api.URL{Scheme: "file", Opaque: "/"}, nil},
+
 		{"source:./testdata/healthy-list.txt", api.URL{Scheme: "source", Opaque: "testdata/healthy-list.txt"}, nil},
 		{"source:testdata/healthy-list.txt#hello", api.URL{Scheme: "source", Opaque: "testdata/healthy-list.txt", Fragment: "hello"}, nil},
 		{"source-abc:./testdata/healthy-list.txt", api.URL{}, scheme.ErrUnsupportedScheme},
@@ -232,8 +239,8 @@ func AssertProbe(t *testing.T, tests []ProbeTest, timeout int) {
 			if r.Status != tt.Status {
 				t.Errorf("expected status is %s but got %s", tt.Status, r.Status)
 			}
-			if ok, _ := regexp.MatchString("^"+tt.MessagePattern+"$", r.Message); !ok {
-				t.Errorf("expected message is match to %#v but got %#v", tt.MessagePattern, r.Message)
+			if ok, _ := regexp.MatchString("^"+tt.MessagePattern+"$", r.ReadableMessage()); !ok {
+				t.Errorf("unexpected message\n----- expected pattern -----\n%s\n----- actual -----\n%s", tt.MessagePattern, r.ReadableMessage())
 			}
 		})
 	}

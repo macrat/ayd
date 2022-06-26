@@ -57,9 +57,9 @@ func TestProbeHistoryMap(t *testing.T) {
 
 	for i := 1; i <= 100; i++ {
 		m.Append(&api.URL{Scheme: "dummy"}, api.Record{
-			CheckedAt: time.Now().Add(time.Duration(i) * time.Second),
-			Target:    &api.URL{Scheme: "dummy", Fragment: "append-test"},
-			Message:   fmt.Sprint(i),
+			Time:    time.Now().Add(time.Duration(i) * time.Second),
+			Target:  &api.URL{Scheme: "dummy", Fragment: "append-test"},
+			Message: fmt.Sprint(i),
 		})
 	}
 
@@ -73,9 +73,9 @@ func TestProbeHistoryMap(t *testing.T) {
 
 	for i := 1; i <= 10; i++ {
 		m.Append(&api.URL{Scheme: "dummy"}, api.Record{
-			CheckedAt: time.Now().Add(time.Duration(i) * time.Second),
-			Target:    &api.URL{Scheme: "dummy", Fragment: "append-test-another"},
-			Message:   fmt.Sprint(i),
+			Time:    time.Now().Add(time.Duration(i) * time.Second),
+			Target:  &api.URL{Scheme: "dummy", Fragment: "append-test-another"},
+			Message: fmt.Sprint(i),
 		})
 	}
 
@@ -89,9 +89,9 @@ func TestProbeHistoryMap(t *testing.T) {
 
 	for i := 1; i <= 10; i++ {
 		m.Append(&api.URL{Scheme: "dummy"}, api.Record{
-			CheckedAt: time.Now().Add(time.Duration(-i) * time.Second),
-			Target:    &api.URL{Scheme: "dummy", Fragment: "append-test-reverse"},
-			Message:   fmt.Sprint(i),
+			Time:    time.Now().Add(time.Duration(-i) * time.Second),
+			Target:  &api.URL{Scheme: "dummy", Fragment: "append-test-reverse"},
+			Message: fmt.Sprint(i),
 		})
 	}
 
@@ -105,14 +105,14 @@ func TestProbeHistoryMap(t *testing.T) {
 
 	timestamp := time.Now()
 	m.Append(&api.URL{Scheme: "dummy"}, api.Record{
-		CheckedAt: timestamp,
-		Target:    &api.URL{Scheme: "dummy", Fragment: "append-test-same-time"},
-		Message:   "first",
+		Time:    timestamp,
+		Target:  &api.URL{Scheme: "dummy", Fragment: "append-test-same-time"},
+		Message: "first",
 	})
 	m.Append(&api.URL{Scheme: "dummy"}, api.Record{
-		CheckedAt: timestamp,
-		Target:    &api.URL{Scheme: "dummy", Fragment: "append-test-same-time"},
-		Message:   "second",
+		Time:    timestamp,
+		Target:  &api.URL{Scheme: "dummy", Fragment: "append-test-same-time"},
+		Message: "second",
 	})
 
 	if hs, ok := m["dummy:#append-test-same-time"]; !ok {

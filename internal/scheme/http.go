@@ -2,6 +2,7 @@ package scheme
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net"
@@ -95,11 +96,19 @@ func (s HTTPScheme) Target() *api.URL {
 func (s HTTPScheme) responseToRecord(resp *http.Response, err error) api.Record {
 	status := api.StatusFailure
 	message := ""
+	var extra map[string]interface{}
 
 	if err == nil {
-		message = fmt.Sprintf("proto=%s length=%d status=%s", resp.Proto, resp.ContentLength, strings.ReplaceAll(resp.Status, " ", "_"))
+		message = resp.Status
 		if 200 <= resp.StatusCode && resp.StatusCode <= 299 {
 			status = api.StatusHealthy
+		}
+		extra = map[string]interface{}{
+			"proto":       resp.Proto,
+			"status_code": resp.StatusCode,
+		}
+		if resp.ContentLength >= 0 {
+			extra["length"] = resp.ContentLength
 		}
 	} else {
 		message = err.Error()
@@ -119,6 +128,7 @@ func (s HTTPScheme) responseToRecord(resp *http.Response, err error) api.Record 
 		Target:  s.target,
 		Status:  status,
 		Message: message,
+		Extra:   extra,
 	}
 }
 
@@ -128,7 +138,7 @@ func (s HTTPScheme) run(ctx context.Context, r Reporter, req *http.Request) {
 	d := time.Since(st)
 
 	rec := s.responseToRecord(resp, err)
-	rec.CheckedAt = st
+	rec.Time = st
 	rec.Latency = d
 
 	r.Report(s.target, timeoutOr(ctx, rec))
@@ -145,11 +155,18 @@ func (s HTTPScheme) Probe(ctx context.Context, r Reporter) {
 
 func (s HTTPScheme) Alert(ctx context.Context, r Reporter, lastRecord api.Record) {
 	qs := s.target.ToURL().Query()
-	qs.Set("ayd_checked_at", lastRecord.CheckedAt.Format(time.RFC3339))
+	qs.Set("ayd_time", lastRecord.Time.Format(time.RFC3339))
 	qs.Set("ayd_status", lastRecord.Status.String())
 	qs.Set("ayd_latency", strconv.FormatFloat(float64(lastRecord.Latency.Microseconds())/1000.0, 'f', -1, 64))
 	qs.Set("ayd_target", lastRecord.Target.String())
 	qs.Set("ayd_message", lastRecord.Message)
+	qs.Set("ayd_extra", "{}")
+
+	if lastRecord.Extra != nil {
+		if bs, err := json.Marshal(lastRecord.Extra); err == nil {
+			qs.Set("ayd_extra", string(bs))
+		}
+	}
 
 	var u url.URL = *s.target.ToURL()
 	u.RawQuery = qs.Encode()

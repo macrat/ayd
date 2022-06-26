@@ -78,16 +78,16 @@ func TestStore_errorLogging(t *testing.T) {
 	defer s.Close()
 
 	s.Report(&api.URL{Scheme: "dummy"}, api.Record{
-		CheckedAt: time.Date(2001, 2, 3, 16, 5, 6, 0, time.UTC),
-		Status:    api.StatusHealthy,
-		Latency:   42 * time.Millisecond,
-		Target:    &api.URL{Scheme: "dummy", Fragment: "logging-test"},
-		Message:   "hello world",
+		Time:    time.Date(2001, 2, 3, 16, 5, 6, 0, time.UTC),
+		Status:  api.StatusHealthy,
+		Latency: 42 * time.Millisecond,
+		Target:  &api.URL{Scheme: "dummy", Fragment: "logging-test"},
+		Message: "hello world",
 	})
 
 	time.Sleep(10 * time.Millisecond)
 
-	if buf.Line(0) != "2001-02-03T16:05:06Z\tHEALTHY\t42.000\tdummy:#logging-test\thello world" {
+	if buf.Line(0) != `{"time":"2001-02-03T16:05:06Z", "status":"HEALTHY", "latency":42.000, "target":"dummy:#logging-test", "message":"hello world"}` {
 		t.Errorf("unexpected log (line 0):\n%s", buf)
 	}
 
@@ -98,20 +98,20 @@ func TestStore_errorLogging(t *testing.T) {
 	os.Chmod(f.Name(), 0000)
 
 	s.Report(&api.URL{Scheme: "dummy"}, api.Record{
-		CheckedAt: time.Date(2001, 2, 3, 16, 5, 7, 0, time.UTC),
-		Status:    api.StatusHealthy,
-		Latency:   42 * time.Millisecond,
-		Target:    &api.URL{Scheme: "dummy", Fragment: "logging-test"},
-		Message:   "foo bar",
+		Time:    time.Date(2001, 2, 3, 16, 5, 7, 0, time.UTC),
+		Status:  api.StatusHealthy,
+		Latency: 42 * time.Millisecond,
+		Target:  &api.URL{Scheme: "dummy", Fragment: "logging-test"},
+		Message: "foo bar",
 	})
 
 	time.Sleep(10 * time.Millisecond)
 
-	if buf.Line(-2) != "2001-02-03T16:05:07Z\tHEALTHY\t42.000\tdummy:#logging-test\tfoo bar" {
+	if buf.Line(-2) != `{"time":"2001-02-03T16:05:07Z", "status":"HEALTHY", "latency":42.000, "target":"dummy:#logging-test", "message":"foo bar"}` {
 		t.Errorf("unexpected log (line -2):\n%s", buf)
 	}
 
-	if ok, err := regexp.MatchString("^[-+:TZ0-9]+\tFAILURE\t0.000\tayd:log\t[^\t]+$", buf.Line(-1)); err != nil {
+	if ok, err := regexp.MatchString(`^{"time":"[-+:TZ0-9]+", "status":"FAILURE", "latency":0.000, "target":"ayd:log", "message":"[^"]+"}$`, buf.Line(-1)); err != nil {
 		t.Errorf("failed to compare log (line -1): %s", err)
 	} else if !ok {
 		t.Errorf("unexpected log:\n%s", buf)
@@ -142,32 +142,32 @@ func TestStore_Restore(t *testing.T) {
 
 	records := []api.Record{
 		{
-			CheckedAt: time.Now().Add(-30 * time.Minute),
-			Target:    &api.URL{Scheme: "ping", Opaque: "restore-test"},
-			Status:    api.StatusUnknown,
-			Message:   "hello world",
-			Latency:   1 * time.Second,
+			Time:    time.Now().Add(-30 * time.Minute),
+			Target:  &api.URL{Scheme: "ping", Opaque: "restore-test"},
+			Status:  api.StatusUnknown,
+			Message: "hello world",
+			Latency: 1 * time.Second,
 		},
 		{
-			CheckedAt: time.Now().Add(-20 * time.Minute),
-			Target:    &api.URL{Scheme: "exec", Opaque: "/usr/local/bin/test.sh"},
-			Status:    api.StatusHealthy,
-			Message:   "foobar",
-			Latency:   123 * time.Millisecond,
+			Time:    time.Now().Add(-20 * time.Minute),
+			Target:  &api.URL{Scheme: "exec", Opaque: "/usr/local/bin/test.sh"},
+			Status:  api.StatusHealthy,
+			Message: "foobar",
+			Latency: 123 * time.Millisecond,
 		},
 		{
-			CheckedAt: time.Now().Add(-10 * time.Minute),
-			Target:    &api.URL{Scheme: "http", Host: "test.local", Path: "/abc/def"},
-			Status:    api.StatusFailure,
-			Message:   "hoge",
-			Latency:   123 * time.Microsecond,
+			Time:    time.Now().Add(-10 * time.Minute),
+			Target:  &api.URL{Scheme: "http", Host: "test.local", Path: "/abc/def"},
+			Status:  api.StatusFailure,
+			Message: "hoge",
+			Latency: 123 * time.Microsecond,
 		},
 		{
-			CheckedAt: time.Now(),
-			Target:    &api.URL{Scheme: "http", Host: "test.local", Path: "/abc/def"},
-			Status:    api.StatusHealthy,
-			Message:   "hoge",
-			Latency:   123 * time.Microsecond,
+			Time:    time.Now(),
+			Target:  &api.URL{Scheme: "http", Host: "test.local", Path: "/abc/def"},
+			Status:  api.StatusHealthy,
+			Message: "hoge",
+			Latency: 123 * time.Microsecond,
 		},
 	}
 
@@ -230,7 +230,7 @@ func TestStore_Restore(t *testing.T) {
 		for j := range ph1.Records {
 			x := ph1.Records[j]
 			y := ph2.Records[j]
-			same := (x.CheckedAt == y.CheckedAt &&
+			same := (x.Time == y.Time &&
 				x.Target.String() != y.Target.String() &&
 				x.Status == y.Status &&
 				x.Message == y.Message &&
@@ -326,8 +326,8 @@ func TestStore_Restore_limitBorder(t *testing.T) {
 	defer f.Close()
 
 	rawRecord := append(
-		[]byte("2001-02-03T01:02:03Z\tHEALTHY\t0.123\tdummy:healthy\tshould be ignore because this is on the border\n"),
-		[]byte("2001-02-03T02:03:04Z\tHEALTHY\t0.123\tdummy:healthy\tfirst record\n")...,
+		[]byte(`{"time":"2001-02-03T01:02:03Z", "status":"HEALTHY", "latency":0.123, "target":"dummy:healthy", "message":"should be ignore because this is on the border\n"}`+"\n"),
+		[]byte(`{"time":"2001-02-03T02:03:04Z", "status":"HEALTHY", "latency":0.123, "target":"dummy:healthy", "message":"first record"}`+"\n")...,
 	)
 	f.Write(rawRecord)
 
@@ -465,10 +465,10 @@ func TestStore_incident(t *testing.T) {
 		offset += 1 * time.Second
 
 		s.Report(&api.URL{Scheme: "dummy"}, api.Record{
-			CheckedAt: time.Now().Add(offset),
-			Target:    &api.URL{Scheme: "dummy", User: url.UserPassword("test", password), Path: path},
-			Message:   message,
-			Status:    status,
+			Time:    time.Now().Add(offset),
+			Target:  &api.URL{Scheme: "dummy", User: url.UserPassword("test", password), Path: path},
+			Message: message,
+			Status:  status,
 		})
 	}
 
@@ -616,7 +616,7 @@ func TestStore_ReportInternalError(t *testing.T) {
 
 	time.Sleep(10 * time.Millisecond) // wait for close
 
-	if ok, err := regexp.MatchString("^[-+:ZT0-9]+\tFAILURE\t[.0-9]+\tayd:test\thello world\n$", buf.String()); err != nil {
+	if ok, err := regexp.MatchString(`^{"time":"[-+:ZT0-9]+", "status":"FAILURE", "latency":[.0-9]+, "target":"ayd:test", "message":"hello world"}`+"\n$", buf.String()); err != nil {
 		t.Fatalf("failed to match log: %s", err)
 	} else if !ok {
 		t.Errorf("unexpected error:\n%s", buf.String())
@@ -650,9 +650,9 @@ func TestStore_MakeReport(t *testing.T) {
 		timestamp = timestamp.Add(time.Second)
 
 		s.Report(&api.URL{Scheme: "dummy"}, api.Record{
-			CheckedAt: timestamp,
-			Status:    status,
-			Target:    &api.URL{Scheme: "dummy", Fragment: fragment},
+			Time:   timestamp,
+			Status: status,
+			Target: &api.URL{Scheme: "dummy", Fragment: fragment},
 		})
 	}
 
@@ -683,10 +683,10 @@ func BenchmarkStore_Append(b *testing.B) {
 			source := &api.URL{Scheme: "dummy"}
 
 			record := api.Record{
-				CheckedAt: time.Now(),
-				Target:    &api.URL{Scheme: "dummy", Fragment: "benchmark-append"},
-				Status:    status,
-				Message:   "hello world",
+				Time:    time.Now(),
+				Target:  &api.URL{Scheme: "dummy", Fragment: "benchmark-append"},
+				Status:  status,
+				Message: "hello world",
 			}
 
 			b.ResetTimer()

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	_ "embed"
 	"errors"
+	"fmt"
 	"io"
 	"io/fs"
 	"runtime"
@@ -33,7 +34,10 @@ func (i FTPFileInfo) Mode() fs.FileMode {
 }
 
 func (i FTPFileInfo) ModTime() time.Time {
-	return time.Now()
+	// Year part is not work correctly because of the library's bug.
+	// The server sets year part as current year, and drops seconds part.
+	// But it still enough for the test.
+	return time.Date(time.Now().Year(), 1, 2, 15, 4, 0, 0, time.UTC)
 }
 
 func (i FTPFileInfo) IsDir() bool {
@@ -169,16 +173,19 @@ func TestFTPProbe(t *testing.T) {
 	t.Parallel()
 	StartFTPServer(t, 21021)
 
-	AssertProbe(t, []ProbeTest{
-		{"ftp://localhost:21021/", api.StatusHealthy, `type=directory files=1`, ""},
-		{"ftp://hoge:fuga@localhost:21021/", api.StatusHealthy, `type=directory files=1`, ""},
-		{"ftp://foo:bar@localhost:21021/", api.StatusFailure, `530 Incorrect password, not logged in`, ""},
-		{"ftp://localhost:21021/path/to", api.StatusHealthy, `type=directory files=2`, ""},
-		{"ftp://localhost:21021/path/to/file.txt", api.StatusHealthy, `type=file size=123`, ""},
-		{"ftp://localhost:21021/no/such/file.txt", api.StatusFailure, `550 no such file`, ""},
-		{"ftp://localhost:21021/slow-file", api.StatusFailure, `probe timed out`, ""},
+	// See also the comment of FTPFileInfo.ModTime.
+	mtime := fmt.Sprintf("%d-01-02T15:04:00Z", time.Now().Year())
 
-		{"ftps://localhost:21021/", api.StatusFailure, `550 Action not taken`, ""},
+	AssertProbe(t, []ProbeTest{
+		{"ftp://localhost:21021/", api.StatusHealthy, "directory exists\n---\nfile_count: 1\nmtime: " + mtime + "\ntype: directory", ""},
+		{"ftp://hoge:fuga@localhost:21021/", api.StatusHealthy, "directory exists\n---\nfile_count: 1\nmtime: " + mtime + "\ntype: directory", ""},
+		{"ftp://foo:bar@localhost:21021/", api.StatusFailure, "530 Incorrect password, not logged in", ""},
+		{"ftp://localhost:21021/path/to", api.StatusHealthy, "directory exists\n---\nfile_count: 2\nmtime: " + mtime + "\ntype: directory", ""},
+		{"ftp://localhost:21021/path/to/file.txt", api.StatusHealthy, "file exists\n---\nfile_size: 123\nmtime: " + mtime + "\ntype: file", ""},
+		{"ftp://localhost:21021/no/such/file.txt", api.StatusFailure, "550 no such file", ""},
+		{"ftp://localhost:21021/slow-file", api.StatusFailure, "probe timed out", ""},
+
+		{"ftps://localhost:21021/", api.StatusFailure, "550 Action not taken", ""},
 
 		{"ftp:///without-host", api.StatusUnknown, ``, "missing target host"},
 		{"ftp://hoge@localhost", api.StatusUnknown, ``, "password is required if set username"},

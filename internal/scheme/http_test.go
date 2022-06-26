@@ -20,19 +20,19 @@ func TestHTTPScheme_Probe(t *testing.T) {
 	defer server.Close()
 
 	AssertProbe(t, []ProbeTest{
-		{server.URL + "/ok", api.StatusHealthy, `proto=HTTP/1\.1 length=2 status=200_OK`, ""},
-		{server.URL + "/redirect/ok", api.StatusHealthy, `proto=HTTP/1\.1 length=2 status=200_OK`, ""},
-		{server.URL + "/error", api.StatusFailure, `proto=HTTP/1\.1 length=5 status=500_Internal_Server_Error`, ""},
-		{server.URL + "/redirect/error", api.StatusFailure, `proto=HTTP/1\.1 length=5 status=500_Internal_Server_Error`, ""},
+		{server.URL + "/ok", api.StatusHealthy, "200 OK\n---\nlength: 2\nproto: HTTP/1\\.1\nstatus_code: 200", ""},
+		{server.URL + "/redirect/ok", api.StatusHealthy, "200 OK\n---\nlength: 2\nproto: HTTP/1\\.1\nstatus_code: 200", ""},
+		{server.URL + "/error", api.StatusFailure, "500 Internal Server Error\n---\nlength: 5\nproto: HTTP/1\\.1\nstatus_code: 500", ""},
+		{server.URL + "/redirect/error", api.StatusFailure, "500 Internal Server Error\n---\nlength: 5\nproto: HTTP/1\\.1\nstatus_code: 500", ""},
 		{server.URL + "/redirect/loop", api.StatusFailure, `Get "/redirect/loop": redirect loop detected`, ""},
-		{strings.Replace(server.URL, "http", "http-get", 1) + "/only/get", api.StatusHealthy, `proto=HTTP/1\.1 length=0 status=200_OK`, ""},
-		{strings.Replace(server.URL, "http", "http-post", 1) + "/only/post", api.StatusHealthy, `proto=HTTP/1\.1 length=0 status=200_OK`, ""},
-		{strings.Replace(server.URL, "http", "http-head", 1) + "/only/head", api.StatusHealthy, `proto=HTTP/1\.1 length=-1 status=200_OK`, ""},
-		{strings.Replace(server.URL, "http", "http-options", 1) + "/only/options", api.StatusHealthy, `proto=HTTP/1\.1 length=0 status=200_OK`, ""},
-		{strings.Replace(server.URL, "http", "http-connect", 1) + "/only/connect", api.StatusHealthy, `proto=HTTP/1\.1 length=0 status=200_OK`, ""},
+		{strings.Replace(server.URL, "http", "http-get", 1) + "/only/get", api.StatusHealthy, "200 OK\n---\nlength: 0\nproto: HTTP/1\\.1\nstatus_code: 200", ""},
+		{strings.Replace(server.URL, "http", "http-post", 1) + "/only/post", api.StatusHealthy, "200 OK\n---\nlength: 0\nproto: HTTP/1\\.1\nstatus_code: 200", ""},
+		{strings.Replace(server.URL, "http", "http-head", 1) + "/only/head", api.StatusHealthy, "200 OK\n---\nproto: HTTP/1\\.1\nstatus_code: 200", ""},
+		{strings.Replace(server.URL, "http", "http-options", 1) + "/only/options", api.StatusHealthy, "200 OK\n---\nlength: 0\nproto: HTTP/1\\.1\nstatus_code: 200", ""},
+		{strings.Replace(server.URL, "http", "http-connect", 1) + "/only/connect", api.StatusHealthy, "200 OK\n---\nlength: 0\nproto: HTTP/1\\.1\nstatus_code: 200", ""},
 		{server.URL + "/slow-page", api.StatusFailure, `probe timed out`, ""},
 		{"http://localhost:54321/", api.StatusFailure, `(127\.0\.0\.1|\[::1\]):54321: connection refused`, ""},
-	}, 5)
+	}, 10)
 
 	AssertTimeout(t, server.URL)
 
@@ -69,11 +69,14 @@ func TestHTTPScheme_Alert(t *testing.T) {
 	r := &testutil.DummyReporter{}
 
 	a.Alert(ctx, r, api.Record{
-		CheckedAt: time.Date(2021, 1, 2, 15, 4, 5, 0, time.UTC),
-		Status:    api.StatusFailure,
-		Latency:   123456 * time.Microsecond,
-		Target:    &api.URL{Scheme: "dummy", Fragment: "hello"},
-		Message:   "hello world",
+		Time:    time.Date(2021, 1, 2, 15, 4, 5, 0, time.UTC),
+		Status:  api.StatusFailure,
+		Latency: 123456 * time.Microsecond,
+		Target:  &api.URL{Scheme: "dummy", Fragment: "hello"},
+		Message: "hello world",
+		Extra: map[string]interface{}{
+			"hello": "world",
+		},
 	})
 
 	if len(r.Records) != 1 {
@@ -84,7 +87,7 @@ func TestHTTPScheme_Alert(t *testing.T) {
 		t.Fatalf("unexpected number of request in the log\n%s", log)
 	}
 
-	expected := `/?ayd_checked_at=2021-01-02T15%3A04%3A05Z&ayd_latency=123.456&ayd_message=hello+world&ayd_status=FAILURE&ayd_target=dummy%3A%23hello`
+	expected := `/?ayd_extra=%7B%22hello%22%3A%22world%22%7D&ayd_latency=123.456&ayd_message=hello+world&ayd_status=FAILURE&ayd_target=dummy%3A%23hello&ayd_time=2021-01-02T15%3A04%3A05Z`
 	if log[0] != expected {
 		t.Errorf("unexpected request URL\nexpected: %s\n but got: %s", expected, log[0])
 	}

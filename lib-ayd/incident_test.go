@@ -22,22 +22,22 @@ func TestIncident(t *testing.T) {
 			t.Errorf("the message is different: %s != %s", i1.Message, i2.Message)
 		}
 
-		if i1.CausedAt.String() != i2.CausedAt.String() {
-			t.Errorf("the caused_at is different: %s != %s", i1.CausedAt, i2.CausedAt)
+		if i1.StartsAt.String() != i2.StartsAt.String() {
+			t.Errorf("the starts_at is different: %s != %s", i1.StartsAt, i2.StartsAt)
 		}
 
-		if i1.ResolvedAt.String() != i2.ResolvedAt.String() {
-			t.Errorf("the resolved_at is different: %s != %s", i1.ResolvedAt, i2.ResolvedAt)
+		if i1.EndsAt.String() != i2.EndsAt.String() {
+			t.Errorf("the ends_at is different: %s != %s", i1.EndsAt, i2.EndsAt)
 		}
 	}
 
 	t.Run("marshal-and-unmarshal", func(t *testing.T) {
 		i1 := ayd.Incident{
-			Target:     &ayd.URL{Scheme: "dummy", Opaque: "failure", Fragment: "hello-world"},
-			Status:     ayd.StatusFailure,
-			Message:    "it's incident",
-			CausedAt:   time.Date(2001, 1, 2, 15, 4, 5, 0, time.UTC),
-			ResolvedAt: time.Date(2021, 6, 5, 16, 3, 2, 0, time.UTC),
+			Target:   &ayd.URL{Scheme: "dummy", Opaque: "failure", Fragment: "hello-world"},
+			Status:   ayd.StatusFailure,
+			Message:  "it's incident",
+			StartsAt: time.Date(2001, 1, 2, 15, 4, 5, 0, time.UTC),
+			EndsAt:   time.Date(2021, 6, 5, 16, 3, 2, 0, time.UTC),
 		}
 
 		j, err := json.Marshal(i1)
@@ -55,12 +55,12 @@ func TestIncident(t *testing.T) {
 	})
 
 	t.Run("unmarshal", func(t *testing.T) {
-		source := `{"target":"dummy:failure#hello-world", "status":"FAILURE", "message":"it's incident", "caused_at":"2021-01-02T15:04:05Z"}`
+		source := `{"target":"dummy:failure#hello-world", "status":"FAILURE", "message":"it's incident", "starts_at":"2021-01-02T15:04:05Z"}`
 		expect := ayd.Incident{
 			Target:   &ayd.URL{Scheme: "dummy", Opaque: "failure", Fragment: "hello-world"},
 			Status:   ayd.StatusFailure,
 			Message:  "it's incident",
-			CausedAt: time.Date(2021, 1, 2, 15, 4, 5, 0, time.UTC),
+			StartsAt: time.Date(2021, 1, 2, 15, 4, 5, 0, time.UTC),
 		}
 
 		var i ayd.Incident

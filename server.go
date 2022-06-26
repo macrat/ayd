@@ -6,11 +6,36 @@ import (
 	"net/http"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/macrat/ayd/internal/endpoint"
 	"github.com/macrat/ayd/internal/store"
+	api "github.com/macrat/ayd/lib-ayd"
 	"github.com/robfig/cron/v3"
 )
+
+func (cmd *AydCommand) reportStartLog(s *store.Store, protocol, listen string) {
+	var tasks [][]string
+
+	for _, t := range cmd.Tasks {
+		tasks = append(tasks, []string{
+			t.Schedule.String(),
+			t.Prober.Target().String(),
+		})
+	}
+
+	u := &api.URL{Scheme: "ayd", Opaque: "server"}
+	s.Report(u, api.Record{
+		Time:    time.Now(),
+		Status:  api.StatusHealthy,
+		Target:  u,
+		Message: fmt.Sprintf("start Ayd server"),
+		Extra: map[string]interface{}{
+			"url":     fmt.Sprintf("%s://%s", protocol, listen),
+			"targets": tasks,
+		},
+	})
+}
 
 func (cmd *AydCommand) RunServer(ctx context.Context, s *store.Store) (exitCode int) {
 	protocol := "http"
@@ -29,8 +54,6 @@ func (cmd *AydCommand) RunServer(ctx context.Context, s *store.Store) (exitCode 
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	listen := fmt.Sprintf("0.0.0.0:%d", cmd.ListenPort)
-
 	scheduler := cron.New()
 
 	if err := s.Restore(); err != nil {
@@ -38,13 +61,8 @@ func (cmd *AydCommand) RunServer(ctx context.Context, s *store.Store) (exitCode 
 		return 1
 	}
 
-	fmt.Fprintf(cmd.OutStream, "starts Ayd on %s://%s\n", protocol, listen)
-
-	// this loop and below loop can't combine to single loop, for separate the log header and status check records surelly.
-	for _, t := range cmd.Tasks {
-		fmt.Fprintf(cmd.OutStream, "%s\t%s\n", t.Schedule, t.Prober.Target().String())
-	}
-	fmt.Fprintln(cmd.OutStream)
+	listen := fmt.Sprintf("0.0.0.0:%d", cmd.ListenPort)
+	cmd.reportStartLog(s, protocol, listen)
 
 	wg := &sync.WaitGroup{}
 	for _, t := range cmd.Tasks {

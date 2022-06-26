@@ -3,6 +3,7 @@ package scheme
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -88,10 +89,10 @@ func (p PluginScheme) execute(ctx context.Context, r Reporter, scope string, arg
 	command, err := findPlugin(p.target.Scheme, scope)
 	if err != nil {
 		r.Report(p.target, api.Record{
-			CheckedAt: time.Now(),
-			Target:    p.target,
-			Status:    api.StatusUnknown,
-			Message:   scope + " plugin for " + p.target.Scheme + " was not found",
+			Time:    time.Now(),
+			Target:  p.target,
+			Status:  api.StatusUnknown,
+			Message: scope + " plugin for " + p.target.Scheme + " was not found",
 		})
 		return
 	}
@@ -117,11 +118,11 @@ func (p PluginScheme) execute(ctx context.Context, r Reporter, scope string, arg
 		}
 
 		r.Report(p.target, api.Record{
-			CheckedAt: time.Now(),
-			Target:    &api.URL{Scheme: "ayd", Opaque: scope + ":plugin:" + p.target.String()},
-			Status:    api.StatusUnknown,
-			Message:   fmt.Sprintf("%s: %#v", err, text),
-			Latency:   latency,
+			Time:    time.Now(),
+			Target:  &api.URL{Scheme: "ayd", Opaque: scope + ":plugin:" + p.target.String()},
+			Status:  api.StatusUnknown,
+			Message: fmt.Sprintf("%s: %#v", err, text),
+			Latency: latency,
 		})
 	}
 
@@ -132,11 +133,11 @@ func (p PluginScheme) execute(ctx context.Context, r Reporter, scope string, arg
 		}
 
 		r.Report(p.target, timeoutOr(ctx, api.Record{
-			CheckedAt: stime,
-			Target:    p.target,
-			Status:    status,
-			Message:   msg,
-			Latency:   latency,
+			Time:    stime,
+			Target:  p.target,
+			Status:  status,
+			Message: msg,
+			Latency: latency,
 		}))
 	}
 }
@@ -148,17 +149,26 @@ func (p PluginScheme) Probe(ctx context.Context, r Reporter) {
 }
 
 func (p PluginScheme) Alert(ctx context.Context, r Reporter, lastRecord api.Record) {
+	args := []string{
+		p.target.String(),
+		lastRecord.Time.Format(time.RFC3339),
+		lastRecord.Status.String(),
+		strconv.FormatFloat(float64(lastRecord.Latency.Microseconds())/1000.0, 'f', -1, 64),
+		lastRecord.Target.String(),
+		lastRecord.Message,
+		"{}",
+	}
+
+	if lastRecord.Extra != nil {
+		if bs, err := json.Marshal(lastRecord.Extra); err == nil {
+			args[len(args)-1] = string(bs)
+		}
+	}
+
 	p.execute(
 		ctx,
 		AlertReporter{&api.URL{Scheme: "alert", Opaque: p.target.String()}, r},
 		"alert",
-		[]string{
-			p.target.String(),
-			lastRecord.CheckedAt.Format(time.RFC3339),
-			lastRecord.Status.String(),
-			strconv.FormatFloat(float64(lastRecord.Latency.Microseconds())/1000.0, 'f', -1, 64),
-			lastRecord.Target.String(),
-			lastRecord.Message,
-		},
+		args,
 	)
 }

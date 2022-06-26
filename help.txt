@@ -7,7 +7,7 @@ Usage:
 Subcommands:
   ayd oneshot  The same as -1 option.
   ayd conv     Convert log file to other format.
-               Please see `ayd convert -h` to more information.
+               Please see `ayd conv -h` to more information.
 
 Options:
   -1, --oneshot	          Check status only once and exit.
@@ -59,6 +59,10 @@ Targets:
    Resolve name with DNS.
    e.g. dns:example.com
         dns://8.8.8.8/example.com?type=AAAA
+
+  file:
+   Check the file or the directory existence.
+   e.g. file:/path/to/file
 
   exec:
    Execute external command.

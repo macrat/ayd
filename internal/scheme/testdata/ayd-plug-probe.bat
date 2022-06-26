@@ -1,9 +1,11 @@
 @echo off
 
 if "%1" == "plug:change" (
-    echo 2001-02-03T16:05:06Z	HEALTHY	123.456	changed:plug	check changed:plug
+    echo {"time":"2001-02-03T16:05:06Z","status":"HEALTHY","latency":123.456,"target":"changed:plug","message":"check changed:plug"}
+) else if "%1" == "plug:extra" (
+    echo {"time":"2001-02-03T16:05:06Z","status":"HEALTHY","latency":123.456,"target":"%1","message":"with extra","hello":"world"}
 ) else if not "%1" == "plug:empty" (
-    echo 2001-02-03T16:05:06Z	HEALTHY	123.456	%1	check %1
+    echo {"time":"2001-02-03T16:05:06Z","status":"HEALTHY","latency":123.456,"target":"%1","message":"check %1"}
 )
 
 if "%1" == "plug:invalid-record" (

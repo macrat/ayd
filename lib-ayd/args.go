@@ -1,6 +1,7 @@
 package ayd
 
 import (
+	"encoding/json"
 	"os"
 	"strconv"
 	"strings"
@@ -38,17 +39,18 @@ func ParseProbePluginArgs() (ProbePluginArgs, error) {
 // AlertPluginArgs is arguments for alert plugin
 type AlertPluginArgs struct {
 	AlertURL  *URL
-	CheckedAt time.Time
+	Time      time.Time
 	Status    Status
 	Latency   time.Duration
 	TargetURL *URL
 	Message   string
+	Extra     map[string]interface{}
 }
 
 // ParseAlertPluginArgsFrom is parse arguments for alert plugin
 func ParseAlertPluginArgsFrom(args []string) (AlertPluginArgs, error) {
-	if len(args) != 7 {
-		return AlertPluginArgs{}, ayderr.New(ErrArgumentCount, nil, "invalid argument: should give exactly 6 arguments")
+	if len(args) != 8 {
+		return AlertPluginArgs{}, ayderr.New(ErrArgumentCount, nil, "invalid argument: should give exactly 7 arguments")
 	}
 
 	alertURL, err := ParseURL(args[1])
@@ -56,9 +58,9 @@ func ParseAlertPluginArgsFrom(args []string) (AlertPluginArgs, error) {
 		return AlertPluginArgs{}, ayderr.New(ErrInvalidArgumentValue, err, "invalid alert URL")
 	}
 
-	checkedAt, err := time.Parse(time.RFC3339, args[2])
+	timestamp, err := time.Parse(time.RFC3339, args[2])
 	if err != nil {
-		return AlertPluginArgs{}, ayderr.New(ErrInvalidArgumentValue, err, "invalid checked at timestamp")
+		return AlertPluginArgs{}, ayderr.New(ErrInvalidArgumentValue, err, "invalid timestamp")
 	}
 
 	status := ParseStatus(strings.ToUpper(args[3]))
@@ -73,13 +75,19 @@ func ParseAlertPluginArgsFrom(args []string) (AlertPluginArgs, error) {
 		return AlertPluginArgs{}, ayderr.New(ErrInvalidArgumentValue, err, "invalid target URL")
 	}
 
+	var extra map[string]interface{}
+	if err := json.Unmarshal([]byte(args[7]), &extra); err != nil {
+		return AlertPluginArgs{}, ayderr.New(ErrInvalidArgumentValue, err, "invalid extra values")
+	}
+
 	return AlertPluginArgs{
 		AlertURL:  alertURL,
-		CheckedAt: checkedAt,
+		Time:      timestamp,
 		Status:    status,
 		Latency:   time.Duration(latency) * time.Millisecond,
 		TargetURL: targetURL,
 		Message:   args[6],
+		Extra:     extra,
 	}, nil
 }
 

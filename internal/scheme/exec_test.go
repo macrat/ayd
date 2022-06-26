@@ -35,12 +35,12 @@ func TestExecScheme_Probe(t *testing.T) {
 	cwd = filepath.ToSlash(cwd)
 
 	AssertProbe(t, []ProbeTest{
-		{"exec:./testdata/test?message=hello&code=0", api.StatusHealthy, "hello", ""},
-		{"exec:./testdata/test?message=world&code=1", api.StatusFailure, "world", ""},
-		{"exec:" + path.Join(cwd, "testdata/test") + "?message=hello&code=0", api.StatusHealthy, "hello", ""},
+		{"exec:./testdata/test?message=hello&code=0", api.StatusHealthy, "hello\n---\nexit_code: 0", ""},
+		{"exec:./testdata/test?message=world&code=1", api.StatusFailure, "world\n---\nexit_code: 1", ""},
+		{"exec:" + path.Join(cwd, "testdata/test") + "?message=hello&code=0", api.StatusHealthy, "hello\n---\nexit_code: 0", ""},
 		{"exec:sleep#10", api.StatusFailure, `probe timed out`, ""},
-		{"exec:echo#::status::unknown", api.StatusUnknown, ``, ""},
-		{"exec:echo#::status::failure", api.StatusFailure, ``, ""},
+		{"exec:echo#::status::unknown", api.StatusUnknown, "---\nexit_code: 0", ""},
+		{"exec:echo#::status::failure", api.StatusFailure, "---\nexit_code: 0", ""},
 	}, 5)
 
 	AssertTimeout(t, "exec:echo")

@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"testing"
 	"time"
 
@@ -25,17 +26,15 @@ func TestAlerter(t *testing.T) {
 		os.Setenv("PATH", origPath)
 	})
 
-	tests := []struct {
+	type Test struct {
 		TargetIn  string
 		TargetOut string
 		Message   string
 		Error     string
-	}{
-		{"exec:ayd-foo-alert", "alert:exec:ayd-foo-alert", "2001-02-03T16:05:06Z\tHEALTHY\t123.456\t\t\"     \"", ""},
-		{"exec:ayd-bar-probe", "alert:exec:ayd-bar-probe", "arg \"\"\nenv ayd_checked_at=2001-02-03T16:05:06Z ayd_status=FAILURE ayd_latency=12.345 ayd_target=dummy:failure ayd_message=foobar", ""},
-		{"foo:", "alert:foo:", "\"foo: 2001-02-03T16:05:06Z FAILURE 12.345 dummy:failure foobar\"", ""},
-		{"foo:hello-world", "alert:foo:hello-world", "\"foo:hello-world 2001-02-03T16:05:06Z FAILURE 12.345 dummy:failure foobar\"", ""},
-		{"foo-bar:hello-world", "alert:foo-bar:hello-world", "\"foo-bar:hello-world 2001-02-03T16:05:06Z FAILURE 12.345 dummy:failure foobar\"", ""},
+	}
+	tests := []Test{
+		{"exec:ayd-foo-alert", "alert:exec:ayd-foo-alert", `{"time":"2001-02-03T16:05:06Z","status":"HEALTHY","latency":123.456,"target":"","message":"\",,,,,\""}` + "\n---\nexit_code: 0", ""},
+		{"exec:ayd-bar-probe", "alert:exec:ayd-bar-probe", "arg \"\"\nenv ayd_time=2001-02-03T16:05:06Z ayd_status=FAILURE ayd_latency=12.345 ayd_target=dummy:failure ayd_message=foobar ayd_extra={\"hello\":\"world\"}\n---\nexit_code: 0", ""},
 		{"bar:", "", "", "unsupported scheme"},
 
 		{"ftp://example.com", "", "", "unsupported scheme for alert"},
@@ -57,6 +56,16 @@ func TestAlerter(t *testing.T) {
 		{"of-course-no-such-plugin:", "", "", "unsupported scheme"},
 	}
 
+	if runtime.GOOS != "windows" {
+		// Windows can not run this test because bat doesn't support double quote character in argument :(
+		tests = append(
+			tests,
+			Test{"foo-bar:hello-world", "alert:foo-bar:hello-world", "\"foo-bar:hello-world,2001-02-03T16:05:06Z,FAILURE,12.345,dummy:failure,foobar\"\n---\nextras: {\"hello\":\"world\"}", ""},
+			Test{"foo:", "alert:foo:", "\"foo:,2001-02-03T16:05:06Z,FAILURE,12.345,dummy:failure,foobar\"\n---\nextras: {\"hello\":\"world\"}", ""},
+			Test{"foo:hello-world", "alert:foo:hello-world", "\"foo:hello-world,2001-02-03T16:05:06Z,FAILURE,12.345,dummy:failure,foobar\"\n---\nextras: {\"hello\":\"world\"}", ""},
+		)
+	}
+
 	for _, tt := range tests {
 		t.Run(tt.TargetIn, func(t *testing.T) {
 			alert, err := scheme.NewAlerter(tt.TargetIn)
@@ -73,11 +82,14 @@ func TestAlerter(t *testing.T) {
 			defer cancel()
 
 			rec := api.Record{
-				CheckedAt: time.Date(2001, 2, 3, 16, 5, 6, 0, time.UTC),
-				Status:    api.StatusFailure,
-				Latency:   12345 * time.Microsecond,
-				Target:    &api.URL{Scheme: "dummy", Opaque: "failure"},
-				Message:   "foobar",
+				Time:    time.Date(2001, 2, 3, 16, 5, 6, 0, time.UTC),
+				Status:  api.StatusFailure,
+				Latency: 12345 * time.Microsecond,
+				Target:  &api.URL{Scheme: "dummy", Opaque: "failure"},
+				Message: "foobar",
+				Extra: map[string]interface{}{
+					"hello": "world",
+				},
 			}
 
 			r := &testutil.DummyReporter{}
@@ -96,8 +108,8 @@ func TestAlerter(t *testing.T) {
 				t.Errorf("unexpected status of record: %s", r.Records[0].Status)
 			}
 
-			if r.Records[0].Message != tt.Message {
-				t.Errorf("--- expected message ---\n%s\n--- actual message ---\n%s", tt.Message, r.Records[0].Message)
+			if r.Records[0].ReadableMessage() != tt.Message {
+				t.Errorf("--- expected message ---\n%s\n--- actual message ---\n%s", tt.Message, r.Records[0].ReadableMessage())
 			}
 		})
 	}
@@ -112,10 +124,10 @@ func TestAlerter(t *testing.T) {
 		defer cancel()
 
 		rec := api.Record{
-			Target:    &api.URL{Scheme: "dummy", Opaque: "failure"},
-			Status:    api.StatusFailure,
-			CheckedAt: time.Date(2001, 2, 3, 16, 5, 6, 0, time.UTC),
-			Message:   "foobar",
+			Target:  &api.URL{Scheme: "dummy", Opaque: "failure"},
+			Status:  api.StatusFailure,
+			Time:    time.Date(2001, 2, 3, 16, 5, 6, 0, time.UTC),
+			Message: "foobar",
 		}
 
 		r := &testutil.DummyReporter{}
@@ -132,7 +144,7 @@ func TestAlerter(t *testing.T) {
 		if r.Records[0].Status != api.StatusUnknown {
 			t.Errorf("unexpected status of record: %s", r.Records[0].Status)
 		}
-		if r.Records[0].Message != `invalid record: unexpected column count: "this is invalid record"` {
+		if r.Records[0].Message != `invalid record: invalid character 'h' in literal true (expecting 'r'): "this is invalid record"` {
 			t.Errorf("unexpected message of record: %s", r.Records[0].Message)
 		}
 	})
@@ -155,11 +167,11 @@ func TestAlertReporter(t *testing.T) {
 		t.Fatalf("unexpected number of records: %d: %v", len(r1.Records), r1.Records)
 	}
 
-	if r1.Records[0].String() != "0001-01-01T00:00:00Z	UNKNOWN	0.000	alert:dummy:another	test-message" {
+	if r1.Records[0].String() != `{"time":"0001-01-01T00:00:00Z", "status":"UNKNOWN", "latency":0.000, "target":"alert:dummy:another", "message":"test-message"}` {
 		t.Errorf("unexpected 1st record: %s", r1.Records[0])
 	}
 
-	if r1.Records[1].String() != "0001-01-01T00:00:00Z	UNKNOWN	0.000	ayd:test:internal-log	something log" {
+	if r1.Records[1].String() != `{"time":"0001-01-01T00:00:00Z", "status":"UNKNOWN", "latency":0.000, "target":"ayd:test:internal-log", "message":"something log"}` {
 		t.Errorf("unexpected 2nd record: %s", r1.Records[1])
 	}
 }
@@ -199,10 +211,10 @@ func TestAlerterSet(t *testing.T) {
 			defer cancel()
 
 			rec := api.Record{
-				Target:    &api.URL{Scheme: "dummy", Opaque: "failure"},
-				Status:    api.StatusFailure,
-				CheckedAt: time.Date(2001, 2, 3, 16, 5, 6, 0, time.UTC),
-				Message:   "foobar",
+				Target:  &api.URL{Scheme: "dummy", Opaque: "failure"},
+				Status:  api.StatusFailure,
+				Time:    time.Date(2001, 2, 3, 16, 5, 6, 0, time.UTC),
+				Message: "foobar",
 			}
 
 			r := &testutil.DummyReporter{}
@@ -242,10 +254,10 @@ func TestAlerterSet_blocking(t *testing.T) {
 	defer cancel()
 
 	rec := api.Record{
-		Target:    &api.URL{Scheme: "dummy", Opaque: "failure"},
-		Status:    api.StatusFailure,
-		CheckedAt: time.Date(2001, 2, 3, 16, 5, 6, 0, time.UTC),
-		Message:   "foobar",
+		Target:  &api.URL{Scheme: "dummy", Opaque: "failure"},
+		Status:  api.StatusFailure,
+		Time:    time.Date(2001, 2, 3, 16, 5, 6, 0, time.UTC),
+		Message: "foobar",
 	}
 
 	r := &testutil.DummyReporter{}
@@ -280,11 +292,14 @@ func AssertAlert(t *testing.T, tests []ProbeTest, timeout int) {
 			defer cancel()
 
 			rs := testutil.RunAlert(ctx, a, api.Record{
-				CheckedAt: time.Date(2001, 2, 3, 16, 5, 6, 0, time.UTC),
-				Target:    &api.URL{Scheme: "dummy", Opaque: "failure"},
-				Status:    api.StatusFailure,
-				Latency:   123456 * time.Microsecond,
-				Message:   "test-message",
+				Time:    time.Date(2001, 2, 3, 16, 5, 6, 0, time.UTC),
+				Target:  &api.URL{Scheme: "dummy", Opaque: "failure"},
+				Status:  api.StatusFailure,
+				Latency: 123456 * time.Microsecond,
+				Message: "test-message",
+				Extra: map[string]interface{}{
+					"hello": "world",
+				},
 			})
 
 			if len(rs) != 1 {
@@ -298,8 +313,8 @@ func AssertAlert(t *testing.T, tests []ProbeTest, timeout int) {
 			if r.Status != tt.Status {
 				t.Errorf("expected status is %s but got %s", tt.Status, r.Status)
 			}
-			if ok, _ := regexp.MatchString("^"+tt.MessagePattern+"$", r.Message); !ok {
-				t.Errorf("expected message is match to %#v but got %#v", tt.MessagePattern, r.Message)
+			if ok, _ := regexp.MatchString("^"+tt.MessagePattern+"$", r.ReadableMessage()); !ok {
+				t.Errorf("unexpected message\n--- expected -----\n%s\n--- actual -----\n%s", tt.MessagePattern, r.ReadableMessage())
 			}
 		})
 	}

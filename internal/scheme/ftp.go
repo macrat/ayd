@@ -150,26 +150,27 @@ func (p FTPProbe) Probe(ctx context.Context, r Reporter) {
 	defer cancel()
 
 	stime := time.Now()
-	report := func(status api.Status, message string) {
+	report := func(status api.Status, message string, extra map[string]interface{}) {
 		r.Report(p.target, timeoutOr(ctx, api.Record{
-			CheckedAt: stime,
-			Status:    status,
-			Latency:   time.Since(stime),
-			Target:    p.target,
-			Message:   message,
+			Time:    stime,
+			Status:  status,
+			Latency: time.Since(stime),
+			Target:  p.target,
+			Message: message,
+			Extra:   extra,
 		}))
 	}
 
 	conn, status, message := ftpConnectAndLogin(ctx, p.target)
 	if status != api.StatusHealthy {
-		report(status, message)
+		report(status, message, nil)
 		return
 	}
 	defer conn.Quit()
 
 	ls, status, message := p.list(conn)
 	if status != api.StatusHealthy {
-		report(status, message)
+		report(status, message, nil)
 		return
 	}
 
@@ -180,9 +181,23 @@ func (p FTPProbe) Probe(ctx context.Context, r Reporter) {
 		}
 	}
 
-	if n == 1 && ls[0].Name == path.Base(p.target.Path) {
-		report(api.StatusHealthy, fmt.Sprintf("type=file size=%d", ls[0].Size))
+	if n == 1 && path.Base(ls[0].Name) == path.Base(p.target.Path) {
+		report(api.StatusHealthy, "file exists", map[string]interface{}{
+			"file_size": ls[0].Size,
+			"mtime":     ls[0].Time.Format(time.RFC3339),
+			"type":      "file",
+		})
 	} else {
-		report(api.StatusHealthy, fmt.Sprintf("type=directory files=%d", n))
+		extra := map[string]interface{}{
+			"file_count": n,
+			"type":       "directory",
+		}
+		for _, f := range ls {
+			if f.Name == "." {
+				extra["mtime"] = f.Time.Format(time.RFC3339)
+				break
+			}
+		}
+		report(api.StatusHealthy, "directory exists", extra)
 	}
 }

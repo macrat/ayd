@@ -118,6 +118,48 @@ func TestPadRecords(t *testing.T) {
 	}
 }
 
+func TestTimeRange(t *testing.T) {
+	f := templateFuncs["time_range"].(func([]api.Record) timeRange)
+
+	times := []time.Time{
+		time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC),
+		time.Date(2000, 1, 2, 0, 0, 0, 0, time.UTC),
+		time.Date(2000, 1, 3, 0, 0, 0, 0, time.UTC),
+	}
+	var zero time.Time
+
+	tests := []struct {
+		Times  []time.Time
+		Oldest time.Time
+		Newest time.Time
+	}{
+		{nil, zero, zero},
+		{times, times[0], times[len(times)-1]},
+		{times[:1], zero, times[0]},
+	}
+
+	for _, tt := range tests {
+		t.Run(fmt.Sprintf("%v_%v", tt.Oldest, tt.Newest), func(t *testing.T) {
+			var xs []api.Record
+			for _, x := range tt.Times {
+				xs = append(xs, api.Record{
+					Time: x,
+				})
+			}
+
+			result := f(xs)
+
+			if !result.Oldest.Equal(tt.Oldest) {
+				t.Errorf("expected oldest is %v but got %v", tt.Oldest, tt.Oldest)
+			}
+
+			if !result.Newest.Equal(tt.Newest) {
+				t.Errorf("expected newest is %v but got %v", tt.Newest, tt.Newest)
+			}
+		})
+	}
+}
+
 type DummyStringer string
 
 func (s DummyStringer) String() string {
