@@ -44,7 +44,12 @@ func TestPingProbe_Probe(t *testing.T) {
 		p := testutil.NewProber(t, "ping:localhost")
 
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Nanosecond)
-		time.Sleep(10 * time.Millisecond)
+		if runtime.GOOS == "windows" {
+			// Windows on GitHub Actions is incredible slow so I need more time to make sure that completely timed out
+			time.Sleep(100 * time.Millisecond)
+		} else {
+			time.Sleep(10 * time.Millisecond)
+		}
 		defer cancel()
 
 		records := testutil.RunProbe(ctx, p)
