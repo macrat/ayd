@@ -4,33 +4,71 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
 	_ "net/http/pprof"
-	"os"
 	"runtime"
 	"time"
+
+	"github.com/macrat/ayd/internal/store"
+	api "github.com/macrat/ayd/lib-ayd"
 )
 
-func debugStatusReporter() {
-	f, err := os.OpenFile("ayd_debug.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "DEBUG: failed to open debug log file: %s\n", err)
-		return
+// startDebugLogger starts debug logger and pprof server.
+func startDebugLogger(s *store.Store) {
+	uptime := time.Now()
+
+	scope := &api.URL{Scheme: "ayd", Opaque: "debug"}
+	report := func(latency time.Duration, message string, extra map[string]interface{}) {
+		s.Report(scope, api.Record{
+			Time:    time.Now(),
+			Status:  api.StatusHealthy,
+			Latency: latency,
+			Target:  scope,
+			Message: message,
+			Extra:   extra,
+		})
 	}
-	fmt.Fprintf(f, "timestamp\tcurrent_goroutines\tcurrent_heap_bytes\tnum_mallocs\tnum_frees\tnum_gc\n")
 
-	var mem runtime.MemStats
+	go func() {
+		report(time.Since(uptime), "start in debug mode", map[string]interface{}{
+			"arch":      runtime.GOARCH,
+			"compiler":  runtime.Compiler,
+			"os":        runtime.GOOS,
+			"goversion": runtime.Version(),
+		})
 
-	t := time.Tick(5 * time.Second)
-	for range t {
-		runtime.ReadMemStats(&mem)
-		fmt.Fprintf(f, "%s\t%d\t%d\t%d\t%d\t%d\n", time.Now().Format(time.RFC3339), runtime.NumGoroutine(), mem.HeapAlloc, mem.Mallocs, mem.Frees, mem.NumGC)
-	}
-}
+		processStatus := func() {
+			var mem runtime.MemStats
 
-func init() {
-	go debugStatusReporter()
+			stime := time.Now()
+			runtime.ReadMemStats(&mem)
+			report(time.Since(stime), "process status", map[string]interface{}{
+				"num_goroutine":  runtime.NumGoroutine(),
+				"heap_alloc":     mem.HeapAlloc,
+				"mallocs":        mem.Mallocs,
+				"mem_frees":      mem.Frees,
+				"num_gc":         mem.NumGC,
+				"uptime_seconds": time.Since(uptime).Seconds(),
+			})
+		}
 
-	go http.ListenAndServe("localhost:6060", nil)
+		processStatus()
+
+		t := time.Tick(5 * time.Second)
+		for range t {
+			processStatus()
+		}
+	}()
+
+	go func() {
+		report(0, "start pprof server", map[string]interface{}{
+			"url": "http://localhost:6060",
+		})
+		err := http.ListenAndServe("localhost:6060", nil)
+		if err != nil {
+			report(0, "pprof server has stopped", map[string]interface{}{
+				"reason": err.Error(),
+			})
+		}
+	}()
 }

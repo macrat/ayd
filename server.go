@@ -33,11 +33,14 @@ func (cmd *AydCommand) reportStartLog(s *store.Store, protocol, listen string) {
 		Extra: map[string]interface{}{
 			"url":     fmt.Sprintf("%s://%s", protocol, listen),
 			"targets": tasks,
+			"version": fmt.Sprintf("%s (%s)", version, commit),
 		},
 	})
 }
 
 func (cmd *AydCommand) RunServer(ctx context.Context, s *store.Store) (exitCode int) {
+	startDebugLogger(s)
+
 	protocol := "http"
 	if cmd.CertPath != "" {
 		protocol = "https"

@@ -79,10 +79,10 @@ func TestURL_String(t *testing.T) {
 }
 
 func TestURL_marshalAndUnmarshal(t *testing.T) {
-	tests := []struct{
+	tests := []struct {
 		Input  string
 		Output string
-	} {
+	}{
 		{"https://example.com", "https://example.com"},
 		{"file:/path/to/file.txt#hello world", "file:/path/to/file.txt#hello%20world"},
 		{"a:b/c?d=e#f", "a:b/c?d=e#f"},
