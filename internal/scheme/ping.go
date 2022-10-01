@@ -192,10 +192,10 @@ func pingResultToRecord(ctx context.Context, target *api.URL, startTime time.Tim
 		rec.Message = "All packets came back"
 	case result.Recv == 0:
 		rec.Status = api.StatusFailure
-		rec.Message = "All packets has dropped"
+		rec.Message = "All packets have dropped"
 	default:
 		rec.Status = api.StatusDegrade
-		rec.Message = "Some packets has dropped"
+		rec.Message = "Some packets have dropped"
 	}
 
 	if ctx.Err() == context.Canceled {
