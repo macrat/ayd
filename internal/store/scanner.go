@@ -1,6 +1,7 @@
 package store
 
 import (
+	"bufio"
 	"os"
 	"sort"
 	"time"
@@ -8,12 +9,79 @@ import (
 	api "github.com/macrat/ayd/lib-ayd"
 )
 
-func newFileScanner(path string, since, until time.Time) (api.LogScanner, error) {
+type fileScanner struct {
+	file      *os.File
+	reader    *bufio.Reader
+	since     time.Time
+	until     time.Time
+	rec       api.Record
+	interests []logRange
+	pos       int64
+}
+
+// newFileScanner creates a new [fileScanner] from file path, with period specification.
+func newFileScanner(path string, since, until time.Time, interests []logRange) (*fileScanner, error) {
 	f, err := os.OpenFile(path, os.O_RDONLY, 0644)
 	if err != nil {
 		return nil, err
 	}
-	return api.NewLogScannerWithPeriod(f, since, until), nil
+	return &fileScanner{
+		file:      f,
+		reader:    bufio.NewReader(f),
+		since:     since,
+		until:     until,
+		interests: interests,
+	}, nil
+}
+
+func (r *fileScanner) Close() error {
+	return r.file.Close()
+}
+
+func (r *fileScanner) seek(pos int64) {
+	r.file.Seek(pos, os.SEEK_SET)
+	r.reader = bufio.NewReader(r.file)
+	r.pos = pos
+}
+
+func (r *fileScanner) Scan() bool {
+	if len(r.interests) == 0 {
+		return false
+	}
+
+	if r.pos < r.interests[0].Start {
+		r.seek(r.interests[0].Start)
+	}
+
+	for {
+		b, err := r.reader.ReadBytes('\n')
+		if err != nil {
+			return false
+		}
+		r.pos += int64(len(b))
+
+		var rec api.Record
+		err = rec.UnmarshalJSON(b)
+		if err == nil && !rec.Time.Before(r.since) && r.until.After(rec.Time) {
+			r.rec = rec
+			return true
+		}
+
+		if r.pos > r.interests[0].End {
+			r.interests = r.interests[1:]
+			if len(r.interests) == 0 {
+				return false
+			}
+			r.seek(r.interests[0].Start)
+		}
+
+		continue
+	}
+	return false
+}
+
+func (r *fileScanner) Record() api.Record {
+	return r.rec
 }
 
 type inMemoryScanner struct {
@@ -69,5 +137,7 @@ func (s *Store) OpenLog(since, until time.Time) (api.LogScanner, error) {
 	if s.Path() == "" {
 		return newInMemoryScanner(s, since, until), nil
 	}
-	return newFileScanner(s.Path(), since, until)
+
+	interests := s.index.Search(since.Unix(), until.Unix())
+	return newFileScanner(s.Path(), since, until, interests)
 }
