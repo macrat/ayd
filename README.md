@@ -416,7 +416,7 @@ There is [a library for create plugin](https://pkg.go.dev/github.com/macrat/ayd/
 
 ##### Probe plugin
 
-Probe plugin which check the target, receives target URL as the only one argument of the command.
+Probe plugin which to check the target, receives the target URL as the only one argument of the command.
 
 For example, target URL `foobar:your-target` has the same mean as below command.
 
@@ -426,13 +426,13 @@ $ ayd-foobar-probe "foobar:your-target"
 
 ##### Alert plugin
 
-Alert plugin which send alerts, receives below arguments.
+Alert plugin which to send alerts, receives below arguments.
 
-1. Alert URL alert.
+1. Alert URL.
 2. Timestamp in RFC3339 format.
-3. Current status of the firing target.
+3. Current status of the target.
 4. Current latency in milliseconds.
-5. Target URL.
+5. Target URL that causes the incident.
 6. Message from the latest probe.
 7. Extra values in JSON format.
 
