@@ -314,7 +314,7 @@ Ayd uses the last value if found multiple reports in single output.
 ##### as Alert
 
 If you use `exec:` as an alert URL, Ayd sets some environment variables about the incident.
-The name of variable and meaning is the same as the queries of [HTTP scheme as alert](http--https).
+The name of variable and meaning is the same as the queries of [HTTP scheme as alert](#http--https).
 
 #### source:
 
