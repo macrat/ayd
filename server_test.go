@@ -102,7 +102,7 @@ func TestRunServer_tls_error(t *testing.T) {
 	}{
 		{"no-such-key", cert.CertFile, "./testdata/no-such-file.pem", "^error: key file does not exist: \\./testdata/no-such-file.pem\n$", 2},
 		{"no-such-cert", "./testdata/no-such-file.pem", cert.KeyFile, "^error: certificate file does not exist: \\./testdata/no-such-file.pem\n$", 2},
-		{"invalid-file", cert.KeyFile, cert.KeyFile, `{"time":"[^"]*", "status":"FAILURE", "latency":0.000, "target":"ayd:endpoint:tls", "message":".*"}`, 1},
+		{"invalid-file", cert.KeyFile, cert.KeyFile, `{"time":"[^"]*", "status":"FAILURE", "latency":0.000, "target":"ayd:endpoint", "message":".*"}`, 1},
 	}
 
 	for _, tt := range tests {

@@ -111,7 +111,7 @@ func (cmd *AydCommand) RunServer(ctx context.Context, s *store.Store) (exitCode 
 		err = srv.ListenAndServe()
 	}
 	if err != http.ErrServerClosed {
-		s.ReportInternalError("endpoint:tls", err.Error())
+		s.ReportInternalError("endpoint", err.Error())
 		exitCode = 1
 	}
 	cancel()
