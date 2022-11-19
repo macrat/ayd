@@ -180,13 +180,18 @@ func (r *Record) UnmarshalJSON(data []byte) error {
 func (r Record) MarshalJSON() ([]byte, error) {
 	head := bytes.NewBuffer(make([]byte, 0, 256))
 
+	target := ""
+	if r.Target != nil {
+		target = r.Target.String()
+	}
+
 	_, err := fmt.Fprintf(
 		head,
 		`{"time":"%s", "status":"%s", "latency":%.3f, "target":%q`,
 		r.Time.Format(time.RFC3339),
 		r.Status,
 		float64(r.Latency.Microseconds())/1000,
-		r.Target,
+		target,
 	)
 	if err != nil {
 		return nil, err

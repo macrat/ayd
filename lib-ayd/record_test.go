@@ -377,6 +377,10 @@ func TestRecord_MarshalJSON(t *testing.T) {
 			},
 			`{"time":"2021-01-02T15:04:05Z", "status":"HEALTHY", "latency":0.000, "target":"dummy:", "foo":"bar"}`,
 		},
+		{
+			ayd.Record{},
+			`{"time":"0001-01-01T00:00:00Z", "status":"UNKNOWN", "latency":0.000, "target":""}`,
+		},
 	}
 
 	for i, tt := range tests {
