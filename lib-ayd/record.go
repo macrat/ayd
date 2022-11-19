@@ -11,6 +11,10 @@ import (
 	"github.com/macrat/ayd/internal/ayderr"
 )
 
+func isReservedKey(key string) bool {
+	return key == "time" || key == "status" || key == "latency" || key == "target"
+}
+
 // Record is a record in Ayd log
 type Record struct {
 	Time    time.Time
@@ -44,6 +48,10 @@ func (r Record) ReadableExtra() []ExtraPair {
 
 	xs := make([]ExtraPair, 0, len(r.Extra))
 	for k, v := range r.Extra {
+		if isReservedKey(k) {
+			continue
+		}
+
 		s := ""
 		switch x := v.(type) {
 		case string:
@@ -198,7 +206,9 @@ func (r Record) MarshalJSON() ([]byte, error) {
 
 	extras := make([]extraPair, 0, len(r.Extra))
 	for k, v := range r.Extra {
-		extras = append(extras, extraPair{k, v})
+		if !isReservedKey(k) {
+			extras = append(extras, extraPair{k, v})
+		}
 	}
 
 	sort.Slice(extras, func(i, j int) bool {

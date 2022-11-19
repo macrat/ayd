@@ -329,6 +329,7 @@ func TestRecord_ReadableMessage(t *testing.T) {
 			"hello\nworld\n",
 			map[string]interface{}{
 				"hello": "world",
+				"time":  "invalid key",
 			},
 			strings.Join([]string{
 				"hello",
@@ -354,6 +355,38 @@ func TestRecord_ReadableMessage(t *testing.T) {
 			actual := ayd.Record{Message: tt.Message, Extra: tt.Extra}.ReadableMessage()
 			if diff := cmp.Diff(actual, tt.Output); diff != "" {
 				t.Errorf("unexpected output\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestRecord_MarshalJSON(t *testing.T) {
+	tests := []struct {
+		R ayd.Record
+		S string
+	}{
+		{
+			ayd.Record{
+				Time:   time.Date(2021, 1, 2, 15, 4, 5, 0, time.UTC),
+				Status: ayd.StatusHealthy,
+				Target: &ayd.URL{Scheme: "dummy"},
+				Extra: map[string]interface{}{
+					"status": "invalid status",
+					"foo":    "bar",
+				},
+			},
+			`{"time":"2021-01-02T15:04:05Z", "status":"HEALTHY", "latency":0.000, "target":"dummy:", "foo":"bar"}`,
+		},
+	}
+
+	for i, tt := range tests {
+		t.Run(fmt.Sprint(i), func(t *testing.T) {
+			b, err := tt.R.MarshalJSON()
+			if err != nil {
+				t.Fatalf("failed to marshal: %s", err)
+			}
+			if string(b) != tt.S {
+				t.Errorf("unexpected result:\nexpected: %s\n but got: %s", tt.S, string(b))
 			}
 		})
 	}
