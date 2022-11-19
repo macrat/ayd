@@ -17,7 +17,7 @@ func TestTCPScheme_Probe(t *testing.T) {
 	defer server.Close()
 
 	AssertProbe(t, []ProbeTest{
-		{strings.Replace(server.URL, "http://", "tcp://", 1), api.StatusHealthy, "succeed to connect\n---\nsource: ([0-9.]+|\\[[0-9a-fA-F:]+\\]):[0-9]+\ntarget: (127.0.0.1|\\[::\\]):[0-9]+", ""},
+		{strings.Replace(server.URL, "http://", "tcp://", 1), api.StatusHealthy, "succeed to connect\n---\nsource_addr: ([0-9.]+|\\[[0-9a-fA-F:]+\\]):[0-9]+\ntarget_addr: (127.0.0.1|\\[::\\]):[0-9]+", ""},
 
 		{"tcp://localhost", api.StatusUnknown, ``, "TCP target's port number is required"},
 	}, 5)

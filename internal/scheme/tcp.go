@@ -77,8 +77,8 @@ func (s TCPProbe) Probe(ctx context.Context, r Reporter) {
 		rec.Status = api.StatusHealthy
 		rec.Message = "succeed to connect"
 		rec.Extra = map[string]interface{}{
-			"source": conn.LocalAddr().String(),
-			"target": conn.RemoteAddr().String(),
+			"source_addr": conn.LocalAddr().String(),
+			"target_addr": conn.RemoteAddr().String(),
 		}
 		conn.Close()
 	}
