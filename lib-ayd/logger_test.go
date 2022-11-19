@@ -173,4 +173,10 @@ func TestLogger_Print(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 	l2.Healthy("with-delay", nil)
 	assert(`^{"time":"[-+:0-9TZ]+", "status":"HEALTHY", "latency":[0-9]{3}\.[0-9]{3}, "target":"dummy:", "message":"with-delay"}` + "\n$")
+
+	l.Print(ayd.Record{
+		Message: "hello",
+		Latency: -123,
+	})
+	assert(`^{"time":"[-+:0-9TZ]+", "status":"UNKNOWN", "latency":0\.000, "target":"dummy:", "message":"hello"}` + "\n$")
 }

@@ -58,6 +58,10 @@ func (l Logger) Print(r Record) error {
 		}
 	}
 
+	if r.Latency < 0 {
+		r.Latency = 0
+	}
+
 	_, err := l.writer.Write([]byte(r.String() + "\n"))
 	if err != nil {
 		return ayderr.New(ErrIO, err, "failed to write log")
