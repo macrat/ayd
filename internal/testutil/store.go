@@ -19,6 +19,8 @@ func NewStoreWithConsole(t testing.TB, w io.Writer) *store.Store {
 		t.Fatalf("failed to create store: %s", err)
 	}
 
+	s.SetIndexInterval(3)
+
 	return s
 }
 
@@ -42,6 +44,8 @@ func NewStoreWithLog(t testing.TB) *store.Store {
 	if err != nil {
 		t.Fatalf("failed to create store: %s", err)
 	}
+
+	s.SetIndexInterval(3)
 
 	if err = s.Restore(); err != nil {
 		t.Fatalf("failed to restore store: %s", err)
