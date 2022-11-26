@@ -103,6 +103,15 @@ var (
 		"time2str": func(t time.Time) string {
 			return t.Format(time.RFC3339)
 		},
+		"time2str_date": func(t time.Time) string {
+			return t.Format("2006-01-02")
+		},
+		"time2str_time": func(t time.Time) string {
+			return t.Format("15:04:05")
+		},
+		"time2str_zone": func(t time.Time) string {
+			return t.Format("Z07:00")
+		},
 		"time2rfc822": func(t time.Time) string {
 			return t.Format(time.RFC822)
 		},

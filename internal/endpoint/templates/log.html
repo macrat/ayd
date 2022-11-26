@@ -41,6 +41,18 @@ td.failure::before { background-color: rgb(var(--failure)) }
 td.healthy::before { background-color: rgb(var(--healthy)) }
 td.unknown::before { background-color: rgb(var(--fg)) }
 
+.time-t {
+    display: inline-block;
+    margin: 0 .1em;
+    opacity: .3;
+}
+.timezone {
+    display: inline-block;
+    margin-left: .1em;
+    font-size: 70%;
+    opacity: .5;
+}
+
 .latency {
     text-align: right;
 }
@@ -75,7 +87,7 @@ td.unknown::before { background-color: rgb(var(--fg)) }
 {{ define "log-records" }}
             <tbody>{{ range .}}
                 <tr>
-                    <td><time title="{{ .Time | time2humanize }}">{{ .Time | time2str }}</time></td>
+                    <td><time title="{{ .Time | time2humanize }}">{{ .Time | time2str_date }}<span class="time-t">T</span>{{ .Time | time2str_time }}<span class="timezone">{{ .Time | time2str_zone }}</span></time></td>
                     <td class="status {{ .Status | to_lower }}">{{ .Status }}</td>
                     <td class="latency">{{ .Latency }}</td>
                     <td class="target">{{ .Target }}</td>
