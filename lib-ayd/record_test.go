@@ -103,7 +103,7 @@ func TestRecord(t *testing.T) {
 		},
 		{
 			String: `{"time":"2021/01/02 15:04:05", "status":"HEALTHY", "latency":123.456, "target":"ping:example.com", "message":"hello world"}`,
-			Error:  `invalid record: time: parsing time "2021/01/02 15:04:05" as "2006-01-02T15:04:05Z07:00": cannot parse "/01/02 15:04:05" as "-"`,
+			Error:  `invalid record: time: invalid format: "2021/01/02 15:04:05"`,
 		},
 		{
 			String: `{"time":"2021-01-02T15:04:05+09:00", "status":"HEALTHY", "latency":123.456, "target":"::invalid target::", "message":"hello world"}`,

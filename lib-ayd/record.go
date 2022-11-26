@@ -122,7 +122,7 @@ func (r *Record) UnmarshalJSON(data []byte) error {
 	} else {
 		if s, ok := value.(string); !ok {
 			return ayderr.New(ErrInvalidRecord, nil, "invalid record: time: should be a string")
-		} else if r.Time, err = time.Parse(time.RFC3339, s); err != nil {
+		} else if r.Time, err = ParseTime(s); err != nil {
 			return ayderr.New(ErrInvalidRecord, err, "invalid record: time")
 		}
 		delete(raw, "time")

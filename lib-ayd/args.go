@@ -58,7 +58,7 @@ func ParseAlertPluginArgsFrom(args []string) (AlertPluginArgs, error) {
 		return AlertPluginArgs{}, ayderr.New(ErrInvalidArgumentValue, err, "invalid alert URL")
 	}
 
-	timestamp, err := time.Parse(time.RFC3339, args[2])
+	timestamp, err := ParseTime(args[2])
 	if err != nil {
 		return AlertPluginArgs{}, ayderr.New(ErrInvalidArgumentValue, err, "invalid timestamp")
 	}

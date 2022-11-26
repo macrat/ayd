@@ -41,7 +41,7 @@ func (ph *ProbeHistory) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	updated, err := time.Parse(time.RFC3339, jh.Updated)
+	updated, err := ParseTime(jh.Updated)
 	if err != nil {
 		return err
 	}

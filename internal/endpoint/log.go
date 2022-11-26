@@ -20,9 +20,9 @@ func getTimeQuery(queries url.Values, name string, default_ time.Time) (time.Tim
 		return default_, nil
 	}
 
-	t, err := time.Parse(time.RFC3339, q)
+	t, err := api.ParseTime(q)
 	if err != nil {
-		return default_, fmt.Errorf("invalid %s format: %w", name, err)
+		return default_, fmt.Errorf("invalid %s format: %q", name, q)
 	}
 	return t, nil
 }

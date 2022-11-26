@@ -131,7 +131,7 @@ func TestParseAlertPluginArgs(t *testing.T) {
 			"",
 			"",
 			nil,
-			`invalid timestamp: parsing time "this is not a time" as "2006-01-02T15:04:05Z07:00": cannot parse "this is not a time" as "2006"`,
+			`invalid timestamp: invalid format: "this is not a time"`,
 		},
 		{
 			[]string{"./ayd-test-alert", "foo:bar", "2001-02-03T16:05:06Z", "HEALTHY", "not a latency", "bar:baz", "foo bar", "{}"},

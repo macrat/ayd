@@ -43,14 +43,14 @@ func (i *Incident) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	startsAt, err := time.Parse(time.RFC3339, ji.StartsAt)
+	startsAt, err := ParseTime(ji.StartsAt)
 	if err != nil {
 		return err
 	}
 
 	var endsAt time.Time
 	if ji.EndsAt != "" {
-		endsAt, err = time.Parse(time.RFC3339, ji.EndsAt)
+		endsAt, err = ParseTime(ji.EndsAt)
 		if err != nil {
 			return err
 		}

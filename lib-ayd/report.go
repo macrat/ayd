@@ -40,7 +40,7 @@ func (r *Report) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	reportedAt, err := time.Parse(time.RFC3339, jr.ReportedAt)
+	reportedAt, err := ParseTime(jr.ReportedAt)
 	if err != nil {
 		return err
 	}

@@ -13,10 +13,10 @@ import (
 
 func FuzzParseRecord(f *testing.F) {
 	f.Add(`{"time":"2021-01-02T15:04:05+09:00", "status":"HEALTHY", "latency":123.456, "target":"ping:example.com", "message":"hello world"}`)
-	f.Add(`{"time":"2021-01-02T15:04:05+09:00", "status":"FAILURE", "latency":123.456, "target":"exec:/path/to/file.sh", "message":"hello world"}`)
-	f.Add(`{"time":"2021-01-02T15:04:05+09:00", "status":"ABORTED", "latency":1234.567, "target":"dummy:#hello", "message":"hello world"}`)
-	f.Add(`{"time":"2021-01-02T15:04:05+09:00", "status":"DEGRADE", "latency":1.234, "target":"dummy:"}`)
-	f.Add(`{"time":"2021-01-02T15:04:05+09:00", "status":"DEGRADE", "latency":1.234, "target":"dummy:", "extra":123.456, "hello":"world"}`)
+	f.Add(`{"time":"2021-01-02_15:04:05+09:00", "status":"FAILURE", "latency":123.456, "target":"exec:/path/to/file.sh", "message":"hello world"}`)
+	f.Add(`{"time":"2021-01-02 15:04:05+09", "status":"ABORTED", "latency":1234.567, "target":"dummy:#hello", "message":"hello world"}`)
+	f.Add(`{"time":"2021-01-02T15:04:05+0900", "status":"DEGRADE", "latency":1.234, "target":"dummy:"}`)
+	f.Add(`{"time":"20210102T150405+09:00", "status":"DEGRADE", "latency":1.234, "target":"dummy:", "extra":123.456, "hello":"world"}`)
 	f.Add(`{"time":"2001-02-03T04:05:06-10:00", "status":"HEALTHY", "latency":1234.456, "target":"https://example.com/path/to/healthz", "message":"hello\tworld"}`)
 	f.Add(`{"time":"1234-10-30T22:33:44Z", "status":"FAILURE", "latency":0.123, "target":"source+http://example.com/hello/world", "message":"this is test\nhello"}`)
 	f.Add(`{"time":"2000-10-23T14:56:37Z", "status":"ABORTED", "latency":987654.321, "target":"alert:foobar:alert-url", "message":"cancelled"}`)
