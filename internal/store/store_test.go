@@ -363,6 +363,61 @@ func TestStore_Restore_limitBorder(t *testing.T) {
 	}
 }
 
+func TestStore_Restore_rotate(t *testing.T) {
+	t.Parallel()
+
+	f, err := os.CreateTemp("", "ayd-test-*")
+	if err != nil {
+		t.Fatalf("failed to create log file: %s", err)
+	}
+	defer os.Remove(f.Name())
+	defer f.Close()
+
+	s, err := store.New(f.Name(), io.Discard)
+	if err != nil {
+		t.Fatalf("failed to create store: %s", err)
+	}
+	defer s.Close()
+
+	s.SetIndexInterval(1)
+
+	baseTime := time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC)
+
+	for i := 0; i < 2; i++ {
+		since := baseTime.Add(time.Duration(i) * 10 * time.Minute)
+
+		err := os.Truncate(f.Name(), 0)
+		if err != nil {
+			t.Fatalf("%d: failed to truncate log file: %s", i, err)
+		}
+
+		s.Report(&api.URL{Scheme: "dummy"}, api.Record{
+			Time:    since,
+			Target:  &api.URL{Scheme: "dummy"},
+			Message: "hello world",
+		})
+		s.Report(&api.URL{Scheme: "dummy"}, api.Record{
+			Time:    since.Add(1 * time.Minute),
+			Target:  &api.URL{Scheme: "dummy"},
+			Message: "hello world",
+		})
+		time.Sleep(10 * time.Millisecond) // wait for writing goroutine
+
+		scanner, err := s.OpenLog(since.Add(-1*time.Minute), since.Add(5*time.Minute))
+		if err != nil {
+			t.Fatalf("failed to open log: %s", err)
+		}
+
+		var rs []api.Record
+		for scanner.Scan() {
+			rs = append(rs, scanner.Record())
+		}
+		if len(rs) != 2 {
+			t.Fatalf("unexpected number of records found:\n%#v", rs)
+		}
+	}
+}
+
 func TestStore_AddTarget(t *testing.T) {
 	s := testutil.NewStore(t)
 	defer s.Close()

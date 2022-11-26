@@ -137,19 +137,23 @@ func (s *Store) writer(ch <-chan api.Record, stopped chan struct{}) {
 			continue
 		}
 
+		stat, err := f.Stat()
+		s.handleError(err, "failed to get log file status")
+		beforeSize := stat.Size()
+
 		reader.Seek(0, io.SeekStart)
-		_, err = reader.WriteTo(f)
+		wroteSize, err := reader.WriteTo(f)
 		s.handleError(err, "failed to write log file")
 
 		err = f.Close()
 		s.handleError(err, "failed to close log file")
 
-		if s.index.AppendEntry(s.fileIndex, s.fileIndex+reader.Size(), r.Time.Unix()) == nil {
-			s.fileIndex += reader.Size()
-		} else {
+		if s.index.AppendEntry(beforeSize, beforeSize+wroteSize, r.Time.Unix()) == ErrLogUnmatch {
 			s.index.Reset()
 			s.fileIndex = reader.Size()
 			s.index.AppendEntry(0, s.fileIndex, r.Time.Unix())
+		} else {
+			s.fileIndex += reader.Size()
 		}
 	}
 
