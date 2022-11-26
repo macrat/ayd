@@ -27,8 +27,7 @@ type RecordHandler func(api.Record)
 
 // Store is the log handler of Ayd, and it also the database of Ayd.
 type Store struct {
-	path      string
-	fileIndex int64
+	path string
 
 	Console io.Writer
 
@@ -150,10 +149,7 @@ func (s *Store) writer(ch <-chan api.Record, stopped chan struct{}) {
 
 		if s.index.AppendEntry(beforeSize, beforeSize+wroteSize, r.Time.Unix()) == ErrLogUnmatch {
 			s.index.Reset()
-			s.fileIndex = reader.Size()
-			s.index.AppendEntry(0, s.fileIndex, r.Time.Unix())
-		} else {
-			s.fileIndex += reader.Size()
+			s.index.AppendEntry(0, beforeSize+wroteSize, r.Time.Unix())
 		}
 	}
 
@@ -344,8 +340,8 @@ func (s *Store) Restore() error {
 	}
 
 	s.probeHistory = make(probeHistoryMap)
-	s.fileIndex = 0
 	s.index.ResetWithoutLock()
+	var fileIndex int64
 
 	reader := bufio.NewReader(f)
 	for {
@@ -354,15 +350,15 @@ func (s *Store) Restore() error {
 			break
 		}
 		l := int64(len(line))
-		s.fileIndex += l
+		fileIndex += l
 
 		var r api.Record
 		if err = r.UnmarshalJSON(line); err != nil {
-			s.index.AppendInvalidRangeWithoutLock(s.fileIndex-l, s.fileIndex)
+			s.index.AppendInvalidRangeWithoutLock(fileIndex-l, fileIndex)
 			continue
 		}
 
-		s.index.AppendEntryWithoutLock(s.fileIndex-l, s.fileIndex, r.Time.Unix())
+		s.index.AppendEntryWithoutLock(fileIndex-l, fileIndex, r.Time.Unix())
 
 		if _, ok := r.Target.User.Password(); ok {
 			r.Target.User = url.UserPassword(r.Target.User.Username(), "xxxxx")
