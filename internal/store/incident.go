@@ -14,11 +14,6 @@ func newIncident(r api.Record) *api.Incident {
 	}
 }
 
-// incidentIsContinued checks if an incident is stil continued or not.
-func incidentIsContinued(i *api.Incident, r api.Record) bool {
-	return i.EndsAt.IsZero() && i.Status == r.Status && i.Message == r.Message
-}
-
 type byIncidentCaused []*api.Incident
 
 func (xs byIncidentCaused) Len() int {

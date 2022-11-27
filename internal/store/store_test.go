@@ -605,6 +605,98 @@ func TestStore_incident(t *testing.T) {
 	assertCallbackCount(6)
 }
 
+func TestStore_delayedIncident(t *testing.T) {
+	s := testutil.NewStore(t)
+	defer s.Close()
+
+	var messages []string
+	callbackCount := 0
+	s.OnStatusChanged = []store.RecordHandler{
+		func(s *[]string, c *int) func(api.Record) {
+			return func(r api.Record) {
+				*s = append(*s, r.Message)
+				*c++
+			}
+		}(&messages, &callbackCount),
+	}
+
+	assert := func(count int, from, to int64, message ...string) {
+		t.Helper()
+
+		if count != callbackCount {
+			t.Fatalf("unexpected number of callbacks: expected %d but found %d", count, callbackCount)
+		}
+		for i := 0; i < len(messages); i++ {
+			if message[i] != messages[i] {
+				t.Fatalf("unexpected incident message[%d]: expected %q but found %q", i, message[i], messages[i])
+			}
+		}
+
+		is := s.CurrentIncidents()
+		if len(is) != 0 {
+			t.Fatalf("unexpected current incidents found: %v", is)
+		}
+
+		is = s.IncidentHistory()
+		if len(is) == 0 {
+			t.Fatalf("incident not found")
+		} else {
+			i := is[len(is)-1]
+
+			if i.Target.String() != "dummy:" {
+				t.Fatalf("unexpected incident found: %s", i)
+			}
+
+			if i.StartsAt.Unix() != from {
+				t.Fatalf("incident should begins at %d but begins at %d", from, i.StartsAt.Unix())
+			}
+			if i.EndsAt.Unix() != to {
+				t.Errorf("incident should ends at %d but ends at %d", to, i.EndsAt.Unix())
+			}
+			if t.Failed() {
+				t.FailNow()
+			}
+		}
+	}
+	report := func(offset int64, message string, status api.Status) {
+		t.Helper()
+
+		s.Report(&api.URL{Scheme: "dummy"}, api.Record{
+			Time:    time.Unix(0, 0).Add(time.Duration(offset) * time.Second),
+			Target:  &api.URL{Scheme: "dummy"},
+			Message: message,
+			Status:  status,
+		})
+	}
+
+	// offset  05  10  15  20  25  30  35  40  50
+	// status   F   H   F   F   F   F   F   H   H
+	// order    |   1   |   2   |   3   |   4   5
+	//          |       |       6       |          -- First test. Put into middle.
+	//          |       |               7          -- Second test. Put into very end.
+	//          |       8                          -- Third test. Put into before begin.
+	//          9                                  -- Fourth test. New incident.
+
+	report(10, "hello1", api.StatusHealthy)
+	report(20, "oh no", api.StatusFailure)
+	report(30, "oh no", api.StatusFailure)
+	report(40, "hello2", api.StatusHealthy)
+	report(50, "hello3", api.StatusHealthy)
+	assert(2, 20, 40, "oh no", "hello2")
+
+	report(25, "oh no", api.StatusFailure) // First test
+	assert(2, 20, 40, "oh no", "hello2")
+
+	report(35, "oh no", api.StatusFailure) // Second test
+	assert(2, 20, 40, "oh no", "hello2")
+
+	report(15, "oh no", api.StatusFailure) // Third test
+	assert(2, 15, 40, "oh no", "hello2")
+
+	report(5, "wah", api.StatusFailure) // Fourth test
+	assert(4, 5, 10, "oh no", "hello2", "wah", "hello1")
+}
+
 func TestStore_incident_len_limit(t *testing.T) {
 	s := testutil.NewStore(t)
 	defer s.Close()

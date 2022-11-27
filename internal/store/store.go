@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	PROBE_HISTORY_LEN    = 40
+	PROBE_HISTORY_LEN    = 60
 	INCIDENT_HISTORY_LEN = 20
 )
 
@@ -238,19 +238,62 @@ func (s *Store) IncidentHistory() []*api.Incident {
 	return s.incidentHistoryWithoutLock()
 }
 
+func (s *Store) searchLastIncident(target string, t time.Time) *api.Incident {
+	cur, ok := s.currentIncidents[target]
+	if ok {
+		return cur
+	}
+
+	hs, hok := s.probeHistory[target]
+
+	if hok && len(hs.Records) > 0 && hs.Records[len(hs.Records)-1].Time.Before(t) {
+		return nil
+	}
+
+	for i := len(s.incidentHistory) - 1; i >= 0; i-- {
+		x := s.incidentHistory[i]
+
+		if x.Target.String() == target && t.Before(x.EndsAt) {
+			if x.StartsAt.Before(t) {
+				return x
+			}
+
+			if hok {
+				for i := len(hs.Records) - 1; i >= 0; i-- {
+					h := hs.Records[i]
+					if h.Time.Before(x.StartsAt) {
+						if h.Time.Before(t) {
+							return x
+						}
+						break
+					}
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
 func (s *Store) setIncidentIfNeed(r api.Record, needCallback bool) {
 	if r.Status == api.StatusAborted {
 		return
 	}
 
 	target := r.Target.String()
-	if cur, ok := s.currentIncidents[target]; ok {
-		if incidentIsContinued(cur, r) {
+
+	if incident := s.searchLastIncident(target, r.Time); incident != nil {
+		if incident.StartsAt.After(r.Time) {
+			incident.StartsAt = r.Time
+		}
+
+		// nothing to do for continue of current incident, or for old resolved incident.
+		if incident.Status == r.Status && incident.Message == r.Message && (incident.EndsAt.IsZero() || incident.EndsAt.After(r.Time)) {
 			return
 		}
 
-		cur.EndsAt = r.Time
-		s.incidentHistory = append(s.incidentHistory, cur)
+		incident.EndsAt = r.Time
+		s.incidentHistory = append(s.incidentHistory, incident)
 		delete(s.currentIncidents, target)
 
 		if len(s.incidentHistory) > INCIDENT_HISTORY_LEN {
@@ -267,13 +310,38 @@ func (s *Store) setIncidentIfNeed(r api.Record, needCallback bool) {
 
 	if r.Status != api.StatusHealthy {
 		incident := newIncident(r)
-		s.currentIncidents[target] = incident
 
-		// kick incident callback when new incident caused
-		if needCallback {
-			s.incidentCount++
-			for _, cb := range s.OnStatusChanged {
-				cb(r)
+		if hs, ok := s.probeHistory[target]; ok && len(hs.Records) > 0 && hs.Records[len(hs.Records)-1].Time.After(r.Time) {
+			var next api.Record
+
+			for _, h := range hs.Records {
+				if r.Time.Before(h.Time) {
+					incident.EndsAt = h.Time
+					next = h
+					break
+				}
+			}
+			s.incidentHistory = append(s.incidentHistory, incident)
+
+			// kick incident callback when new incident caused
+			if needCallback {
+				s.incidentCount++
+				for _, cb := range s.OnStatusChanged {
+					cb(r)
+					if next.Status == api.StatusHealthy {
+						cb(next)
+					}
+				}
+			}
+		} else {
+			s.currentIncidents[target] = incident
+
+			// kick incident callback when new incident caused
+			if needCallback {
+				s.incidentCount++
+				for _, cb := range s.OnStatusChanged {
+					cb(r)
+				}
 			}
 		}
 	}
@@ -294,8 +362,8 @@ func (s *Store) Report(source *api.URL, r api.Record) {
 		s.historyLock.Lock()
 		defer s.historyLock.Unlock()
 
-		s.probeHistory.Append(source, r)
 		s.setIncidentIfNeed(r, true)
+		s.probeHistory.Append(source, r)
 	}
 }
 
@@ -365,8 +433,8 @@ func (s *Store) Restore() error {
 		}
 
 		if r.Target.Scheme != "alert" && r.Target.Scheme != "ayd" {
-			s.probeHistory.Append(r.Target, r)
 			s.setIncidentIfNeed(r, false)
+			s.probeHistory.Append(r.Target, r)
 		}
 	}
 
