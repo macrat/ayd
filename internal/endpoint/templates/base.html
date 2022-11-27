@@ -24,6 +24,7 @@
             {{- end }}
         </div>{{ if .Message }}
         <pre class="message">{{ .Message }}</pre>{{ end }}
+        → <a href="/log.html?target={{ .Target }}&since={{ .StartsAt | time2str }}{{ if not .EndsAt.IsZero }}&until={{ .EndsAt | time2str }}{{ end }}">detail</a>
     </section>
 {{ end -}}
 
