@@ -80,11 +80,6 @@ func (s *Store) Path() string {
 	return s.path
 }
 
-// SetPath sets path to log file.
-func (s *Store) SetPath(p string) {
-	s.path = p
-}
-
 // IncidentCount returns the count of incident causes.
 func (s *Store) IncidentCount() int {
 	return s.incidentCount
