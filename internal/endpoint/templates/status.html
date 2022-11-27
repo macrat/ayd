@@ -178,7 +178,7 @@ section.status {
     {{ end }}</article>
 
     <article class="status" aria-label="Current status">{{ range .ProbeHistory | sort_history }}
-        <section class="status {{ .Status | to_lower }}">
+        <section class="status {{ .Status | to_lower }}" id="{{ .Target | url2uuid }}">
             <h1 aria-label="'{{ .Target }}' is currently {{ .Status | to_lower }}">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#{{ .Status | to_lower }}-icon" /></svg>
                 {{- .Target }}

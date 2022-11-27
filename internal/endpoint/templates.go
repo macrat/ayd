@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/dustin/go-humanize"
+	"github.com/google/uuid"
 	api "github.com/macrat/ayd/lib-ayd"
 )
 
@@ -160,6 +161,9 @@ var (
 				builder.Add(r.Status)
 			}
 			return builder.Build()
+		},
+		"url2uuid": func(u *api.URL) string {
+			return uuid.NewSHA1(uuid.NameSpaceURL, []byte(u.String())).String()
 		},
 	}
 )
