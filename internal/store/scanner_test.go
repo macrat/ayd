@@ -2,12 +2,15 @@ package store_test
 
 import (
 	"io"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/macrat/ayd/internal/store"
 	"github.com/macrat/ayd/internal/testutil"
+	api "github.com/macrat/ayd/lib-ayd"
 )
 
 func TestStore_OpenLog(t *testing.T) {
@@ -92,5 +95,46 @@ func TestStore_OpenLog(t *testing.T) {
 				})
 			}
 		})
+	}
+}
+
+func TestStore_OpenLog_logRemoved(t *testing.T) {
+	p := filepath.Join(t.TempDir(), "ayd.log")
+
+	s, err := store.New(p, io.Discard)
+	if err != nil {
+		t.Fatalf("failed to make store: %s", err)
+	}
+	defer s.Close()
+
+	testCount := func(r api.LogScanner) {
+		t.Helper()
+		count := 0
+		for r.Scan() {
+			count++
+		}
+		if count != 0 {
+			t.Fatalf("unexpected number of records found: %d", count)
+		}
+	}
+
+	baseTime := time.Now()
+
+	if r, err := s.OpenLog(baseTime.Add(-1*time.Hour), baseTime.Add(1*time.Hour)); err != nil {
+		t.Fatalf("failed to open reader: %s", err)
+	} else {
+		testCount(r)
+		r.Close()
+	}
+
+	if err := os.Remove(p); err != nil {
+		t.Fatalf("failed to remove test log file: %s", err)
+	}
+
+	if r, err := s.OpenLog(baseTime.Add(-1*time.Hour), baseTime.Add(1*time.Hour)); err != nil {
+		t.Fatalf("failed to open reader: %s", err)
+	} else {
+		testCount(r)
+		r.Close()
 	}
 }

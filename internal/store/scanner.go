@@ -2,6 +2,7 @@ package store
 
 import (
 	"bufio"
+	"errors"
 	"os"
 	"sort"
 	"time"
@@ -133,11 +134,31 @@ func (r *inMemoryScanner) Record() api.Record {
 	return r.records[r.index]
 }
 
+type dummyScanner struct{}
+
+func (r dummyScanner) Close() error {
+	return nil
+}
+
+func (r dummyScanner) Scan() bool {
+	return false
+}
+
+func (r dummyScanner) Record() api.Record {
+	// This method never be called.
+	panic("This is a bug if you see this message.")
+}
+
 func (s *Store) OpenLog(since, until time.Time) (api.LogScanner, error) {
 	if s.Path() == "" {
 		return newInMemoryScanner(s, since, until), nil
 	}
 
 	interests := s.index.Search(since.Unix(), until.Unix())
-	return newFileScanner(s.Path(), since, until, interests)
+	r, err := newFileScanner(s.Path(), since, until, interests)
+	if errors.Is(err, os.ErrNotExist) {
+		return dummyScanner{}, nil
+	} else {
+		return r, err
+	}
 }
