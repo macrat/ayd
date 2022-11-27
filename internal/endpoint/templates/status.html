@@ -200,9 +200,9 @@ section.status {
             </figure>
             <div class="time-range">
                 {{- with .Records | time_range }}
-                <span class="oldest {{ if .Oldest.IsZero }}no-data{{ end }}">{{ if .Oldest.IsZero }}no data{{ else }}<time datetime="{{ .Oldest | time2str }}" title="{{ .Oldest | time2str }}">{{ .Oldest | time2humanize }}</time>{{ end }}</span>
+                <span class="oldest {{ if .Oldest.IsZero }}no-data{{ end }}">{{ if .Oldest.IsZero }}no data{{ else }}{{ block "timestamp" .Oldest }}{{ end }}{{ end }}</span>
                 <span class="{{ if .Oldest.IsZero }}no-data{{ end }}">~</span>
-                <span class="newest {{ if .Newest.IsZero }}no-data{{ end }}">{{ if .Newest.IsZero }}no data{{ else }}<time datetime="{{ .Newest | time2str }}" title="{{ .Newest | time2str }}">{{ .Newest | time2humanize }}</time>{{ end }}</span>
+                <span class="newest {{ if .Newest.IsZero }}no-data{{ end }}">{{ if .Newest.IsZero }}no data{{ else }}{{ block "timestamp" .Newest }}{{ end }}{{ end }}</span>
                 {{ end -}}
             </div>
         </section>{{ end }}

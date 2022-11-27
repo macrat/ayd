@@ -1,18 +1,26 @@
 <!DOCTYPE html>
 
-{{define "incident" }}
+{{ define "timestamp_inner" -}}
+    {{ . | time2str_date }}<span class="time-t">T</span>{{ . | time2str_time }}<span class="timezone">{{ . | time2str_zone }}</span>
+{{- end -}}
+
+{{ define "timestamp" -}}
+    <time title="{{ . | time2humanize }}">{{ block "timestamp_inner" . }}{{ end }}</time>
+{{- end -}}
+
+{{ define "incident" }}
     <section class="incident">
         <h1>
             <span class="incident-status {{ .Status | to_lower }}">{{ .Status }}</span>
             <span class="target" aria-label="incident of '{{ .Target }}'">{{ .Target }}</span>
         </h1>
         <div class="period">
-            <time aria-label="since {{ .StartsAt | time2str }}" title="{{ .StartsAt | time2humanize }}">{{ .StartsAt | time2str }}</time>
+            <time aria-label="since {{ .StartsAt | time2str }}" title="{{ .StartsAt | time2humanize }}">{{ block "timestamp_inner" .StartsAt }}{{ end }}</time>
             <span aria-hidden="true">-</span>
             {{ if .EndsAt.IsZero -}}
                 ongoing
             {{- else -}}
-                <time aria-label="until {{ .EndsAt | time2str }}" title="{{ .EndsAt | time2humanize }}">{{ .EndsAt | time2str }}</time>
+            <time aria-label="until {{ .EndsAt | time2str }}" title="{{ .EndsAt | time2humanize }}">{{ block "timestamp_inner" .EndsAt }}{{ end }}</time>
             {{- end }}
         </div>{{ if .Message }}
         <pre class="message">{{ .Message }}</pre>{{ end }}
@@ -130,6 +138,22 @@ h1 {
     border: 1px solid rgb(var(--fg));
     border-radius: 2px;
     padding: 16px 12px;
+}
+.incident .period > span {
+    display: inline-block;
+    margin: 0 .5em;
+}
+
+.time-t {
+    display: inline-block;
+    margin: 0 .1em;
+    opacity: .3;
+}
+.timezone {
+    display: inline-block;
+    margin-left: .1em;
+    font-size: 70%;
+    opacity: .5;
 }
 
 {{ block "style" . }}{{ end }}
