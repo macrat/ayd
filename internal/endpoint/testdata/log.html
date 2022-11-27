@@ -112,6 +112,22 @@ h1 {
     border-radius: 2px;
     padding: 16px 12px;
 }
+.incident .period > span {
+    display: inline-block;
+    margin: 0 .5em;
+}
+
+.time-t {
+    display: inline-block;
+    margin: 0 .1em;
+    opacity: .3;
+}
+.timezone {
+    display: inline-block;
+    margin-left: .1em;
+    font-size: 70%;
+    opacity: .5;
+}
 
 
 main {
@@ -153,18 +169,6 @@ td.degrade::before { background-color: rgb(var(--degrade)) }
 td.failure::before { background-color: rgb(var(--failure)) }
 td.healthy::before { background-color: rgb(var(--healthy)) }
 td.unknown::before { background-color: rgb(var(--fg)) }
-
-.time-t {
-    display: inline-block;
-    margin: 0 .1em;
-    opacity: .3;
-}
-.timezone {
-    display: inline-block;
-    margin-left: .1em;
-    font-size: 70%;
-    opacity: .5;
-}
 
 .latency {
     text-align: right;

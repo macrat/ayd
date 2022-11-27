@@ -112,6 +112,22 @@ h1 {
     border-radius: 2px;
     padding: 16px 12px;
 }
+.incident .period > span {
+    display: inline-block;
+    margin: 0 .5em;
+}
+
+.time-t {
+    display: inline-block;
+    margin: 0 .1em;
+    opacity: .3;
+}
+.timezone {
+    display: inline-block;
+    margin-left: .1em;
+    font-size: 70%;
+    opacity: .5;
+}
 
 
 article.status {
@@ -430,9 +446,9 @@ hoge: fuga">
                 </svg>
             </figure>
             <div class="time-range">
-                <span class="oldest "><time datetime="2021-01-02T15:04:08Z" title="2021-01-02T15:04:08Z">[[MASKED_DATA]]</time></span>
+                <span class="oldest "><time title="[[MASKED_DATA]]">2021-01-02<span class="time-t">T</span>15:04:08<span class="timezone">Z</span></time></span>
                 <span class="">~</span>
-                <span class="newest "><time datetime="2021-01-02T15:04:09Z" title="2021-01-02T15:04:09Z">[[MASKED_DATA]]</time></span>
+                <span class="newest "><time title="[[MASKED_DATA]]">2021-01-02<span class="time-t">T</span>15:04:09<span class="timezone">Z</span></time></span>
                 </div>
         </section>
         <section class="status healthy">
@@ -516,9 +532,9 @@ hello world!!">
                 </svg>
             </figure>
             <div class="time-range">
-                <span class="oldest "><time datetime="2021-01-02T15:04:05Z" title="2021-01-02T15:04:05Z">[[MASKED_DATA]]</time></span>
+                <span class="oldest "><time title="[[MASKED_DATA]]">2021-01-02<span class="time-t">T</span>15:04:05<span class="timezone">Z</span></time></span>
                 <span class="">~</span>
-                <span class="newest "><time datetime="2021-01-02T15:04:07Z" title="2021-01-02T15:04:07Z">[[MASKED_DATA]]</time></span>
+                <span class="newest "><time title="[[MASKED_DATA]]">2021-01-02<span class="time-t">T</span>15:04:07<span class="timezone">Z</span></time></span>
                 </div>
         </section>
         <section class="status healthy">
@@ -599,9 +615,9 @@ this is healthy">
                 </svg>
             </figure>
             <div class="time-range">
-                <span class="oldest "><time datetime="2021-01-02T15:04:05Z" title="2021-01-02T15:04:05Z">[[MASKED_DATA]]</time></span>
+                <span class="oldest "><time title="[[MASKED_DATA]]">2021-01-02<span class="time-t">T</span>15:04:05<span class="timezone">Z</span></time></span>
                 <span class="">~</span>
-                <span class="newest "><time datetime="2021-01-02T15:04:06Z" title="2021-01-02T15:04:06Z">[[MASKED_DATA]]</time></span>
+                <span class="newest "><time title="[[MASKED_DATA]]">2021-01-02<span class="time-t">T</span>15:04:06<span class="timezone">Z</span></time></span>
                 </div>
         </section>
         <section class="status unknown">
@@ -691,7 +707,7 @@ this is healthy">
             <span class="target" aria-label="incident of 'http://c.example.com'">http://c.example.com</span>
         </h1>
         <div class="period">
-            <time aria-label="since 2021-01-02T15:04:09Z" title="[[MASKED_DATA]]">2021-01-02T15:04:09Z</time>
+            <time aria-label="since 2021-01-02T15:04:09Z" title="[[MASKED_DATA]]">2021-01-02<span class="time-t">T</span>15:04:09<span class="timezone">Z</span></time>
             <span aria-hidden="true">-</span>
             ongoing
         </div>

@@ -112,6 +112,22 @@ h1 {
     border-radius: 2px;
     padding: 16px 12px;
 }
+.incident .period > span {
+    display: inline-block;
+    margin: 0 .5em;
+}
+
+.time-t {
+    display: inline-block;
+    margin: 0 .1em;
+    opacity: .3;
+}
+.timezone {
+    display: inline-block;
+    margin-left: .1em;
+    font-size: 70%;
+    opacity: .5;
+}
 
 
 hr {
@@ -203,7 +219,7 @@ footer span {
             <span class="target" aria-label="incident of 'http://c.example.com'">http://c.example.com</span>
         </h1>
         <div class="period">
-            <time aria-label="since 2021-01-02T15:04:09Z" title="[[MASKED_DATA]]">2021-01-02T15:04:09Z</time>
+            <time aria-label="since 2021-01-02T15:04:09Z" title="[[MASKED_DATA]]">2021-01-02<span class="time-t">T</span>15:04:09<span class="timezone">Z</span></time>
             <span aria-hidden="true">-</span>
             ongoing
         </div>
@@ -222,9 +238,9 @@ footer span {
             <span class="target" aria-label="incident of 'http://b.example.com'">http://b.example.com</span>
         </h1>
         <div class="period">
-            <time aria-label="since 2021-01-02T15:04:05Z" title="[[MASKED_DATA]]">2021-01-02T15:04:05Z</time>
+            <time aria-label="since 2021-01-02T15:04:05Z" title="[[MASKED_DATA]]">2021-01-02<span class="time-t">T</span>15:04:05<span class="timezone">Z</span></time>
             <span aria-hidden="true">-</span>
-            <time aria-label="until 2021-01-02T15:04:06Z" title="[[MASKED_DATA]]">2021-01-02T15:04:06Z</time>
+            <time aria-label="until 2021-01-02T15:04:06Z" title="[[MASKED_DATA]]">2021-01-02<span class="time-t">T</span>15:04:06<span class="timezone">Z</span></time>
         </div>
         <pre class="message">this is failure</pre>
     </section>
