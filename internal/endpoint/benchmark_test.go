@@ -1,6 +1,7 @@
 package endpoint_test
 
 import (
+	"bytes"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -18,6 +19,9 @@ func Benchmark_endpoints(b *testing.B) {
 		{"/status.txt", endpoint.StatusTextEndpoint},
 		{"/status.json", endpoint.StatusJSONEndpoint},
 		{"/incidents.html", endpoint.IncidentsHTMLEndpoint},
+		{"/incidents.rss", endpoint.IncidentsRSSEndpoint},
+		{"/incidents.csv", endpoint.IncidentsCSVEndpoint},
+		{"/log.html", endpoint.LogHTMLEndpoint},
 		{"/log.csv", endpoint.LogCSVEndpoint},
 		{"/log.json", endpoint.LogJsonEndpoint},
 		{"/metrics", endpoint.MetricsEndpoint},
@@ -35,9 +39,14 @@ func Benchmark_endpoints(b *testing.B) {
 
 			r := httptest.NewRequest("GET", tt.Path, nil)
 
+			var buf bytes.Buffer
+
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
-				h(httptest.NewRecorder(), r)
+				w := httptest.NewRecorder()
+				w.Body = &buf
+				h(w, r)
+				buf.Reset()
 			}
 		})
 	}
