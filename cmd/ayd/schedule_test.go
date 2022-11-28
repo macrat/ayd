@@ -3,7 +3,7 @@ package main_test
 import (
 	"testing"
 
-	"github.com/macrat/ayd"
+	"github.com/macrat/ayd/cmd/ayd"
 )
 
 func TestParseCronSchedule(t *testing.T) {

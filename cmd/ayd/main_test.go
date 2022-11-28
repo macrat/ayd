@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/macrat/ayd"
+	"github.com/macrat/ayd/cmd/ayd"
 )
 
 func MakeTestCommand(t testing.TB, taskArgs []string) (*main.AydCommand, *bytes.Buffer) {

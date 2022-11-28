@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/macrat/ayd"
+	"github.com/macrat/ayd/cmd/ayd"
 	"github.com/macrat/ayd/internal/ayderr"
 	"github.com/macrat/ayd/internal/scheme"
 	"github.com/macrat/ayd/internal/testutil"

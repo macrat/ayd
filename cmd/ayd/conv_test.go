@@ -10,11 +10,9 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/macrat/ayd"
+	"github.com/macrat/ayd/cmd/ayd"
+	"github.com/macrat/ayd/internal/testutil"
 )
-
-//go:embed internal/testutil/testdata/test.log
-var testLog string
 
 //go:embed testdata/log.csv
 var testLogCSV string
@@ -35,77 +33,77 @@ func TestConvCommand_Run(t *testing.T) {
 	}{
 		{
 			[]string{},
-			testLog,
+			testutil.DummyLog,
 			testLogCSV,
 			"",
 			0,
 		},
 		{
 			[]string{"-c"},
-			testLog,
+			testutil.DummyLog,
 			testLogCSV,
 			"",
 			0,
 		},
 		{
 			[]string{"--csv", "-"},
-			testLog,
+			testutil.DummyLog,
 			testLogCSV,
 			"",
 			0,
 		},
 		{
-			[]string{"-c", "./internal/testutil/testdata/test.log"},
-			testLog,
+			[]string{"-c", "../../internal/testutil/testdata/test.log"},
+			testutil.DummyLog,
 			testLogCSV,
 			"",
 			0,
 		},
 		{
 			[]string{"-j"},
-			testLog,
+			testutil.DummyLog,
 			testLogJson,
 			"",
 			0,
 		},
 		{
 			[]string{"--json", "-o", "-"},
-			testLog,
+			testutil.DummyLog,
 			testLogJson,
 			"",
 			0,
 		},
 		{
 			[]string{"-l"},
-			testLog,
+			testutil.DummyLog,
 			testLogLtsv,
 			"",
 			0,
 		},
 		{
 			[]string{"-j", "-c"},
-			testLog,
+			testutil.DummyLog,
 			"",
 			"error: flags for output format can not use multiple in the same time.\n",
 			2,
 		},
 		{
 			[]string{"-c", "./testdata/no-such-file"},
-			testLog,
+			testutil.DummyLog,
 			"",
 			"error: failed to open input log file: .*\n",
 			1,
 		},
 		{
 			[]string{"-h"},
-			testLog,
+			testutil.DummyLog,
 			main.ConvHelp,
 			"",
 			0,
 		},
 		{
 			[]string{"--no-such-option"},
-			testLog,
+			testutil.DummyLog,
 			"",
 			"unknown flag: --no-such-option\n\nPlease see `ayd conv -h` for more information.\n",
 			2,
@@ -134,7 +132,7 @@ func TestConvCommand_Run(t *testing.T) {
 	}
 
 	t.Run("write-file", func(t *testing.T) {
-		stdin := strings.NewReader(testLog)
+		stdin := strings.NewReader(testutil.DummyLog)
 		stdout := bytes.NewBuffer(nil)
 		stderr := bytes.NewBuffer(nil)
 		cmd := main.ConvCommand{stdin, stdout, stderr}

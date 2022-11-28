@@ -2,7 +2,7 @@ before:
   hooks:
     - 'go mod tidy'
     - 'go install github.com/josephspurrier/goversioninfo/cmd/goversioninfo@latest'
-    - 'goversioninfo -platform-specific -ver-major="{{ .Major }}" -product-ver-major="{{ .Major }}" -ver-minor="{{ .Minor }}" -product-ver-minor="{{ .Minor }}" -ver-patch="{{ .Patch }}" -product-ver-patch="{{ .Patch }}" -file-version="{{ .Version }} ({{ .ShortCommit }})" -product-version="{{ .Version }} ({{ .ShortCommit }})"'
+    - './.goreleaser-before.sh "{{.Major}}" "{{.Minor}}" "{{.Patch}}" "{{.ShortCommit}}"'
 
 builds:
   - id: with-upx
@@ -11,6 +11,7 @@ builds:
     goos:
       - linux
       - darwin
+    main: ./cmd/ayd
     flags:
       - -trimpath
     ldflags:
@@ -24,6 +25,7 @@ builds:
       - CGO_ENABLED=0
     goos:
       - windows
+    main: ./cmd/ayd
     flags:
       - -trimpath
     ldflags:
