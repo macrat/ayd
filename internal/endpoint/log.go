@@ -258,17 +258,20 @@ func LogCSVEndpoint(s Store) http.HandlerFunc {
 		scanner = setFilter(scanner, r)
 
 		c := csv.NewWriter(w)
-		c.Write([]string{"timestamp", "status", "latency", "target", "message"})
+		c.Write([]string{"timestamp", "status", "latency", "target", "message", "extra"})
 
 		for scanner.Scan() {
 			r := scanner.Record()
+
+			extra, _ := json.Marshal(r.Extra) // Ignore error because it use empty string if failed to convert.
 
 			c.Write([]string{
 				r.Time.Format(time.RFC3339),
 				r.Status.String(),
 				strconv.FormatFloat(float64(r.Latency.Microseconds())/1000, 'f', 3, 64),
 				r.Target.String(),
-				r.ReadableMessage(),
+				r.Message,
+				string(extra),
 			})
 		}
 
