@@ -159,12 +159,19 @@ func (c ConvCommand) toCSV(scanners []api.LogScanner, output io.Writer) error {
 	for _, s := range scanners {
 		for s.Scan() {
 			r := s.Record()
-			err := writer.Write([]string{
+
+			extra, err := json.Marshal(r.Extra)
+			if err != nil {
+				return fmt.Errorf("failed to convert extra values: %s", err)
+			}
+
+			err = writer.Write([]string{
 				r.Time.Format(time.RFC3339),
 				r.Status.String(),
 				strconv.FormatFloat(float64(r.Latency.Microseconds())/1000, 'f', 3, 64),
 				r.Target.String(),
-				r.ReadableMessage(),
+				r.Message,
+				string(extra),
 			})
 			if err != nil {
 				return fmt.Errorf("failed to write log: %s", err)
