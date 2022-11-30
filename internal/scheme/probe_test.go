@@ -75,6 +75,11 @@ func TestTargetURLNormalize(t *testing.T) {
 		{"tcp://", api.URL{}, scheme.ErrMissingHost},
 		{"tcp:", api.URL{}, scheme.ErrMissingHost},
 
+		{"ssh://foo:bar@example.com", api.URL{Scheme: "ssh", Host: "example.com"}, nil},
+		{"ssh://foo:bar@example.com/path/to/somewhere", api.URL{Scheme: "ssh", Host: "example.com"}, nil},
+		{"ssh://foo:bar@example.com?fingerprint=SHA256:pU4DM3M2JB6wTVmvXNntBMkIKycmhK461KdcdFtKiPE", api.URL{Scheme: "ssh", Host: "example.com", RawQuery: "fingerprint=SHA256%3ApU4DM3M2JB6wTVmvXNntBMkIKycmhK461KdcdFtKiPE"}, nil},
+		{"ssH://fOo:Bar@Example.com?oh=no", api.URL{Scheme: "ssh", Host: "example.com"}, nil},
+
 		{"dns:example.com", api.URL{Scheme: "dns", Opaque: "example.com"}, nil},
 		{"dns:///example.com", api.URL{Scheme: "dns", Opaque: "example.com"}, nil},
 		{"dns://8.8.8.8/example.com", api.URL{Scheme: "dns", Host: "8.8.8.8", Path: "/example.com"}, nil},
