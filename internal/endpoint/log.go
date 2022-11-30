@@ -263,7 +263,10 @@ func LogCSVEndpoint(s Store) http.HandlerFunc {
 		for scanner.Scan() {
 			r := scanner.Record()
 
-			extra, _ := json.Marshal(r.Extra) // Ignore error because it use empty string if failed to convert.
+			var extra []byte
+			if len(r.Extra) > 0 {
+				extra, _ = json.Marshal(r.Extra) // Ignore error because it use empty string if failed to convert.
+			}
 
 			c.Write([]string{
 				r.Time.Format(time.RFC3339),
