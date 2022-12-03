@@ -48,6 +48,7 @@ func TestPathPattern_Match(t *testing.T) {
 		{"ayd_%Y%m%d.log", "ayd_2022010.log", time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC), false},
 		{"ayd_%Y-%m-%d.log", "ayd_2022-06-15.log", time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC), true},
 		{"ayd_%m%d.log", "ayd_0401.log", time.Date(2022, 3, 1, 0, 0, 0, 0, time.UTC), time.Date(2022, 5, 1, 0, 0, 0, 0, time.UTC), true},
+		{"%Y%m%dT%H%M.log", "20210102T1504.log", time.Date(2021, 1, 2, 15, 4, 0, 0, time.UTC), time.Date(2021, 1, 2, 15, 4, 10, 0, time.UTC), true},
 		{"%y/ayd_%H%M.log", "22/ayd_2059.log", time.Date(2022, 1, 1, 20, 0, 0, 0, time.UTC), time.Date(2022, 1, 1, 21, 0, 0, 0, time.UTC), true},
 		{"%y/ayd_%H%M.log", "22/ayd_2101.log", time.Date(2022, 1, 1, 20, 0, 0, 0, time.UTC), time.Date(2022, 1, 1, 21, 0, 0, 0, time.UTC), false},
 		{"%y/ayd_%H%M.log", "22/ayd_1959.log", time.Date(2022, 1, 1, 20, 0, 0, 0, time.UTC), time.Date(2022, 1, 1, 21, 0, 0, 0, time.UTC), false},

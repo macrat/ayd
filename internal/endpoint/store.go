@@ -7,9 +7,6 @@ import (
 )
 
 type Store interface {
-	// Path returns path to log file.
-	Path() string
-
 	// Targets returns target URLs include inactive target.
 	Targets() []string
 

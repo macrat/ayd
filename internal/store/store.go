@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/url"
 	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 	"sync"
@@ -20,15 +21,14 @@ const (
 )
 
 var (
-	LogRestoreBytes    = int64(100 * 1024 * 1024)
-	TooLargeLogMessage = "WARNING: read only last 100MB from log file because it is too large"
+	LogRestoreBytes = int64(100 * 1024 * 1024)
 )
 
 type RecordHandler func(api.Record)
 
 // Store is the log handler of Ayd, and it also the database of Ayd.
 type Store struct {
-	path string
+	path PathPattern
 
 	Console io.Writer
 
@@ -51,7 +51,7 @@ func New(path string, console io.Writer) (*Store, error) {
 	ch := make(chan api.Record, 32)
 
 	store := &Store{
-		path:             path,
+		path:             ParsePathPattern(path),
 		Console:          console,
 		probeHistory:     make(probeHistoryMap),
 		currentIncidents: make(map[string]*api.Incident),
@@ -60,23 +60,14 @@ func New(path string, console io.Writer) (*Store, error) {
 		healthy:          true,
 	}
 
-	if store.path != "" {
-		if f, err := os.OpenFile(store.path, os.O_WRONLY|os.O_APPEND|os.O_CREATE|os.O_SYNC, 0644); err != nil {
-			close(ch)
-			return nil, err
-		} else {
-			f.Close()
-		}
-	}
-
 	go store.writer(ch, store.writerStopped)
 
 	return store, nil
 }
 
-// Path returns path to log file.
-func (s *Store) Path() string {
-	return s.path
+// Path returns pathes to log files.
+func (s *Store) Pathes() []string {
+	return s.path.ListAll()
 }
 
 // IncidentCount returns the count of incident causes.
@@ -118,13 +109,19 @@ func (s *Store) writer(ch <-chan api.Record, stopped chan struct{}) {
 		reader.Reset(msg)
 		reader.WriteTo(s.Console)
 
-		if s.path == "" {
+		if s.path.IsEmpty() {
 			continue
 		}
 
 		s.setHealthy()
 
-		f, err := os.OpenFile(s.path, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
+		p := s.path.Build(r.Time)
+
+		if err := os.MkdirAll(filepath.Dir(p), 0755); err != nil {
+			s.handleError(err, "failed to create log directory")
+		}
+
+		f, err := os.OpenFile(p, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
 		if err != nil {
 			s.handleError(err, "failed to open log file")
 			continue
@@ -353,32 +350,56 @@ func (s *Store) Report(source *api.URL, r api.Record) {
 }
 
 func (s *Store) Restore() error {
-	if s.path == "" {
+	if s.path.IsEmpty() {
 		return nil
 	}
 
 	s.historyLock.Lock()
 	defer s.historyLock.Unlock()
 
-	f, err := os.OpenFile(s.path, os.O_RDONLY|os.O_CREATE, 0644)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-	if ret, _ := f.Seek(-LogRestoreBytes, os.SEEK_END); ret != 0 {
-		u := &api.URL{Scheme: "ayd", Opaque: "log"}
-		fmt.Fprintln(s.Console, api.Record{
-			Time:    time.Now(),
-			Status:  api.StatusDegrade,
-			Target:  u,
-			Message: TooLargeLogMessage,
-			Extra: map[string]interface{}{
-				"log_size": ret + LogRestoreBytes,
-			},
-		})
+	s.probeHistory = make(probeHistoryMap)
+
+	pathes := s.path.ListAll()
+
+	var loadedSize int64
+	for i := range pathes {
+		if loadedSize > LogRestoreBytes {
+			break
+		}
+
+		path := pathes[len(pathes)-i-1]
+
+		size, err := s.restoreOneFile(path, LogRestoreBytes-loadedSize)
+		if err != nil {
+			return err
+		}
+		loadedSize += size
 	}
 
-	s.probeHistory = make(probeHistoryMap)
+	for k := range s.probeHistory {
+		s.probeHistory[k].setInactive()
+	}
+
+	return nil
+}
+
+func (s *Store) restoreOneFile(path string, maxSize int64) (int64, error) {
+	f, err := os.OpenFile(path, os.O_RDONLY|os.O_CREATE, 0644)
+	if err != nil {
+		return 0, err
+	}
+	defer f.Close()
+
+	size, err := f.Seek(0, os.SEEK_END)
+	if err != nil {
+		return 0, err
+	}
+
+	if size > maxSize {
+		f.Seek(-maxSize, os.SEEK_END)
+	} else {
+		f.Seek(0, os.SEEK_SET)
+	}
 
 	reader := bufio.NewReader(f)
 	for {
@@ -402,11 +423,7 @@ func (s *Store) Restore() error {
 		}
 	}
 
-	for k := range s.probeHistory {
-		s.probeHistory[k].setInactive()
-	}
-
-	return nil
+	return size, nil
 }
 
 // ActivateTarget marks the target will reported via specified source.

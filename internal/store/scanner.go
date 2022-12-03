@@ -37,12 +37,6 @@ func (r *fileScanner) Close() error {
 	return r.file.Close()
 }
 
-func (r *fileScanner) seek(pos int64) {
-	r.file.Seek(pos, os.SEEK_SET)
-	r.reader = bufio.NewReader(r.file)
-	r.pos = pos
-}
-
 func (r *fileScanner) Scan() bool {
 	for {
 		b, err := r.reader.ReadBytes('\n')
@@ -62,6 +56,82 @@ func (r *fileScanner) Scan() bool {
 
 func (r *fileScanner) Record() api.Record {
 	return r.rec
+}
+
+type fileScannerSet struct {
+	scanners []*fileScanner
+	scanned  bool
+	earliest int
+}
+
+func newFileScannerSet(pathes []string, since, until time.Time) (*fileScannerSet, error) {
+	min := time.Unix(1<<63-1, 0)
+
+	var ss fileScannerSet
+	for i, p := range pathes {
+		s, err := newFileScanner(p, since, until)
+		if err != nil {
+			ss.Close()
+			return nil, err
+		}
+		if !s.Scan() {
+			ss.Close()
+			continue
+		}
+		if s.Record().Time.Before(min) {
+			ss.earliest = i
+			min = s.Record().Time
+		}
+		ss.scanners = append(ss.scanners, s)
+	}
+	return &ss, nil
+}
+
+func (r *fileScannerSet) Close() error {
+	var err error
+	for _, s := range r.scanners {
+		if e := s.Close(); e != nil {
+			err = e
+		}
+	}
+	return err
+}
+
+func (r *fileScannerSet) updateEarliest() {
+	max := time.Unix(1<<63-1, 0)
+	for i, s := range r.scanners {
+		if s.Record().Time.Before(max) {
+			r.earliest = i
+			max = s.Record().Time
+		}
+	}
+}
+
+func (r *fileScannerSet) Scan() bool {
+	if !r.scanned {
+		r.scanned = true
+		return len(r.scanners) > 0
+	}
+
+	for len(r.scanners) > 0 {
+		if r.scanners[r.earliest].Scan() {
+			r.updateEarliest()
+			return true
+		} else {
+			r.scanners[r.earliest].Close()
+			r.scanners = append(r.scanners[:r.earliest], r.scanners[r.earliest+1:]...)
+			r.updateEarliest()
+		}
+	}
+
+	return false
+}
+
+func (r *fileScannerSet) Record() api.Record {
+	if len(r.scanners) < 0 {
+		panic("This is a bug if you see this message.")
+	}
+	return r.scanners[r.earliest].Record()
 }
 
 type inMemoryScanner struct {
@@ -129,11 +199,11 @@ func (r dummyScanner) Record() api.Record {
 }
 
 func (s *Store) OpenLog(since, until time.Time) (api.LogScanner, error) {
-	if s.Path() == "" {
+	if s.path.IsEmpty() {
 		return newInMemoryScanner(s, since, until), nil
 	}
 
-	r, err := newFileScanner(s.Path(), since, until)
+	r, err := newFileScannerSet(s.path.ListBetween(since, until), since, until)
 	if errors.Is(err, os.ErrNotExist) {
 		return dummyScanner{}, nil
 	} else {

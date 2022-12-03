@@ -1,6 +1,8 @@
 package store
 
 import (
+	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -9,6 +11,7 @@ import (
 type pathFragment interface {
 	Build(t time.Time) string
 	Len() int
+	Glob() string
 	FillTimePattern(s string, tp *timePattern) (ok bool)
 }
 
@@ -20,6 +23,10 @@ func (c constFragment) Build(_ time.Time) string {
 
 func (c constFragment) Len() int {
 	return len(c)
+}
+
+func (c constFragment) Glob() string {
+	return string(c)
 }
 
 func (c constFragment) FillTimePattern(s string, tp *timePattern) (ok bool) {
@@ -43,6 +50,14 @@ func (y yearFragment) Len() int {
 		return 2
 	} else {
 		return 4
+	}
+}
+
+func (y yearFragment) Glob() string {
+	if y.Short {
+		return "[0-9][0-9]"
+	} else {
+		return "[0-9][0-9][0-9][0-9]"
 	}
 }
 
@@ -74,6 +89,10 @@ func (m monthFragment) Len() int {
 	return 2
 }
 
+func (m monthFragment) Glob() string {
+	return "[0-1][0-9]"
+}
+
 func (m monthFragment) FillTimePattern(s string, tp *timePattern) (ok bool) {
 	n, err := strconv.Atoi(s)
 	if err != nil || n < 1 || 12 < n {
@@ -96,6 +115,10 @@ func (d dayFragment) Build(t time.Time) string {
 
 func (d dayFragment) Len() int {
 	return 2
+}
+
+func (d dayFragment) Glob() string {
+	return "[0-3][0-9]"
 }
 
 func (d dayFragment) FillTimePattern(s string, tp *timePattern) (ok bool) {
@@ -122,6 +145,10 @@ func (h hourFragment) Len() int {
 	return 2
 }
 
+func (h hourFragment) Glob() string {
+	return "[0-2][0-9]"
+}
+
 func (h hourFragment) FillTimePattern(s string, tp *timePattern) (ok bool) {
 	n, err := strconv.Atoi(s)
 	if err != nil || n < 0 || 23 < n {
@@ -146,6 +173,10 @@ func (m minuteFragment) Len() int {
 	return 2
 }
 
+func (m minuteFragment) Glob() string {
+	return "[0-5][0-9]"
+}
+
 func (m minuteFragment) FillTimePattern(s string, tp *timePattern) (ok bool) {
 	n, err := strconv.Atoi(s)
 	if err != nil || n < 0 || 59 < n {
@@ -161,16 +192,12 @@ func (m minuteFragment) FillTimePattern(s string, tp *timePattern) (ok bool) {
 }
 
 type PathPattern struct {
-	Unit time.Duration
-
 	pattern   string
 	fragments []pathFragment
 }
 
 func ParsePathPattern(s string) PathPattern {
-	p := PathPattern{
-		pattern: s,
-	}
+	p := PathPattern{pattern: s}
 
 	var buf []string
 	left := 0
@@ -220,6 +247,14 @@ func ParsePathPattern(s string) PathPattern {
 	return p
 }
 
+func (p PathPattern) String() string {
+	return p.pattern
+}
+
+func (p PathPattern) IsEmpty() bool {
+	return len(p.fragments) == 0
+}
+
 func (p PathPattern) Build(t time.Time) string {
 	ss := make([]string, len(p.fragments))
 	for i, f := range p.fragments {
@@ -228,27 +263,33 @@ func (p PathPattern) Build(t time.Time) string {
 	return strings.Join(ss, "")
 }
 
-func (p PathPattern) Match(filename string, since, until time.Time) bool {
-	if len(p.fragments) == 0 {
-		return filename == ""
-	}
-
-	tp := emptyTimePattern
+func (p PathPattern) parseTimePattern(filename string) (tp timePattern, ok bool) {
+	tp = emptyTimePattern
 
 	l := 0
 	for _, f := range p.fragments {
 		r := l + f.Len()
 		if r > len(filename) {
-			return false
+			return tp, false
 		}
 
 		if !f.FillTimePattern(filename[l:r], &tp) {
-			return false
+			return tp, false
 		}
 
 		l = r
 	}
-	if len(filename) != l {
+
+	return tp, len(filename) == l
+}
+
+func (p PathPattern) Match(filename string, since, until time.Time) bool {
+	if p.IsEmpty() {
+		return filename == ""
+	}
+
+	tp, ok := p.parseTimePattern(filename)
+	if !ok {
 		return false
 	}
 
@@ -256,6 +297,58 @@ func (p PathPattern) Match(filename string, since, until time.Time) bool {
 	min := tp.Exec(since, minTimePattern)
 
 	return !since.After(max) && !min.After(until)
+}
+
+func (p PathPattern) Glob() string {
+	ss := make([]string, len(p.fragments))
+	for i, f := range p.fragments {
+		ss[i] = f.Glob()
+	}
+	return strings.Join(ss, "")
+}
+
+// ListAll returns all log file pathes.
+// The result is sorted by time order.
+func (p PathPattern) ListAll() []string {
+	xs, err := filepath.Glob(p.Glob())
+	if err != nil {
+		return nil
+	}
+
+	rs := make([]string, 0, len(xs))
+	tps := make([]timePattern, 0, len(xs))
+
+	for _, x := range xs {
+		if tp, ok := p.parseTimePattern(x); ok {
+			rs = append(rs, x)
+			tps = append(tps, tp)
+		}
+	}
+
+	sort.Slice(rs, func(i, j int) bool {
+		return tps[i].Less(tps[j])
+	})
+
+	return rs
+}
+
+// ListBetween returns log file pathes.
+// The result is filtered by since and until query, but not sorted.
+func (p PathPattern) ListBetween(since, until time.Time) []string {
+	xs, err := filepath.Glob(p.Glob())
+	if err != nil {
+		return nil
+	}
+
+	rs := make([]string, 0, len(xs))
+
+	for _, x := range xs {
+		if p.Match(x, since, until) {
+			rs = append(rs, x)
+		}
+	}
+
+	return rs
 }
 
 type timePattern struct {
@@ -323,4 +416,8 @@ func (p timePattern) Time(loc *time.Location) time.Time {
 		0,
 		loc,
 	)
+}
+
+func (p timePattern) Less(x timePattern) bool {
+	return p.Year < x.Year || p.Month < x.Month || p.Day < x.Day || p.Hour < x.Hour || p.Minute < x.Minute
 }

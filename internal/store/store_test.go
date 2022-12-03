@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/url"
 	"os"
+	"path/filepath"
 	"regexp"
 	"runtime"
 	"strings"
@@ -61,19 +62,10 @@ func TestStore_errorLogging(t *testing.T) {
 	defer os.Remove(f.Name())
 	f.Close()
 
-	os.Chmod(f.Name(), 0000)
-
-	_, err = store.New(f.Name(), io.Discard)
-	if err == nil {
-		t.Errorf("expected failed to open %s (with permission 000) but successed", f.Name())
-	}
-
-	os.Chmod(f.Name(), 0600)
-
 	buf := NewBuffer()
 	s, err := store.New(f.Name(), buf)
 	if err != nil {
-		t.Errorf("failed to open store %s (with permission 600)", err)
+		t.Errorf("failed to open store %s (with permission 600): %s", f.Name(), err)
 	}
 	defer s.Close()
 
@@ -127,14 +119,9 @@ func TestStore_errorLogging(t *testing.T) {
 }
 
 func TestStore_Restore(t *testing.T) {
-	f, err := os.CreateTemp("", "ayd-test-*")
-	if err != nil {
-		t.Fatalf("failed to create log file: %s", err)
-	}
-	defer os.Remove(f.Name())
-	f.Close()
+	path := filepath.Join(t.TempDir(), "%H.log")
 
-	s1, err := store.New(f.Name(), io.Discard)
+	s1, err := store.New(path, io.Discard)
 	if err != nil {
 		t.Fatalf("failed to create store: %s", err)
 	}
@@ -142,21 +129,21 @@ func TestStore_Restore(t *testing.T) {
 
 	records := []api.Record{
 		{
-			Time:    time.Now().Add(-30 * time.Minute),
+			Time:    time.Now().Add(-time.Hour),
 			Target:  &api.URL{Scheme: "ping", Opaque: "restore-test"},
 			Status:  api.StatusUnknown,
 			Message: "hello world",
 			Latency: 1 * time.Second,
 		},
 		{
-			Time:    time.Now().Add(-20 * time.Minute),
+			Time:    time.Now().Add(-30 * time.Minute),
 			Target:  &api.URL{Scheme: "exec", Opaque: "/usr/local/bin/test.sh"},
 			Status:  api.StatusHealthy,
 			Message: "foobar",
 			Latency: 123 * time.Millisecond,
 		},
 		{
-			Time:    time.Now().Add(-10 * time.Minute),
+			Time:    time.Now().Add(-15 * time.Minute),
 			Target:  &api.URL{Scheme: "http", Host: "test.local", Path: "/abc/def"},
 			Status:  api.StatusFailure,
 			Message: "hoge",
@@ -177,7 +164,7 @@ func TestStore_Restore(t *testing.T) {
 
 	time.Sleep(100 * time.Millisecond) // wait for write
 
-	s2, err := store.New(f.Name(), io.Discard)
+	s2, err := store.New(path, io.Discard)
 	if err != nil {
 		t.Fatalf("failed to create store: %s", err)
 	}
@@ -363,7 +350,7 @@ func TestStore_Restore_limitBorder(t *testing.T) {
 	}
 }
 
-func TestStore_Restore_rotate(t *testing.T) {
+func TestStore_Restore_fileRemoved(t *testing.T) {
 	t.Parallel()
 
 	f, err := os.CreateTemp("", "ayd-test-*")
@@ -766,6 +753,55 @@ func TestStore_ReportInternalError(t *testing.T) {
 	} else if !ok {
 		t.Errorf("unexpected error:\n%s", buf.String())
 	}
+}
+
+func TestStore_logRotate(t *testing.T) {
+	dir := t.TempDir()
+
+	s, err := store.New(filepath.Join(dir, "dt=%Y%m%d/%H.log"), io.Discard)
+	if err != nil {
+		t.Fatalf("failed to create store: %s", err)
+	}
+
+	report := func(Y, m, d, H, M int) {
+		s.Report(&api.URL{Scheme: "dummy"}, api.Record{
+			Time:   time.Date(Y, time.Month(m), d, H, M, 0, 0, time.UTC),
+			Target: &api.URL{Scheme: "dummy"},
+		})
+	}
+	assert := func(lines ...int) {
+		t.Helper()
+		ls := s.Pathes()
+		if len(ls) != len(lines) {
+			t.Fatalf("unexpected number of log files found: expected=%d got=%d", len(lines), len(ls))
+		}
+		for i, f := range ls {
+			bs, err := os.ReadFile(f)
+			if err != nil {
+				t.Fatalf("%d: failed to read %s: %s", i, f, err)
+			}
+			if n := bytes.Count(bs, []byte{'\n'}); n != lines[i] {
+				t.Fatalf("%d: unexpected number of lines found in %s: expected=%d got=%d", i, f, lines[i], n)
+			}
+		}
+	}
+
+	assert()
+
+	report(2001, 2, 3, 16, 5)
+	report(2001, 2, 3, 16, 6)
+	time.Sleep(10 * time.Millisecond)
+	assert(2)
+
+	report(2001, 2, 4, 16, 5)
+	report(2001, 2, 3, 16, 7)
+	time.Sleep(10 * time.Millisecond)
+	assert(3, 1)
+
+	report(2001, 2, 4, 16, 50)
+	report(2001, 2, 3, 4, 5)
+	time.Sleep(10 * time.Millisecond)
+	assert(1, 3, 2)
 }
 
 func TestStore_MakeReport(t *testing.T) {
