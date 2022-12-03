@@ -353,11 +353,13 @@ func TestLogJsonEndpoint(t *testing.T) {
 		},
 	}
 
+	srv := testutil.StartTestServer(t)
+	t.Cleanup(func() {
+		srv.Close()
+	})
+
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			srv := testutil.StartTestServer(t)
-			defer srv.Close()
-
 			resp, err := srv.Client().Get(srv.URL + "/log.json" + tt.Query)
 			if err != nil {
 				t.Fatalf("failed to get /log.json: %s", err)
@@ -462,11 +464,13 @@ func TestLogCSVEndpoint(t *testing.T) {
 		},
 	}
 
+	srv := testutil.StartTestServer(t)
+	t.Cleanup(func() {
+		srv.Close()
+	})
+
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			srv := testutil.StartTestServer(t)
-			defer srv.Close()
-
 			resp, err := srv.Client().Get(srv.URL + "/log.csv" + tt.Query)
 			if err != nil {
 				t.Fatalf("failed to get /log.csv: %s", err)
