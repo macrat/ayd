@@ -298,6 +298,7 @@ func LogHTMLEndpoint(s Store) http.HandlerFunc {
 
 		scanner, err := s.OpenLog(since, until)
 		if err != nil {
+			handleError(s, "log.html", fmt.Errorf("failed to open log: %w", err))
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte(err.Error() + "\n"))
 			return
