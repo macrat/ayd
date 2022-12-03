@@ -3,9 +3,7 @@ package main_test
 import (
 	"context"
 	"fmt"
-	"os"
 	"regexp"
-	"runtime"
 	"sync"
 	"testing"
 	"time"
@@ -127,26 +125,6 @@ func TestRunServer_tls_error(t *testing.T) {
 				t.Errorf("expected output matches with %q but does not match\n%s", tt.Pattern, output)
 			}
 		})
-	}
-}
-
-func TestRunServer_permissionError(t *testing.T) {
-	if runtime.GOOS != "linux" && runtime.GOOS != "darwin" {
-		t.Skip("permission test only works on *nix OS")
-	}
-
-	s := testutil.NewStore(t)
-	defer s.Close()
-	os.Chmod(s.Path(), 0200)
-
-	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
-	defer cancel()
-
-	cmd, _ := MakeTestCommand(t, []string{"dummy:"})
-
-	code := cmd.RunServer(ctx, s)
-	if code != 1 {
-		t.Errorf("unexpected return code: %d", code)
 	}
 }
 

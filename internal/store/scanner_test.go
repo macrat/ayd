@@ -2,7 +2,6 @@ package store_test
 
 import (
 	"io"
-	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -33,10 +32,10 @@ func TestStore_OpenLog(t *testing.T) {
 	if scanner, err := inStorage.OpenLog(time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC), time.Now()); err != nil {
 		t.Fatalf("failed to prepare in-memory store: %s", err)
 	} else {
-		defer scanner.Close()
 		for scanner.Scan() {
 			inMemory.Report(scanner.Record().Target, scanner.Record())
 		}
+		scanner.Close()
 	}
 
 	for _, s := range stores {
@@ -119,17 +118,6 @@ func TestStore_OpenLog_logRemoved(t *testing.T) {
 	}
 
 	baseTime := time.Now()
-
-	if r, err := s.OpenLog(baseTime.Add(-1*time.Hour), baseTime.Add(1*time.Hour)); err != nil {
-		t.Fatalf("failed to open reader: %s", err)
-	} else {
-		testCount(r)
-		r.Close()
-	}
-
-	if err := os.Remove(p); err != nil {
-		t.Fatalf("failed to remove test log file: %s", err)
-	}
 
 	if r, err := s.OpenLog(baseTime.Add(-1*time.Hour), baseTime.Add(1*time.Hour)); err != nil {
 		t.Fatalf("failed to open reader: %s", err)

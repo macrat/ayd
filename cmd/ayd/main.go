@@ -141,7 +141,6 @@ func (cmd *AydCommand) Run(args []string) (exitCode int) {
 		fmt.Fprintf(cmd.ErrStream, "error: failed to open log file: %s\n", err)
 		return 1
 	}
-	defer s.Close()
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
@@ -150,6 +149,7 @@ func (cmd *AydCommand) Run(args []string) (exitCode int) {
 		alert, err := scheme.NewAlerterSet(cmd.AlertURLs)
 		if err != nil {
 			fmt.Fprintln(cmd.ErrStream, err)
+			s.Close()
 			return 2
 		}
 		s.OnStatusChanged = append(s.OnStatusChanged, func(r api.Record) {
@@ -158,10 +158,19 @@ func (cmd *AydCommand) Run(args []string) (exitCode int) {
 	}
 
 	if cmd.OneshotMode {
-		return cmd.RunOneshot(ctx, s)
+		exitCode = cmd.RunOneshot(ctx, s)
 	} else {
-		return cmd.RunServer(ctx, s)
+		exitCode = cmd.RunServer(ctx, s)
 	}
+
+	s.Close()
+
+	healthy, _ := s.Errors()
+	if exitCode == 0 && !healthy {
+		return 1
+	}
+
+	return exitCode
 }
 
 func main() {
