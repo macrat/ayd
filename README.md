@@ -607,8 +607,25 @@ You can change this with `-f` option like below.
 $ ayd -f /path/to/ayd.log ping:example.com
 ```
 
-There is no feature to log rotate.
-Please consider using the log rotation tool if you have a plan to use it for a long time.
+It is recommended to rotate logs if you run Ayd for long time.
+You can rotate logs like below.
+
+``` shell
+$ ayd -f ./ayd_%Y%m%d.log         ping:example.com
+$ ayd -f /path/to/%Y/%m%d/ayd.log ping:example.com
+```
+
+There are some keywords to specify how to name log files.
+
+- `%Y`: Full year like `2006`.
+- `%y`: Short year like `06`.
+- `%m`: Month.
+- `%d`: Day of month.
+- `%H`: Hour.
+- `%M`: Minute.
+- `%%`: A '%' character.
+
+Unknown keywords will be just ignored and keep as is.
 
 If you use `-f -` option, Ayd does not write log file.
 This is not recommended for production use because Ayd can't restore last status when restore if don't save log file.
