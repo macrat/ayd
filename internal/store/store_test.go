@@ -793,15 +793,47 @@ func TestStore_logRotate(t *testing.T) {
 	time.Sleep(10 * time.Millisecond)
 	assert(2)
 
-	report(2001, 2, 4, 16, 5)
+	report(2001, 2, 4, 16, 50)
 	report(2001, 2, 3, 16, 7)
 	time.Sleep(10 * time.Millisecond)
 	assert(3, 1)
 
-	report(2001, 2, 4, 16, 50)
+	report(2001, 2, 4, 16, 5)
 	report(2001, 2, 3, 4, 5)
 	time.Sleep(10 * time.Millisecond)
 	assert(1, 3, 2)
+
+	r, err := s.OpenLog(time.Date(2001, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2002, 1, 1, 0, 0, 0, 0, time.UTC))
+	if err != nil {
+		t.Fatalf("failed to open scanner: %s", err)
+	}
+	defer r.Close()
+
+	tests := []struct {
+		Day, Hour, Minute int
+	}{
+		{3, 4, 5},
+		{3, 16, 5},
+		{3, 16, 6},
+		{3, 16, 7},
+		{4, 16, 50},
+		{4, 16, 5},
+	}
+	for i, tt := range tests {
+		if !r.Scan() {
+			t.Fatalf("%d: failed to scan", i)
+		}
+
+		got := r.Record().Time
+
+		if got.Day() != tt.Day || got.Hour() != tt.Hour || got.Minute() != tt.Minute {
+			t.Errorf("%d: unexpected date record found: want=02/%02d %02d:%02d actual=02/%02d %02d:%02d", i, tt.Day, tt.Hour, tt.Minute, got.Day(), got.Hour(), got.Minute())
+		}
+	}
+
+	if r.Scan() {
+		t.Fatalf("unexpected extra record found: %s", r.Record())
+	}
 }
 
 func TestStore_MakeReport(t *testing.T) {

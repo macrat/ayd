@@ -113,18 +113,19 @@ func (r *fileScannerSet) Scan() bool {
 		return len(r.scanners) > 0
 	}
 
-	for len(r.scanners) > 0 {
-		if r.scanners[r.earliest].Scan() {
-			r.updateEarliest()
-			return true
-		} else {
-			r.scanners[r.earliest].Close()
-			r.scanners = append(r.scanners[:r.earliest], r.scanners[r.earliest+1:]...)
-			r.updateEarliest()
-		}
+	if len(r.scanners) == 0 {
+		return false
 	}
 
-	return false
+	if r.scanners[r.earliest].Scan() {
+		r.updateEarliest()
+		return true
+	} else {
+		r.scanners[r.earliest].Close()
+		r.scanners = append(r.scanners[:r.earliest], r.scanners[r.earliest+1:]...)
+		r.updateEarliest()
+		return len(r.scanners) > 0
+	}
 }
 
 func (r *fileScannerSet) Record() api.Record {
