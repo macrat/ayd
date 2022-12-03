@@ -11,27 +11,25 @@ import (
 )
 
 type fileScanner struct {
-	file      *os.File
-	reader    *bufio.Reader
-	since     time.Time
-	until     time.Time
-	rec       api.Record
-	interests []logRange
-	pos       int64
+	file   *os.File
+	reader *bufio.Reader
+	since  time.Time
+	until  time.Time
+	rec    api.Record
+	pos    int64
 }
 
 // newFileScanner creates a new [fileScanner] from file path, with period specification.
-func newFileScanner(path string, since, until time.Time, interests []logRange) (*fileScanner, error) {
+func newFileScanner(path string, since, until time.Time) (*fileScanner, error) {
 	f, err := os.OpenFile(path, os.O_RDONLY, 0644)
 	if err != nil {
 		return nil, err
 	}
 	return &fileScanner{
-		file:      f,
-		reader:    bufio.NewReader(f),
-		since:     since,
-		until:     until,
-		interests: interests,
+		file:   f,
+		reader: bufio.NewReader(f),
+		since:  since,
+		until:  until,
 	}, nil
 }
 
@@ -46,14 +44,6 @@ func (r *fileScanner) seek(pos int64) {
 }
 
 func (r *fileScanner) Scan() bool {
-	if len(r.interests) == 0 {
-		return false
-	}
-
-	if r.pos < r.interests[0].Start {
-		r.seek(r.interests[0].Start)
-	}
-
 	for {
 		b, err := r.reader.ReadBytes('\n')
 		if err != nil {
@@ -67,18 +57,7 @@ func (r *fileScanner) Scan() bool {
 			r.rec = rec
 			return true
 		}
-
-		if r.pos > r.interests[0].End {
-			r.interests = r.interests[1:]
-			if len(r.interests) == 0 {
-				return false
-			}
-			r.seek(r.interests[0].Start)
-		}
-
-		continue
 	}
-	return false
 }
 
 func (r *fileScanner) Record() api.Record {
@@ -154,8 +133,7 @@ func (s *Store) OpenLog(since, until time.Time) (api.LogScanner, error) {
 		return newInMemoryScanner(s, since, until), nil
 	}
 
-	interests := s.index.Search(since.Unix(), until.Unix())
-	r, err := newFileScanner(s.Path(), since, until, interests)
+	r, err := newFileScanner(s.Path(), since, until)
 	if errors.Is(err, os.ErrNotExist) {
 		return dummyScanner{}, nil
 	} else {

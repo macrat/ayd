@@ -20,7 +20,8 @@ const (
 )
 
 var (
-	LogRestoreBytes int64 = 1024 * 1024 * 1024
+	LogRestoreBytes    = int64(100 * 1024 * 1024)
+	TooLargeLogMessage = "WARNING: read only last 100MB from log file because it is too large"
 )
 
 type RecordHandler func(api.Record)
@@ -35,7 +36,6 @@ type Store struct {
 	probeHistory     probeHistoryMap
 	currentIncidents map[string]*api.Incident
 	incidentHistory  []*api.Incident
-	index            *indexer
 
 	OnStatusChanged []RecordHandler
 	incidentCount   int
@@ -55,7 +55,6 @@ func New(path string, console io.Writer) (*Store, error) {
 		Console:          console,
 		probeHistory:     make(probeHistoryMap),
 		currentIncidents: make(map[string]*api.Incident),
-		index:            newIndexer(),
 		writeCh:          ch,
 		writerStopped:    make(chan struct{}),
 		healthy:          true,
@@ -131,21 +130,12 @@ func (s *Store) writer(ch <-chan api.Record, stopped chan struct{}) {
 			continue
 		}
 
-		stat, err := f.Stat()
-		s.handleError(err, "failed to get log file status")
-		beforeSize := stat.Size()
-
 		reader.Seek(0, io.SeekStart)
-		wroteSize, err := reader.WriteTo(f)
+		_, err = reader.WriteTo(f)
 		s.handleError(err, "failed to write log file")
 
 		err = f.Close()
 		s.handleError(err, "failed to close log file")
-
-		if s.index.AppendEntry(beforeSize, beforeSize+wroteSize, r.Time.Unix()) == ErrLogUnmatch {
-			s.index.Reset()
-			s.index.AppendEntry(0, beforeSize+wroteSize, r.Time.Unix())
-		}
 	}
 
 	close(stopped)
@@ -370,9 +360,6 @@ func (s *Store) Restore() error {
 	s.historyLock.Lock()
 	defer s.historyLock.Unlock()
 
-	s.index.Lock()
-	defer s.index.Unlock()
-
 	f, err := os.OpenFile(s.path, os.O_RDONLY|os.O_CREATE, 0644)
 	if err != nil {
 		return err
@@ -384,27 +371,14 @@ func (s *Store) Restore() error {
 			Time:    time.Now(),
 			Status:  api.StatusDegrade,
 			Target:  u,
-			Message: "WARNING: read only last 1GB from log file because it is too large",
+			Message: TooLargeLogMessage,
 			Extra: map[string]interface{}{
 				"log_size": ret + LogRestoreBytes,
-			},
-		})
-	} else if info, err := f.Stat(); err == nil && info.Size() > 10*1024*1024 {
-		u := &api.URL{Scheme: "ayd", Opaque: "log"}
-		fmt.Fprintln(s.Console, api.Record{
-			Time:    time.Now(),
-			Status:  api.StatusHealthy,
-			Target:  u,
-			Message: "WARNING: loading large log file",
-			Extra: map[string]interface{}{
-				"log_size": info.Size(),
 			},
 		})
 	}
 
 	s.probeHistory = make(probeHistoryMap)
-	s.index.ResetWithoutLock()
-	var fileIndex int64
 
 	reader := bufio.NewReader(f)
 	for {
@@ -412,16 +386,11 @@ func (s *Store) Restore() error {
 		if err != nil {
 			break
 		}
-		l := int64(len(line))
-		fileIndex += l
 
 		var r api.Record
 		if err = r.UnmarshalJSON(line); err != nil {
-			s.index.AppendInvalidRangeWithoutLock(fileIndex-l, fileIndex)
 			continue
 		}
-
-		s.index.AppendEntryWithoutLock(fileIndex-l, fileIndex, r.Time.Unix())
 
 		if _, ok := r.Target.User.Password(); ok {
 			r.Target.User = url.UserPassword(r.Target.User.Username(), "xxxxx")
@@ -534,9 +503,4 @@ func (s *Store) MakeReport(probeHistoryLength int) api.Report {
 	}
 
 	return report
-}
-
-// SetIndexInterval sets indexing interval for debug.
-func (s *Store) SetIndexInterval(interval int64) {
-	s.index.interval = interval
 }

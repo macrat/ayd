@@ -379,8 +379,6 @@ func TestStore_Restore_rotate(t *testing.T) {
 	}
 	defer s.Close()
 
-	s.SetIndexInterval(1)
-
 	baseTime := time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC)
 
 	for i := 0; i < 2; i++ {
