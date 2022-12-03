@@ -7,7 +7,7 @@ import (
 	"github.com/macrat/ayd/internal/store"
 )
 
-func TestPattern_parseAndBuild(t *testing.T) {
+func TestPathPattern_parseAndBuild(t *testing.T) {
 	times := []time.Time{
 		time.Date(2001, 2, 3, 4, 5, 6, 7, time.UTC),
 		time.Date(1234, 11, 29, 20, 42, 50, 234, time.UTC),
@@ -23,7 +23,7 @@ func TestPattern_parseAndBuild(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		p := store.ParsePattern(tt.input)
+		p := store.ParsePathPattern(tt.input)
 
 		for i, want := range tt.want {
 			actual := p.Build(times[i])
@@ -34,7 +34,7 @@ func TestPattern_parseAndBuild(t *testing.T) {
 	}
 }
 
-func TestPattern_Match(t *testing.T) {
+func TestPathPattern_Match(t *testing.T) {
 	tests := []struct {
 		pattern string
 		fname   string
@@ -51,10 +51,43 @@ func TestPattern_Match(t *testing.T) {
 		{"%y/ayd_%H%M.log", "22/ayd_2059.log", time.Date(2022, 1, 1, 20, 0, 0, 0, time.UTC), time.Date(2022, 1, 1, 21, 0, 0, 0, time.UTC), true},
 		{"%y/ayd_%H%M.log", "22/ayd_2101.log", time.Date(2022, 1, 1, 20, 0, 0, 0, time.UTC), time.Date(2022, 1, 1, 21, 0, 0, 0, time.UTC), false},
 		{"%y/ayd_%H%M.log", "22/ayd_1959.log", time.Date(2022, 1, 1, 20, 0, 0, 0, time.UTC), time.Date(2022, 1, 1, 21, 0, 0, 0, time.UTC), false},
+		{"%m_%d_%Y.log", "12_25_2001.log", time.Date(2001, 12, 1, 0, 0, 0, 0, time.UTC), time.Date(2001, 12, 30, 0, 0, 0, 0, time.UTC), true},
+		{"ayd/date=%Y%m%d/time=%H%M/log.json", "ayd/year=20220203/time=1504/log.json", time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2022, 2, 3, 15, 3, 0, 0, time.UTC), false},
+		{"ayd/date=%Y%m%d/time=%H%M/log.json", "ayd/year=20220203/time=1503/log.json", time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2022, 2, 3, 15, 3, 0, 0, time.UTC), false},
+		{"", "", time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC), true},
+		{"%", "%", time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC), true},
+		{"%%", "%", time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC), true},
+		{"%%%", "%%", time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC), true},
+		{"%a%%", "%a%", time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC), true},
+		{"%Y", "2022", time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC), true},
+		{"%Y", "-123", time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC), false},
+		{"%m", "12", time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2022, 12, 31, 23, 59, 0, 0, time.UTC), true},
+		{"%m", "13", time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2022, 12, 31, 23, 59, 0, 0, time.UTC), false},
+		{"%d", "31", time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2022, 12, 31, 23, 59, 0, 0, time.UTC), true},
+		{"%d", "32", time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2022, 12, 31, 23, 59, 0, 0, time.UTC), false},
+		{"%H", "23", time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2022, 12, 31, 23, 59, 0, 0, time.UTC), true},
+		{"%H", "24", time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2022, 12, 31, 23, 59, 0, 0, time.UTC), false},
+		{"%M", "59", time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2022, 12, 31, 23, 59, 0, 0, time.UTC), true},
+		{"%M", "60", time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2022, 12, 31, 23, 59, 0, 0, time.UTC), false},
+		{"%Y%m%d", "20220101", time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC), true},
+		{"%Y%m%d", "20220101?", time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC), false},
+		{"%Y%m%d", "2022010", time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC), false},
+		{"%Y-%Y", "2022-2022", time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC), true},
+		{"%Y-%Y", "2022-2023", time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC), false},
+		{"%Y-%y", "2022-22", time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC), true},
+		{"%Y-%y", "2022-23", time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC), false},
+		{"%m-%m", "01-01", time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC), true},
+		{"%m-%m", "01-02", time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC), false},
+		{"%d-%d", "01-01", time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC), true},
+		{"%d-%d", "01-02", time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC), false},
+		{"%H-%H", "01-01", time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC), true},
+		{"%H-%H", "01-02", time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC), false},
+		{"%M-%M", "01-01", time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC), true},
+		{"%M-%M", "01-02", time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC), false},
 	}
 
 	for _, tt := range tests {
-		p := store.ParsePattern(tt.pattern)
+		p := store.ParsePathPattern(tt.pattern)
 		actual := p.Match(tt.fname, tt.since, tt.until)
 		if actual != tt.want {
 			t.Errorf("%s: %s: want=%v actual=%v", tt.pattern, tt.fname, tt.want, actual)
@@ -62,7 +95,7 @@ func TestPattern_Match(t *testing.T) {
 	}
 }
 
-func FuzzPattern_Build(f *testing.F) {
+func FuzzPathPattern_Build(f *testing.F) {
 	f.Add("ayd_%y%m%d.log")
 	f.Add("%Y-%m-%dT%H:%M.txt")
 	f.Add("ayd/year=%Y/month=%m/day=%d/hour=%H/minute=%M/log.json")
@@ -77,7 +110,7 @@ func FuzzPattern_Build(f *testing.F) {
 			t.Skip()
 		}
 
-		p := store.ParsePattern(s)
+		p := store.ParsePathPattern(s)
 		if len(p.Build(now)) == 0 {
 			t.Errorf("pattern %q made an empty string", s)
 		}

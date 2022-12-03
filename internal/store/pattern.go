@@ -9,21 +9,21 @@ import (
 type pathFragment interface {
 	Build(t time.Time) string
 	Len() int
-	Match(s string, since, until time.Time) bool
+	FillTimePattern(s string, tp *timePattern) (ok bool)
 }
 
 type constFragment string
 
-func (s constFragment) Build(_ time.Time) string {
-	return string(s)
+func (c constFragment) Build(_ time.Time) string {
+	return string(c)
 }
 
-func (s constFragment) Len() int {
-	return len(s)
+func (c constFragment) Len() int {
+	return len(c)
 }
 
-func (s constFragment) Match(str string, _, _ time.Time) bool {
-	return string(s) == str
+func (c constFragment) FillTimePattern(s string, tp *timePattern) (ok bool) {
+	return s == string(c)
 }
 
 type yearFragment struct {
@@ -46,15 +46,22 @@ func (y yearFragment) Len() int {
 	}
 }
 
-func (y yearFragment) Match(s string, since, until time.Time) bool {
+func (y yearFragment) FillTimePattern(s string, tp *timePattern) (ok bool) {
 	n, err := strconv.Atoi(s)
 	if err != nil || n < 0 {
 		return false
 	}
+
 	if y.Short {
 		n += 2000
 	}
-	return since.Year() <= n && n <= until.Year()
+
+	if tp.Year >= 0 && tp.Year != n {
+		return false
+	}
+
+	tp.Year = n
+	return true
 }
 
 type monthFragment struct{}
@@ -67,20 +74,18 @@ func (m monthFragment) Len() int {
 	return 2
 }
 
-func (m monthFragment) Match(s string, since, until time.Time) bool {
+func (m monthFragment) FillTimePattern(s string, tp *timePattern) (ok bool) {
 	n, err := strconv.Atoi(s)
 	if err != nil || n < 1 || 12 < n {
 		return false
 	}
 
-	if since.Year() == until.Year() {
-		return int(since.Month()) <= n && n <= int(until.Month())
+	if tp.Month >= 1 && tp.Month != n {
+		return false
 	}
 
-	si := int(since.Month())
-	ei := int(until.Month()) + 12
-
-	return si <= n && n <= ei+12 || si <= n+12 && n+12 <= ei+12
+	tp.Month = n
+	return true
 }
 
 type dayFragment struct{}
@@ -93,31 +98,18 @@ func (d dayFragment) Len() int {
 	return 2
 }
 
-func (d dayFragment) Match(s string, since, until time.Time) bool {
+func (d dayFragment) FillTimePattern(s string, tp *timePattern) (ok bool) {
 	n, err := strconv.Atoi(s)
 	if err != nil || n < 1 || 31 < n {
 		return false
 	}
 
-	if since.Year() == until.Year() && since.Month() == until.Month() {
-		return int(since.Day()) <= n && n <= int(until.Day())
+	if tp.Day >= 1 && tp.Day != n {
+		return false
 	}
 
-	if until.Sub(since) > (30+31)*24*time.Hour {
-		// The period definitely contains all kind of numbers if it is more than 30+31 days.
-		return true
-	}
-
-	since = since.Truncate(24 * time.Hour)
-	until = until.Truncate(24 * time.Hour)
-
-	// Try all days instead of calculation, because handling leap year is too complex.
-	for t := since; t.Before(until); t = t.AddDate(0, 0, 1) {
-		if t.Day() == n {
-			return true
-		}
-	}
-	return false
+	tp.Day = n
+	return true
 }
 
 type hourFragment struct{}
@@ -130,20 +122,18 @@ func (h hourFragment) Len() int {
 	return 2
 }
 
-func (h hourFragment) Match(s string, since, until time.Time) bool {
+func (h hourFragment) FillTimePattern(s string, tp *timePattern) (ok bool) {
 	n, err := strconv.Atoi(s)
-	if err != nil || n < 1 || 23 < n {
+	if err != nil || n < 0 || 23 < n {
 		return false
 	}
 
-	if since.Truncate(24 * time.Hour).Equal(until.Truncate(24 * time.Hour)) {
-		return int(since.Hour()) <= n && n <= int(until.Hour())
+	if tp.Hour >= 0 && tp.Hour != n {
+		return false
 	}
 
-	si := since.Hour()
-	ei := until.Hour() + 24
-
-	return si <= n && n <= ei || si <= n+24 && n+24 <= ei
+	tp.Hour = n
+	return true
 }
 
 type minuteFragment struct{}
@@ -156,31 +146,29 @@ func (m minuteFragment) Len() int {
 	return 2
 }
 
-func (m minuteFragment) Match(s string, since, until time.Time) bool {
+func (m minuteFragment) FillTimePattern(s string, tp *timePattern) (ok bool) {
 	n, err := strconv.Atoi(s)
-	if err != nil || n < 1 || 59 < n {
+	if err != nil || n < 0 || 59 < n {
 		return false
 	}
 
-	if since.Truncate(time.Hour).Equal(until.Truncate(time.Hour)) {
-		return int(since.Minute()) <= n && n <= int(until.Minute())
+	if tp.Minute >= 0 && tp.Minute != n {
+		return false
 	}
 
-	si := since.Minute()
-	ei := until.Minute() + 60
-
-	return si <= n && n <= ei || si <= n+60 && n+60 <= ei
+	tp.Minute = n
+	return true
 }
 
-type Pattern struct {
+type PathPattern struct {
 	Unit time.Duration
 
 	pattern   string
 	fragments []pathFragment
 }
 
-func ParsePattern(s string) Pattern {
-	p := Pattern{
+func ParsePathPattern(s string) PathPattern {
+	p := PathPattern{
 		pattern: s,
 	}
 
@@ -232,7 +220,7 @@ func ParsePattern(s string) Pattern {
 	return p
 }
 
-func (p Pattern) Build(t time.Time) string {
+func (p PathPattern) Build(t time.Time) string {
 	ss := make([]string, len(p.fragments))
 	for i, f := range p.fragments {
 		ss[i] = f.Build(t)
@@ -240,25 +228,99 @@ func (p Pattern) Build(t time.Time) string {
 	return strings.Join(ss, "")
 }
 
-func (p Pattern) Len() int {
-	n := 0
-	for _, f := range p.fragments {
-		n += f.Len()
+func (p PathPattern) Match(filename string, since, until time.Time) bool {
+	if len(p.fragments) == 0 {
+		return filename == ""
 	}
-	return n
-}
 
-func (p Pattern) Match(s string, since, until time.Time) bool {
+	tp := emptyTimePattern
+
 	l := 0
 	for _, f := range p.fragments {
 		r := l + f.Len()
-		if len(s) < r {
+		if r > len(filename) {
 			return false
 		}
-		if !f.Match(s[l:r], since, until) {
+
+		if !f.FillTimePattern(filename[l:r], &tp) {
 			return false
 		}
+
 		l = r
 	}
-	return true
+	if len(filename) != l {
+		return false
+	}
+
+	max := tp.Exec(until, maxTimePattern)
+	min := tp.Exec(since, minTimePattern)
+
+	return !since.After(max) && !min.After(until)
+}
+
+type timePattern struct {
+	Year   int
+	Month  int
+	Day    int
+	Hour   int
+	Minute int
+}
+
+var (
+	emptyTimePattern = timePattern{-1, -1, -1, -1, -1}
+	minTimePattern   = timePattern{0, 1, 1, 0, 0}
+	maxTimePattern   = timePattern{9999, 12, 31, 23, 59}
+)
+
+func (p timePattern) Exec(t time.Time, base timePattern) time.Time {
+	useCopy := false
+	r := base
+
+	if p.Minute >= 0 {
+		r.Minute = p.Minute
+		useCopy = true
+	}
+
+	if p.Hour >= 0 {
+		r.Hour = p.Hour
+		useCopy = true
+	} else if useCopy {
+		r.Hour = t.Hour()
+	}
+
+	if p.Day >= 1 {
+		r.Day = p.Day
+		useCopy = true
+	} else if useCopy {
+		r.Day = t.Day()
+	}
+
+	if p.Month >= 1 {
+		r.Month = p.Month
+		useCopy = true
+	} else if useCopy {
+		r.Month = int(t.Month())
+	}
+
+	if p.Year >= 0 {
+		r.Year = p.Year
+		//useCopy = true // No need this.
+	} else if useCopy {
+		r.Year = t.Year()
+	}
+
+	return r.Time(t.Location())
+}
+
+func (p timePattern) Time(loc *time.Location) time.Time {
+	return time.Date(
+		p.Year,
+		time.Month(p.Month),
+		p.Day,
+		p.Hour,
+		p.Minute,
+		0,
+		0,
+		loc,
+	)
 }
