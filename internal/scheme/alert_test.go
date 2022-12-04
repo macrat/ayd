@@ -56,8 +56,14 @@ func TestAlerter(t *testing.T) {
 		{"of-course-no-such-plugin:", "", "", "unsupported scheme"},
 	}
 
-	if runtime.GOOS != "windows" {
-		// Windows can not run this test because bat doesn't support double quote character in argument :(
+	if runtime.GOOS == "windows" {
+		tests = append(
+			tests,
+			Test{"foo-bar:hello-world", "alert:foo-bar:hello-world", "foo-bar:hello-world\n---\n" + `record: {"time":"2001-02-03T16:05:06Z", "status":"FAILURE", "latency":12.345, "target":"dummy:failure", "message":"foobar", "hello":"world"}`, ""},
+			Test{"foo:", "alert:foo:", "foo:\n---\n" + `record: {"time":"2001-02-03T16:05:06Z", "status":"FAILURE", "latency":12.345, "target":"dummy:failure", "message":"foobar", "hello":"world"}`, ""},
+			Test{"foo:hello-world", "alert:foo:hello-world", "foo:hello-world\n---\n" + `record: {"time":"2001-02-03T16:05:06Z", "status":"FAILURE", "latency":12.345, "target":"dummy:failure", "message":"foobar", "hello":"world"}`, ""},
+		)
+	} else {
 		tests = append(
 			tests,
 			Test{"foo-bar:hello-world", "alert:foo-bar:hello-world", "foo-bar:hello-world\n---\n" + `record: {"hello":"world","latency":12.345,"message":"foobar","status":"FAILURE","target":"dummy:failure","time":"2001-02-03T16:05:06Z"}`, ""},

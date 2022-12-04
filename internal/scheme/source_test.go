@@ -309,14 +309,17 @@ func TestSourceScheme_Alert(t *testing.T) {
 		t.Errorf("unexpected message for foo:alert-test\n--- expected --\n%s\n--- actual ---\n%s", expected, r.Records[1].Message)
 	}
 
-	extra := map[string]interface{}{
-		"record": map[string]interface{}{
+	extra := map[string]interface{}{}
+	if runtime.GOOS == "windows" {
+		extra["record"] = `{"time":"2021-01-02T15:04:05Z", "status":"FAILURE", "latency":123.456, "target":"dummy:hello-world", "message":"test-message"}`
+	} else {
+		extra["record"] = map[string]interface{}{
 			"latency": 123.456,
 			"message": "test-message",
 			"status":  "FAILURE",
 			"target":  "dummy:hello-world",
 			"time":    "2021-01-02T15:04:05Z",
-		},
+		}
 	}
 	if diff := cmp.Diff(r.Records[1].Extra, extra); diff != "" {
 		t.Errorf("unexpected extra values\n%s", diff)

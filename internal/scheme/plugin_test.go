@@ -124,9 +124,15 @@ func TestPluginScheme_Alert(t *testing.T) {
 	t.Parallel()
 	PreparePluginPath(t)
 
-	AssertAlert(t, []ProbeTest{
-		{"foo:hello-world", api.StatusHealthy, "foo:hello-world\n---\n" + `record: {"hello":"world","latency":123.456,"message":"test-message","status":"FAILURE","target":"dummy:failure","time":"2001-02-03T16:05:06Z"}`, ""},
-	}, 5)
+	if runtime.GOOS == "windows" {
+		AssertAlert(t, []ProbeTest{
+			{"foo:hello-world", api.StatusHealthy, "foo:hello-world\n---\n" + `record: {"time":"2001-02-03T16:05:06Z", "status":"FAILURE", "latency":123.456, "target":"dummy:failure", "message":"test-message", "hello":"world"}`, ""},
+		}, 5)
+	} else {
+		AssertAlert(t, []ProbeTest{
+			{"foo:hello-world", api.StatusHealthy, "foo:hello-world\n---\n" + `record: {"hello":"world","latency":123.456,"message":"test-message","status":"FAILURE","target":"dummy:failure","time":"2001-02-03T16:05:06Z"}`, ""},
+		}, 5)
+	}
 }
 
 func TestPluginProbe_inactiveTargetHandling(t *testing.T) {
