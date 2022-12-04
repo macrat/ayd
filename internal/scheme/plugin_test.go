@@ -124,16 +124,9 @@ func TestPluginScheme_Alert(t *testing.T) {
 	t.Parallel()
 	PreparePluginPath(t)
 
-	if runtime.GOOS == "windows" {
-		// Windows can not handle double quote in argument :(
-		AssertAlert(t, []ProbeTest{
-			{"foo:hello-world", api.StatusHealthy, "\"foo:hello-world,2001-02-03T16:05:06Z,FAILURE,123.456,dummy:failure,test-message\"", ""},
-		}, 5)
-	} else {
-		AssertAlert(t, []ProbeTest{
-			{"foo:hello-world", api.StatusHealthy, "\"foo:hello-world,2001-02-03T16:05:06Z,FAILURE,123.456,dummy:failure,test-message\"\n---\nextras: {\"hello\":\"world\"}", ""},
-		}, 5)
-	}
+	AssertAlert(t, []ProbeTest{
+		{"foo:hello-world", api.StatusHealthy, "foo:hello-world\n---\n" + `record: {"hello":"world","latency":123.456,"message":"test-message","status":"FAILURE","target":"dummy:failure","time":"2001-02-03T16:05:06Z"}`, ""},
+	}, 5)
 }
 
 func TestPluginProbe_inactiveTargetHandling(t *testing.T) {

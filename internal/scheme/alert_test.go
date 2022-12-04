@@ -33,7 +33,7 @@ func TestAlerter(t *testing.T) {
 		Error     string
 	}
 	tests := []Test{
-		{"exec:ayd-foo-alert", "alert:exec:ayd-foo-alert", `{"time":"2001-02-03T16:05:06Z","status":"HEALTHY","latency":123.456,"target":"","message":"\",,,,,\""}` + "\n---\nexit_code: 0", ""},
+		{"exec:ayd-foo-alert", "alert:exec:ayd-foo-alert", `{"time":"2001-02-03T16:05:06Z","status":"HEALTHY","latency":123.456,"target":"","message":""}` + "\n---\nexit_code: 0", ""},
 		{"exec:ayd-bar-probe", "alert:exec:ayd-bar-probe", "arg \"\"\nenv ayd_time=2001-02-03T16:05:06Z ayd_status=FAILURE ayd_latency=12.345 ayd_target=dummy:failure ayd_message=foobar ayd_extra={\"hello\":\"world\"}\n---\nexit_code: 0", ""},
 		{"bar:", "", "", "unsupported scheme"},
 
@@ -60,9 +60,9 @@ func TestAlerter(t *testing.T) {
 		// Windows can not run this test because bat doesn't support double quote character in argument :(
 		tests = append(
 			tests,
-			Test{"foo-bar:hello-world", "alert:foo-bar:hello-world", "\"foo-bar:hello-world,2001-02-03T16:05:06Z,FAILURE,12.345,dummy:failure,foobar\"\n---\nextras: {\"hello\":\"world\"}", ""},
-			Test{"foo:", "alert:foo:", "\"foo:,2001-02-03T16:05:06Z,FAILURE,12.345,dummy:failure,foobar\"\n---\nextras: {\"hello\":\"world\"}", ""},
-			Test{"foo:hello-world", "alert:foo:hello-world", "\"foo:hello-world,2001-02-03T16:05:06Z,FAILURE,12.345,dummy:failure,foobar\"\n---\nextras: {\"hello\":\"world\"}", ""},
+			Test{"foo-bar:hello-world", "alert:foo-bar:hello-world", "foo-bar:hello-world\n---\n" + `record: {"hello":"world","latency":12.345,"message":"foobar","status":"FAILURE","target":"dummy:failure","time":"2001-02-03T16:05:06Z"}`, ""},
+			Test{"foo:", "alert:foo:", "foo:\n---\n" + `record: {"hello":"world","latency":12.345,"message":"foobar","status":"FAILURE","target":"dummy:failure","time":"2001-02-03T16:05:06Z"}`, ""},
+			Test{"foo:hello-world", "alert:foo:hello-world", "foo:hello-world\n---\n" + `record: {"hello":"world","latency":12.345,"message":"foobar","status":"FAILURE","target":"dummy:failure","time":"2001-02-03T16:05:06Z"}`, ""},
 		)
 	}
 

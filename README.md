@@ -416,7 +416,7 @@ There is [a library for create plugin](https://pkg.go.dev/github.com/macrat/ayd/
 
 ##### Probe plugin
 
-Probe plugin which to check the target, receives the target URL as the only one argument of the command.
+Probe plugin, which to check the target, receives the target URL as the only one argument of the command.
 
 For example, target URL `foobar:your-target` has the same mean as below command.
 
@@ -426,27 +426,16 @@ $ ayd-foobar-probe "foobar:your-target"
 
 ##### Alert plugin
 
-Alert plugin which to send alerts, receives below arguments.
-
-1. Alert URL.
-2. Timestamp in RFC3339 format.
-3. Current status of the target.
-4. Current latency in milliseconds.
-5. Target URL that causes the incident.
-6. Message from the latest probe.
-7. Extra values in JSON format.
+Alert plugin, which to send alerts, receives two arguments.
+The first argument is a URL for alert itself.
+The second one is the latest record that fired the alert in JSON format.
 
 For example, the alert URL `foobar:your-alert` for plugin `ayd-foobar-alert` will be called like a below command.
 
 ``` shell
-$ ayd-foobar-alert                      \
-    "foobar:your-alert"                 \
-    "2001-02-30T16:05:06+09:00"         \
-    "FAILURE"                           \
-    "1.234"                             \
-    "ping:your-target"                  \
-    "this is message of the record"     \
-    '{"extra values":"in json format"}'
+$ ayd-foobar-alert       \
+    "foobar:your-alert"  \
+    '{"time":"2001-02-30T16:05:06+09:00", "status":"FAILURE", "latency":"1.234", "target":"ping:your-target", "message":"this is message of the record"}'
 ```
 
 The output of the probe plugin will parsed the same way to [log file](#log-file), but all target URL will add `alert:` prefix and won't not show in status page.
