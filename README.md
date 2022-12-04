@@ -589,36 +589,23 @@ For example, log lines look like below.
 {"time":"2001-02-30T16:10:00+09:00", "status":"HEALTHY", "latency":0.375, "target":"ping:anotherhost", "message":"All packets came back", "packets_recv":3, "packets_sent:3, "rtt_avg":0.38, "rtt_max":0.47, "rtt_min":0.31}
 ```
 
-Ayd will save the log file named `ayd.log` into the current directory in default.
-You can change this with `-f` option like below.
+Ayd will save log files named `ayd_%Y%m%d.log` into the current directory by default.
+The `%Y`, `%m`, and `%d` will be replaced with the year, month, and day of month, respectively, of the record.
+You can also use `%y` for the year in two characters, `%H` for the hour, `%M` for the minute, and `%%` for the `%` character.
+
+It can change where the logs are saved using the `-f` option like this:
 
 ``` shell
-$ ayd -f /path/to/ayd.log ping:example.com
+$ ayd -f /path/to/%Y/log.json ping:example.com
 ```
 
-It is recommended to rotate logs if you run Ayd for long time.
-You can rotate logs like below.
+If you want, you can set file name without time specifications to store all logs into a single file.
+However, this is not recommended if you plan to run Ayd for a long time.
+A large log file is difficult to handle, and can slow down Ayd's log APIs.
 
-``` shell
-$ ayd -f ./ayd_%Y%m%d.log         ping:example.com
-$ ayd -f /path/to/%Y/%m%d/ayd.log ping:example.com
-```
-
-There are some keywords to specify how to name log files.
-
-- `%Y`: Full year like `2006`.
-- `%y`: Short year like `06`.
-- `%m`: Month.
-- `%d`: Day of month.
-- `%H`: Hour.
-- `%M`: Minute.
-- `%%`: A '%' character.
-
-Unknown keywords will be just ignored and keep as is.
-
-If you use `-f -` option, Ayd does not write log file.
-This is not recommended for production use because Ayd can't restore last status when restore if don't save log file.
-But, this is may useful for [use Ayd as a parts of script file](#one-shot-mode).
+If you use `-f -` option, Ayd will not write any log file.
+This is not recommended for production use, because Ayd can not restore its last status when it is restarted.
+But, this is may useful for [using Ayd as part of a script file](#one-shot-mode).
 
 If you want use log file in other format like CSV, you can download via [HTTP endpoint](#status-page-and-endpoints), or you can use `ayd conv` subcommand like below.
 
@@ -673,7 +660,7 @@ Description=Ayd status monitoring service
 After=network.target remote-fs.target
 
 [Service]
-ExecStart=/usr/local/bin/ayd -f /var/log/ayd.log \
+ExecStart=/usr/local/bin/ayd -f /var/log/ayd.log.%Y%m \
     http://your-target.example.com
 #   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ please change target
 

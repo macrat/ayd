@@ -62,7 +62,7 @@ func (cmd *AydCommand) ParseArgs(args []string) (exitCode int) {
 	flags := pflag.NewFlagSet("ayd", pflag.ContinueOnError)
 
 	flags.IntVarP(&cmd.ListenPort, "port", "p", 9000, "HTTP listen port")
-	flags.StringVarP(&cmd.StorePath, "log-file", "f", "./ayd.log", "Path to log file")
+	flags.StringVarP(&cmd.StorePath, "log-file", "f", "ayd_%Y%m%d.log", "Path to log file")
 	flags.BoolVarP(&cmd.OneshotMode, "oneshot", "1", false, "Check status only once and exit")
 	flags.StringArrayVarP(&cmd.AlertURLs, "alert", "a", nil, "The alert URLs")
 	flags.StringVarP(&cmd.UserInfo, "user", "u", "", "Username and password for HTTP endpoint")
