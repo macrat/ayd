@@ -2,15 +2,14 @@ package endpoint
 
 import (
 	_ "embed"
-	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
-	"strconv"
 	"strings"
 	"time"
 
+	"github.com/macrat/ayd/internal/logconv"
 	api "github.com/macrat/ayd/lib-ayd"
 )
 
@@ -256,29 +255,8 @@ func LogCSVEndpoint(s Store) http.HandlerFunc {
 		defer scanner.Close()
 
 		scanner = setFilter(scanner, r)
-
-		c := csv.NewWriter(w)
-		c.Write([]string{"timestamp", "status", "latency", "target", "message", "extra"})
-
-		for scanner.Scan() {
-			r := scanner.Record()
-
-			var extra []byte
-			if len(r.Extra) > 0 {
-				extra, _ = json.Marshal(r.Extra) // Ignore error because it use empty string if failed to convert.
-			}
-
-			c.Write([]string{
-				r.Time.Format(time.RFC3339),
-				r.Status.String(),
-				strconv.FormatFloat(float64(r.Latency.Microseconds())/1000, 'f', 3, 64),
-				r.Target.String(),
-				r.Message,
-				string(extra),
-			})
-		}
-
-		c.Flush()
+		err = logconv.ToCSV(w, scanner, true)
+		handleError(s, "log.csv", err)
 	}
 }
 

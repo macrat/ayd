@@ -1,15 +1,14 @@
 package main
 
 import (
-	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"io"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 
+	"github.com/macrat/ayd/internal/logconv"
 	api "github.com/macrat/ayd/lib-ayd"
 	"github.com/spf13/pflag"
 )
@@ -154,36 +153,9 @@ func (c ConvCommand) toJson(scanners []api.LogScanner, output io.Writer) error {
 }
 
 func (c ConvCommand) toCSV(scanners []api.LogScanner, output io.Writer) error {
-	writer := csv.NewWriter(output)
-
-	for _, s := range scanners {
-		for s.Scan() {
-			r := s.Record()
-
-			var extra []byte
-			if len(r.Extra) > 0 {
-				var err error
-				extra, err = json.Marshal(r.Extra)
-				if err != nil {
-					return fmt.Errorf("failed to convert extra values: %s", err)
-				}
-			}
-
-			err := writer.Write([]string{
-				r.Time.Format(time.RFC3339),
-				r.Status.String(),
-				strconv.FormatFloat(float64(r.Latency.Microseconds())/1000, 'f', 3, 64),
-				r.Target.String(),
-				r.Message,
-				string(extra),
-			})
-			if err != nil {
-				return fmt.Errorf("failed to write log: %s", err)
-			}
-		}
+	for i, s := range scanners {
+		logconv.ToCSV(output, s, i == 0)
 	}
-
-	writer.Flush()
 
 	return nil
 }
