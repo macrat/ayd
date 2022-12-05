@@ -260,6 +260,26 @@ func LogCSVEndpoint(s Store) http.HandlerFunc {
 	}
 }
 
+func LogLTSVEndpoint(s Store) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/plain")
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET")
+
+		scanner, code, err := newLogScanner(s, "log.ltsv", r)
+		if err != nil {
+			w.WriteHeader(code)
+			w.Write([]byte(err.Error() + "\n"))
+			return
+		}
+		defer scanner.Close()
+
+		scanner = setFilter(scanner, r)
+		err = logconv.ToLTSV(w, scanner)
+		handleError(s, "log.ltsv", err)
+	}
+}
+
 //go:embed templates/log.html
 var logHTMLTemplate string
 

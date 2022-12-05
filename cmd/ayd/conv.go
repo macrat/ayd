@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"strings"
-	"time"
 
 	"github.com/macrat/ayd/internal/logconv"
 	api "github.com/macrat/ayd/lib-ayd"
@@ -162,38 +160,8 @@ func (c ConvCommand) toCSV(scanners []api.LogScanner, output io.Writer) error {
 
 func (c ConvCommand) toLTSV(scanners []api.LogScanner, output io.Writer) error {
 	for _, s := range scanners {
-		for s.Scan() {
-			r := s.Record()
-			fmt.Fprintf(
-				output,
-				"time:%s\tstatus:%s\tlatency:%.3f\ttarget:%s",
-				r.Time.Format(time.RFC3339),
-				r.Status,
-				float64(r.Latency.Microseconds())/1000,
-				r.Target,
-			)
-
-			if r.Message != "" {
-				fmt.Fprintf(output, "\tmessage:%s", r.Message)
-			}
-
-			extra := r.ReadableExtra()
-
-			for _, e := range extra {
-				s := e.Value
-				if _, ok := r.Extra[e.Key].(string); ok {
-					// You should escape if the value is string. Otherwise, it's already escaped as a JSON value.
-					s = strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(e.Value, `\`, `\\`), "\t", `\t`), "\n", `\n`), "\r", `\r`)
-				}
-				fmt.Fprintf(
-					output,
-					"\t%s:%s",
-					e.Key,
-					s,
-				)
-			}
-
-			fmt.Fprintln(output)
+		if err := logconv.ToLTSV(output, s); err != nil {
+			return err
 		}
 	}
 

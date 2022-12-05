@@ -23,6 +23,7 @@ func Benchmark_endpoints(b *testing.B) {
 		{"/incidents.csv", endpoint.IncidentsCSVEndpoint},
 		{"/log.html", endpoint.LogHTMLEndpoint},
 		{"/log.csv", endpoint.LogCSVEndpoint},
+		{"/log.ltsv", endpoint.LogLTSVEndpoint},
 		{"/log.json", endpoint.LogJsonEndpoint},
 		{"/metrics", endpoint.MetricsEndpoint},
 		{"/healthz", func(s endpoint.Store) http.HandlerFunc {

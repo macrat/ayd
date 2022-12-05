@@ -495,6 +495,100 @@ func TestLogCSVEndpoint(t *testing.T) {
 	}
 }
 
+func TestLogLTSVEndpoint(t *testing.T) {
+	tests := []struct {
+		Name       string
+		Query      string
+		StatusCode int
+		Pattern    string
+	}{
+		{
+			"without-query",
+			"",
+			http.StatusOK,
+			"",
+		},
+		{
+			"fetch-all",
+			"?since=2021-01-01T00:00:00Z&until=2022-01-01T00:00:00Z&target=http://a.example.com",
+			http.StatusOK,
+			"(time:[^\t]*\tstatus:[^\t]{7}\tlatency:[^\t]*\ttarget:[^\t]*\tmessage:[^\t]*\n){3}",
+		},
+		{
+			"drop-with-time-range",
+			"?since=2021-01-02T15:04:06Z&until=2021-01-02T15:04:07Z&target=http://a.example.com",
+			http.StatusOK,
+			"time:2021-01-02T15:04:06Z\tstatus:[^\t]{7}\tlatency:[^\t]*\ttarget:http://a\\.example\\.com*\tmessage:[^\t]*\n",
+		},
+		{
+			"drop-all-with-time-range",
+			"?since=2001-01-01T00:00:00Z&until=2002-01-01T00:00:00Z&target=http://a.example.com",
+			http.StatusOK,
+			"",
+		},
+		{
+			"drop-with-target",
+			"?since=2021-01-01T00:00:00Z&until=2022-01-01T00:00:00Z&target=http://b.example.com",
+			http.StatusOK,
+			"(time:[^\t]*\tstatus:[^\t]{7}\tlatency:[^\t]*\ttarget:http://b\\.example\\.com\tmessage:[^\t]*\n){2}",
+		},
+		{
+			"drop-all-with-target",
+			"?since=2021-01-01T00:00:00Z&until=2022-01-01T00:00:00Z&target=http://no-such.example.com",
+			http.StatusOK,
+			"",
+		},
+		{
+			"invalid-since",
+			"?since=invalid-since&until=2022-01-01T00:00:00Z",
+			http.StatusBadRequest,
+			"invalid query format: since\n",
+		},
+		{
+			"invalid-until",
+			"?since=2021-01-01T00:00:00Z&until=invalid-until",
+			http.StatusBadRequest,
+			"invalid query format: until\n",
+		},
+		{
+			"invalid-since-and-until",
+			"?since=invalid-since&until=invalid-until",
+			http.StatusBadRequest,
+			"invalid query format: until, since\n",
+		},
+	}
+
+	srv := testutil.StartTestServer(t)
+	t.Cleanup(func() {
+		srv.Close()
+	})
+
+	for _, tt := range tests {
+		t.Run(tt.Name, func(t *testing.T) {
+			resp, err := srv.Client().Get(srv.URL + "/log.ltsv" + tt.Query)
+			if err != nil {
+				t.Fatalf("failed to get /log.ltsv: %s", err)
+			}
+			defer resp.Body.Close()
+
+			if resp.StatusCode != tt.StatusCode {
+				t.Errorf("unexpected status: %s", resp.Status)
+			}
+
+			body, err := io.ReadAll(resp.Body)
+			if err != nil {
+				t.Fatalf("failed to read body: %s", err)
+			}
+
+			if ok, err := regexp.Match("^"+tt.Pattern+"$", body); err != nil {
+				t.Errorf("failed to check body: %s", err)
+			} else if !ok {
+				t.Errorf("body must match to %#v but got:\n%s", tt.Pattern, string(body))
+			}
+		})
+	}
+}
+
 func TestLogHTMLEndpoint(t *testing.T) {
 	AssertEndpoint(t, "/log.html?since=2021-01-01T00%3A00%3A00Z&until=2021-01-03T00%3A00%3A00Z", "./testdata/log.html", "[0-9] years? ago")
 }

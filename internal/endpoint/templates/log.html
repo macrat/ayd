@@ -121,7 +121,8 @@ td.unknown::before { background-color: rgb(var(--fg)) }
             {{ .Count }} of {{ .Total }} records have shown<br />
             download all log as
             <a href="{{ printf "/log.csv?%s" .RawQuery }}" type="text/csv" download="ayd-log.csv">CSV</a>
-            <a href="{{ printf "log.json?%s" .RawQuery }}" type="application/json" download="ayd-log.json">JSON</a>
+            <a href="{{ printf "/log.ltsv?%s" .RawQuery }}" type="text/plain" download="ayd-log.ltsv">LTSV</a>
+            <a href="{{ printf "/log.json?%s" .RawQuery }}" type="application/json" download="ayd-log.json">JSON</a>
         </div>
     </article>
 
