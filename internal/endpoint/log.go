@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -17,6 +18,10 @@ func getTimeQuery(queries url.Values, name string, default_ time.Time) (time.Tim
 	q := queries.Get(name)
 	if q == "" {
 		return default_, nil
+	}
+
+	if n, err := strconv.ParseInt(q, 10, 64); err == nil {
+		return time.Unix(n, 0), nil
 	}
 
 	t, err := api.ParseTime(q)

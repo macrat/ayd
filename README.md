@@ -529,8 +529,8 @@ Be careful, the target URL or the message won't convert even if set `charset=asc
 
 The log endpoints accept `since`, `until`, `target`, and `query` query to filtering log entries.
 
-`since` and `until` is the queries to filtering by date-time, in RFC3339 format like `2001-02-03T16:05:06+09:00`.
-In default, Ayd replies logs that from 7 days ago to current time.
+The `since` and `until` is the queries to filtering by date-time, in RFC3339 format like `2001-02-03T16:05:06+09:00`, or UNIX time like `981183906`.
+By default, Ayd replies logs that from 7 days ago to current time.
 
 And, `target` is the query to filtering by target URL.
 

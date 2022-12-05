@@ -324,6 +324,20 @@ func TestLogJsonEndpoint(t *testing.T) {
 			"",
 		},
 		{
+			"drop-with-timerange-rfc3339",
+			"?since=2021-01-02T15:04:06Z&until=2021-01-02T15:04:08Z",
+			http.StatusOK,
+			3,
+			"",
+		},
+		{
+			"drop-with-timerange-unixtime",
+			"?since=1609599846&until=1609599848",
+			http.StatusOK,
+			3,
+			"",
+		},
+		{
 			"drop-with-target",
 			"?since=2021-01-01T00:00:00Z&until=2022-01-01T00:00:00Z&target=http://b.example.com",
 			http.StatusOK,
@@ -382,7 +396,10 @@ func TestLogJsonEndpoint(t *testing.T) {
 				}
 
 				if len(result.Records) != tt.Length {
-					t.Errorf("unexpected count of result: %#v", result)
+					t.Errorf("unexpected count of result: %d", len(result.Records))
+					for _, r := range result.Records {
+						t.Log(r)
+					}
 				}
 			} else {
 				var result struct {
