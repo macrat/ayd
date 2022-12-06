@@ -1,6 +1,6 @@
 module github.com/macrat/ayd
 
-go 1.17
+go 1.19
 
 require (
 	github.com/NYTimes/gziphandler v1.1.1
