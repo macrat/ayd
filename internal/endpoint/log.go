@@ -285,6 +285,24 @@ func LogLTSVEndpoint(s Store) http.HandlerFunc {
 	}
 }
 
+func LogXlsxEndpoint(s Store) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+		scanner, code, err := newLogScanner(s, "log.xlsx", r)
+		if err != nil {
+			w.WriteHeader(code)
+			w.Write([]byte(err.Error() + "\n"))
+			return
+		}
+		defer scanner.Close()
+
+		scanner = setFilter(scanner, r)
+		err = logconv.ToXlsx(w, scanner)
+		handleError(s, "log.xlsx", err)
+	}
+}
+
 //go:embed templates/log.html
 var logHTMLTemplate string
 

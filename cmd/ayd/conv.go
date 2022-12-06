@@ -8,6 +8,7 @@ import (
 
 	"github.com/macrat/ayd/internal/logconv"
 	api "github.com/macrat/ayd/lib-ayd"
+	"github.com/mattn/go-isatty"
 	"github.com/spf13/pflag"
 )
 
@@ -33,6 +34,7 @@ Options:
   -c, --csv     Convert to CSV. (default format)
   -j, --json    Convert to JSON.
   -l, --ltsv    Convert to LTSV.
+  -x, --xlsx    Convert to XLSX.
 
   -h, --help    Show this help message and exit.
 `
@@ -45,6 +47,7 @@ func (c ConvCommand) Run(args []string) int {
 	toCsv := flags.BoolP("csv", "c", false, "Convert to CSV")
 	toJson := flags.BoolP("json", "j", false, "Convert to JSON")
 	toLtsv := flags.BoolP("ltsv", "l", false, "Convert to LTSV")
+	toXlsx := flags.BoolP("xlsx", "x", false, "Convert to XLSX")
 
 	help := flags.BoolP("help", "h", false, "Show this message and exit")
 
@@ -67,6 +70,9 @@ func (c ConvCommand) Run(args []string) int {
 		count++
 	}
 	if *toLtsv {
+		count++
+	}
+	if *toXlsx {
 		count++
 	}
 	if count > 1 {
@@ -102,6 +108,9 @@ func (c ConvCommand) Run(args []string) int {
 		}
 		defer f.Close()
 		output = f
+	} else if *toXlsx && isatty.IsTerminal(os.Stdout.Fd()) || isatty.IsCygwinTerminal(os.Stdout.Fd()) {
+		fmt.Fprintln(c.ErrStream, "error: can not write xlsx format to stdout. please redirect or use -o option.")
+		return 1
 	}
 
 	var err error
@@ -110,6 +119,8 @@ func (c ConvCommand) Run(args []string) int {
 		err = c.toJson(scanners, output)
 	case *toLtsv:
 		err = c.toLTSV(scanners, output)
+	case *toXlsx:
+		err = c.toXlsx(scanners, output)
 	default:
 		err = c.toCSV(scanners, output)
 	}
@@ -161,6 +172,16 @@ func (c ConvCommand) toCSV(scanners []api.LogScanner, output io.Writer) error {
 func (c ConvCommand) toLTSV(scanners []api.LogScanner, output io.Writer) error {
 	for _, s := range scanners {
 		if err := logconv.ToLTSV(output, s); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (c ConvCommand) toXlsx(scanners []api.LogScanner, output io.Writer) error {
+	for _, s := range scanners {
+		if err := logconv.ToXlsx(output, s); err != nil {
 			return err
 		}
 	}

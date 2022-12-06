@@ -61,10 +61,11 @@ func New(s Store) http.Handler {
 	m.Handle("/incidents.csv", LinkHeader{IncidentsCSVEndpoint(s), incidentsLink})
 	m.Handle("/incidents.json", LinkHeader{IncidentsJSONEndpoint(s), incidentsLink})
 
-	logLink := `<log.html>;rel="alternate";type="text/html", <log.csv>;rel="alternate";type="text/csv", <log.ltsv>;rel="alternate";type="text/plain", <log.json>;rel="alternate";type="application/json"`
+	logLink := `<log.html>;rel="alternate";type="text/html", <log.csv>;rel="alternate";type="text/csv", <log.xlsx>;rel="alternate";type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", <log.ltsv>;rel="alternate";type="text/plain", <log.json>;rel="alternate";type="application/json"`
 	m.Handle("/log", http.RedirectHandler("/log.html", http.StatusMovedPermanently))
 	m.Handle("/log.html", LinkHeader{LogHTMLEndpoint(s), logLink})
 	m.Handle("/log.csv", LinkHeader{LogCSVEndpoint(s), logLink})
+	m.Handle("/log.xlsx", LinkHeader{LogXlsxEndpoint(s), logLink})
 	m.Handle("/log.ltsv", LinkHeader{LogLTSVEndpoint(s), logLink})
 	m.Handle("/log.json", LinkHeader{LogJsonEndpoint(s), logLink})
 
