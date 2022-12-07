@@ -2,7 +2,6 @@ package logconv
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"sort"
 	"time"
@@ -52,16 +51,40 @@ func ToXlsx(w io.Writer, s api.LogScanner, createdAt time.Time) error {
 	xlsx.SetCellStr("log", "D1", "target")
 	xlsx.SetCellStr("log", "E1", "message")
 
+	colors := map[api.Status]string{
+		api.StatusHealthy: "89C923",
+		api.StatusDegrade: "DDA100",
+		api.StatusFailure: "FF2D00",
+		api.StatusUnknown: "000000",
+		api.StatusAborted: "C0C0C0",
+	}
+
+	setValue := func(x, y uint, value any, color string, style int, format *string) {
+		xlsx.SetCellValue("log", excelPos(x, y), value)
+		sid, _ := xlsx.NewStyle(&excelize.Style{
+			CustomNumFmt: format,
+			Border:       []excelize.Border{{Type: "bottom", Style: style, Color: color}},
+		})
+		pos := excelPos(x, y)
+		xlsx.SetCellStyle("log", pos, pos, sid)
+	}
+	datefmt := "yyyy-mm-dd hh:mm:ss\"Z\""
+	latencyfmt := "#,##0.000 \"ms\""
+
 	var row uint
 	for s.Scan() {
 		row++
 		r := s.Record()
 
-		xlsx.SetCellValue("log", excelPos(0, row), r.Time.UTC())
-		xlsx.SetCellStr("log", excelPos(1, row), r.Status.String())
-		xlsx.SetCellFloat("log", excelPos(2, row), float64(r.Latency.Microseconds())/1000, 3, 64)
-		xlsx.SetCellStr("log", excelPos(3, row), r.Target.String())
-		xlsx.SetCellStr("log", excelPos(4, row), r.Message)
+		color := colors[r.Status]
+		style, _ := xlsx.NewStyle(&excelize.Style{Border: []excelize.Border{{Type: "bottom", Style: 1, Color: color}}})
+		xlsx.SetRowStyle("log", int(row+1), int(row+1), style)
+
+		setValue(0, row, r.Time.UTC(), color, 1, &datefmt)
+		setValue(1, row, r.Status.String(), color, 5, nil)
+		setValue(2, row, float64(r.Latency.Microseconds())/1000, color, 1, &latencyfmt)
+		setValue(3, row, r.Target.String(), color, 1, nil)
+		setValue(4, row, r.Message, color, 1, nil)
 
 		extras = append(extras, r.Extra)
 		for k := range r.Extra {
@@ -103,49 +126,10 @@ func ToXlsx(w io.Writer, s api.LogScanner, createdAt time.Time) error {
 		return err
 	}
 
-	datefmt := "yyyy-mm-dd hh:mm:ss\"Z\""
-	if style, err := xlsx.NewStyle(&excelize.Style{CustomNumFmt: &datefmt}); err == nil {
-		xlsx.SetColStyle("log", "A", style)
-	}
 	xlsx.SetColWidth("log", "A", "A", 20)
-
-	healthy, _ := xlsx.NewConditionalStyle(`{"border": [{"type":"bottom", "style":5, "color":"89C923"}]}`)
-	degrade, _ := xlsx.NewConditionalStyle(`{"border": [{"type":"bottom", "style":5, "color":"DDA100"}]}`)
-	failure, _ := xlsx.NewConditionalStyle(`{"border": [{"type":"bottom", "style":5, "color":"FF2D00"}]}`)
-	unknown, _ := xlsx.NewConditionalStyle(`{"border": [{"type":"bottom", "style":5, "color":"000000"}]}`)
-	aborted, _ := xlsx.NewConditionalStyle(`{"border": [{"type":"bottom", "style":2, "color":"000000"}]}`)
-	xlsx.SetConditionalFormat("log", "B:B", fmt.Sprintf(`[
-		{"type":"cell", "criteria":"==", "value":"\"HEALTHY\"", "format":%d},
-		{"type":"cell", "criteria":"==", "value":"\"DEGRADE\"", "format":%d},
-		{"type":"cell", "criteria":"==", "value":"\"FAILURE\"", "format":%d},
-		{"type":"cell", "criteria":"==", "value":"\"UNKNOWN\"", "format":%d},
-		{"type":"cell", "criteria":"==", "value":"\"ABORTED\"", "format":%d}
-	]`, healthy, degrade, failure, unknown, aborted))
-
-	healthy, _ = xlsx.NewConditionalStyle(`{"border": [{"type":"bottom", "style":1, "color":"89C923"}]}`)
-	degrade, _ = xlsx.NewConditionalStyle(`{"border": [{"type":"bottom", "style":1, "color":"DDA100"}]}`)
-	failure, _ = xlsx.NewConditionalStyle(`{"border": [{"type":"bottom", "style":1, "color":"FF2D00"}]}`)
-	unknown, _ = xlsx.NewConditionalStyle(`{"border": [{"type":"bottom", "style":1, "color":"000000"}]}`)
-	aborted, _ = xlsx.NewConditionalStyle(`{"border": [{"type":"bottom", "style":1, "color":"000000"}]}`)
-	endCol, err := excelize.ColumnNumberToName(5 + len(extraKeys))
-	if err != nil {
-		endCol = "ZZ"
-	}
-	xlsx.SetConditionalFormat("log", "A:"+endCol, fmt.Sprintf(`[
-		{"type":"formula", "criteria":"=$B1=\"HEALTHY\"", "format":%d},
-		{"type":"formula", "criteria":"=$B1=\"DEGRADE\"", "format":%d},
-		{"type":"formula", "criteria":"=$B1=\"FAILURE\"", "format":%d},
-		{"type":"formula", "criteria":"=$B1=\"UNKNOWN\"", "format":%d},
-		{"type":"formula", "criteria":"=$B1=\"ABORTED\"", "format":%d}
-	]`, healthy, degrade, failure, unknown, aborted))
-
-	latencyfmt := "#,##0.000 \"ms\""
-	if style, err := xlsx.NewStyle(&excelize.Style{CustomNumFmt: &latencyfmt}); err == nil {
-		xlsx.SetColStyle("log", "C", style)
-	}
 	xlsx.SetColWidth("log", "C", "C", 15)
-
 	xlsx.SetColWidth("log", "D", "D", 30)
+	xlsx.SetColWidth("log", "E", "E", 30)
 
 	xlsx.AutoFilter("log", "A1", excelPos(uint(4+len(extraKeys)), 0), "")
 
