@@ -505,6 +505,7 @@ Ayd has these pages/endpoints.
 | [/incidents.json](http://localhost:9000/status.json) | Incident history in JSON format.                                     |
 | [/log.html](http://localhost:9000/log.html)          | Raw log data in HTML page.                                           |
 | [/log.csv](http://localhost:9000/log.csv)            | Raw log file in CSV format.                                          |
+| [/log.xlsx](http://localhost:9000/log.xlsx)          | Raw log file in Microsoft Excel (OpenXML Spreadsheet) format.        |
 | [/log.ltsv](http://localhost:9000/log.ltsv)          | Raw log file in LTSV (Labeled Tab-Separated Values) format.          |
 | [/log.json](http://localhost:9000/log.json)          | Raw log file in JSON format.                                         |
 | [/targets.txt](http://localhost:9000/targets.txt)    | The list of target URLs, separated by \\n.                           |
