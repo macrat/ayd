@@ -28,7 +28,7 @@ func contains[T comparable](xs []T, x T) bool {
 	return false
 }
 
-func ToXlsx(w io.Writer, s api.LogScanner) error {
+func ToXlsx(w io.Writer, s api.LogScanner, createdAt time.Time) error {
 	var extras []map[string]interface{}
 	var extraKeys []string
 
@@ -39,10 +39,9 @@ func ToXlsx(w io.Writer, s api.LogScanner) error {
 	xlsx.SetAppProps(&excelize.AppProperties{
 		Application: "Ayd",
 	})
-	timestamp := time.Now().Format(time.RFC3339)
 	xlsx.SetDocProps(&excelize.DocProperties{
-		Created:        timestamp,
-		Modified:       timestamp,
+		Created:        createdAt.Format(time.RFC3339),
+		Modified:       createdAt.Format(time.RFC3339),
 		Creator:        "Ayd",
 		LastModifiedBy: "Ayd",
 	})
@@ -114,18 +113,20 @@ func ToXlsx(w io.Writer, s api.LogScanner) error {
 	degrade, _ := xlsx.NewConditionalStyle(`{"border": [{"type":"bottom", "style":5, "color":"DDA100"}]}`)
 	failure, _ := xlsx.NewConditionalStyle(`{"border": [{"type":"bottom", "style":5, "color":"FF2D00"}]}`)
 	unknown, _ := xlsx.NewConditionalStyle(`{"border": [{"type":"bottom", "style":5, "color":"000000"}]}`)
+	aborted, _ := xlsx.NewConditionalStyle(`{"border": [{"type":"bottom", "style":2, "color":"000000"}]}`)
 	xlsx.SetConditionalFormat("log", "B:B", fmt.Sprintf(`[
 		{"type":"cell", "criteria":"==", "value":"\"HEALTHY\"", "format":%d},
 		{"type":"cell", "criteria":"==", "value":"\"DEGRADE\"", "format":%d},
 		{"type":"cell", "criteria":"==", "value":"\"FAILURE\"", "format":%d},
-		{"type":"cell", "criteria":"==", "value":"\"UNKNOWN\"", "format":%d}
-	]`, healthy, degrade, failure, unknown))
+		{"type":"cell", "criteria":"==", "value":"\"UNKNOWN\"", "format":%d},
+		{"type":"cell", "criteria":"==", "value":"\"ABORTED\"", "format":%d}
+	]`, healthy, degrade, failure, unknown, aborted))
 
 	healthy, _ = xlsx.NewConditionalStyle(`{"border": [{"type":"bottom", "style":1, "color":"89C923"}]}`)
-	degrade, _ = xlsx.NewConditionalStyle(`{"border": [{"type":"bottom", "style":2, "color":"DDA100"}]}`)
-	failure, _ = xlsx.NewConditionalStyle(`{"border": [{"type":"bottom", "style":2, "color":"FF2D00"}]}`)
-	unknown, _ = xlsx.NewConditionalStyle(`{"border": [{"type":"bottom", "style":2, "color":"000000"}]}`)
-	aborted, _ := xlsx.NewConditionalStyle(`{"border": [{"type":"bottom", "style":1, "color":"000000"}]}`)
+	degrade, _ = xlsx.NewConditionalStyle(`{"border": [{"type":"bottom", "style":1, "color":"DDA100"}]}`)
+	failure, _ = xlsx.NewConditionalStyle(`{"border": [{"type":"bottom", "style":1, "color":"FF2D00"}]}`)
+	unknown, _ = xlsx.NewConditionalStyle(`{"border": [{"type":"bottom", "style":1, "color":"000000"}]}`)
+	aborted, _ = xlsx.NewConditionalStyle(`{"border": [{"type":"bottom", "style":1, "color":"000000"}]}`)
 	endCol, err := excelize.ColumnNumberToName(5 + len(extraKeys))
 	if err != nil {
 		endCol = "ZZ"

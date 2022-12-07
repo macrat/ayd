@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"time"
 
 	"github.com/macrat/ayd/internal/logconv"
 	api "github.com/macrat/ayd/lib-ayd"
@@ -110,7 +111,7 @@ func (c ConvCommand) Run(args []string) int {
 		output = f
 	} else if *toXlsx && isatty.IsTerminal(os.Stdout.Fd()) || isatty.IsCygwinTerminal(os.Stdout.Fd()) {
 		fmt.Fprintln(c.ErrStream, "error: can not write xlsx format to stdout. please redirect or use -o option.")
-		return 1
+		return 2
 	}
 
 	var err error
@@ -180,8 +181,9 @@ func (c ConvCommand) toLTSV(scanners []api.LogScanner, output io.Writer) error {
 }
 
 func (c ConvCommand) toXlsx(scanners []api.LogScanner, output io.Writer) error {
+	createdAt := time.Now()
 	for _, s := range scanners {
-		if err := logconv.ToXlsx(output, s); err != nil {
+		if err := logconv.ToXlsx(output, s, createdAt); err != nil {
 			return err
 		}
 	}

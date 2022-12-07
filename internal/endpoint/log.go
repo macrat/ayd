@@ -298,7 +298,7 @@ func LogXlsxEndpoint(s Store) http.HandlerFunc {
 		defer scanner.Close()
 
 		scanner = setFilter(scanner, r)
-		err = logconv.ToXlsx(w, scanner)
+		err = logconv.ToXlsx(w, scanner, time.Now())
 		handleError(s, "log.xlsx", err)
 	}
 }
