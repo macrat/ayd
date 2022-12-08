@@ -2,6 +2,7 @@ package logconv
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"sort"
 	"time"
@@ -28,9 +29,6 @@ func contains[T comparable](xs []T, x T) bool {
 }
 
 func ToXlsx(w io.Writer, s api.LogScanner, createdAt time.Time) error {
-	var extras []map[string]interface{}
-	var extraKeys []string
-
 	xlsx := excelize.NewFile()
 	defer xlsx.Close()
 	xlsx.SetSheetName("Sheet1", "log")
@@ -45,7 +43,8 @@ func ToXlsx(w io.Writer, s api.LogScanner, createdAt time.Time) error {
 		LastModifiedBy: "Ayd",
 	})
 
-	xlsx.SetCellStr("log", "A1", "time")
+	zone, _ := createdAt.Zone()
+	xlsx.SetCellStr("log", "A1", fmt.Sprintf("time (%s)", zone))
 	xlsx.SetCellStr("log", "B1", "status")
 	xlsx.SetCellStr("log", "C1", "latency")
 	xlsx.SetCellStr("log", "D1", "target")
@@ -68,8 +67,11 @@ func ToXlsx(w io.Writer, s api.LogScanner, createdAt time.Time) error {
 		pos := excelPos(x, y)
 		xlsx.SetCellStyle("log", pos, pos, sid)
 	}
-	datefmt := "yyyy-mm-dd hh:mm:ss\"Z\""
+	datefmt := "yyyy-mm-dd hh:mm:ss"
 	latencyfmt := "#,##0.000 \"ms\""
+
+	var extras []map[string]interface{}
+	var extraKeys []string
 
 	var row uint
 	for s.Scan() {
@@ -80,7 +82,7 @@ func ToXlsx(w io.Writer, s api.LogScanner, createdAt time.Time) error {
 		style, _ := xlsx.NewStyle(&excelize.Style{Border: []excelize.Border{{Type: "bottom", Style: 1, Color: color}}})
 		xlsx.SetRowStyle("log", int(row+1), int(row+1), style)
 
-		setValue(0, row, r.Time.UTC(), color, 1, &datefmt)
+		setValue(0, row, r.Time.In(createdAt.Location()), color, 1, &datefmt)
 		setValue(1, row, r.Status.String(), color, 5, nil)
 		setValue(2, row, float64(r.Latency.Microseconds())/1000, color, 1, &latencyfmt)
 		setValue(3, row, r.Target.String(), color, 1, nil)
