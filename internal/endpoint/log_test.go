@@ -512,6 +512,23 @@ func TestLogCSVEndpoint(t *testing.T) {
 	}
 }
 
+func TestLogXlsxEndpoint(t *testing.T) {
+	srv := testutil.StartTestServer(t)
+	t.Cleanup(func() {
+		srv.Close()
+	})
+
+	resp, err := srv.Client().Get(srv.URL + "/log.xlsx")
+	if err != nil {
+		t.Fatalf("failed to get /log.xlsx: %s", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		t.Errorf("unexpected status: %s", resp.Status)
+	}
+}
+
 func TestLogLTSVEndpoint(t *testing.T) {
 	tests := []struct {
 		Name       string
