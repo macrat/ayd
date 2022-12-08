@@ -118,7 +118,7 @@ Ayd supports below URL schemes in default.
 | [`ping:`](#ping)                   | :heavy_check_mark: | :heavy_minus_sign: |
 | [`tcp:`](#tcp)                     | :heavy_check_mark: | :heavy_minus_sign: |
 | [`dns:`](#dns)                     | :heavy_check_mark: | :heavy_minus_sign: |
-| [`file:`](file)                    | :heavy_check_mark: | :heavy_check_mark: |
+| [`file:`](#file)                   | :heavy_check_mark: | :heavy_check_mark: |
 | [`exec:`](#exec)                   | :heavy_check_mark: | :heavy_check_mark: |
 | [`source:`](#source)               | :heavy_check_mark: | :heavy_check_mark: |
 
