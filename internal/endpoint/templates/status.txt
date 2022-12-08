@@ -1,12 +1,12 @@
 -------------------------------| Current Status |-------------------------------
 {{ range .ProbeHistory | sort_history }}
-+- {{ .Target }}
-+{{ range .Records | pad_records 40 }}-{{ end }}{{ range .Records }}{{
+| {{ .Status }}  {{ .Target }}
+|{{ range .Records | pad_records 40 }}-{{ end }}{{ range .Records }}{{
     if .Status | is_unknown }}?{{ end }}{{
     if .Status | is_aborted }}-{{ end }}{{
     if .Status | is_failure }}!{{ end }}{{
     if .Status | is_degrade }}!{{ end }}{{
-    if .Status | is_healthy }}v{{ end }}{{ end }}|  updated: {{ if .Updated }}{{ .Updated | time2str }}{{ else }}(not yet){{ end }}
+    if .Status | is_healthy }}+{{ end }}{{ end }}|    updated: {{ if .Updated }}{{ .Updated | time2str }}{{ else }}(not yet){{ end }}
 {{ end }}
 
 ------------------------------| Current Incident |------------------------------
