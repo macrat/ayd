@@ -513,18 +513,6 @@ Ayd has these pages/endpoints.
 | [/metrics](http://localhost:9000/metrics)            | Minimal status page for use by [Prometheus](https://prometheus.io/). |
 | [/healthz](http://localhost:9000/healthz)            | Health status page for checking status of Ayd itself.                |
 
-#### Change encoding of `/stauts.txt`
-
-`/status.txt` accepts `charset` query to changing the encoding of result.
-The query value is `unicode` or `ascii`.
-In default, the encoding is `unicode`.
-
-examples:
-- <http://localhost:9000/status.txt>, <http://localhost:9000/status.txt?charset=unicode>: Reply is in UTF-8 text.
-- <http://localhost:9000/status.txt?charset=ascii>: Reply is in ASCII text.
-
-Be careful, the target URL or the message won't convert even if set `charset=ascii`. The response could include non-ascii text.
-
 
 #### Filter log entries in `/log.html`, `/log.csv`, `/log.ltsv`, and `/log.json`
 
