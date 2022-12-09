@@ -23,9 +23,7 @@ var (
 )
 
 var (
-	executeLatencyRe = regexp.MustCompile("(?m)^::latency::[ \t]*([0-9]+(?:\\.[0-9]+)?)[ \t]*(?:\n|$)")
-	executeStatusRe  = regexp.MustCompile("(?m)^::status::[ \t]*((?i:healthy|degrade|failure|aborted|unknown))[ \t]*(?:\n|$)")
-	executeExtraRe   = regexp.MustCompile("(?m)^::([^:.\n\t]+)::[ \t]*([^\n]*)[ \t]*(?:\n|$)")
+	executeMessageRegex = regexp.MustCompile("(?m)^::([^:.\n\t]+)::[ \t]*([^\n]*)[ \t]*(?:\n|$)")
 )
 
 func getExecuteEnvByURL(u *api.URL) []string {
@@ -76,47 +74,39 @@ func (s ExecScheme) Target() *api.URL {
 	return s.target
 }
 
-func getLatencyByMessage(message string, default_ time.Duration) (replacedMessage string, latency time.Duration) {
-	if m := executeLatencyRe.FindAllStringSubmatch(message, -1); m != nil {
-		if l, err := strconv.ParseFloat(m[len(m)-1][1], 64); err == nil {
-			return strings.Trim(executeLatencyRe.ReplaceAllString(message, ""), "\n"), time.Duration(l * float64(time.Millisecond))
-		}
-	}
-
-	return message, default_
-}
-
-func getStatusByMessage(message string, default_ api.Status) (replacedMessage string, status api.Status) {
-	if m := executeStatusRe.FindAllStringSubmatch(message, -1); m != nil {
-		var status api.Status
-		status.UnmarshalText([]byte(strings.ToUpper(m[len(m)-1][1])))
-		return strings.Trim(executeStatusRe.ReplaceAllString(message, ""), "\n"), status
-	}
-
-	return message, default_
-}
-
-func getExtraByMessage(message string) (replacedMessage string, extra map[string]any) {
+func parseExecMessage(message string, defaultStatus api.Status, defaultLatency time.Duration) (replacedMessage string, status api.Status, latency time.Duration, extra map[string]any) {
+	status = defaultStatus
+	latency = defaultLatency
 	extra = make(map[string]any)
 
-	if ms := executeExtraRe.FindAllStringSubmatch(message, -1); ms != nil {
-		for _, m := range ms {
-			switch m[1] {
-			case "time", "status", "latency", "target", "message":
-			default:
-				var value any
-				if json.Unmarshal([]byte(m[2]), &value) == nil {
-					extra[m[1]] = value
-				} else {
-					extra[m[1]] = m[2]
-				}
-				message = strings.ReplaceAll(message, m[0], "")
-			}
-		}
-		return strings.Trim(message, "\n"), extra
+	ms := executeMessageRegex.FindAllStringSubmatch(message, -1)
+	if ms == nil {
+		return message, status, latency, extra
 	}
 
-	return message, extra
+	for _, m := range ms {
+		switch m[1] {
+		case "status":
+			status = api.ParseStatus(strings.ToUpper(m[2]))
+			message = strings.ReplaceAll(message, m[0], "")
+		case "latency":
+			if l, err := strconv.ParseFloat(m[2], 64); err == nil && l >= 0 {
+				latency = time.Duration(l * float64(time.Millisecond))
+			}
+			message = strings.ReplaceAll(message, m[0], "")
+		case "time", "target", "message":
+		default:
+			var value any
+			if json.Unmarshal([]byte(m[2]), &value) == nil {
+				extra[m[1]] = value
+			} else {
+				extra[m[1]] = m[2]
+			}
+			message = strings.ReplaceAll(message, m[0], "")
+		}
+	}
+
+	return strings.Trim(message, "\n"), status, latency, extra
 }
 
 func isUnknownExecutionError(err error) bool {
@@ -181,11 +171,8 @@ func (s ExecScheme) run(ctx context.Context, r Reporter, extraEnv []string) {
 		message = err.Error()
 	}
 
-	message, latency = getLatencyByMessage(message, latency)
-	message, status = getStatusByMessage(message, status)
-
 	var extra map[string]any
-	message, extra = getExtraByMessage(message)
+	message, status, latency, extra = parseExecMessage(message, status, latency)
 
 	if err == nil {
 		extra["exit_code"] = 0
