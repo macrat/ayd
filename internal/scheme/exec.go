@@ -23,8 +23,9 @@ var (
 )
 
 var (
-	executeLatencyRe = regexp.MustCompile("(?m)^::latency::([0-9]+(?:\\.[0-9]+)?)(?:\n|$)")
-	executeStatusRe  = regexp.MustCompile("(?m)^::status::((?i:healthy|failure|aborted|unknown))(?:\n|$)")
+	executeLatencyRe = regexp.MustCompile("(?m)^::latency::[ \t]*([0-9]+(?:\\.[0-9]+)?)[ \t]*(?:\n|$)")
+	executeStatusRe  = regexp.MustCompile("(?m)^::status::[ \t]*((?i:healthy|degrade|failure|aborted|unknown))[ \t]*(?:\n|$)")
+	executeExtraRe   = regexp.MustCompile("(?m)^::([^:.\n\t]+)::[ \t]*([^\n]*)[ \t]*(?:\n|$)")
 )
 
 func getExecuteEnvByURL(u *api.URL) []string {
@@ -95,6 +96,29 @@ func getStatusByMessage(message string, default_ api.Status) (replacedMessage st
 	return message, default_
 }
 
+func getExtraByMessage(message string) (replacedMessage string, extra map[string]any) {
+	extra = make(map[string]any)
+
+	if ms := executeExtraRe.FindAllStringSubmatch(message, -1); ms != nil {
+		for _, m := range ms {
+			switch m[1] {
+			case "time", "status", "latency", "target", "message":
+			default:
+				var value any
+				if json.Unmarshal([]byte(m[2]), &value) == nil {
+					extra[m[1]] = value
+				} else {
+					extra[m[1]] = m[2]
+				}
+				message = strings.ReplaceAll(message, m[0], "")
+			}
+		}
+		return strings.Trim(message, "\n"), extra
+	}
+
+	return message, extra
+}
+
 func isUnknownExecutionError(err error) bool {
 	if e := errors.Unwrap(err); e != nil {
 		switch e.Error() {
@@ -160,15 +184,17 @@ func (s ExecScheme) run(ctx context.Context, r Reporter, extraEnv []string) {
 	message, latency = getLatencyByMessage(message, latency)
 	message, status = getStatusByMessage(message, status)
 
-	var extra map[string]interface{}
+	var extra map[string]any
+	message, extra = getExtraByMessage(message)
+
 	if err == nil {
-		extra = map[string]interface{}{"exit_code": 0}
+		extra["exit_code"] = 0
 	} else {
 		var exitErr *exec.ExitError
 		if ctx.Err() == context.DeadlineExceeded || ctx.Err() == context.Canceled {
 			// do not add exit_code if command cancelled by Ayd.
 		} else if errors.As(err, &exitErr) && exitErr.ExitCode() >= 0 {
-			extra = map[string]interface{}{"exit_code": exitErr.ExitCode()}
+			extra["exit_code"] = exitErr.ExitCode()
 		}
 	}
 

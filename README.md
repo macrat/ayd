@@ -295,21 +295,38 @@ examples:
 
 ##### Extra report format
 
-`exec:` commands can report latency of service, or status of service in the output of the command.
-Please write output like below if you want to use this function.
+Programs executed by `exec:` can report extra values, such as latency or service status, using the syntax `::key::value`.
 
-``` plain text
+For example, the output look like this:
+
+``` plain
 ::latency::123.456
 ::status::failure
+::extra_count::123
+::extra_info::this is a test
 hello world
 ```
 
-This output is reporting latency is `123.456ms`, status is `FAILURE`, and message is `hello world`.
+This output will be parsed by Ayd like this:
 
-- `::latency::`: Reports the latency of service in milliseconds.
-- `::status::`: Reports the status of service in `healthy`, `degrade`, `failure`, `aborted`, or `unknown`.
+``` json
+{
+  "latency": 123.456,
+  "status": "failure",
+  "extra_count": 123,
+  "extra_info": "this is a test",
+  "message": "hello world"
+}
+```
 
-Ayd uses the last value if found multiple reports in single output.
+The `latency` is a latency of the service, in milliseconds.
+The `status` is one of `HEALTHY`, `DEGRADE`, `FAILURE`, `ABORTED`, `UNKNOWN`.
+The other values are numbers, texts, or JSON values.
+
+You can not set `time`, `target`, and `exit_code`.
+If you need to change them, please make a [plugin](#plugin).
+
+If there are multiple keys with the same name in the output, only the last one will be used.
 
 ##### as Alert
 
