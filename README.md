@@ -114,7 +114,7 @@ Ayd supports below URL schemes in default.
 | scheme                             |      as Target     |      as Alert      |
 |------------------------------------|:------------------:|:------------------:|
 | [`http:` / `https:`](#http--https) | :heavy_check_mark: | :heavy_check_mark: |
-| [`ftp:` / `ftps:`](#ftp--ftps)     | :heavy_check_mark: | :heavy_minus_sign: |
+| [`ftp:` / `ftps:`](#ftp--ftps)     | :heavy_check_mark: | :heavy_check_mark: |
 | [`ping:`](#ping)                   | :heavy_check_mark: | :heavy_minus_sign: |
 | [`tcp:`](#tcp)                     | :heavy_check_mark: | :heavy_minus_sign: |
 | [`dns:`](#dns)                     | :heavy_check_mark: | :heavy_minus_sign: |
@@ -169,7 +169,8 @@ examples:
 
 ##### as Alert
 
-FTP/FTPS does not support to used as an alert URL.
+Writes the same format logs as the [normal log file](#log-file), over FTP or FTPS, when the service status changed.
+It is pretty same as [file:](#file) scheme for alert but uses FTP/FTPS.
 
 #### ping:
 
@@ -250,7 +251,8 @@ examples:
 
 ##### as Alert
 
-If you use this as an alert target, it writes logs that the same as [normal log](#log-file) to the target path, but only logs when status changed.
+Writes the same format logs as the [normal log file](#log-file) to the target path, when the service status changed.
+It is pretty same as [ftp: / ftps:](ftp--ftps) for alert but writes to a local file.
 
 #### exec:
 

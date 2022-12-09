@@ -2,6 +2,7 @@ package scheme_test
 
 import (
 	"bytes"
+	"context"
 	_ "embed"
 	"errors"
 	"fmt"
@@ -11,6 +12,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/macrat/ayd/internal/scheme"
+	"github.com/macrat/ayd/internal/testutil"
 	api "github.com/macrat/ayd/lib-ayd"
 	ftp "goftp.io/server/core"
 )
@@ -56,7 +60,15 @@ func (i FTPFileInfo) Group() string {
 	return "hoge"
 }
 
-type FTPTestDriver struct{}
+type FTPUploadedFile struct {
+	Name   string
+	Data   []byte
+	Append bool
+}
+
+type FTPTestDriver struct {
+	Uploaded []FTPUploadedFile
+}
 
 func (d FTPTestDriver) Stat(path string) (ftp.FileInfo, error) {
 	switch path {
@@ -127,11 +139,20 @@ func (d FTPTestDriver) GetFile(path string, i int64) (int64, io.ReadCloser, erro
 	return 0, nil, errors.New("not implemented")
 }
 
-func (d FTPTestDriver) PutFile(path string, f io.Reader, b bool) (int64, error) {
-	return 0, errors.New("not implemented")
+func (d *FTPTestDriver) PutFile(path string, f io.Reader, append_ bool) (int64, error) {
+	if b, err := io.ReadAll(f); err != nil {
+		return 0, err
+	} else {
+		d.Uploaded = append(d.Uploaded, FTPUploadedFile{
+			Name:   path,
+			Data:   b,
+			Append: append_,
+		})
+		return int64(len(b)), nil
+	}
 }
 
-func (d FTPTestDriver) NewDriver() (ftp.Driver, error) {
+func (d *FTPTestDriver) NewDriver() (ftp.Driver, error) {
 	return d, nil
 }
 
@@ -150,10 +171,11 @@ func (a FTPTestAuth) CheckPasswd(username, password string) (ok bool, err error)
 // StartFTPServer starts FTP server for test.
 //
 // XXX: randomize port and avoid conflict
-func StartFTPServer(t *testing.T, port int) *ftp.Server {
+func StartFTPServer(t *testing.T, port int) *FTPTestDriver {
 	t.Helper()
+	driver := &FTPTestDriver{}
 	server := ftp.NewServer(&ftp.ServerOpts{
-		Factory: FTPTestDriver{},
+		Factory: driver,
 		Auth:    FTPTestAuth{},
 		Port:    port,
 		Logger:  &ftp.DiscardLogger{},
@@ -166,10 +188,10 @@ func StartFTPServer(t *testing.T, port int) *ftp.Server {
 			server.Shutdown()
 		})
 	}()
-	return server
+	return driver
 }
 
-func TestFTPProbe(t *testing.T) {
+func TestFTPScheme_Probe(t *testing.T) {
 	t.Parallel()
 	StartFTPServer(t, 21021)
 
@@ -197,5 +219,56 @@ func TestFTPProbe(t *testing.T) {
 		AssertProbe(t, []ProbeTest{
 			{"ftp://localhost:12345/", api.StatusFailure, `(127\.0\.0\.1|\[::1\]):12345: connection refused`, ""},
 		}, 1)
+	}
+}
+
+func TestFTPScheme_Alert(t *testing.T) {
+	t.Parallel()
+
+	a, err := scheme.NewAlerter("ftp://hoge:fuga@localhost:21121/alert.json")
+	if err != nil {
+		t.Fatalf("failed to prepare FTPScheme: %s", err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	driver := StartFTPServer(t, 21121)
+
+	r := &testutil.DummyReporter{}
+	a.Alert(ctx, r, api.Record{
+		Time:    time.Date(2021, 1, 2, 15, 4, 5, 0, time.UTC),
+		Status:  api.StatusFailure,
+		Latency: 123456 * time.Microsecond,
+		Target:  &api.URL{Scheme: "dummy", Fragment: "hello"},
+		Message: "hello world",
+	})
+
+	expected := `{"time":"2021-01-02T15:04:05Z", "status":"FAILURE", "latency":123.456, "target":"dummy:#hello", "message":"hello world"}` + "\n"
+
+	if len(r.Records) != 1 {
+		t.Errorf("unexpected number of records\n%v", r.Records)
+	} else {
+		if r.Records[0].Status != api.StatusHealthy {
+			t.Errorf("unexpected status: %s", r.Records[0].Status)
+		}
+		if r.Records[0].Message != fmt.Sprintf("uploaded %d bytes to the server", len(expected)) {
+			t.Errorf("unexpected message: %q", r.Records[0].Message)
+		}
+	}
+
+	if len(driver.Uploaded) != 1 {
+		t.Errorf("unexpected number of uploaded files found: %d", len(driver.Uploaded))
+	} else {
+		info := driver.Uploaded[0]
+		if info.Name != "/alert.json" {
+			t.Errorf("unexpected name file uploaded: %s", info.Name)
+		}
+		if diff := cmp.Diff(expected, string(info.Data)); diff != "" {
+			t.Errorf("unexpected file uploaded:\n%s", diff)
+		}
+		if !info.Append {
+			t.Errorf("the append flag was false")
+		}
 	}
 }

@@ -37,8 +37,6 @@ func TestAlerter(t *testing.T) {
 		{"exec:ayd-bar-probe", "alert:exec:ayd-bar-probe", "arg \"\"\nenv ayd_time=2001-02-03T16:05:06Z ayd_status=FAILURE ayd_latency=12.345 ayd_target=dummy:failure ayd_message=foobar ayd_extra={\"hello\":\"world\"}\n---\nexit_code: 0", ""},
 		{"bar:", "", "", "unsupported scheme"},
 
-		{"ftp://example.com", "", "", "unsupported scheme for alert"},
-		{"ftps://example.com", "", "", "unsupported scheme for alert"},
 		{"ping://example.com", "", "", "unsupported scheme for alert"},
 		{"ping4://example.com", "", "", "unsupported scheme for alert"},
 		{"ping6://example.com", "", "", "unsupported scheme for alert"},
