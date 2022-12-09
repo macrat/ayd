@@ -29,17 +29,21 @@ input {
     max-width: 100%;
 }
 
-td.status::before {
-    content: '';
-    display: inline-block;
-    width: .5em;
-    height: 1em;
+td.status span {
+    display: block;
+    text-align: center;
 }
-td.aborted::before { background-color: rgb(var(--bg)) }
-td.degrade::before { background-color: rgb(var(--degrade)) }
-td.failure::before { background-color: rgb(var(--failure)) }
-td.healthy::before { background-color: rgb(var(--healthy)) }
-td.unknown::before { background-color: rgb(var(--fg)) }
+td.status span::after {
+    content: '';
+    display: block;
+    width: 100%;
+    height: 2px;
+}
+td.aborted span::after { background-color: rgb(var(--bg)) }
+td.degrade span::after { background-color: rgb(var(--degrade)) }
+td.failure span::after { background-color: rgb(var(--failure)) }
+td.healthy span::after { background-color: rgb(var(--healthy)) }
+td.unknown span::after { background-color: rgb(var(--fg)) }
 
 .latency {
     text-align: right;
@@ -76,7 +80,7 @@ td.unknown::before { background-color: rgb(var(--fg)) }
             <tbody>{{ range .}}
                 <tr>
                     <td>{{ block "timestamp" .Time }}{{ end }}</td>
-                    <td class="status {{ .Status | to_lower }}">{{ .Status }}</td>
+                    <td class="status {{ .Status | to_lower }}"><span>{{ .Status }}</span></td>
                     <td class="latency">{{ .Latency }}</td>
                     <td class="target">{{ .Target }}</td>
                     <td class="message">{{ .Message }}{{ range .ReadableExtra }} <span class="extra"><span class="extra-label">{{ .Key }}</span> {{ .Value }}</span>{{ end }}</td>
@@ -113,7 +117,7 @@ td.unknown::before { background-color: rgb(var(--fg)) }
             </thead>
             {{- block "log-records" .Head }}{{ end }}
             {{- if .Tail }}
-            <tbody><tr><td colspan="5" class="omit-indicator">{{ .Omitted }} records have omitted</td></tr></tbody>
+            <tbody><tr><td colspan="5" class="omit-indicator">{{ .Omitted }} records have omitted.</td></tr></tbody>
             {{- block "log-records" .Tail }}{{ end }}
             {{- end }}
         </table>
