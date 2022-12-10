@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/signal"
 	"text/template"
+	"time"
 
 	"github.com/macrat/ayd/internal/scheme"
 	"github.com/macrat/ayd/internal/store"
@@ -38,7 +38,8 @@ type AydCommand struct {
 	ShowVersion bool
 	ShowHelp    bool
 
-	Tasks []Task
+	Tasks     []Task
+	StartedAt time.Time
 }
 
 var defaultAydCommand = &AydCommand{
@@ -142,8 +143,8 @@ func (cmd *AydCommand) Run(args []string) (exitCode int) {
 		return 1
 	}
 
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
-	defer stop()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	if len(cmd.AlertURLs) > 0 {
 		alert, err := scheme.NewAlerterSet(cmd.AlertURLs)
