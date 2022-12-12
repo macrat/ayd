@@ -533,18 +533,27 @@ Ayd has these pages/endpoints.
 | [/healthz](http://localhost:9000/healthz)            | Health status page for checking status of Ayd itself.                |
 
 
-#### Filter log entries in `/log.html`, `/log.csv`, `/log.ltsv`, and `/log.json`
+#### Filter log entries
 
-The log endpoints accept `since`, `until`, `target`, and `query` query to filtering log entries.
+The log endpoints accept the following queries for filtering log entries.
 
-The `since` and `until` is the queries to filtering by date-time, in RFC3339 format like `2001-02-03T16:05:06+09:00`, or UNIX time like `981183906`.
-By default, Ayd replies logs that from 7 days ago to current time.
+- `since` and `until`: filter logs by datetime in either RFC3339 format (e.g. `2001-02-03T16:05:06+09:00`) or UNIX time (e.g. `981183906`).
+  By default, Ayd replies logs from 7 days ago to the current time.
 
-And, `target` is the query to filtering by target URL.
+- `limit`: set maximum number of entries in the response.
+  You can use `offset` query to fetch more.
 
-`query` is space delimited query for filtering records.
-It works as perfect matching for status, partial match for target URL and message text.
-And, you can use filters for latency like `<10ms` or `>=1s`.
+  By default, Ayd replies all logs.
+
+- `offset`: set the offset number of the first entry in the response.
+  This is usually used in conjunction with the `limit` query for paging.
+
+- `target`: filter entries by target URLs.
+  You can use multiple `target` queries as "OR" filtering.
+
+- `query`: filter by a space-delimited query.
+  This works as a perfect matching for status, a partial match for target URL and message text.
+  You can also use a syntax for filtering latency like `<10ms` or `>=1s`.
 
 examples:
 - <http://localhost:9000/log.csv?since=2000-01-01T00:00:00Z&until=2001-01-01T00:00:00Z>: The logs from 2000-01-01 to 2000-12-31.

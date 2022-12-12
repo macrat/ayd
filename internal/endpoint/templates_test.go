@@ -232,3 +232,27 @@ func TestLatencyGraph(t *testing.T) {
 		})
 	}
 }
+
+func TestUint2Humanize(t *testing.T) {
+	f := templateFuncs["uint2humanize"].(func(uint64) string)
+
+	tests := []struct {
+		Input  uint64
+		Output string
+	}{
+		{0, "0"},
+		{123, "123"},
+		{1234, "1,234"},
+		{12345, "12,345"},
+		{123456, "123,456"},
+		{1234567, "1,234,567"},
+		{1000100, "1,000,100"},
+		{9876543210, "9,876,543,210"},
+	}
+
+	for _, tt := range tests {
+		if s := f(tt.Input); s != tt.Output {
+			t.Errorf("%d => %s", tt.Input, s)
+		}
+	}
+}

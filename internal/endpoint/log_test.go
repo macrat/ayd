@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/macrat/ayd/internal/endpoint"
 	"github.com/macrat/ayd/internal/store"
 	"github.com/macrat/ayd/internal/testutil"
@@ -108,7 +109,7 @@ func TestLogScanner(t *testing.T) {
 			},
 		},
 		{
-			"LogFilter-target",
+			"FilterScanner-target",
 			func(since, until time.Time) api.LogScanner {
 				f := io.NopCloser(strings.NewReader(strings.Join([]string{
 					`{"time":"2000-01-01T13:02:03Z","status":"HEALTHY","latency":0.123,"target":"dummy:healthy#1","message":"first"}`,
@@ -118,7 +119,7 @@ func TestLogScanner(t *testing.T) {
 					`{"time":"2000-01-04T13:02:03Z","status":"FAILURE","latency":0.123,"target":"dummy:failure","message":"another"}`,
 				}, "\n")))
 
-				return endpoint.LogFilter{
+				return endpoint.FilterScanner{
 					api.NewLogScannerWithPeriod(f, since, until),
 					[]string{"dummy:healthy#1", "dummy:healthy#2"},
 					nil,
@@ -126,7 +127,7 @@ func TestLogScanner(t *testing.T) {
 			},
 		},
 		{
-			"LogFilter-query",
+			"FilterScanner-query",
 			func(since, until time.Time) api.LogScanner {
 				f := io.NopCloser(strings.NewReader(strings.Join([]string{
 					`{"time":"2000-01-01T13:02:03Z","status":"HEALTHY","latency":0.123,"target":"dummy:healthy#1","message":"first"}`,
@@ -136,7 +137,7 @@ func TestLogScanner(t *testing.T) {
 					`{"time":"2000-01-04T13:02:03Z","status":"FAILURE","latency":0.123,"target":"dummy:failure","message":"another"}`,
 				}, "\n")))
 
-				return endpoint.LogFilter{
+				return endpoint.FilterScanner{
 					api.NewLogScannerWithPeriod(f, since, until),
 					nil,
 					endpoint.ParseQuery("healthy"),
@@ -169,6 +170,67 @@ func TestLogScanner(t *testing.T) {
 				})
 			}
 		})
+	}
+}
+
+func TestPagingScanner(t *testing.T) {
+	s := testutil.NewStoreWithLog(t)
+
+	messages := []string{
+		"hello world",
+		"this is failure",
+		"hello world!",
+		"this is healthy",
+		"hello world!!",
+		"this is aborted",
+		"this is unknown",
+	}
+
+	tests := []struct {
+		Offset  uint64
+		Limit   uint64
+		Records []string
+	}{
+		{0, 0, messages},
+		{0, 100, messages},
+		{1, 0, messages[1:]},
+		{5, 0, messages[5:]},
+		{0, uint64(len(messages)), messages},
+		{0, uint64(len(messages) - 1), messages[:len(messages)-1]},
+		{2, 3, messages[2:5]},
+		{1, 1, messages[1:2]},
+		{2, 1, messages[2:3]},
+		{0, 2, messages[:2]},
+		{0, 1, messages[:1]},
+		{5, 10, messages[5:]},
+	}
+
+	for _, tt := range tests {
+		r, err := s.OpenLog(time.Unix(0, 0), time.Date(2100, 1, 1, 0, 0, 0, 0, time.UTC))
+		if err != nil {
+			t.Fatalf("failed to open log: %s", err)
+		}
+		defer r.Close()
+
+		ps := endpoint.PagingScanner{
+			Scanner: r,
+			Offset:  tt.Offset,
+			Limit:   tt.Limit,
+		}
+
+		var records []string
+		for ps.Scan() {
+			records = append(records, ps.Record().Message)
+		}
+		total := ps.ScanTotal()
+
+		if diff := cmp.Diff(tt.Records, records); diff != "" {
+			t.Errorf("%d-%d: unexpected records:\n%s", tt.Offset, tt.Limit, diff)
+		}
+
+		if total != uint64(len(messages)) {
+			t.Errorf("%d-%d: expected total is %d but got %d", tt.Offset, tt.Limit, len(messages), total)
+		}
 	}
 }
 
@@ -345,6 +407,20 @@ func TestLogJsonEndpoint(t *testing.T) {
 			"",
 		},
 		{
+			"with-limit",
+			"?since=2021-01-01T00:00:00Z&until=2022-01-01T00:00:00Z&limit=3",
+			http.StatusOK,
+			3,
+			"",
+		},
+		{
+			"with-offset-and-limit",
+			"?since=2021-01-01T00:00:00Z&until=2022-01-01T00:00:00Z&limit=3&offset=5",
+			http.StatusOK,
+			2, // limit is 3 but only 2 records exist.
+			"",
+		},
+		{
 			"invalid-since",
 			"?since=invalid-since&until=2022-01-01T00:00:00Z",
 			http.StatusBadRequest,
@@ -460,6 +536,12 @@ func TestLogCSVEndpoint(t *testing.T) {
 			"?since=2021-01-01T00:00:00Z&until=2022-01-01T00:00:00Z&target=http://no-such.example.com",
 			http.StatusOK,
 			"time,status,latency,target,message,extra\n",
+		},
+		{
+			"with-offset-and-limit",
+			"?since=2021-01-01T00:00:00Z&until=2022-01-01T00:00:00Z&offset=1&limit=2",
+			http.StatusOK,
+			"time,status,latency,target,message,extra\n2021-01-02T15:04:05Z,[^\n]*\n2021-01-02T15:04:06Z,[^\n]*\n",
 		},
 		{
 			"invalid-since",

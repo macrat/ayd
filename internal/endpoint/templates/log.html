@@ -7,15 +7,29 @@ main {
 article {
     overflow: auto;
 }
+
+.pager {
+    text-align: center;
+    margin: .5rem 0;
+}
+.pager-link {
+    display: inline-block;
+    padding: .2em .5em;
+    color: inherit;
+    text-decoration: none;
+}
+.pager-link.disabled {
+    color: rgba(var(--fg), .3);
+}
+
 table {
     width: 100%;
     border-collapse: collapse;
-    margin-bottom: 1rem;
 }
 th, td {
     border-right: 1px solid rgba(var(--fg), .1);
 }
-td:last-child {
+th:last-child, td:last-child {
     border-right: none;
 }
 tbody td {
@@ -52,13 +66,9 @@ td.unknown span::after { background-color: rgb(var(--fg)) }
 .target, .message {
     font-family: monospace;
     white-space: pre-wrap;
+    overflow-wrap: anywhere;
 }
 
-.extra {
-    display: inline-block;
-    padding: .1em .2em;
-    border: 1px solid rgb(var(--fg));
-}
 .extra-label {
     font-weight: bold;
 }
@@ -76,17 +86,21 @@ td.unknown span::after { background-color: rgb(var(--fg)) }
 }
 {{ end }}{{/* </style> */}}
 
-{{ define "log-records" }}
-            <tbody>{{ range .}}
-                <tr>
-                    <td>{{ block "timestamp" .Time }}{{ end }}</td>
-                    <td class="status {{ .Status | to_lower }}"><span>{{ .Status }}</span></td>
-                    <td class="latency">{{ .Latency }}</td>
-                    <td class="target">{{ .Target }}</td>
-                    <td class="message">{{ .Message }}{{ range .ReadableExtra }} <span class="extra"><span class="extra-label">{{ .Key }}</span> {{ .Value }}</span>{{ end }}</td>
-                </tr>{{ end }}
-            </tbody>
-{{- end }}
+{{ define "pager" }}
+        <div class="pager">
+            {{- if gt .From 1 }}
+            <a href="/log.html?{{ .RawQuery }}&limit={{ .Limit }}&offset={{ .Prev }}" class="pager-link" title="Previous page">&lt;</a>
+            {{ else }}
+            <a class="pager-link disabled" aria-label="There is not previous page.">&lt;</a>
+            {{ end -}}
+            <span aria-label="Showing record {{ .From }} to {{ .To }} out of {{ .Total }}.">{{ .From | uint2humanize }}-{{ .To | uint2humanize }} of {{ .Total | uint2humanize }}</span>
+            {{- if lt .To .Total }}
+            <a href="/log.html?{{ .RawQuery }}&limit={{ .Limit }}&offset={{ .Next }}" class="pager-link" title="Next page">&gt;</a>
+            {{ else }}
+            <a class="pager-link disabled" aria-label="There is no next page.">&gt;</a>
+            {{ end }}
+        </div>
+{{ end }}
 
 {{ define "body" }}
     <article style="text-align: center">
@@ -99,30 +113,42 @@ td.unknown span::after { background-color: rgb(var(--fg)) }
                 <input id="until" type="hidden" name="until" value="{{ .Until | time2str }}" />
             </div>
             <div>
-                <input name="query" size="50" value="{{ .Query }}" placeholder="e.g. >=1s example.com" autofocus />
+                <input type="search" name="query" size="50" value="{{ .Query }}" placeholder="e.g. >=1s example.com" autofocus />
                 <button type="submit">search</button>
             </div>
         </form>
     </article>
     <article>
+        {{ block "pager" . }}{{ end }}
         <table>
             <thead>
                 <tr>
-                    <th style="width: 25ex">timestamp</th>
+                    <th style="width: 25ex">time</th>
                     <th style="width: 7em">status</th>
                     <th>latency</th>
                     <th>target</th>
                     <th>message</th>
                 </tr>
             </thead>
-            {{- block "log-records" .Head }}{{ end }}
-            {{- if .Tail }}
-            <tbody><tr><td colspan="5" class="omit-indicator">{{ .Omitted }} records have omitted.</td></tr></tbody>
-            {{- block "log-records" .Tail }}{{ end }}
-            {{- end }}
+            <tbody>{{ range .Records}}
+                <tr>
+                    <td>{{ block "timestamp" .Time }}{{ end }}</td>
+                    <td class="status {{ .Status | to_lower }}"><span>{{ .Status }}</span></td>
+                    <td class="latency">{{ .Latency }}</td>
+                    <td class="target">{{ .Target }}</td>
+                    <td class="message">
+                        {{- .Message -}}
+                        {{- if .Extra -}}{{- "\n\n" -}}
+                        <span class="extra">
+                            {{- "{" }}{{ range (.Extra | extra2jsons) }}"<span class="extra-label">{{ .Key }}</span>": {{ .Value }}{{ if not .IsLast }}, {{ end }}{{ end }}{{ "}" -}}
+                        </span>
+                        {{- end -}}
+                    </td>
+                </tr>{{ end }}
+            </tbody>
         </table>
+        {{ block "pager" . }}{{ end }}
         <div class="download-buttons">
-            {{ .Count }} of {{ .Total }} records have shown<br />
             download all log as
             <a href="{{ printf "/log.csv?%s" .RawQuery }}" type="text/csv" download="ayd-log.csv">CSV</a>
             <a href="{{ printf "/log.xlsx?%s" .RawQuery }}" type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" download="ayd-log.xlsx">XLSX</a>

@@ -31,51 +31,139 @@ func getTimeQuery(queries url.Values, name string, default_ time.Time) (time.Tim
 	return t, nil
 }
 
-func getTimeQueries(s Store, scope string, r *http.Request, defaultPeriod time.Duration) (since, until time.Time, err error) {
-	qs := r.URL.Query()
+type logOptions struct {
+	Since, Until  time.Time
+	Limit, Offset uint64
+	Targets       []string
+	Query         Query
+}
 
+func newLogOptionsByRequest(s Store, scope string, r *http.Request, defaultPeriod time.Duration) (opts logOptions, err error) {
 	var invalidQueries []string
 	var errors []string
 
-	until, err = getTimeQuery(qs, "until", time.Now())
+	qs := r.URL.Query()
+
+	opts.Until, err = getTimeQuery(qs, "until", time.Now())
 	if err != nil {
 		invalidQueries = append(invalidQueries, "until")
 		errors = append(errors, err.Error())
 	}
 
-	since, err = getTimeQuery(qs, "since", until.Add(-defaultPeriod))
+	opts.Since, err = getTimeQuery(qs, "since", opts.Until.Add(-defaultPeriod))
 	if err != nil {
 		invalidQueries = append(invalidQueries, "since")
 		errors = append(errors, err.Error())
 	}
 
+	if l := qs.Get("limit"); l != "" {
+		opts.Limit, err = strconv.ParseUint(l, 10, 64)
+		if err != nil {
+			invalidQueries = append(invalidQueries, "list")
+			errors = append(errors, err.Error())
+		}
+	}
+
+	if o := qs.Get("offset"); o != "" {
+		opts.Offset, err = strconv.ParseUint(o, 10, 64)
+		if err != nil {
+			invalidQueries = append(invalidQueries, "list")
+			errors = append(errors, err.Error())
+		}
+	}
+
+	opts.Targets = qs["target"]
+
+	if q := ParseQuery(qs.Get("query")); len(qs) > 0 {
+		opts.Query = q
+	}
+
 	if len(invalidQueries) > 0 {
 		handleError(s, scope, fmt.Errorf("%s", strings.Join(errors, "\n")))
-		return since, until, fmt.Errorf("invalid query format: %s", strings.Join(invalidQueries, ", "))
+		return opts, fmt.Errorf("invalid query format: %s", strings.Join(invalidQueries, ", "))
 	}
 
-	return since, until, nil
+	return opts, nil
 }
 
-func newLogScanner(s Store, scope string, r *http.Request) (scanner api.LogScanner, statusCode int, err error) {
-	since, until, err := getTimeQueries(s, scope, r, 7*24*time.Hour)
-	if err != nil {
-		return nil, http.StatusBadRequest, err
-	}
-
-	scanner, err = s.OpenLog(since, until)
-	if err != nil {
-		handleError(s, scope, fmt.Errorf("failed to open log: %w", err))
-		return nil, http.StatusInternalServerError, fmt.Errorf("internal server error")
-	}
-
-	return scanner, http.StatusOK, nil
+type PagingScanner struct {
+	Scanner api.LogScanner
+	Offset  uint64
+	Limit   uint64
+	count   uint64
 }
 
-type LogFilter struct {
+func (s *PagingScanner) Scan() bool {
+	for s.count < s.Offset {
+		if !s.Scanner.Scan() {
+			return false
+		}
+		s.count++
+	}
+	if s.Limit != 0 && s.Limit <= s.count-s.Offset {
+		return false
+	}
+	ok := s.Scanner.Scan()
+	if ok {
+		s.count++
+	}
+	return ok
+}
+
+// ScanTotal scans all logs and return number of records.
+// Don't call this before get records you need, because this method consumes all logs.
+func (s *PagingScanner) ScanTotal() uint64 {
+	for s.Scanner.Scan() {
+		s.count++
+	}
+	return s.count
+}
+
+func (s *PagingScanner) Record() api.Record {
+	return s.Scanner.Record()
+}
+
+func (s *PagingScanner) Close() error {
+	return s.Scanner.Close()
+}
+
+type FilterScanner struct {
 	Scanner api.LogScanner
 	Targets []string
 	Query   Query
+}
+
+func (f FilterScanner) Close() error {
+	return f.Scanner.Close()
+}
+
+func (f FilterScanner) filterByTarget(target string) bool {
+	if len(f.Targets) == 0 {
+		return true
+	}
+	for _, t := range f.Targets {
+		if target == t {
+			return true
+		}
+	}
+	return false
+}
+
+func (f FilterScanner) filterByQuery(r api.Record) bool {
+	return f.Query.Match(f.Record())
+}
+
+func (f FilterScanner) Scan() bool {
+	for f.Scanner.Scan() {
+		if f.filterByTarget(f.Record().Target.String()) && f.filterByQuery(f.Record()) {
+			return true
+		}
+	}
+	return false
+}
+
+func (f FilterScanner) Record() api.Record {
+	return f.Scanner.Record()
 }
 
 type keyword interface {
@@ -163,49 +251,35 @@ func (qs Query) Match(r api.Record) bool {
 	return true
 }
 
-func setFilter(scanner api.LogScanner, r *http.Request) api.LogScanner {
-	queries := r.URL.Query()
-
-	targets := queries["target"]
-	query := ParseQuery(queries.Get("query"))
-	if len(targets) > 0 || len(query) > 0 {
-		return LogFilter{scanner, targets, query}
+func newLogScanner(s Store, scope string, r *http.Request, defaultPeriod time.Duration) (scanner *PagingScanner, statusCode int, err error) {
+	opts, err := newLogOptionsByRequest(s, scope, r, defaultPeriod)
+	if err != nil {
+		return nil, http.StatusBadRequest, err
 	}
 
-	return scanner
+	return newLogScannerByOpts(s, scope, r, opts)
 }
 
-func (f LogFilter) Close() error {
-	return f.Scanner.Close()
-}
-
-func (f LogFilter) filterByTarget(target string) bool {
-	if len(f.Targets) == 0 {
-		return true
+func newLogScannerByOpts(s Store, scope string, r *http.Request, opts logOptions) (scanner *PagingScanner, statusCode int, err error) {
+	rawScanner, err := s.OpenLog(opts.Since, opts.Until)
+	if err != nil {
+		handleError(s, scope, fmt.Errorf("failed to open log: %w", err))
+		return nil, http.StatusInternalServerError, fmt.Errorf("internal server error")
 	}
-	for _, t := range f.Targets {
-		if target == t {
-			return true
-		}
+
+	rawScanner = FilterScanner{
+		Scanner: rawScanner,
+		Targets: opts.Targets,
+		Query:   opts.Query,
 	}
-	return false
-}
 
-func (f LogFilter) filterByQuery(r api.Record) bool {
-	return f.Query.Match(f.Record())
-}
-
-func (f LogFilter) Scan() bool {
-	for f.Scanner.Scan() {
-		if f.filterByTarget(f.Record().Target.String()) && f.filterByQuery(f.Record()) {
-			return true
-		}
+	scanner = &PagingScanner{
+		Scanner: rawScanner,
+		Limit:   opts.Limit,
+		Offset:  opts.Offset,
 	}
-	return false
-}
 
-func (f LogFilter) Record() api.Record {
-	return f.Scanner.Record()
+	return scanner, http.StatusOK, nil
 }
 
 func LogJsonEndpoint(s Store) http.HandlerFunc {
@@ -216,7 +290,7 @@ func LogJsonEndpoint(s Store) http.HandlerFunc {
 
 		enc := json.NewEncoder(w)
 
-		scanner, code, err := newLogScanner(s, "log.json", r)
+		scanner, code, err := newLogScanner(s, "log.json", r, 7*24*time.Hour)
 		if err != nil {
 			msg := struct {
 				E string `json:"error"`
@@ -229,8 +303,6 @@ func LogJsonEndpoint(s Store) http.HandlerFunc {
 			return
 		}
 		defer scanner.Close()
-
-		scanner = setFilter(scanner, r)
 
 		records := struct {
 			R []api.Record `json:"records"`
@@ -251,7 +323,7 @@ func LogCSVEndpoint(s Store) http.HandlerFunc {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "GET")
 
-		scanner, code, err := newLogScanner(s, "log.csv", r)
+		scanner, code, err := newLogScanner(s, "log.csv", r, 7*24*time.Hour)
 		if err != nil {
 			w.WriteHeader(code)
 			w.Write([]byte(err.Error() + "\n"))
@@ -259,7 +331,6 @@ func LogCSVEndpoint(s Store) http.HandlerFunc {
 		}
 		defer scanner.Close()
 
-		scanner = setFilter(scanner, r)
 		err = logconv.ToCSV(w, scanner, true)
 		handleError(s, "log.csv", err)
 	}
@@ -271,7 +342,7 @@ func LogLTSVEndpoint(s Store) http.HandlerFunc {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "GET")
 
-		scanner, code, err := newLogScanner(s, "log.ltsv", r)
+		scanner, code, err := newLogScanner(s, "log.ltsv", r, 7*24*time.Hour)
 		if err != nil {
 			w.WriteHeader(code)
 			w.Write([]byte(err.Error() + "\n"))
@@ -279,7 +350,6 @@ func LogLTSVEndpoint(s Store) http.HandlerFunc {
 		}
 		defer scanner.Close()
 
-		scanner = setFilter(scanner, r)
 		err = logconv.ToLTSV(w, scanner)
 		handleError(s, "log.ltsv", err)
 	}
@@ -289,7 +359,7 @@ func LogXlsxEndpoint(s Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
-		scanner, code, err := newLogScanner(s, "log.xlsx", r)
+		scanner, code, err := newLogScanner(s, "log.xlsx", r, 7*24*time.Hour)
 		if err != nil {
 			w.WriteHeader(code)
 			w.Write([]byte(err.Error() + "\n"))
@@ -297,7 +367,6 @@ func LogXlsxEndpoint(s Store) http.HandlerFunc {
 		}
 		defer scanner.Close()
 
-		scanner = setFilter(scanner, r)
 		err = logconv.ToXlsx(w, scanner, time.Now())
 		handleError(s, "log.xlsx", err)
 	}
@@ -310,59 +379,56 @@ func LogHTMLEndpoint(s Store) http.HandlerFunc {
 	tmpl := loadHTMLTemplate(logHTMLTemplate)
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		since, until, err := getTimeQueries(s, "log.html", r, 1*time.Hour)
+		opts, err := newLogOptionsByRequest(s, "log.html", r, time.Hour)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte(err.Error() + "\n"))
 			return
 		}
 
-		scanner, err := s.OpenLog(since, until)
+		if opts.Limit == 0 {
+			opts.Limit = 25
+		}
+
+		scanner, code, err := newLogScannerByOpts(s, "log.html", r, opts)
 		if err != nil {
-			handleError(s, "log.html", fmt.Errorf("failed to open log: %w", err))
-			w.WriteHeader(http.StatusInternalServerError)
+			w.WriteHeader(code)
 			w.Write([]byte(err.Error() + "\n"))
 			return
 		}
-		defer scanner.Close()
-
-		scanner = setFilter(scanner, r)
 
 		var rs []api.Record
 		for scanner.Scan() {
 			rs = append(rs, scanner.Record())
 		}
 
-		var head []api.Record
-		var tail []api.Record
-
-		total := len(rs)
-		if total > 20 {
-			head = rs[:10]
-			tail = rs[total-10:]
-		} else {
-			head = rs
-		}
-		count := len(head) + len(tail)
+		total := scanner.ScanTotal()
 
 		query := strings.TrimSpace(r.URL.Query().Get("query"))
 
 		rawQuery := url.Values{}
-		rawQuery.Set("since", since.Format(time.RFC3339))
-		rawQuery.Set("until", until.Format(time.RFC3339))
+		rawQuery.Set("since", opts.Since.Format(time.RFC3339))
+		rawQuery.Set("until", opts.Until.Format(time.RFC3339))
 		rawQuery.Set("query", query)
+
+		var prev uint64
+		if opts.Offset >= opts.Limit {
+			prev = opts.Offset - opts.Limit
+		}
 
 		w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 		handleError(s, "log.html", tmpl.Execute(w, logData{
-			Since:    since,
-			Until:    until,
+			Since:    opts.Since,
+			Until:    opts.Until,
 			Query:    query,
 			RawQuery: rawQuery.Encode(),
-			Head:     head,
-			Tail:     tail,
+			Records:  rs,
 			Total:    total,
-			Count:    count,
-			Omitted:  total - count,
+			From:     opts.Offset + 1,
+			To:       opts.Offset + uint64(len(rs)),
+			Prev:     prev,
+			Next:     opts.Offset + uint64(len(rs)),
+			Limit:    opts.Limit,
 		}))
 	}
 }
@@ -372,9 +438,11 @@ type logData struct {
 	Until    time.Time
 	Query    string
 	RawQuery string
-	Head     []api.Record
-	Tail     []api.Record
-	Total    int
-	Count    int
-	Omitted  int
+	Records  []api.Record
+	Total    uint64
+	From     uint64
+	To       uint64
+	Prev     uint64
+	Next     uint64
+	Limit    uint64
 }

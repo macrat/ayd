@@ -142,15 +142,29 @@ main {
 article {
     overflow: auto;
 }
+
+.pager {
+    text-align: center;
+    margin: .5rem 0;
+}
+.pager-link {
+    display: inline-block;
+    padding: .2em .5em;
+    color: inherit;
+    text-decoration: none;
+}
+.pager-link.disabled {
+    color: rgba(var(--fg), .3);
+}
+
 table {
     width: 100%;
     border-collapse: collapse;
-    margin-bottom: 1rem;
 }
 th, td {
     border-right: 1px solid rgba(var(--fg), .1);
 }
-td:last-child {
+th:last-child, td:last-child {
     border-right: none;
 }
 tbody td {
@@ -187,13 +201,9 @@ td.unknown span::after { background-color: rgb(var(--fg)) }
 .target, .message {
     font-family: monospace;
     white-space: pre-wrap;
+    overflow-wrap: anywhere;
 }
 
-.extra {
-    display: inline-block;
-    padding: .1em .2em;
-    border: 1px solid rgb(var(--fg));
-}
 .extra-label {
     font-weight: bold;
 }
@@ -275,16 +285,24 @@ footer span {
                 <input id="until" type="hidden" name="until" value="2021-01-03T00:00:00Z" />
             </div>
             <div>
-                <input name="query" size="50" value="" placeholder="e.g. >=1s example.com" autofocus />
+                <input type="search" name="query" size="50" value="" placeholder="e.g. >=1s example.com" autofocus />
                 <button type="submit">search</button>
             </div>
         </form>
     </article>
     <article>
+        
+        <div class="pager">
+            <a class="pager-link disabled" aria-label="There is not previous page.">&lt;</a>
+            <span aria-label="Showing record 1 to 7 out of 7.">1-7 of 7</span>
+            <a class="pager-link disabled" aria-label="There is no next page.">&gt;</a>
+            
+        </div>
+
         <table>
             <thead>
                 <tr>
-                    <th style="width: 25ex">timestamp</th>
+                    <th style="width: 25ex">time</th>
                     <th style="width: 7em">status</th>
                     <th>latency</th>
                     <th>target</th>
@@ -332,19 +350,30 @@ footer span {
                     <td class="status aborted"><span>ABORTED</span></td>
                     <td class="latency">1.234ms</td>
                     <td class="target">http://c.example.com</td>
-                    <td class="message">this is aborted <span class="extra"><span class="extra-label">hello</span> world</span></td>
+                    <td class="message">this is aborted
+
+<span class="extra">{"<span class="extra-label">hello</span>": &#34;world&#34;}</span></td>
                 </tr>
                 <tr>
                     <td><time title="[[MASKED_DATA]]">2021-01-02<span class="time-t">T</span>15:04:09<span class="timezone">Z</span></time></td>
                     <td class="status unknown"><span>UNKNOWN</span></td>
                     <td class="latency">2.345ms</td>
                     <td class="target">http://c.example.com</td>
-                    <td class="message">this is unknown <span class="extra"><span class="extra-label">extra</span> [1,2,3]</span> <span class="extra"><span class="extra-label">hoge</span> fuga</span></td>
+                    <td class="message">this is unknown
+
+<span class="extra">{"<span class="extra-label">extra</span>": [1,2,3], "<span class="extra-label">hoge</span>": &#34;fuga&#34;}</span></td>
                 </tr>
             </tbody>
         </table>
+        
+        <div class="pager">
+            <a class="pager-link disabled" aria-label="There is not previous page.">&lt;</a>
+            <span aria-label="Showing record 1 to 7 out of 7.">1-7 of 7</span>
+            <a class="pager-link disabled" aria-label="There is no next page.">&gt;</a>
+            
+        </div>
+
         <div class="download-buttons">
-            7 of 7 records have shown<br />
             download all log as
             <a href="/log.csv?query=&amp;since=2021-01-01T00%3A00%3A00Z&amp;until=2021-01-03T00%3A00%3A00Z" type="text/csv" download="ayd-log.csv">CSV</a>
             <a href="/log.xlsx?query=&amp;since=2021-01-01T00%3A00%3A00Z&amp;until=2021-01-03T00%3A00%3A00Z" type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" download="ayd-log.xlsx">XLSX</a>

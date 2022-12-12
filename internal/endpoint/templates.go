@@ -2,9 +2,11 @@ package endpoint
 
 import (
 	_ "embed"
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -165,6 +167,46 @@ var (
 		"url2uuid": func(u *api.URL) string {
 			return uuid.NewSHA1(uuid.NameSpaceURL, []byte(u.String())).String()
 		},
+		"uint2humanize": func(n uint64) string {
+			var ss []string
+			for n > 999 {
+				s := strconv.FormatUint(n%1000, 10)
+				switch len(s) {
+				case 2:
+					s = "0" + s
+				case 1:
+					s = "00" + s
+				}
+				ss = append(ss, s)
+				n /= 1000
+			}
+			ss = append(ss, strconv.FormatUint(n%1000, 10))
+			for i := 0; i < len(ss)/2; i++ {
+				j := len(ss) - i - 1
+				ss[i], ss[j] = ss[j], ss[i]
+			}
+			return strings.Join(ss, ",")
+		},
+		"extra2jsons": func(extra map[string]any) (xs []extraPair) {
+			if len(extra) == 0 {
+				return nil
+			}
+			xs = make([]extraPair, 0, len(extra))
+			for k, v := range extra {
+				b, err := json.Marshal(v)
+				if err == nil {
+					xs = append(xs, extraPair{
+						Key:   k,
+						Value: string(b),
+					})
+				}
+			}
+			sort.Slice(xs, func(i, j int) bool {
+				return xs[i].Key < xs[j].Key
+			})
+			xs[len(xs)-1].IsLast = true
+			return xs
+		},
 	}
 )
 
@@ -227,4 +269,10 @@ func (b *statusSummaryBuilder) Build() []statusSummary {
 type timeRange struct {
 	Oldest time.Time
 	Newest time.Time
+}
+
+type extraPair struct {
+	Key    string
+	Value  string
+	IsLast bool
 }
