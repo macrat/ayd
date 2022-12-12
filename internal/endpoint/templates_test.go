@@ -189,6 +189,34 @@ func TestToCamel(t *testing.T) {
 	}
 }
 
+func TestLatency2Str(t *testing.T) {
+	f := templateFuncs["latency2str"].(func(time.Duration) string)
+
+	tests := []struct {
+		Input  time.Duration
+		Output string
+	}{
+		{0, "0"},
+		{123 * time.Nanosecond, "0"},
+		{1234 * time.Nanosecond, "0.001ms"},
+		{12345 * time.Nanosecond, "0.012ms"},
+		{123456 * time.Nanosecond, "0.123ms"},
+		{1234000 * time.Nanosecond, "1.234ms"},
+		{1234999 * time.Nanosecond, "1.235ms"},
+		{12345 * time.Millisecond, "12.35s"},
+		{98765 * time.Millisecond, "1m39s"},
+		{987654 * time.Millisecond, "16m28s"},
+		{1234 * time.Second, "20m34s"},
+		{123456 * time.Second, "34h17m36s"},
+	}
+
+	for _, tt := range tests {
+		if s := f(tt.Input); s != tt.Output {
+			t.Errorf("unexpected output %s => %q", tt.Input, s)
+		}
+	}
+}
+
 func TestLatencyGraph(t *testing.T) {
 	f := templateFuncs["latency_graph"].(func(rs []api.Record) string)
 

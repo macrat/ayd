@@ -125,8 +125,8 @@ td.unknown span::after { background-color: rgb(var(--fg)) }
                 <tr>
                     <th style="width: 25ex">time</th>
                     <th style="width: 7em">status</th>
-                    <th>latency</th>
-                    <th>target</th>
+                    <th style="width: 8ex">latency</th>
+                    <th style="min-width: 10em">target</th>
                     <th>message</th>
                 </tr>
             </thead>
@@ -134,7 +134,7 @@ td.unknown span::after { background-color: rgb(var(--fg)) }
                 <tr>
                     <td>{{ block "timestamp" .Time }}{{ end }}</td>
                     <td class="status {{ .Status | to_lower }}"><span>{{ .Status }}</span></td>
-                    <td class="latency">{{ .Latency }}</td>
+                    <td class="latency">{{ .Latency | latency2str }}</td>
                     <td class="target">{{ .Target }}</td>
                     <td class="message">
                         {{- .Message -}}

@@ -124,6 +124,34 @@ var (
 		"latency2float": func(d time.Duration) float64 {
 			return float64(d.Microseconds()) / 1000.0
 		},
+		"latency2str": func(d time.Duration) string {
+			format := func(n int64) string {
+				switch {
+				case n < 10*10000:
+					return fmt.Sprintf("%.3f", float64(n)/10000)
+				case n < 100*10000:
+					return fmt.Sprintf("%.2f", float64(n)/10000)
+				default:
+					return fmt.Sprintf("%.1f", float64(n)/10000)
+				}
+			}
+
+			n := d.Nanoseconds()
+			switch {
+			case n < 1000:
+				return "0"
+			case n < 1000*1000:
+				return fmt.Sprintf("%.3f", float64(n)/1000/1000) + "ms"
+			case n < 1000*1000*1000:
+				return format(n/100) + "ms"
+			case n < 60*1000*1000*1000:
+				return format(n/1000/100) + "s"
+			default:
+				m := d.Truncate(time.Minute).String()
+				s := float64(d.Milliseconds()%60000) / 1000
+				return m[:len(m)-2] + fmt.Sprintf("%.0fs", s)
+			}
+		},
 		"latency_graph": func(rs []api.Record) string {
 			if len(rs) == 0 {
 				return ""
