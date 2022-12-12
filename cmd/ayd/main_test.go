@@ -172,7 +172,7 @@ func TestAydCommand_Run(t *testing.T) {
 		},
 		{
 			Args:     []string{"ayd", "-f", "-", "-1", "-a", "dummy:#alert", "ping:localhost"},
-			Pattern:  `^\{"time":"[-+:0-9TZ]+", "status":"HEALTHY", "latency":[0-9]+\.[0-9]{3}, "target":"ping:localhost", "message":"All packets came back", "packets_recv":3, "packets_sent":3, "rtt_avg":[0-9]+(\.[0-9]*)?, "rtt_max":[0-9]+(\.[0-9]*)?, "rtt_min":[0-9]+(\.[0-9]*)?\}` + "\n$",
+			Pattern:  `^\{"time":"[-+:0-9TZ]+", "status":"HEALTHY", "latency":[0-9]+\.[0-9]{3}, "target":"ping:localhost", "message":"all packets came back", "packets_recv":3, "packets_sent":3, "rtt_avg":[0-9]+(\.[0-9]*)?, "rtt_max":[0-9]+(\.[0-9]*)?, "rtt_min":[0-9]+(\.[0-9]*)?\}` + "\n$",
 			ExitCode: 0,
 		},
 	}
