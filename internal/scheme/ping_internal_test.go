@@ -253,7 +253,7 @@ func TestPingResultToRecord(t *testing.T) {
 				AvgRTT: 2345 * time.Microsecond,
 				MaxRTT: 3456 * time.Microsecond,
 			},
-			"All packets came back",
+			"all packets came back",
 			map[string]interface{}{
 				"rtt_min":      1.234,
 				"rtt_avg":      2.345,
@@ -273,7 +273,7 @@ func TestPingResultToRecord(t *testing.T) {
 				Recv:   0,
 				Loss:   3,
 			},
-			"All packets have dropped",
+			"all packets have dropped",
 			map[string]interface{}{
 				"rtt_min":      0.0,
 				"rtt_avg":      0.0,
@@ -296,7 +296,7 @@ func TestPingResultToRecord(t *testing.T) {
 				AvgRTT: 2345 * time.Microsecond,
 				MaxRTT: 3456 * time.Microsecond,
 			},
-			"Some packets have dropped",
+			"some packets have dropped",
 			map[string]interface{}{
 				"rtt_min":      1.234,
 				"rtt_avg":      2.345,

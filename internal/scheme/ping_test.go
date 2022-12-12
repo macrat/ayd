@@ -22,7 +22,7 @@ func TestPingProbe_Probe(t *testing.T) {
 	}
 
 	pattern := strings.Join([]string{
-		`All packets came back`,
+		`all packets came back`,
 		`---`,
 		`packets_recv: 3`,
 		`packets_sent: 3`,
@@ -87,7 +87,7 @@ func TestPingProbe_Probe(t *testing.T) {
 		t.Setenv("AYD_PING_INTERVAL", "1ms")
 
 		pattern := strings.Join([]string{
-			`All packets came back`,
+			`all packets came back`,
 			`---`,
 			`packets_recv: 10`,
 			`packets_sent: 10`,
