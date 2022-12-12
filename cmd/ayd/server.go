@@ -17,13 +17,15 @@ import (
 )
 
 func (cmd *AydCommand) reportStartServer(s *store.Store, protocol, listen string) {
-	var tasks [][]string
+	tasks := make(map[string][]string)
 
 	for _, t := range cmd.Tasks {
-		tasks = append(tasks, []string{
-			t.Schedule.String(),
-			t.Prober.Target().String(),
-		})
+		k := t.Schedule.String()
+		if l, ok := tasks[k]; ok {
+			tasks[k] = append(l, t.Prober.Target().String())
+		} else {
+			tasks[k] = []string{t.Prober.Target().String()}
+		}
 	}
 
 	cmd.StartedAt = time.Now()
