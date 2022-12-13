@@ -5,8 +5,9 @@
 [![Codecov Test Coverage](https://img.shields.io/codecov/c/gh/macrat/ayd)](https://app.codecov.io/gh/macrat/ayd/)
 [![Docker Build Status](https://img.shields.io/github/workflow/status/macrat/ayd-docker/build?color=blue&label=docker%20build&logoColor=white)](https://hub.docker.com/r/macrat/ayd)
 
-Ayd - The easiest alive monitoring tool.
-You can start monitoring if your system live or not, by only one easy command like below.
+**Ayd** - The easiest alive monitoring tool.
+
+With this only one easy command, you can monitor whether your system is alive or not:
 
 ``` shell
 $ ayd ping:192.168.1.1 https://example.com
@@ -21,40 +22,38 @@ $ ayd ping:192.168.1.1 https://example.com
   * [ICMP echo (ping)](#ping)
   * [TCP connect](#tcp)
   * [DNS resolve](#dns)
-  * [file/directory existance](#file)
+  * [file/directory existence](#file)
   * [execute external command (or script file)](#exec)
   * [plugin](#plugin)
 
-- The [status page](#status-page-and-endpoints) for browser, console, or programs.
+- The [status page](#status-pages-and-endpoints) for using by browsers, consoles, or other programs.
 
-- Send alert if target failure or recovered.
+- Send an alert if an incident occurs or is resolved.
 
 ### Good at
 
-- Make a status page for temporary usage.
+- Monitoring small systems
+- Creating temporary status pages
 
-  You can start it by only one command! And, stop it via just Ctrl-C!
+This tool is designed for small systems, as easy to start using it and easy to quit using it.
 
-- Make a status page for a small system.
-
-  Single binary server, single log file, there is no database!
+It is a single binary tool that uses only plain text log files.
+So there is no need to maintain databases or setting files.
 
 ### Not good at
 
-- Complex customization, extension.
+- Customization
+- Visualization and investigation
 
-  There is a few extension way, but extensibility is not the goal of this project.
-
-- Investigate more detail.
-
-  This program is just for check your service is dead or alive.
+This tool is designed for simple checks to see if a service is functioning.
+It does not offer complex or advanced features.
 
 
 ## Quick start
 
 1. Download the latest version from [release page](https://github.com/macrat/ayd/releases/).
 
-2. Extract downloaded package and put to somewhere that registered to PATH.
+2. Extract downloaded package and put the binary to somewhere that registered to the PATH.
 
 3. Run the server with [target URLs](#url-scheme) (and [schedule](#scheduling) if need) as arguments.
 
@@ -62,15 +61,17 @@ $ ayd ping:192.168.1.1 https://example.com
 $ ayd https://your-service.example.com ping:another-host.example.com
 ```
 
-4. Check your service status.
+4. Check the status of your services.
 
-You can see the status page on <http://localhost:9000/>, and you can use [HTTP APIs](#status-page-and-endpoints).
+You can see the status page on <http://localhost:9000/>, and you can use [HTTP APIs](#status-pages-and-endpoints).
 
 
 ## Reference
 
-Ayd check the target specified as URLs if alive or not, and report to the alert target that specified as URLs if status changed.
-A command to start Ayd looks like below.
+Ayd checks whether the targets are alive or not, and reports to the alert targets if the target's status has changed.
+The targets and alert targets are specified as URLs, in the command to start Ayd.
+
+A command to start Ayd looks like:
 
 ``` plain text
 $ ayd  -a exec:/path/to/alert.sh  10m  ping:192.168.1.1 http://example.com
@@ -86,25 +87,25 @@ $ ayd  -a exec:/path/to/alert.sh  10m  ping:192.168.1.1 http://example.com
        Execute /path/to/alert.sh if the target status changed.
 ```
 
-The [common schemes](#url-scheme) for target URL or alrt URL, are supported by Ayd itself.
+The [common schemes](#url-scheme) for targets and alerts are supported by Ayd itself.
 You can also add other schemes using [plugin](#plugin).
 
-Ayd checks the target every 5 minutes in default, but you can change it by placing [schedule specification](#sucheduling) before target URL.
+Ayd checks the targets every 5 minutes in default, but you can change it by placing [schedule specification](#sucheduling) before target URL.
 
-While Ayd running, it provides [simple dashboard and some APIs](#status-page-and-endpoints) you can check the status.
-Also, the log file is formatted as JSON, so you can read it or aggregate it easily using common tools like [jq](https://stedolan.github.io/jq/).
+While Ayd running, it provides [a simple dashboard and some APIs](#status-pages-and-endpoints).
+The log files of Ayd is formatted as JSON, so you can read it or aggregate it easily using common tools like [jq](https://stedolan.github.io/jq/).
 
 - [URL scheme](#url-scheme)
 - [Scheduling](#scheduling)
-- [Status page and endpoints](#status-page-and-endpoints)
+- [Status pages and endpoints](#status-pages-and-endpoints)
 - [Log file](#log-file)
-- [Text encoding](#text-encoding)
 - [Tips](#tips)
   * [Daemonize](#daemonize)
   * [Change listen port](#change-listen-port)
   * [Use HTTPS status page on status page](#use-https-on-status-page)
   * [Use Basic Authentication on status page](#use-basic-authentication-on-status-page)
   * [One-shot mode](#one-shot-mode)
+  * [Text encoding](#text-encoding)
 
 
 ### URL scheme
@@ -122,7 +123,7 @@ Ayd supports below URL schemes in default.
 | [`exec:`](#exec)                   | :heavy_check_mark: | :heavy_check_mark: |
 | [`source:`](#source)               | :heavy_check_mark: | :heavy_check_mark: |
 
-You can use extra scheme with [plugin](#plugin) if you want to.
+You can use extra schemes with [plugin](#plugin) if you need.
 
 #### http: / https:
 
@@ -509,7 +510,7 @@ The above command means checking `your-service.example.com` every 5 minutes from
 ```
 
 
-### Status page and endpoints
+### Status pages and endpoints
 
 Ayd has these pages/endpoints.
 
@@ -625,7 +626,7 @@ If you use `-f -` option, Ayd will not write any log file.
 This is not recommended for production use, because Ayd can not restore its last status when it is restarted.
 But, this is may useful for [using Ayd as part of a script file](#one-shot-mode).
 
-If you want use log file in other format like CSV, you can download via [HTTP endpoint](#status-page-and-endpoints), or you can use `ayd conv` subcommand like below.
+If you want use log file in other format like CSV, you can download via [HTTP endpoint](#status-pages-and-endpoints), or you can use `ayd conv` subcommand like below.
 
 ``` shell
 $ cat ayd.log | ayd conv > ayd_log.csv
@@ -634,20 +635,6 @@ $ ayd conv ./ayd.log -o ayd_log.csv
 
 $ ayd conv -l ./ayd.log -o ayd_log.ltsv
 ```
-
-
-### Text encoding
-
-Ayd expects UTF-8 with/without BOM or UTF-8 with BOM as input character encoding.
-
-But in Windows, you can use the system's default character encoding too, for example CP1252 or CP932.
-Ayd tries to decode as UTF-8 first, and then tries to use the system's default encoding.
-If the text has the BOM, Ayd always follow it.
-
-The characters couldn't decode will replaced by U+FFFD that means unrecognized character before save to the log file.
-That means;
-- The log file is always valid UTF-8 even if your external command or plugin writes invalid characters.
-- You can lose information if external commands or plugins write invalid characters as current encoding.
 
 
 ### Tips
@@ -732,3 +719,16 @@ Ayd will check status just once and exit when passed `-1` option.
 Exit status code will be 0 if all targets are healthy.
 If some targets are unhealthy, the status code will be 1.
 And, if your arguments are wrong (or can't resolve host names, or exec scripts not found), the status code will be 2.
+
+#### Text encoding
+
+Ayd expects UTF-8 with/without BOM or UTF-8 with BOM as input character encoding.
+
+But in Windows, you can use the system's default character encoding too, for example CP1252 or CP932.
+Ayd tries to decode as UTF-8 first, and then tries to use the system's default encoding.
+If the text has the BOM, Ayd always follow it.
+
+The characters couldn't decode will replaced by U+FFFD that means unrecognized character before save to the log file.
+That means;
+- The log file is always valid UTF-8 even if your external command or plugin writes invalid characters.
+- You can lose information if external commands or plugins write invalid characters as current encoding.
