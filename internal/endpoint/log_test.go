@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"os"
 	"regexp"
 	"strings"
 	"testing"
@@ -457,7 +458,7 @@ func TestLogJsonEndpoint(t *testing.T) {
 			defer resp.Body.Close()
 
 			if resp.StatusCode != tt.StatusCode {
-				t.Errorf("unexpected status: %s", resp.Status)
+				t.Fatalf("unexpected status: %s", resp.Status)
 			}
 
 			dec := json.NewDecoder(resp.Body)
@@ -492,6 +493,32 @@ func TestLogJsonEndpoint(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("snapshot", func(t *testing.T) {
+		resp, err := srv.Client().Get(srv.URL + "/log.json?since=20210102T150406Z&until=20210102T150409Z&limit=2&offset=1")
+		if err != nil {
+			t.Fatalf("failed to get /log.json: %s", err)
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			t.Fatalf("unexpected status: %s", resp.Status)
+		}
+
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			t.Fatalf("failed to read body: %s", err)
+		}
+
+		want, err := os.ReadFile("testdata/log.json")
+		if err != nil {
+			t.Fatalf("failed to read snapshot: %s", err)
+		}
+
+		if diff := cmp.Diff(string(want), string(body)); diff != "" {
+			t.Fatalf("unexpected response:\n%s", diff)
+		}
+	})
 }
 
 func TestLogCSVEndpoint(t *testing.T) {

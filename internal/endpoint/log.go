@@ -290,7 +290,20 @@ func LogJsonEndpoint(s Store) http.HandlerFunc {
 
 		enc := json.NewEncoder(w)
 
-		scanner, code, err := newLogScanner(s, "log.json", r, 7*24*time.Hour)
+		opts, err := newLogOptionsByRequest(s, "log.json", r, 7*24*time.Hour)
+		if err != nil {
+			msg := struct {
+				E string `json:"error"`
+			}{
+				err.Error(),
+			}
+
+			w.WriteHeader(http.StatusBadRequest)
+			enc.Encode(msg)
+			return
+		}
+
+		scanner, code, err := newLogScannerByOpts(s, "log.json", r, opts)
 		if err != nil {
 			msg := struct {
 				E string `json:"error"`
@@ -306,11 +319,33 @@ func LogJsonEndpoint(s Store) http.HandlerFunc {
 
 		records := struct {
 			R []api.Record `json:"records"`
+			T uint64       `json:"total"`
+			P string       `json:"prev,omitempty"`
+			N string       `json:"next,omitempty"`
 		}{
-			[]api.Record{},
+			R: []api.Record{},
 		}
 		for scanner.Scan() {
 			records.R = append(records.R, scanner.Record())
+		}
+		records.T = scanner.ScanTotal()
+
+		u := r.URL
+		if next := opts.Offset + uint64(len(records.R)); next < records.T {
+			q := u.Query()
+			q.Set("offset", strconv.FormatUint(next, 10))
+			u.RawQuery = q.Encode()
+			records.N = u.String()
+		}
+		if opts.Offset > 0 {
+			var prev uint64
+			if opts.Offset > opts.Limit {
+				prev = opts.Offset - opts.Limit
+			}
+			q := u.Query()
+			q.Set("offset", strconv.FormatUint(prev, 10))
+			u.RawQuery = q.Encode()
+			records.P = u.String()
 		}
 
 		handleError(s, "log.json", enc.Encode(records))
@@ -412,7 +447,7 @@ func LogHTMLEndpoint(s Store) http.HandlerFunc {
 		rawQuery.Set("query", query)
 
 		var prev uint64
-		if opts.Offset >= opts.Limit {
+		if opts.Offset > opts.Limit {
 			prev = opts.Offset - opts.Limit
 		}
 
