@@ -22,6 +22,13 @@ article {
     color: rgba(var(--fg), .3);
 }
 
+.empty-log {
+    display: block;
+    text-align: center;
+    font-size: 150%;
+    color: rgba(var(--fg), .5);
+}
+
 table {
     width: 100%;
     border-collapse: collapse;
@@ -119,6 +126,9 @@ td.unknown span::after { background-color: rgb(var(--fg)) }
         </form>
     </article>
     <article>
+        {{ if eq .Total 0 -}}
+        <span class="empty-log">No Data</span>
+        {{- else -}}
         {{ block "pager" . }}{{ end }}
         <table>
             <thead>
@@ -155,6 +165,7 @@ td.unknown span::after { background-color: rgb(var(--fg)) }
             <a href="{{ printf "/log.ltsv?%s" .RawQuery }}" type="text/plain" download="ayd-log.ltsv">LTSV</a>
             <a href="{{ printf "/log.json?%s" .RawQuery }}" type="application/json" download="ayd-log.json">JSON</a>
         </div>
+        {{ end }}
     </article>
 
     <script>
