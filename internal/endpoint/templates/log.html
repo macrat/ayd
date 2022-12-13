@@ -89,13 +89,13 @@ td.unknown span::after { background-color: rgb(var(--fg)) }
 {{ define "pager" }}
         <div class="pager">
             {{- if gt .From 1 }}
-            <a href="/log.html?{{ .RawQuery }}&limit={{ .Limit }}&offset={{ .Prev }}" class="pager-link" title="Previous page">&lt;</a>
+            <a href="{{ printf "/log.html?%s&limit=%d&offset=%d" .RawQuery .Limit .Prev }}" class="pager-link" title="Previous page">&lt;</a>
             {{ else }}
             <a class="pager-link disabled" aria-label="There is not previous page.">&lt;</a>
             {{ end -}}
             <span aria-label="Showing record {{ .From }} to {{ .To }} out of {{ .Total }}.">{{ .From | uint2humanize }}-{{ .To | uint2humanize }} of {{ .Total | uint2humanize }}</span>
             {{- if lt .To .Total }}
-            <a href="/log.html?{{ .RawQuery }}&limit={{ .Limit }}&offset={{ .Next }}" class="pager-link" title="Next page">&gt;</a>
+            <a href="{{ printf "/log.html?%s&limit=%d&offset=%d" .RawQuery .Limit .Next }}" class="pager-link" title="Next page">&gt;</a>
             {{ else }}
             <a class="pager-link disabled" aria-label="There is no next page.">&gt;</a>
             {{ end }}
