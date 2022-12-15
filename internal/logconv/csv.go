@@ -10,14 +10,12 @@ import (
 	api "github.com/macrat/ayd/lib-ayd"
 )
 
-func ToCSV(w io.Writer, s api.LogScanner, withHeader bool) error {
+func ToCSV(w io.Writer, s api.LogScanner) error {
 	c := csv.NewWriter(w)
 
-	if withHeader {
-		err := c.Write([]string{"time", "status", "latency", "target", "message", "extra"})
-		if err != nil {
-			return err
-		}
+	err := c.Write([]string{"time", "status", "latency", "target", "message", "extra"})
+	if err != nil {
+		return err
 	}
 
 	for s.Scan() {

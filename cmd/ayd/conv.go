@@ -81,7 +81,7 @@ func (c ConvCommand) Run(args []string) int {
 		return 2
 	}
 
-	var scanners []api.LogScanner
+	var scanners jointScanner
 	for _, path := range flags.Args()[2:] {
 		if path == "" || path == "-" {
 			scanners = append(scanners, api.NewLogScanner(io.NopCloser(c.InStream)))
@@ -92,13 +92,13 @@ func (c ConvCommand) Run(args []string) int {
 				return 1
 			}
 			s := api.NewLogScanner(f)
-			defer s.Close()
 			scanners = append(scanners, s)
 		}
 	}
 	if len(scanners) == 0 {
 		scanners = append(scanners, api.NewLogScanner(io.NopCloser(c.InStream)))
 	}
+	defer (&scanners).Close()
 
 	output := c.OutStream
 	if *outputPath != "" && *outputPath != "-" {
@@ -117,13 +117,13 @@ func (c ConvCommand) Run(args []string) int {
 	var err error
 	switch {
 	case *toJson:
-		err = c.toJson(scanners, output)
+		err = c.toJson(&scanners, output)
 	case *toLtsv:
-		err = c.toLTSV(scanners, output)
+		err = c.toLTSV(&scanners, output)
 	case *toXlsx:
-		err = c.toXlsx(scanners, output)
+		err = c.toXlsx(&scanners, output)
 	default:
-		err = c.toCSV(scanners, output)
+		err = c.toCSV(&scanners, output)
 	}
 	if err != nil {
 		fmt.Fprintf(c.ErrStream, "error: %s\n", err)
@@ -133,25 +133,26 @@ func (c ConvCommand) Run(args []string) int {
 	}
 }
 
-func (c ConvCommand) toJson(scanners []api.LogScanner, output io.Writer) error {
+func (c ConvCommand) toJson(s api.LogScanner, output io.Writer) error {
+	if _, err := output.Write([]byte("[\n  ")); err != nil {
+		return fmt.Errorf("failed to write log: %s", err)
+	}
+
 	first := true
-	for _, s := range scanners {
-		for s.Scan() {
-			prefix := []byte(",\n  ")
-			if first {
-				prefix = []byte("[\n  ")
-			}
+
+	for s.Scan() {
+		if first {
 			first = false
-
-			if _, err := output.Write(prefix); err != nil {
+		} else {
+			if _, err := output.Write([]byte(",\n  ")); err != nil {
 				return fmt.Errorf("failed to write log: %s", err)
 			}
+		}
 
-			if j, err := json.Marshal(s.Record()); err != nil {
-				return fmt.Errorf("failed to encode log: %s", err)
-			} else if _, err := output.Write(j); err != nil {
-				return fmt.Errorf("failed to write log: %s", err)
-			}
+		if j, err := json.Marshal(s.Record()); err != nil {
+			return fmt.Errorf("failed to encode log: %s", err)
+		} else if _, err := output.Write(j); err != nil {
+			return fmt.Errorf("failed to write log: %s", err)
 		}
 	}
 
@@ -162,29 +163,16 @@ func (c ConvCommand) toJson(scanners []api.LogScanner, output io.Writer) error {
 	return nil
 }
 
-func (c ConvCommand) toCSV(scanners []api.LogScanner, output io.Writer) error {
-	for i, s := range scanners {
-		logconv.ToCSV(output, s, i == 0)
-	}
-
-	return nil
+func (c ConvCommand) toCSV(s api.LogScanner, output io.Writer) error {
+	return logconv.ToCSV(output, s)
 }
 
-func (c ConvCommand) toLTSV(scanners []api.LogScanner, output io.Writer) error {
-	for _, s := range scanners {
-		if err := logconv.ToLTSV(output, s); err != nil {
-			return err
-		}
-	}
-
-	return nil
+func (c ConvCommand) toLTSV(s api.LogScanner, output io.Writer) error {
+	return logconv.ToLTSV(output, s)
 }
 
-func (c ConvCommand) toXlsx(scanners []api.LogScanner, output io.Writer) error {
-	createdAt := time.Now()
-
-	ss := jointScanner(scanners)
-	return logconv.ToXlsx(output, &ss, createdAt)
+func (c ConvCommand) toXlsx(s api.LogScanner, output io.Writer) error {
+	return logconv.ToXlsx(output, s, time.Now())
 }
 
 type jointScanner []api.LogScanner

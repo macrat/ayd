@@ -366,7 +366,7 @@ func LogCSVEndpoint(s Store) http.HandlerFunc {
 		}
 		defer scanner.Close()
 
-		err = logconv.ToCSV(w, scanner, true)
+		err = logconv.ToCSV(w, scanner)
 		handleError(s, "log.csv", err)
 	}
 }
