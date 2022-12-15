@@ -1,12 +1,8 @@
 package logconv_test
 
 import (
-	"archive/zip"
 	"bytes"
-	"io"
-	"io/fs"
 	"os"
-	"reflect"
 	"testing"
 	"time"
 
@@ -29,80 +25,15 @@ func TestToXlsx(t *testing.T) {
 		t.Fatalf("failed to convert: %s", err)
 	}
 
-	output, err := zip.NewReader(bytes.NewReader(w.Bytes()), int64(w.Len()))
-	if err != nil {
-		t.Fatalf("failed to open generated file: %s", err)
-	}
-
-	var outputLen int
-	err = fs.WalkDir(output, ".", func(path string, d fs.DirEntry, err error) error {
-		if d.IsDir() {
-			return nil
-		}
-
-		outputLen++
-		return nil
-	})
-	if err != nil {
-		t.Errorf("failed to walk on the output: %s", err)
-	}
-
-	snapshot, err := zip.OpenReader("testdata/log.xlsx")
+	want, err := os.Open("testdata/log.xlsx")
 	if err != nil {
 		t.Errorf("failed to open snapshot file: %s", err)
 	}
-	defer snapshot.Close()
+	actual := bytes.NewReader(w.Bytes())
 
-	var snapshotLen int
-	err = fs.WalkDir(snapshot, ".", func(path string, d fs.DirEntry, err error) error {
-		if d.IsDir() {
-			return nil
-		}
+	ws, _ := want.Stat()
 
-		snapshotLen++
-
-		of, err := output.Open(path)
-		if err != nil {
-			t.Errorf("failed to open %q from the output: %s", path, err)
-			return nil
-		}
-		defer of.Close()
-
-		o, err := io.ReadAll(of)
-		if err != nil {
-			t.Errorf("failed to read %q from the output", path)
-			return nil
-		}
-
-		sf, err := snapshot.Open(path)
-		if err != nil {
-			t.Errorf("failed to open %q from the snapshot: %s", path, err)
-			return nil
-		}
-		defer sf.Close()
-
-		s, err := io.ReadAll(sf)
-		if err != nil {
-			t.Errorf("failed to read %q from the snapshot", path)
-			return nil
-		}
-
-		if !reflect.DeepEqual(o, s) {
-			t.Errorf("%q was different", path)
-			return nil
-		}
-
-		return nil
-	})
-	if err != nil {
-		t.Errorf("failed to walk on the snapshot: %s", err)
-	}
-
-	if snapshotLen != outputLen {
-		t.Errorf("different number of files found in the output")
-	}
-
-	if t.Failed() {
+	if !testutil.XlsxEqual(actual, int64(w.Len()), want, int64(ws.Size())) {
 		err = os.MkdirAll("testdata/actual", 0755)
 		if err != nil {
 			t.Errorf("failed to make testdata/actual: %s", err)
@@ -113,6 +44,6 @@ func TestToXlsx(t *testing.T) {
 			t.Errorf("failed to write actual file: %s", err)
 		}
 
-		t.Log("unexpected output. please see testdata/actual/log.xlsx")
+		t.Errorf("unexpected output. please check testdata/actual/log.xlsx")
 	}
 }

@@ -182,11 +182,34 @@ func (c ConvCommand) toLTSV(scanners []api.LogScanner, output io.Writer) error {
 
 func (c ConvCommand) toXlsx(scanners []api.LogScanner, output io.Writer) error {
 	createdAt := time.Now()
-	for _, s := range scanners {
-		if err := logconv.ToXlsx(output, s, createdAt); err != nil {
-			return err
-		}
+
+	ss := jointScanner(scanners)
+	return logconv.ToXlsx(output, &ss, createdAt)
+}
+
+type jointScanner []api.LogScanner
+
+func (ss *jointScanner) Scan() bool {
+	if len(*ss) == 0 {
+		return false
 	}
 
+	if (*ss)[0].Scan() {
+		return true
+	}
+	(*ss)[0].Close()
+	*ss = (*ss)[1:]
+
+	return ss.Scan()
+}
+
+func (ss *jointScanner) Record() api.Record {
+	return (*ss)[0].Record()
+}
+
+func (ss *jointScanner) Close() error {
+	for _, s := range *ss {
+		s.Close()
+	}
 	return nil
 }
