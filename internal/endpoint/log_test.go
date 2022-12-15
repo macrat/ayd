@@ -442,6 +442,27 @@ func TestLogJsonEndpoint(t *testing.T) {
 			0,
 			"invalid query format: until, since",
 		},
+		{
+			"invalid-limit",
+			"?limit=abc",
+			http.StatusBadRequest,
+			0,
+			"invalid query format: limit",
+		},
+		{
+			"invalid-offset",
+			"?offset=01fa",
+			http.StatusBadRequest,
+			0,
+			"invalid query format: offset",
+		},
+		{
+			"invalid-limit-and-offset",
+			"?offset=1a&limit=3f",
+			http.StatusBadRequest,
+			0,
+			"invalid query format: limit, offset",
+		},
 	}
 
 	srv := testutil.StartTestServer(t)

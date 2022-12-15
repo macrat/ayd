@@ -59,7 +59,7 @@ func newLogOptionsByRequest(s Store, scope string, r *http.Request, defaultPerio
 	if l := qs.Get("limit"); l != "" {
 		opts.Limit, err = strconv.ParseUint(l, 10, 64)
 		if err != nil {
-			invalidQueries = append(invalidQueries, "list")
+			invalidQueries = append(invalidQueries, "limit")
 			errors = append(errors, err.Error())
 		}
 	}
@@ -67,7 +67,7 @@ func newLogOptionsByRequest(s Store, scope string, r *http.Request, defaultPerio
 	if o := qs.Get("offset"); o != "" {
 		opts.Offset, err = strconv.ParseUint(o, 10, 64)
 		if err != nil {
-			invalidQueries = append(invalidQueries, "list")
+			invalidQueries = append(invalidQueries, "offset")
 			errors = append(errors, err.Error())
 		}
 	}
