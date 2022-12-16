@@ -65,23 +65,23 @@ type fileScannerSet struct {
 }
 
 func newFileScannerSet(pathes []string, since, until time.Time) (*fileScannerSet, error) {
-	min := time.Unix(1<<63-1, 0)
+	min := time.Unix(1<<60-1, 0)
 
 	var ss fileScannerSet
-	for i, p := range pathes {
+	for _, p := range pathes {
 		s, err := newFileScanner(p, since, until)
 		if err != nil {
+			s.Close()
 			ss.Close()
 			return nil, err
 		}
 		if !s.Scan() {
 			s.Close()
-			ss.Close()
 			continue
 		}
-		if s.Record().Time.Before(min) {
-			ss.earliest = i
-			min = s.Record().Time
+		if t := s.Record().Time; t.Before(min) {
+			ss.earliest = len(ss.scanners)
+			min = t
 		}
 		ss.scanners = append(ss.scanners, s)
 	}
@@ -99,11 +99,11 @@ func (r *fileScannerSet) Close() error {
 }
 
 func (r *fileScannerSet) updateEarliest() {
-	max := time.Unix(1<<63-1, 0)
+	min := time.Unix(1<<60-1, 0)
 	for i, s := range r.scanners {
-		if s.Record().Time.Before(max) {
+		if t := s.Record().Time; t.Before(min) {
 			r.earliest = i
-			max = s.Record().Time
+			min = t
 		}
 	}
 }

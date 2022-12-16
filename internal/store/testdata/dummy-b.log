@@ -1,0 +1,4 @@
+{"time":"2001-01-01T15:04:05Z","status":"HEALTHY","latency":123.456,"target":"dummy:","message":"1"}
+{"time":"2001-01-03T15:04:05Z","status":"HEALTHY","latency":123.456,"target":"dummy:","message":"3"}
+{"time":"2001-01-06T15:04:05Z","status":"HEALTHY","latency":123.456,"target":"dummy:","message":"6"}
+wah
