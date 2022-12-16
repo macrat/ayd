@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"context"
 	"errors"
-	"fmt"
 	"os"
 	"os/exec"
 	"strings"
@@ -101,6 +100,8 @@ func (p PluginScheme) execute(ctx context.Context, r Reporter, scope string, arg
 
 	count := 0
 
+	var invalidLines []string
+
 	scanner := bufio.NewScanner(strings.NewReader(output))
 	for scanner.Scan() {
 		text := strings.TrimSpace(scanner.Text())
@@ -109,22 +110,29 @@ func (p PluginScheme) execute(ctx context.Context, r Reporter, scope string, arg
 		}
 
 		rec, err := api.ParseRecord(text)
-		if err == nil {
-			count++
-			r.Report(p.target, rec)
+		if err != nil {
+			invalidLines = append(invalidLines, scanner.Text())
 			continue
 		}
 
+		count++
+		r.Report(p.target, rec)
+	}
+
+	if invalidLines != nil {
 		r.Report(p.target, api.Record{
-			Time:    time.Now(),
-			Target:  &api.URL{Scheme: "ayd", Opaque: scope + ":plugin:" + p.target.String()},
+			Time:    stime,
+			Target:  p.target,
 			Status:  api.StatusUnknown,
-			Message: fmt.Sprintf("%s: %#v", err, text),
+			Message: "the plugin reported invalid records",
 			Latency: latency,
+			Extra: map[string]any{
+				"raw_message": strings.Join(invalidLines, "\n"),
+			},
 		})
 	}
 
-	if err != nil || count == 0 {
+	if err != nil || (invalidLines == nil && count == 0) {
 		msg := ""
 		if err != nil {
 			msg = err.Error()

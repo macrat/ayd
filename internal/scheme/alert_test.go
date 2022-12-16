@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/macrat/ayd/internal/scheme"
 	"github.com/macrat/ayd/internal/testutil"
 	api "github.com/macrat/ayd/lib-ayd"
@@ -138,18 +139,21 @@ func TestAlerter(t *testing.T) {
 
 		alert.Alert(ctx, r, rec)
 
-		if len(r.Records) != 2 {
+		if len(r.Records) != 1 {
 			t.Fatalf("unexpected number of records: %d: %v", len(r.Records), r.Records)
 		}
 
-		if r.Records[0].Target.String() != "ayd:alert:plugin:broken:" {
+		if r.Records[0].Target.String() != "alert:broken:" {
 			t.Errorf("unexpected target URL: %s", r.Records[0].Target)
 		}
 		if r.Records[0].Status != api.StatusUnknown {
 			t.Errorf("unexpected status of record: %s", r.Records[0].Status)
 		}
-		if r.Records[0].Message != `invalid record: invalid character 'h' in literal true (expecting 'r'): "this is invalid record"` {
+		if r.Records[0].Message != "the plugin reported invalid records" {
 			t.Errorf("unexpected message of record: %s", r.Records[0].Message)
+		}
+		if diff := cmp.Diff(map[string]any{"raw_message": "this is invalid record"}, r.Records[0].Extra); diff != "" {
+			t.Errorf("got unexpected extra values: %s", diff)
 		}
 	})
 }

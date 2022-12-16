@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/macrat/ayd/internal/scheme"
 	"github.com/macrat/ayd/internal/testutil"
 	api "github.com/macrat/ayd/lib-ayd"
@@ -64,14 +65,17 @@ func TestPluginScheme_Probe(t *testing.T) {
 			t.Errorf("got a record of unexpected target: %s", rs[0].Target)
 		}
 
-		if rs[1].Target.String() != "ayd:probe:plugin:plug:invalid-record" {
+		if rs[1].Target.String() != "plug:invalid-record" {
 			t.Errorf("got a record of unexpected target: %s", rs[1].Target)
 		}
 		if rs[1].Status != api.StatusUnknown {
 			t.Errorf("got unexpected status: %s", rs[1].Status)
 		}
-		if rs[1].Message != `invalid record: invalid character 'h' in literal true (expecting 'r'): "this is invalid"` {
+		if rs[1].Message != "the plugin reported invalid records" {
 			t.Errorf("got unexpected message: %s", rs[1].Message)
+		}
+		if diff := cmp.Diff(map[string]any{"raw_message": "this is invalid"}, rs[1].Extra); diff != "" {
+			t.Errorf("got unexpected extra values: %s", diff)
 		}
 	})
 
