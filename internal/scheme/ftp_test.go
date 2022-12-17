@@ -182,7 +182,7 @@ func StartFTPServer(t *testing.T, port int) *FTPTestDriver {
 	})
 	go func() {
 		if err := server.ListenAndServe(); err != nil {
-			t.Fatalf("failed to start ftp server: %s", err)
+			panic(fmt.Errorf("failed to start ftp server: %w", err))
 		}
 		t.Cleanup(func() {
 			server.Shutdown()

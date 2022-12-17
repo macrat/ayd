@@ -87,7 +87,7 @@ func (cmd *AydCommand) RunServer(ctx context.Context, s *store.Store) (exitCode 
 
 	ctx, cancel := context.WithCancel(ctx)
 	go func() {
-		ch := make(chan os.Signal)
+		ch := make(chan os.Signal, 1)
 		signal.Notify(ch, syscall.SIGINT, syscall.SIGHUP)
 		select {
 		case <-ctx.Done():
