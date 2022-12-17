@@ -121,9 +121,6 @@ var (
 		"time2humanize": func(t time.Time) string {
 			return humanize.Time(t)
 		},
-		"latency2float": func(d time.Duration) float64 {
-			return float64(d.Microseconds()) / 1000.0
-		},
 		"latency2str": func(d time.Duration) string {
 			format := func(n int64) string {
 				switch {
