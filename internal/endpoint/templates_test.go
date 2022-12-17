@@ -203,6 +203,9 @@ func TestLatency2Str(t *testing.T) {
 		{123456 * time.Nanosecond, "0.123ms"},
 		{1234000 * time.Nanosecond, "1.234ms"},
 		{1234999 * time.Nanosecond, "1.235ms"},
+		{123 * time.Microsecond, "0.123ms"},
+		{120 * time.Microsecond, "0.120ms"},
+		{100 * time.Microsecond, "0.100ms"},
 		{12345 * time.Millisecond, "12.35s"},
 		{98765 * time.Millisecond, "1m39s"},
 		{987654 * time.Millisecond, "16m28s"},
@@ -276,6 +279,8 @@ func TestUint2Humanize(t *testing.T) {
 		{1234567, "1,234,567"},
 		{1000100, "1,000,100"},
 		{9876543210, "9,876,543,210"},
+		{100450789, "100,450,789"},
+		{123450700, "123,450,700"},
 	}
 
 	for _, tt := range tests {
