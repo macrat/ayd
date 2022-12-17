@@ -1,9 +1,9 @@
 ![Ayd](./assets/logo.svg)
 
-[![CI test status](https://img.shields.io/github/workflow/status/macrat/ayd/CI?label=CI%20test)](https://github.com/macrat/ayd/actions/workflows/ci.yml)
+[![CI Test Status](https://github.com/macrat/ayd/actions/workflows/ci.yml/badge.svg)](https://github.com/macrat/ayd/actions/workflows/ci.yml)
 [![Code Climate maintainability](https://img.shields.io/codeclimate/maintainability-percentage/macrat/ayd)](https://codeclimate.com/github/macrat/ayd)
 [![Codecov Test Coverage](https://img.shields.io/codecov/c/gh/macrat/ayd)](https://app.codecov.io/gh/macrat/ayd/)
-[![Docker Build Status](https://img.shields.io/github/workflow/status/macrat/ayd-docker/build?color=blue&label=docker%20build&logoColor=white)](https://hub.docker.com/r/macrat/ayd)
+[![Docker Build Status](https://img.shields.io/docker/pulls/macrat/ayd?logo=docker&logoColor=white)](https://hub.docker.com/r/macrat/ayd)
 
 **Ayd** - The easiest alive monitoring tool.
 
