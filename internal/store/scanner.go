@@ -70,10 +70,9 @@ func newFileScannerSet(pathes []string, since, until time.Time) (*fileScannerSet
 	var ss fileScannerSet
 	for _, p := range pathes {
 		s, err := newFileScanner(p, since, until)
-		if err != nil {
-			if s != nil {
-				s.Close()
-			}
+		if errors.Is(err, os.ErrNotExist) {
+			continue
+		} else if err != nil {
 			ss.Close()
 			return nil, err
 		}
@@ -132,9 +131,6 @@ func (r *fileScannerSet) Scan() bool {
 }
 
 func (r *fileScannerSet) Record() api.Record {
-	if len(r.scanners) < 0 {
-		panic("This is a bug if you see this message.")
-	}
 	return r.scanners[r.earliest].Record()
 }
 
@@ -187,30 +183,11 @@ func (r *inMemoryScanner) Record() api.Record {
 	return r.records[r.index]
 }
 
-type dummyScanner struct{}
-
-func (r dummyScanner) Close() error {
-	return nil
-}
-
-func (r dummyScanner) Scan() bool {
-	return false
-}
-
-func (r dummyScanner) Record() api.Record {
-	// This method never be called.
-	panic("This is a bug if you see this message.")
-}
-
 func (s *Store) OpenLog(since, until time.Time) (api.LogScanner, error) {
 	if s.path.IsEmpty() {
 		return newInMemoryScanner(s, since, until), nil
 	}
 
 	r, err := newFileScannerSet(s.path.ListBetween(since, until), since, until)
-	if errors.Is(err, os.ErrNotExist) {
-		return dummyScanner{}, nil
-	} else {
-		return r, err
-	}
+	return r, err
 }
