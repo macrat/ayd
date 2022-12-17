@@ -71,7 +71,9 @@ func newFileScannerSet(pathes []string, since, until time.Time) (*fileScannerSet
 	for _, p := range pathes {
 		s, err := newFileScanner(p, since, until)
 		if err != nil {
-			s.Close()
+			if s != nil {
+				s.Close()
+			}
 			ss.Close()
 			return nil, err
 		}
