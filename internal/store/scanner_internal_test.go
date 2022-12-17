@@ -17,6 +17,10 @@ func Test_fileScannerSet(t *testing.T) {
 	}
 	defer s.Close()
 
+	if len(s.scanners) != 2 {
+		t.Errorf("unexpected number of record files found:\n%#v", s)
+	}
+
 	var actual []string
 	for s.Scan() {
 		actual = append(actual, s.Record().Message)
