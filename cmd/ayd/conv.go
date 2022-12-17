@@ -171,8 +171,14 @@ func (c ConvCommand) toLTSV(s api.LogScanner, output io.Writer) error {
 	return logconv.ToLTSV(output, s)
 }
 
+var (
+	// CurrentTime returns current time.
+	// It returns 2001-02-03T16:05:06Z in test.
+	CurrentTime = time.Now
+)
+
 func (c ConvCommand) toXlsx(s api.LogScanner, output io.Writer) error {
-	return logconv.ToXlsx(output, s, time.Now())
+	return logconv.ToXlsx(output, s, CurrentTime())
 }
 
 type jointScanner []api.LogScanner

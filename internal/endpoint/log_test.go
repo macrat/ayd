@@ -694,7 +694,7 @@ func TestLogLTSVEndpoint(t *testing.T) {
 			"drop-with-target",
 			"?since=2021-01-01T00:00:00Z&until=2022-01-01T00:00:00Z&target=http://b.example.com",
 			http.StatusOK,
-			"(time:[^\t]*\tstatus:[^\t]{7}\tlatency:[^\t]*\ttarget:http://b\\.example\\.com\tmessage:[^\t]*\n){2}",
+			"(time:[^\t]*\tstatus:[^\t]{7}\tlatency:[^\t]*\ttarget:http://b\\.example\\.com\tmessage:[^\t]*(\textra:[^\t]*)?\n){2}",
 		},
 		{
 			"drop-all-with-target",
