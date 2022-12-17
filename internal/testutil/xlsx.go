@@ -7,7 +7,7 @@ import (
 	"reflect"
 )
 
-func XlsxEqual(actual io.ReaderAt, actualSize int64, want io.ReaderAt, wantSize int64) bool {
+func XlsxEqual(actual io.ReaderAt, actualSize int64, want io.ReaderAt, wantSize int64) (same bool) {
 	output, err := zip.NewReader(actual, actualSize)
 	if err != nil {
 		return false
@@ -31,6 +31,12 @@ func XlsxEqual(actual io.ReaderAt, actualSize int64, want io.ReaderAt, wantSize 
 		return false
 	}
 
+	defer func() {
+		if recover() != nil {
+			same = false
+		}
+	}()
+
 	var snapshotLen int
 	err = fs.WalkDir(snapshot, ".", func(path string, d fs.DirEntry, err error) error {
 		if d.IsDir() {
@@ -47,7 +53,7 @@ func XlsxEqual(actual io.ReaderAt, actualSize int64, want io.ReaderAt, wantSize 
 
 		o, err := io.ReadAll(of)
 		if err != nil {
-			return err
+			panic(err)
 		}
 
 		sf, err := snapshot.Open(path)
@@ -58,11 +64,11 @@ func XlsxEqual(actual io.ReaderAt, actualSize int64, want io.ReaderAt, wantSize 
 
 		s, err := io.ReadAll(sf)
 		if err != nil {
-			return err
+			panic(err)
 		}
 
 		if !reflect.DeepEqual(o, s) {
-			return err
+			panic(err)
 		}
 
 		return nil
