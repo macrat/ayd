@@ -1,0 +1,7 @@
+time:2021-01-02T15:04:05Z	status:HEALTHY	latency:123.456	target:http://a.example.com	message:hello world
+time:2021-01-02T15:04:05Z	status:FAILURE	latency:12.345	target:http://b.example.com	message:this is failure
+time:2021-01-02T15:04:06Z	status:HEALTHY	latency:234.567	target:http://a.example.com	message:hello world!
+time:2021-01-02T15:04:06Z	status:HEALTHY	latency:54.321	target:http://b.example.com	message:this is healthy	extra:1.234
+time:2021-01-02T15:04:07Z	status:HEALTHY	latency:345.678	target:http://a.example.com	message:hello world!!
+time:2021-01-02T15:04:08Z	status:ABORTED	latency:1.234	target:http://c.example.com	message:this is aborted	hello:world
+time:2021-01-02T15:04:09Z	status:UNKNOWN	latency:2.345	target:http://c.example.com	message:this is unknown	extra:[1,2,3]	hoge:fuga

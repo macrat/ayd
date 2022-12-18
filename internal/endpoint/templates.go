@@ -2,9 +2,11 @@ package endpoint
 
 import (
 	_ "embed"
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -119,8 +121,33 @@ var (
 		"time2humanize": func(t time.Time) string {
 			return humanize.Time(t)
 		},
-		"latency2float": func(d time.Duration) float64 {
-			return float64(d.Microseconds()) / 1000.0
+		"latency2str": func(d time.Duration) string {
+			format := func(n int64) string {
+				switch {
+				case n < 10*10000:
+					return fmt.Sprintf("%.3f", float64(n)/10000)
+				case n < 100*10000:
+					return fmt.Sprintf("%.2f", float64(n)/10000)
+				default:
+					return fmt.Sprintf("%.1f", float64(n)/10000)
+				}
+			}
+
+			n := d.Nanoseconds()
+			switch {
+			case n < 1000:
+				return "0"
+			case n < 1000*1000:
+				return fmt.Sprintf("%.3f", float64(n)/1000/1000) + "ms"
+			case n < 1000*1000*1000:
+				return format(n/100) + "ms"
+			case n < 60*1000*1000*1000:
+				return format(n/1000/100) + "s"
+			default:
+				m := d.Truncate(time.Minute).String()
+				s := float64(d.Milliseconds()%60000) / 1000
+				return m[:len(m)-2] + fmt.Sprintf("%.0fs", s)
+			}
 		},
 		"latency_graph": func(rs []api.Record) string {
 			if len(rs) == 0 {
@@ -164,6 +191,46 @@ var (
 		},
 		"url2uuid": func(u *api.URL) string {
 			return uuid.NewSHA1(uuid.NameSpaceURL, []byte(u.String())).String()
+		},
+		"uint2humanize": func(n uint64) string {
+			var ss []string
+			for n > 999 {
+				s := strconv.FormatUint(n%1000, 10)
+				switch len(s) {
+				case 2:
+					s = "0" + s
+				case 1:
+					s = "00" + s
+				}
+				ss = append(ss, s)
+				n /= 1000
+			}
+			ss = append(ss, strconv.FormatUint(n%1000, 10))
+			for i := 0; i < len(ss)/2; i++ {
+				j := len(ss) - i - 1
+				ss[i], ss[j] = ss[j], ss[i]
+			}
+			return strings.Join(ss, ",")
+		},
+		"extra2jsons": func(extra map[string]any) (xs []extraPair) {
+			if len(extra) == 0 {
+				return nil
+			}
+			xs = make([]extraPair, 0, len(extra))
+			for k, v := range extra {
+				b, err := json.Marshal(v)
+				if err == nil {
+					xs = append(xs, extraPair{
+						Key:   k,
+						Value: string(b),
+					})
+				}
+			}
+			sort.Slice(xs, func(i, j int) bool {
+				return xs[i].Key < xs[j].Key
+			})
+			xs[len(xs)-1].IsLast = true
+			return xs
 		},
 	}
 )
@@ -227,4 +294,10 @@ func (b *statusSummaryBuilder) Build() []statusSummary {
 type timeRange struct {
 	Oldest time.Time
 	Newest time.Time
+}
+
+type extraPair struct {
+	Key    string
+	Value  string
+	IsLast bool
 }

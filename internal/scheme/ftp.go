@@ -1,6 +1,7 @@
 package scheme
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
 	"errors"
@@ -92,13 +93,13 @@ func ftpConnectAndLogin(ctx context.Context, u *api.URL) (conn *ftp.ServerConn, 
 	return conn, api.StatusHealthy, ""
 }
 
-// FTPProbe is a implementation for the FTP.
-type FTPProbe struct {
+// FTPScheme is a probe/alert implementation for the FTP.
+type FTPScheme struct {
 	target *api.URL
 }
 
-func NewFTPProbe(u *api.URL) (FTPProbe, error) {
-	p := FTPProbe{
+func NewFTPScheme(u *api.URL) (FTPScheme, error) {
+	s := FTPScheme{
 		target: &api.URL{
 			Scheme:   u.Scheme,
 			User:     u.User,
@@ -109,31 +110,31 @@ func NewFTPProbe(u *api.URL) (FTPProbe, error) {
 	}
 
 	if u.Host == "" {
-		return FTPProbe{}, ErrMissingHost
+		return FTPScheme{}, ErrMissingHost
 	}
 
 	if u.User != nil {
 		if u.User.Username() == "" {
-			return FTPProbe{}, ErrMissingUsername
+			return FTPScheme{}, ErrMissingUsername
 		}
 		if _, ok := u.User.Password(); !ok {
-			return FTPProbe{}, ErrMissingPassword
+			return FTPScheme{}, ErrMissingPassword
 		}
 	}
 
 	if u.Path == "" {
-		p.target.Path = "/"
+		s.target.Path = "/"
 	}
 
-	return p, nil
+	return s, nil
 }
 
-func (p FTPProbe) Target() *api.URL {
-	return p.target
+func (s FTPScheme) Target() *api.URL {
+	return s.target
 }
 
-func (p FTPProbe) list(conn *ftp.ServerConn) (files []*ftp.Entry, status api.Status, message string) {
-	ls, err := conn.List(p.target.Path)
+func (s FTPScheme) list(conn *ftp.ServerConn) (files []*ftp.Entry, status api.Status, message string) {
+	ls, err := conn.List(s.target.Path)
 	if err != nil {
 		return nil, api.StatusFailure, err.Error()
 	}
@@ -144,30 +145,30 @@ func (p FTPProbe) list(conn *ftp.ServerConn) (files []*ftp.Entry, status api.Sta
 }
 
 // Probe checks if the target FTP server is available.
-func (p FTPProbe) Probe(ctx context.Context, r Reporter) {
+func (s FTPScheme) Probe(ctx context.Context, r Reporter) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
 	defer cancel()
 
 	stime := time.Now()
 	report := func(status api.Status, message string, extra map[string]interface{}) {
-		r.Report(p.target, timeoutOr(ctx, api.Record{
+		r.Report(s.target, timeoutOr(ctx, api.Record{
 			Time:    stime,
 			Status:  status,
 			Latency: time.Since(stime),
-			Target:  p.target,
+			Target:  s.target,
 			Message: message,
 			Extra:   extra,
 		}))
 	}
 
-	conn, status, message := ftpConnectAndLogin(ctx, p.target)
+	conn, status, message := ftpConnectAndLogin(ctx, s.target)
 	if status != api.StatusHealthy {
 		report(status, message, nil)
 		return
 	}
 	defer conn.Quit()
 
-	ls, status, message := p.list(conn)
+	ls, status, message := s.list(conn)
 	if status != api.StatusHealthy {
 		report(status, message, nil)
 		return
@@ -180,7 +181,7 @@ func (p FTPProbe) Probe(ctx context.Context, r Reporter) {
 		}
 	}
 
-	if n == 1 && path.Base(ls[0].Name) == path.Base(p.target.Path) {
+	if n == 1 && path.Base(ls[0].Name) == path.Base(s.target.Path) {
 		report(api.StatusHealthy, "file exists", map[string]interface{}{
 			"file_size": ls[0].Size,
 			"mtime":     ls[0].Time.Format(time.RFC3339),
@@ -198,5 +199,38 @@ func (p FTPProbe) Probe(ctx context.Context, r Reporter) {
 			}
 		}
 		report(api.StatusHealthy, "directory exists", extra)
+	}
+}
+
+func (s FTPScheme) Alert(ctx context.Context, r Reporter, lastRecord api.Record) {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
+	defer cancel()
+
+	stime := time.Now()
+	report := func(status api.Status, message string, extra map[string]interface{}) {
+		r.Report(s.target, timeoutOr(ctx, api.Record{
+			Time:    stime,
+			Status:  status,
+			Latency: time.Since(stime),
+			Target:  s.target,
+			Message: message,
+			Extra:   extra,
+		}))
+	}
+
+	conn, status, message := ftpConnectAndLogin(ctx, s.target)
+	if status != api.StatusHealthy {
+		report(status, message, nil)
+		return
+	}
+	defer conn.Quit()
+
+	line := lastRecord.String() + "\n"
+
+	err := conn.Append(s.target.Path, bytes.NewBufferString(line))
+	if err != nil {
+		report(api.StatusFailure, fmt.Sprintf("failed to upload record: %s", err), nil)
+	} else {
+		report(api.StatusHealthy, fmt.Sprintf("uploaded %d bytes to the server", len(line)), nil)
 	}
 }

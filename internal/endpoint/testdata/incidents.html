@@ -15,10 +15,16 @@ html {
     --degrade: 221, 161, 0;
     --healthy: 137, 201, 35;
 }
+a {
+    color: #0000EE;
+}
 @media (prefers-color-scheme: dark) {
     html {
         --bg: var(--dark);
         --fg: var(--light);
+    }
+    a {
+        color: #AAAAFF;
     }
 }
 
@@ -202,6 +208,8 @@ footer span {
                         <a href="/log.html" type="text/html">Log</a>
                         <ul class="menu-types">
                             <li><a href="/log.csv" type="text/csv">CSV</a></li>
+                            <li><a href="/log.xlsx" type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">XLSX</a></li>
+                            <li><a href="/log.ltsv" type="text/plain">LTSV</a></li>
                             <li><a href="/log.json" type="application/json">json</a></li>
                         </ul>
                     </span>

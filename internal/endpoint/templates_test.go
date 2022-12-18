@@ -189,6 +189,37 @@ func TestToCamel(t *testing.T) {
 	}
 }
 
+func TestLatency2Str(t *testing.T) {
+	f := templateFuncs["latency2str"].(func(time.Duration) string)
+
+	tests := []struct {
+		Input  time.Duration
+		Output string
+	}{
+		{0, "0"},
+		{123 * time.Nanosecond, "0"},
+		{1234 * time.Nanosecond, "0.001ms"},
+		{12345 * time.Nanosecond, "0.012ms"},
+		{123456 * time.Nanosecond, "0.123ms"},
+		{1234000 * time.Nanosecond, "1.234ms"},
+		{1234999 * time.Nanosecond, "1.235ms"},
+		{123 * time.Microsecond, "0.123ms"},
+		{120 * time.Microsecond, "0.120ms"},
+		{100 * time.Microsecond, "0.100ms"},
+		{12345 * time.Millisecond, "12.35s"},
+		{98765 * time.Millisecond, "1m39s"},
+		{987654 * time.Millisecond, "16m28s"},
+		{1234 * time.Second, "20m34s"},
+		{123456 * time.Second, "34h17m36s"},
+	}
+
+	for _, tt := range tests {
+		if s := f(tt.Input); s != tt.Output {
+			t.Errorf("unexpected output %s => %q", tt.Input, s)
+		}
+	}
+}
+
 func TestLatencyGraph(t *testing.T) {
 	f := templateFuncs["latency_graph"].(func(rs []api.Record) string)
 
@@ -230,5 +261,31 @@ func TestLatencyGraph(t *testing.T) {
 				t.Errorf("unexpected output\nexpected: %#v\n but got: %#v", tt.Output, result)
 			}
 		})
+	}
+}
+
+func TestUint2Humanize(t *testing.T) {
+	f := templateFuncs["uint2humanize"].(func(uint64) string)
+
+	tests := []struct {
+		Input  uint64
+		Output string
+	}{
+		{0, "0"},
+		{123, "123"},
+		{1234, "1,234"},
+		{12345, "12,345"},
+		{123456, "123,456"},
+		{1234567, "1,234,567"},
+		{1000100, "1,000,100"},
+		{9876543210, "9,876,543,210"},
+		{100450789, "100,450,789"},
+		{123450700, "123,450,700"},
+	}
+
+	for _, tt := range tests {
+		if s := f(tt.Input); s != tt.Output {
+			t.Errorf("%d => %s", tt.Input, s)
+		}
 	}
 }

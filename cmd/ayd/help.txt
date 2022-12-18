@@ -1,0 +1,108 @@
+Ayd -- Easy status monitoring tool (version {{ .Version }})
+
+Usage:
+  ayd [OPTIONS...] INTERVALS|TARGETS...
+  ayd -1 [-a URL] [-f FILE] INTERVALS|TARGETS...
+
+Subcommands:
+  ayd oneshot  The same as -1 option.
+  ayd conv     Convert log file to other format.
+               Please see `ayd conv -h` to more information.
+
+Options:
+  -1, --oneshot	          Check status only once and exit.
+                          If some of targets is not healthy, the exit code will be 1.
+  -a, --alert=URL         The alert URL that the same format as the target URL.
+                          You can use this option more than once.
+  -f, --log-file=FILE     Path to log file. Log file is also used as a database.
+                          Ayd won't create log file if set "-" or empty.
+                          You can use time spec %Y, %y, %m, %d, %H, %M, in the file name.
+                          (default "ayd_%Y%m%d.log")
+  -p, --port=PORT         Listen port of status page. (default 9000)
+  -u, --user=USER[:PASS]  Username and password for HTTP basic auth.
+  -c, --ssl-cert=FILE     Path to certificate file for HTTPS. Please set also -k.
+  -k, --ssl-key=FILE      Path to key file for HTTPS. Please set also -c.
+  -v, --version           Show Ayd version and exit.
+  -h, --help              Show {{ if .Short }}detail{{ else }}this{{ end }} help message and exit.
+{{ if .Short }}
+Use `ayd -h` for more information.{{ else }}
+Intervals:
+  Specify execution schedule in interval (e.g. "2m" means "every 2 minutes")
+  or cron expression (e.g. "*/5 8-19 * *" means "every 5 minutes from 8 p.m. to 7 a.m.").
+  Default interval is "5m" in if don't pass any interval.
+
+Targets:
+  The target address for status checking.
+  Specify with URL format like "ping:example.com" or "https://example.com/foo/bar".
+
+  http, https:
+   Send HTTP request, and check status code is 2xx or not.
+   It will follow redirect up to {{ .HTTPRedirectMax }} times.
+   e.g. https://example.com/path/to
+
+   You can specify HTTP method in scheme like "http-head" or "https-post".
+   Supported method is GET, HEAD, POST, OPTION, and CONNECT. Default is GET method.
+
+  ftp, ftps:
+   Send LIST or MLSD command of FTP for status checking.
+   e.g. ftp://example.com/path/to/file
+
+  ping, ping4, ping6:
+   Send 3 ICMP echo request in 1 second.
+   "ping4" and "ping6" is variants for specify IPv4 or IPv6.
+   e.g. ping:example.com
+
+  tcp, tcp4, tcp6:
+   Connect to TCP port.
+   "tcp4" and "tcp6" is variants for specify IPv4 or IPv6.
+   e.g. tcp://example.com:3306
+
+  dns:
+   Resolve name with DNS.
+   e.g. dns:example.com
+        dns://8.8.8.8/example.com?type=AAAA
+
+  file:
+   Check the file or the directory existence.
+   e.g. file:/path/to/file
+
+  exec:
+   Execute external command.
+   You can set 1st argument with fragment,
+   and you can set environment variable with query.
+   e.g. exec:/path/to/script?something_variable=awesome-value#argument-for-script
+
+  source:
+   Load a file, and test target URLs of each lines.
+   Lines in the file that starts with "#" will ignore as comments.
+   e.g. source:/path/to/list.txt
+
+   This scheme has some variants: "source+http", "source+https", "source+ftp", "source+ftps", and "source+exec".
+   e.g. source+https://example.com/list.txt
+        source+ftp://example.com/list.txt
+        source+exec:/path/to/script
+
+Examples:
+  Send ping to example.com in default interval(5m):
+   $ ayd ping:example.com
+
+  Send ping to example.com every minutes:
+   $ ayd 1m ping:example.com
+
+  Access to http://example.com every half hours:
+   $ ayd 30m http://example.com
+
+  Check a.local(ping) and b.local(http) every minutes,
+  and execute ./check.sh command every 15 minutes:
+   $ ayd 1m ping:a.local http://b.local 15m exec:./check.sh
+
+  Check targets that listed in file named "./list.txt":
+   $ echo ping:a.local >> list.txt
+   $ echo ping:b.local >> list.txt
+   $ ayd source:./list.txt
+
+  Listen on http://0.0.0.0:8080 (and connect to example.com:3306 for check):
+   $ ayd -p 8080 1m tcp://example.com:3306
+
+See also:
+  https://github.com/macrat/ayd#readme{{ end }}

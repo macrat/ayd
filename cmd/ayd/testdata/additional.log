@@ -1,0 +1,1 @@
+{"time":"2021-01-03T15:04:05Z", "status":"HEALTHY", "latency":123.456, "target":"http://example.com", "message":"WAH!!!"}

@@ -245,7 +245,7 @@ func TestPingResultToRecord(t *testing.T) {
 			&api.URL{Scheme: "dummy-ping", Opaque: "healthy"},
 			time.Now(),
 			pinger.Result{
-				Target: &net.IPAddr{net.IPv4(127, 0, 0, 1), ""},
+				Target: &net.IPAddr{IP: net.IPv4(127, 0, 0, 1)},
 				Sent:   3,
 				Recv:   3,
 				Loss:   0,
@@ -253,7 +253,7 @@ func TestPingResultToRecord(t *testing.T) {
 				AvgRTT: 2345 * time.Microsecond,
 				MaxRTT: 3456 * time.Microsecond,
 			},
-			"All packets came back",
+			"all packets came back",
 			map[string]interface{}{
 				"rtt_min":      1.234,
 				"rtt_avg":      2.345,
@@ -268,12 +268,12 @@ func TestPingResultToRecord(t *testing.T) {
 			&api.URL{Scheme: "dummy-ping", Opaque: "failure"},
 			time.Now().Add(-10 * time.Second),
 			pinger.Result{
-				Target: &net.IPAddr{net.IPv4(127, 1, 2, 3), ""},
+				Target: &net.IPAddr{IP: net.IPv4(127, 1, 2, 3)},
 				Sent:   3,
 				Recv:   0,
 				Loss:   3,
 			},
-			"All packets have dropped",
+			"all packets have dropped",
 			map[string]interface{}{
 				"rtt_min":      0.0,
 				"rtt_avg":      0.0,
@@ -288,7 +288,7 @@ func TestPingResultToRecord(t *testing.T) {
 			&api.URL{Scheme: "dummy-ping", Opaque: "degrade"},
 			time.Now().Add(-20 * time.Second),
 			pinger.Result{
-				Target: &net.IPAddr{net.IPv4(127, 3, 2, 1), ""},
+				Target: &net.IPAddr{IP: net.IPv4(127, 3, 2, 1)},
 				Sent:   3,
 				Recv:   2,
 				Loss:   1,
@@ -296,7 +296,7 @@ func TestPingResultToRecord(t *testing.T) {
 				AvgRTT: 2345 * time.Microsecond,
 				MaxRTT: 3456 * time.Microsecond,
 			},
-			"Some packets have dropped",
+			"some packets have dropped",
 			map[string]interface{}{
 				"rtt_min":      1.234,
 				"rtt_avg":      2.345,
@@ -311,7 +311,7 @@ func TestPingResultToRecord(t *testing.T) {
 			&api.URL{Scheme: "dummy-ping", Opaque: "timeout"},
 			time.Now().Add(-30 * time.Second),
 			pinger.Result{
-				Target: &net.IPAddr{net.IPv4(127, 3, 2, 1), ""},
+				Target: &net.IPAddr{IP: net.IPv4(127, 3, 2, 1)},
 				Sent:   3,
 				Recv:   2,
 				Loss:   1,

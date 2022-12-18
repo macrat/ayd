@@ -31,7 +31,7 @@ func NewAlerterFromURL(u *api.URL) (Alerter, error) {
 	case "http", "https":
 		return NewHTTPScheme(u)
 	case "ftp", "ftps":
-		return nil, ErrUnsupportedAlertScheme
+		return NewFTPScheme(u)
 	case "ping", "ping4", "ping6":
 		return nil, ErrUnsupportedAlertScheme
 	case "tcp", "tcp4", "tcp6":

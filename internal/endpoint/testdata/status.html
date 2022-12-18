@@ -15,10 +15,16 @@ html {
     --degrade: 221, 161, 0;
     --healthy: 137, 201, 35;
 }
+a {
+    color: #0000EE;
+}
 @media (prefers-color-scheme: dark) {
     html {
         --bg: var(--dark);
         --fg: var(--light);
+    }
+    a {
+        color: #AAAAFF;
     }
 }
 
@@ -336,6 +342,8 @@ footer span {
                         <a href="/log.html" type="text/html">Log</a>
                         <ul class="menu-types">
                             <li><a href="/log.csv" type="text/csv">CSV</a></li>
+                            <li><a href="/log.xlsx" type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">XLSX</a></li>
+                            <li><a href="/log.ltsv" type="text/plain">LTSV</a></li>
                             <li><a href="/log.json" type="application/json">json</a></li>
                         </ul>
                     </span>
@@ -509,19 +517,19 @@ hoge: fuga">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#no-data-icon" /></svg>
                 </span>
                 <span class="status-bit healthy" title="2021-01-02T15:04:05Z
-healthy in 123.456ms
+healthy in 123.5ms
 
 hello world">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#healthy-icon" /></svg>
                 </span>
                 <span class="status-bit healthy" title="2021-01-02T15:04:06Z
-healthy in 234.567ms
+healthy in 234.6ms
 
 hello world!">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#healthy-icon" /></svg>
                 </span>
                 <span class="status-bit healthy" title="2021-01-02T15:04:07Z
-healthy in 345.678ms
+healthy in 345.7ms
 
 hello world!!">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#healthy-icon" /></svg>
@@ -598,15 +606,17 @@ hello world!!">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#no-data-icon" /></svg>
                 </span>
                 <span class="status-bit failure" title="2021-01-02T15:04:05Z
-failure in 12.345ms
+failure in 12.35ms
 
 this is failure">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#failure-icon" /></svg>
                 </span>
                 <span class="status-bit healthy" title="2021-01-02T15:04:06Z
-healthy in 54.321ms
+healthy in 54.32ms
 
-this is healthy">
+this is healthy
+---
+extra: 1.234">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#healthy-icon" /></svg>
                 </span>
 

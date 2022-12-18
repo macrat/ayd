@@ -37,6 +37,7 @@ func TestExecScheme_Probe(t *testing.T) {
 	AssertProbe(t, []ProbeTest{
 		{"exec:./testdata/test?message=hello&code=0", api.StatusHealthy, "hello\n---\nexit_code: 0", ""},
 		{"exec:./testdata/test?message=world&code=1", api.StatusFailure, "world\n---\nexit_code: 1", ""},
+		{"exec:./testdata/test?message=::foo::bar&code=1", api.StatusFailure, "---\nexit_code: 1\nfoo: bar", ""},
 		{"exec:" + path.Join(cwd, "testdata/test") + "?message=hello&code=0", api.StatusHealthy, "hello\n---\nexit_code: 0", ""},
 		{"exec:sleep#10", api.StatusFailure, `probe timed out`, ""},
 		{"exec:echo#::status::unknown", api.StatusUnknown, "---\nexit_code: 0", ""},

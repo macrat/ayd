@@ -19,8 +19,6 @@ func NewStoreWithConsole(t testing.TB, w io.Writer) *store.Store {
 		t.Fatalf("failed to create store: %s", err)
 	}
 
-	s.SetIndexInterval(3)
-
 	return s
 }
 
@@ -30,13 +28,10 @@ func NewStore(t testing.TB) *store.Store {
 	return NewStoreWithConsole(t, io.Discard)
 }
 
-//go:embed testdata/test.log
-var rawLog []byte
-
 func NewStoreWithLog(t testing.TB) *store.Store {
 	fpath := filepath.Join(t.TempDir(), "ayd.log")
 
-	if err := os.WriteFile(fpath, rawLog, 0644); err != nil {
+	if err := os.WriteFile(fpath, []byte(DummyLog), 0644); err != nil {
 		t.Fatalf("failed to prepare test log file: %s", err)
 	}
 
@@ -44,8 +39,6 @@ func NewStoreWithLog(t testing.TB) *store.Store {
 	if err != nil {
 		t.Fatalf("failed to create store: %s", err)
 	}
-
-	s.SetIndexInterval(3)
 
 	if err = s.Restore(); err != nil {
 		t.Fatalf("failed to restore store: %s", err)

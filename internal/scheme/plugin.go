@@ -3,12 +3,9 @@ package scheme
 import (
 	"bufio"
 	"context"
-	"encoding/json"
 	"errors"
-	"fmt"
 	"os"
 	"os/exec"
-	"strconv"
 	"strings"
 	"time"
 
@@ -103,6 +100,8 @@ func (p PluginScheme) execute(ctx context.Context, r Reporter, scope string, arg
 
 	count := 0
 
+	var invalidLines []string
+
 	scanner := bufio.NewScanner(strings.NewReader(output))
 	for scanner.Scan() {
 		text := strings.TrimSpace(scanner.Text())
@@ -111,22 +110,29 @@ func (p PluginScheme) execute(ctx context.Context, r Reporter, scope string, arg
 		}
 
 		rec, err := api.ParseRecord(text)
-		if err == nil {
-			count++
-			r.Report(p.target, rec)
+		if err != nil {
+			invalidLines = append(invalidLines, scanner.Text())
 			continue
 		}
 
+		count++
+		r.Report(p.target, rec)
+	}
+
+	if invalidLines != nil {
 		r.Report(p.target, api.Record{
-			Time:    time.Now(),
-			Target:  &api.URL{Scheme: "ayd", Opaque: scope + ":plugin:" + p.target.String()},
+			Time:    stime,
+			Target:  p.target,
 			Status:  api.StatusUnknown,
-			Message: fmt.Sprintf("%s: %#v", err, text),
+			Message: "the plugin reported invalid records",
 			Latency: latency,
+			Extra: map[string]any{
+				"raw_message": strings.Join(invalidLines, "\n"),
+			},
 		})
 	}
 
-	if err != nil || count == 0 {
+	if err != nil || (invalidLines == nil && count == 0) {
 		msg := ""
 		if err != nil {
 			msg = err.Error()
@@ -151,18 +157,7 @@ func (p PluginScheme) Probe(ctx context.Context, r Reporter) {
 func (p PluginScheme) Alert(ctx context.Context, r Reporter, lastRecord api.Record) {
 	args := []string{
 		p.target.String(),
-		lastRecord.Time.Format(time.RFC3339),
-		lastRecord.Status.String(),
-		strconv.FormatFloat(float64(lastRecord.Latency.Microseconds())/1000.0, 'f', -1, 64),
-		lastRecord.Target.String(),
-		lastRecord.Message,
-		"{}",
-	}
-
-	if lastRecord.Extra != nil {
-		if bs, err := json.Marshal(lastRecord.Extra); err == nil {
-			args[len(args)-1] = string(bs)
-		}
+		lastRecord.String(),
 	}
 
 	p.execute(

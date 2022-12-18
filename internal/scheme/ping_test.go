@@ -2,8 +2,6 @@ package scheme_test
 
 import (
 	"context"
-	"errors"
-	"os"
 	"runtime"
 	"strings"
 	"testing"
@@ -22,7 +20,7 @@ func TestPingProbe_Probe(t *testing.T) {
 	}
 
 	pattern := strings.Join([]string{
-		`All packets came back`,
+		`all packets came back`,
 		`---`,
 		`packets_recv: 3`,
 		`packets_sent: 3`,
@@ -87,7 +85,7 @@ func TestPingProbe_Probe(t *testing.T) {
 		t.Setenv("AYD_PING_INTERVAL", "1ms")
 
 		pattern := strings.Join([]string{
-			`All packets came back`,
+			`all packets came back`,
 			`---`,
 			`packets_recv: 10`,
 			`packets_sent: 10`,
@@ -100,45 +98,6 @@ func TestPingProbe_Probe(t *testing.T) {
 			{"ping:localhost", api.StatusHealthy, pattern, ""},
 		}, 2)
 	})
-}
-
-func TestPingProbe(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("unprivileged mode is not supported on windows")
-	}
-
-	privileged := os.Getenv("AYD_PRIVILEGED")
-	t.Cleanup(func() {
-		os.Setenv("AYD_PRIVILEGED", privileged)
-	})
-
-	tests := []struct {
-		Env  string
-		Fail bool
-	}{
-		{"1", true},
-		{"0", false},
-		{"yes", true},
-		{"no", false},
-		{"true", true},
-		{"false", false},
-		{"TRUE", true},
-		{"False", false},
-	}
-
-	for _, tt := range tests {
-		t.Run("AYD_PRIVILEGED="+tt.Env, func(t *testing.T) {
-			os.Setenv("AYD_PRIVILEGED", tt.Env)
-			_, err := scheme.NewPingProbe(&api.URL{Scheme: "ping", Opaque: "localhost"})
-
-			if tt.Fail && !errors.Is(err, scheme.ErrFailedToPreparePing) {
-				t.Errorf("expected permission error but got %v", err)
-			}
-			if !tt.Fail && err != nil {
-				t.Errorf("expected nil but got error: %s", err)
-			}
-		})
-	}
 }
 
 func BenchmarkPingProbe(b *testing.B) {

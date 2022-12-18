@@ -98,39 +98,13 @@ func newAutoPinger() *autoPingerStruct {
 	}
 }
 
-func getAydPrivilegedEnv() bool {
-	switch strings.ToLower(os.Getenv("AYD_PRIVILEGED")) {
-	case "", "0", "no", "false":
-		return false
-	}
-	return true
-}
-
-func makePingers() (v4, v6 *pinger.Pinger) {
-	v4 = pinger.NewIPv4()
-	v6 = pinger.NewIPv6()
-
-	if getAydPrivilegedEnv() {
-		v4.SetPrivileged(true)
-		v6.SetPrivileged(true)
-	}
-
-	return v4, v6
-}
-
 func (p *autoPingerStruct) start() (teardown func(), err error) {
-	p.v4, p.v6 = makePingers()
+	p.v4 = pinger.NewIPv4()
+	p.v6 = pinger.NewIPv6()
 
 	ctx, stop := context.WithCancel(context.Background())
 
-	if err := p.v4.Start(ctx); err != nil {
-		stop()
-		p.v4 = nil
-		p.v6 = nil
-		return nil, err
-	}
-
-	if err := p.v6.Start(ctx); err != nil {
+	if err := p.startPingers(ctx); err != nil {
 		stop()
 		p.v4 = nil
 		p.v6 = nil
@@ -189,13 +163,13 @@ func pingResultToRecord(ctx context.Context, target *api.URL, startTime time.Tim
 	switch {
 	case result.Loss == 0:
 		rec.Status = api.StatusHealthy
-		rec.Message = "All packets came back"
+		rec.Message = "all packets came back"
 	case result.Recv == 0:
 		rec.Status = api.StatusFailure
-		rec.Message = "All packets have dropped"
+		rec.Message = "all packets have dropped"
 	default:
 		rec.Status = api.StatusDegrade
-		rec.Message = "Some packets have dropped"
+		rec.Message = "some packets have dropped"
 	}
 
 	if ctx.Err() == context.Canceled {
@@ -212,11 +186,14 @@ var (
 
 // checkPingPermission tries to prepare pinger for check if it has permission.
 func checkPingPermission() error {
-	ctx, stop := context.WithCancel(context.Background())
-	defer stop()
+	stop, err := autoPinger.start()
 
-	p, _ := makePingers()
-	return p.Start(ctx)
+	if err != nil {
+		return err
+	}
+
+	stop()
+	return nil
 }
 
 // PingProbe is a Prober implementation for SNMP echo request aka ping.

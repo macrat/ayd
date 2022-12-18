@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/macrat/ayd/internal/scheme"
 	"github.com/macrat/ayd/internal/testutil"
 	api "github.com/macrat/ayd/lib-ayd"
@@ -33,12 +34,10 @@ func TestAlerter(t *testing.T) {
 		Error     string
 	}
 	tests := []Test{
-		{"exec:ayd-foo-alert", "alert:exec:ayd-foo-alert", `{"time":"2001-02-03T16:05:06Z","status":"HEALTHY","latency":123.456,"target":"","message":"\",,,,,\""}` + "\n---\nexit_code: 0", ""},
+		{"exec:ayd-foo-alert", "alert:exec:ayd-foo-alert", `{"time":"2001-02-03T16:05:06Z","status":"HEALTHY","latency":123.456,"target":"","message":""}` + "\n---\nexit_code: 0", ""},
 		{"exec:ayd-bar-probe", "alert:exec:ayd-bar-probe", "arg \"\"\nenv ayd_time=2001-02-03T16:05:06Z ayd_status=FAILURE ayd_latency=12.345 ayd_target=dummy:failure ayd_message=foobar ayd_extra={\"hello\":\"world\"}\n---\nexit_code: 0", ""},
 		{"bar:", "", "", "unsupported scheme"},
 
-		{"ftp://example.com", "", "", "unsupported scheme for alert"},
-		{"ftps://example.com", "", "", "unsupported scheme for alert"},
 		{"ping://example.com", "", "", "unsupported scheme for alert"},
 		{"ping4://example.com", "", "", "unsupported scheme for alert"},
 		{"ping6://example.com", "", "", "unsupported scheme for alert"},
@@ -56,13 +55,19 @@ func TestAlerter(t *testing.T) {
 		{"of-course-no-such-plugin:", "", "", "unsupported scheme"},
 	}
 
-	if runtime.GOOS != "windows" {
-		// Windows can not run this test because bat doesn't support double quote character in argument :(
+	if runtime.GOOS == "windows" {
 		tests = append(
 			tests,
-			Test{"foo-bar:hello-world", "alert:foo-bar:hello-world", "\"foo-bar:hello-world,2001-02-03T16:05:06Z,FAILURE,12.345,dummy:failure,foobar\"\n---\nextras: {\"hello\":\"world\"}", ""},
-			Test{"foo:", "alert:foo:", "\"foo:,2001-02-03T16:05:06Z,FAILURE,12.345,dummy:failure,foobar\"\n---\nextras: {\"hello\":\"world\"}", ""},
-			Test{"foo:hello-world", "alert:foo:hello-world", "\"foo:hello-world,2001-02-03T16:05:06Z,FAILURE,12.345,dummy:failure,foobar\"\n---\nextras: {\"hello\":\"world\"}", ""},
+			Test{"foo-bar:hello-world", "alert:foo-bar:hello-world", "foo-bar:hello-world\n---\n" + `record: {"time":"2001-02-03T16:05:06Z", "status":"FAILURE", "latency":12.345, "target":"dummy:failure", "message":"foobar", "hello":"world"}`, ""},
+			Test{"foo:", "alert:foo:", "foo:\n---\n" + `record: {"time":"2001-02-03T16:05:06Z", "status":"FAILURE", "latency":12.345, "target":"dummy:failure", "message":"foobar", "hello":"world"}`, ""},
+			Test{"foo:hello-world", "alert:foo:hello-world", "foo:hello-world\n---\n" + `record: {"time":"2001-02-03T16:05:06Z", "status":"FAILURE", "latency":12.345, "target":"dummy:failure", "message":"foobar", "hello":"world"}`, ""},
+		)
+	} else {
+		tests = append(
+			tests,
+			Test{"foo-bar:hello-world", "alert:foo-bar:hello-world", "foo-bar:hello-world\n---\n" + `record: {"hello":"world","latency":12.345,"message":"foobar","status":"FAILURE","target":"dummy:failure","time":"2001-02-03T16:05:06Z"}`, ""},
+			Test{"foo:", "alert:foo:", "foo:\n---\n" + `record: {"hello":"world","latency":12.345,"message":"foobar","status":"FAILURE","target":"dummy:failure","time":"2001-02-03T16:05:06Z"}`, ""},
+			Test{"foo:hello-world", "alert:foo:hello-world", "foo:hello-world\n---\n" + `record: {"hello":"world","latency":12.345,"message":"foobar","status":"FAILURE","target":"dummy:failure","time":"2001-02-03T16:05:06Z"}`, ""},
 		)
 	}
 
@@ -134,18 +139,21 @@ func TestAlerter(t *testing.T) {
 
 		alert.Alert(ctx, r, rec)
 
-		if len(r.Records) != 2 {
+		if len(r.Records) != 1 {
 			t.Fatalf("unexpected number of records: %d: %v", len(r.Records), r.Records)
 		}
 
-		if r.Records[0].Target.String() != "ayd:alert:plugin:broken:" {
+		if r.Records[0].Target.String() != "alert:broken:" {
 			t.Errorf("unexpected target URL: %s", r.Records[0].Target)
 		}
 		if r.Records[0].Status != api.StatusUnknown {
 			t.Errorf("unexpected status of record: %s", r.Records[0].Status)
 		}
-		if r.Records[0].Message != `invalid record: invalid character 'h' in literal true (expecting 'r'): "this is invalid record"` {
+		if r.Records[0].Message != "the plugin reported invalid records" {
 			t.Errorf("unexpected message of record: %s", r.Records[0].Message)
+		}
+		if diff := cmp.Diff(map[string]any{"raw_message": "this is invalid record"}, r.Records[0].Extra); diff != "" {
+			t.Errorf("got unexpected extra values: %s", diff)
 		}
 	})
 }
