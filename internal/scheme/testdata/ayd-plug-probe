@@ -1,11 +1,11 @@
 #!/bin/sh
 
 if [ "$1" = "plug:change" ]; then
-    echo '{"time":"2001-02-03T16:05:06Z","status":"HEALTHY","latency":123.456,"target":"changed:plug","message":"check changed:plug"}'
+    echo '{"time":"2001-02-03T16:05:06+09:00","status":"HEALTHY","latency":123.456,"target":"changed:plug","message":"check changed:plug"}'
 elif [ "$1" = "plug:extra" ]; then
-    echo '{"time":"2001-02-03T16:05:06Z","status":"HEALTHY","latency":123.456,"target":"'${1}'","message":"with extra","hello":"world"}'
+    echo '{"time":"2001-02-03T16:05:06+09:00","status":"HEALTHY","latency":123.456,"target":"'${1}'","message":"with extra","hello":"world"}'
 elif [ "$1" != "plug:empty" ]; then
-    echo '{"time":"2001-02-03T16:05:06Z","status":"HEALTHY","latency":123.456,"target":"'${1}'","message":"check '${1}'"}'
+    echo '{"time":"2001-02-03T16:05:06+09:00","status":"HEALTHY","latency":123.456,"target":"'${1}'","message":"check '${1}'"}'
 fi
 
 if [ "$1" = "plug:invalid-record" ]; then

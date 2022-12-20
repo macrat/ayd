@@ -124,6 +124,43 @@ func TestPluginScheme_Probe(t *testing.T) {
 	})
 }
 
+func TestPluginScheme_Probe_timezone(t *testing.T) {
+	PreparePluginPath(t)
+	t.Setenv("TZ", "UTC")
+
+	tests := []struct {
+		URL  string
+		Time time.Time
+	}{
+		{"plug:+0900", time.Date(2001, 2, 3, 16-9, 5, 6, 0, time.UTC)},
+		{"plug-plus:utc", time.Date(2001, 2, 3, 16, 5, 6, 0, time.UTC)},
+	}
+
+	for _, tt := range tests {
+		p, err := scheme.NewProber(tt.URL)
+		if err != nil {
+			t.Fatalf("%s: failed to create plugin: %s", tt.URL, err)
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+
+		rs := testutil.RunProbe(ctx, p)
+
+		if len(rs) != 1 {
+			t.Fatalf("%s: unexpected number of results: %d", tt.URL, len(rs))
+		}
+
+		if rs[0].Target.String() != tt.URL {
+			t.Errorf("%s: unexpected target: %s", tt.URL, rs[0].Target)
+		}
+
+		if !rs[0].Time.Equal(tt.Time) {
+			t.Errorf("%s: unexpected time: %s", tt.URL, rs[0].Time)
+		}
+	}
+}
+
 func TestPluginScheme_Alert(t *testing.T) {
 	t.Parallel()
 	PreparePluginPath(t)

@@ -115,6 +115,8 @@ func (p PluginScheme) execute(ctx context.Context, r Reporter, scope string, arg
 			continue
 		}
 
+		rec.Time = rec.Time.Local()
+
 		count++
 		r.Report(p.target, rec)
 	}
