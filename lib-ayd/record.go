@@ -120,10 +120,15 @@ func (r *Record) UnmarshalJSON(data []byte) error {
 	if value, ok := raw["time"]; !ok {
 		return ayderr.New(ErrInvalidRecord, nil, "invalid record: time: missing required field")
 	} else {
-		if s, ok := value.(string); !ok {
-			return ayderr.New(ErrInvalidRecord, nil, "invalid record: time: should be a string")
-		} else if r.Time, err = ParseTime(s); err != nil {
-			return ayderr.New(ErrInvalidRecord, err, "invalid record: time")
+		switch v := value.(type) {
+		case float64:
+			r.Time = time.UnixMilli(int64(v * 1000))
+		case string:
+			if r.Time, err = ParseTime(v); err != nil {
+				return ayderr.New(ErrInvalidRecord, err, "invalid record: time")
+			}
+		default:
+			return ayderr.New(ErrInvalidRecord, nil, "invalid record: time: should be a string or a number")
 		}
 		delete(raw, "time")
 	}

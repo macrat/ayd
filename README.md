@@ -564,6 +564,7 @@ The log file of Ayd is stored in [JSON Lines](https://jsonlines.org/) format, en
 Each record has at least 4 fields.
 
 - `time` when status check started, in [RFC3339 format](https://tools.ietf.org/html/rfc3339) like `2001-02-30T16:05:06+00:00`.
+  Ayd can parse some variant formats like `2001-02-03 16:05:06+0000` or `20010203_160506Z`, and the UNIX time seconds.
 
 - `status` of the record that `HEALTHY`, `DEGRADE`, `FAILURE`, `UNKNOWN`, or `ABORTED`.
 

@@ -54,6 +54,7 @@ func TestRecord(t *testing.T) {
 
 	tests := []struct {
 		String string
+		Encode string
 		Record ayd.Record
 		Error  string
 	}{
@@ -88,13 +89,25 @@ func TestRecord(t *testing.T) {
 			},
 		},
 		{
-			String: `{"time":"2021-01-02T15:04:05+09:00", "status":"DEGRADE", "latency":1027.890, "target":"dummy:"}`,
+			String: `{"time":"2021-01-02 15:04:05+09:00", "status":"DEGRADE", "latency":1027.890, "target":"dummy:"}`,
+			Encode: `{"time":"2021-01-02T15:04:05+09:00", "status":"DEGRADE", "latency":1027.890, "target":"dummy:"}`,
 			Record: ayd.Record{
 				Time:    time.Date(2021, 1, 2, 15, 4, 5, 0, tokyo),
 				Target:  &ayd.URL{Scheme: "dummy"},
 				Status:  ayd.StatusDegrade,
 				Message: "",
 				Latency: 1027890 * time.Microsecond,
+			},
+		},
+		{
+			String: `{"time":1641135845, "status":"HEALTHY", "latency":12.345, "target":"dummy:"}`,
+			Encode: `{"time":"2022-01-02T15:04:05Z", "status":"HEALTHY", "latency":12.345, "target":"dummy:"}`,
+			Record: ayd.Record{
+				Time:    time.Date(2022, 1, 2, 15, 4, 5, 0, time.UTC),
+				Target:  &ayd.URL{Scheme: "dummy"},
+				Status:  ayd.StatusHealthy,
+				Message: "",
+				Latency: 12345 * time.Microsecond,
 			},
 		},
 		{
@@ -122,8 +135,8 @@ func TestRecord(t *testing.T) {
 			Error:  `invalid record: time: missing required field`,
 		},
 		{
-			String: `{"time":123, "status":"HEALTHY", "latency":123.456, "target":"ping:example.com", "message":"hello world"}`,
-			Error:  `invalid record: time: should be a string`,
+			String: `{"time":{}, "status":"HEALTHY", "latency":123.456, "target":"ping:example.com", "message":"hello world"}`,
+			Error:  `invalid record: time: should be a string or a number`,
 		},
 		{
 			String: `{"time":"2021-01-02T15:04:05+09:00", "status":null, "latency":123.456, "target":"ping:example.com", "message":"hello world"}`,
@@ -209,8 +222,12 @@ func TestRecord(t *testing.T) {
 			t.Errorf("unexpected extra\n%s", diff)
 		}
 
-		if tt.Record.String() != tt.String {
-			t.Errorf("expected: %#v\n but got: %#v", tt.String, tt.Record.String())
+		expect := tt.Encode
+		if expect == "" {
+			expect = tt.String
+		}
+		if tt.Record.String() != expect {
+			t.Errorf("expected: %#v\n but got: %#v", expect, tt.Record.String())
 		}
 	}
 }
