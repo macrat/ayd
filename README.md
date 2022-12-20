@@ -401,24 +401,30 @@ Even if use it as an alert URL, the behavior is almost the same, but send alert 
 
 #### Plugin
 
-A plugin is a executable file named like `ayd-xxx-probe` or `ayd-xxx-alert`, installed to the PATH directory.
+A plugin is an executable file installed in the PATH directory.
 
-Ayd looks for `ayd-xxx-probe` for a target or `ayd-xxx-alert` for an alert, if URL scheme is `xxx:`, `xxx-yyy:`, or `xxx+yyy:`.
-You can change scheme via changing `xxx`, but you can't use `ayd`, `alert`, and the scheme that is supported by Ayd itself.
-And you can use `yyy` part to change plugin behavior, the same as [http:](#http--https) or [dns:](#dns).
+The name of plugin depends on the URL scheme its supports and its purpose, like `ayd-xxx-probe`, `ayd-xxx-alert`, or `ayd-xxx-scheme`.
+A plugin named `-probe` is for probing target, named `-alert` is for sending alerts, and named `-scheme` supports both purposes.
 
-The longest plugin name has priority if you installed multiple plugins.
-For example, `ayd-xxx-yyy-probe` has high priority than `ayd-xxx-probe`.
+For example, if the target URL has the scheme `xxx-yyy:`, Ayd will search these executable files in order of priority:
+
+1. `ayd-xxx-yyy-probe`
+2. `ayd-xxx-yyy-scheme`
+3. `ayd-xxx-probe`
+4. `ayd-xxx-scheme`
+
+The scheme names that supported by Ayd, `ayd`, and `alert`, are reserved and cannot be used by plugins.
 
 The plugin prints result to stdout, in the same format as [log file](#log-file).
+Plugins should not report results that are more than 1 hour old.
 
-Ayd expects UTF-8 text as outputs of plugins.
-But in Windows, you can use system's default character encoding.
+Ayd expects the output of the plugin to be in UTF-8.
+However, in Windows, the system's default character encoding can be used.
 Please see also [text encoding chapter](#text-encoding).
 
-Execution of a plugin will timeout in maximum 1 hour and report as failure.
+If a plugin takes longer than 1 hour to execute, it will be timed out and reported as a failure.
 
-The differences from plugin to [`exec:`](#exec) are below.
+The differences from plugin to [`exec:`](#exec) are:
 
 |                                                         | `exec: `     | plugin                     |
 |---------------------------------------------------------|--------------|----------------------------|
@@ -428,13 +434,14 @@ The differences from plugin to [`exec:`](#exec) are below.
 | receive raw target URL                                  | can not      | can                        |
 | record about multiple targets like as [source](#source) | can not      | can                        |
 
-There is [a library for create plugin](https://pkg.go.dev/github.com/macrat/ayd/lib-ayd).
+There is [a library for creating plugin](https://pkg.go.dev/github.com/macrat/ayd/lib-ayd).
 
 ##### Probe plugin
 
-Probe plugin, which to check the target, receives the target URL as the only one argument of the command.
+The probe plugin is for checking the target.
+It receives the target URL as the only one argument.
 
-For example, target URL `foobar:your-target` has the same mean as below command.
+For example, the target URL `foobar:your-target` will be called like:
 
 ``` shell
 $ ayd-foobar-probe "foobar:your-target"
@@ -442,11 +449,12 @@ $ ayd-foobar-probe "foobar:your-target"
 
 ##### Alert plugin
 
-Alert plugin, which to send alerts, receives two arguments.
-The first argument is a URL for alert itself.
+The alert plugin is for sending an alert.
+It receives two arguments.
+The first argument is an alert URL.
 The second one is the latest record that fired the alert in JSON format.
 
-For example, the alert URL `foobar:your-alert` for plugin `ayd-foobar-alert` will be called like a below command.
+For example, the alert URL `foobar:your-alert` for plugin `ayd-foobar-alert` will be called like:
 
 ``` shell
 $ ayd-foobar-alert       \
@@ -454,7 +462,7 @@ $ ayd-foobar-alert       \
     '{"time":"2001-02-30T16:05:06+09:00", "status":"FAILURE", "latency":"1.234", "target":"ping:your-target", "message":"this is message of the record"}'
 ```
 
-The output of the probe plugin will parsed the same way to [log file](#log-file), but all target URL will add `alert:` prefix and won't not show in status page.
+The `target` URLs in the alert plugin's output, will be added `alert:` prefix before store in Ayd, and hide in the status pages.
 
 ##### plugin list
 

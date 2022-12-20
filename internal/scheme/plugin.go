@@ -19,16 +19,25 @@ type PluginScheme struct {
 }
 
 // pluginCandidates makes scheme name candidates of plugin by URL scheme.
-func pluginCandidates(scheme string) []string {
+// The output is priority ascending order, which means the first candidate has the lowest priority.
+func pluginCandidates(scheme, scope string) []string {
 	var xs []string
 
 	for i, x := range scheme {
 		if x == '-' || x == '+' {
-			xs = append(xs, scheme[:i])
+			xs = append(
+				xs,
+				"ayd-"+scheme[:i]+"-scheme",
+				"ayd-"+scheme[:i]+"-"+scope,
+			)
 		}
 	}
 
-	xs = append(xs, scheme)
+	xs = append(
+		xs,
+		"ayd-"+scheme+"-scheme",
+		"ayd-"+scheme+"-"+scope,
+	)
 
 	return xs
 }
@@ -36,9 +45,9 @@ func pluginCandidates(scheme string) []string {
 // findPlugin finds a plugin for URL scheme.
 // It choice the longest name plugin.
 func findPlugin(scheme, scope string) (commandName string, err error) {
-	candidates := pluginCandidates(scheme)
+	candidates := pluginCandidates(scheme, scope)
 	for i := range candidates {
-		commandName = "ayd-" + candidates[len(candidates)-i-1] + "-" + scope
+		commandName = candidates[len(candidates)-i-1]
 		_, err = exec.LookPath(commandName)
 		if err == nil || !errors.Is(err, exec.ErrNotFound) {
 			return
