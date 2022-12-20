@@ -1,5 +1,9 @@
 package ayd
 
+import (
+	"strings"
+)
+
 const (
 	// StatusFailure means the target is in FAILURE, but status check is success.
 	// System administrators have to do something action to the target system when this status.
@@ -28,7 +32,7 @@ type Status int8
 //
 // If passed unsupported status, it will returns StatusUnknown
 func ParseStatus(raw string) Status {
-	switch raw {
+	switch strings.ToUpper(raw) {
 	case "HEALTHY":
 		return StatusHealthy
 	case "DEGRADE":

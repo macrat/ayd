@@ -89,7 +89,7 @@ func TestRecord(t *testing.T) {
 			},
 		},
 		{
-			String: `{"time":"2021-01-02 15:04:05+09:00", "status":"DEGRADE", "latency":1027.890, "target":"dummy:"}`,
+			String: `{"time":"2021-01-02 15:04:05+09:00", "status":"Degrade", "latency":1027.890, "target":"dummy:"}`,
 			Encode: `{"time":"2021-01-02T15:04:05+09:00", "status":"DEGRADE", "latency":1027.890, "target":"dummy:"}`,
 			Record: ayd.Record{
 				Time:    time.Date(2021, 1, 2, 15, 4, 5, 0, tokyo),
@@ -100,7 +100,7 @@ func TestRecord(t *testing.T) {
 			},
 		},
 		{
-			String: `{"time":1641135845, "status":"HEALTHY", "latency":12.345, "target":"dummy:"}`,
+			String: `{"time":1641135845, "status":"healthy", "latency":12.345, "target":"dummy:"}`,
 			Encode: `{"time":"2022-01-02T15:04:05Z", "status":"HEALTHY", "latency":12.345, "target":"dummy:"}`,
 			Record: ayd.Record{
 				Time:    time.Date(2022, 1, 2, 15, 4, 5, 0, time.UTC),
