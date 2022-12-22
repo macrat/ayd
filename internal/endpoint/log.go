@@ -1,6 +1,7 @@
 package endpoint
 
 import (
+	"context"
 	_ "embed"
 	"encoding/json"
 	"fmt"
@@ -251,6 +252,32 @@ func (qs Query) Match(r api.Record) bool {
 	return true
 }
 
+type ContextScanner struct {
+	ctx     context.Context
+	scanner api.LogScanner
+}
+
+func NewContextScanner(ctx context.Context, s api.LogScanner) ContextScanner {
+	return ContextScanner{ctx, s}
+}
+
+func (cs ContextScanner) Scan() bool {
+	select {
+	case <-cs.ctx.Done():
+		return false
+	default:
+		return cs.scanner.Scan()
+	}
+}
+
+func (cs ContextScanner) Record() api.Record {
+	return cs.scanner.Record()
+}
+
+func (cs ContextScanner) Close() error {
+	return cs.scanner.Close()
+}
+
 func newLogScanner(s Store, scope string, r *http.Request, defaultPeriod time.Duration) (scanner *PagingScanner, statusCode int, err error) {
 	opts, err := newLogOptionsByRequest(s, scope, r, defaultPeriod)
 	if err != nil {
@@ -266,6 +293,8 @@ func newLogScannerByOpts(s Store, scope string, r *http.Request, opts logOptions
 		handleError(s, scope, fmt.Errorf("failed to open log: %w", err))
 		return nil, http.StatusInternalServerError, fmt.Errorf("internal server error")
 	}
+
+	rawScanner = NewContextScanner(r.Context(), rawScanner)
 
 	rawScanner = FilterScanner{
 		Scanner: rawScanner,

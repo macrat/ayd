@@ -1,6 +1,7 @@
 package endpoint_test
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -232,6 +233,56 @@ func TestPagingScanner(t *testing.T) {
 		if total != uint64(len(messages)) {
 			t.Errorf("%d-%d: expected total is %d but got %d", tt.Offset, tt.Limit, len(messages), total)
 		}
+	}
+}
+
+func TestContextScanner_scanAll(t *testing.T) {
+	s := testutil.NewStoreWithLog(t)
+
+	r, err := s.OpenLog(time.Unix(0, 0), time.Date(2100, 1, 1, 0, 0, 0, 0, time.UTC))
+	if err != nil {
+		t.Fatalf("failed to open log: %s", err)
+	}
+	defer r.Close()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	cs := endpoint.NewContextScanner(ctx, r)
+
+	count := 0
+	for cs.Scan() {
+		t.Log(cs.Record())
+		count++
+	}
+
+	if count != 7 {
+		t.Fatalf("unexpected number of records found: %d", count)
+	}
+}
+
+func TestContextScanner_cancel(t *testing.T) {
+	s := testutil.NewStoreWithLog(t)
+
+	r, err := s.OpenLog(time.Unix(0, 0), time.Date(2100, 1, 1, 0, 0, 0, 0, time.UTC))
+	if err != nil {
+		t.Fatalf("failed to open log: %s", err)
+	}
+	defer r.Close()
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	cs := endpoint.NewContextScanner(ctx, r)
+
+	if !cs.Scan() {
+		cancel()
+		t.Fatalf("failed to scan first record")
+	}
+
+	cancel()
+
+	if cs.Scan() {
+		t.Fatalf("unexpectedly succeed to scan record: %s", cs.Record())
 	}
 }
 
