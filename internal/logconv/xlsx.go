@@ -76,6 +76,10 @@ func ToXlsx(w io.Writer, s api.LogScanner, createdAt time.Time) error {
 	var row uint
 	for s.Scan() {
 		row++
+		if row > 100000 {
+			break
+		}
+
 		r := s.Record()
 
 		color := colors[r.Status]
