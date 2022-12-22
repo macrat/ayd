@@ -197,7 +197,7 @@ type PathPattern struct {
 }
 
 func ParsePathPattern(s string) PathPattern {
-	p := PathPattern{pattern: s}
+	p := PathPattern{pattern: filepath.FromSlash(s)}
 
 	var buf []string
 	left := 0
@@ -419,5 +419,17 @@ func (p timePattern) Time(loc *time.Location) time.Time {
 }
 
 func (p timePattern) Less(x timePattern) bool {
-	return p.Year < x.Year || p.Month < x.Month || p.Day < x.Day || p.Hour < x.Hour || p.Minute < x.Minute
+	if p.Year != x.Year {
+		return p.Year < x.Year
+	}
+	if p.Month != x.Month {
+		return p.Month < x.Month
+	}
+	if p.Day != x.Day {
+		return p.Day < x.Day
+	}
+	if p.Hour != x.Hour {
+		return p.Hour < p.Hour
+	}
+	return p.Minute < x.Minute
 }

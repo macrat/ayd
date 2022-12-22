@@ -1,6 +1,10 @@
 package store_test
 
 import (
+	"os"
+	"path/filepath"
+	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -93,6 +97,29 @@ func TestPathPattern_Match(t *testing.T) {
 		if actual != tt.want {
 			t.Errorf("%s: %s: want=%v actual=%v", tt.pattern, tt.fname, tt.want, actual)
 		}
+	}
+}
+
+func TestPathPattern_ListAll(t *testing.T) {
+	dir := t.TempDir()
+
+	os.Mkdir(filepath.Join(dir, "2021"), 0755)
+	os.Mkdir(filepath.Join(dir, "2022"), 0755)
+	os.WriteFile(filepath.Join(dir, "2021", "01-02.log"), []byte{}, 0644)
+	os.WriteFile(filepath.Join(dir, "2021", "02-03.log"), []byte{}, 0644)
+	os.WriteFile(filepath.Join(dir, "2022", "01-02.log"), []byte{}, 0644)
+	os.WriteFile(filepath.Join(dir, "2022", "04-01.log"), []byte{}, 0644)
+
+	p := store.ParsePathPattern(filepath.Join(dir, "%Y/%m-%d.log"))
+
+	want := []string{
+		filepath.Join(dir, "2021", "01-02.log"),
+		filepath.Join(dir, "2021", "02-03.log"),
+		filepath.Join(dir, "2022", "01-02.log"),
+		filepath.Join(dir, "2022", "04-01.log"),
+	}
+	if actual := p.ListAll(); !reflect.DeepEqual(want, actual) {
+		t.Errorf("unexpected files found\nwant:\n%s\nactual:\n%s", strings.Join(want, "\n"), strings.Join(actual, "\n"))
 	}
 }
 
