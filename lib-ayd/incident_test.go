@@ -1,10 +1,10 @@
 package ayd_test
 
 import (
-	"encoding/json"
 	"testing"
 	"time"
 
+	"github.com/goccy/go-json"
 	"github.com/macrat/ayd/lib-ayd"
 )
 

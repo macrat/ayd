@@ -2,11 +2,11 @@ package logconv
 
 import (
 	"encoding/csv"
-	"encoding/json"
 	"io"
 	"strconv"
 	"time"
 
+	"github.com/goccy/go-json"
 	api "github.com/macrat/ayd/lib-ayd"
 )
 

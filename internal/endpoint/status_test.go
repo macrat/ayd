@@ -1,11 +1,11 @@
 package endpoint_test
 
 import (
-	"encoding/json"
 	"io"
 	"net/http"
 	"testing"
 
+	"github.com/goccy/go-json"
 	"github.com/macrat/ayd/internal/testutil"
 )
 

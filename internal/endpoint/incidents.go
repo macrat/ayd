@@ -3,13 +3,13 @@ package endpoint
 import (
 	_ "embed"
 	"encoding/csv"
-	"encoding/json"
 	"net/http"
 	"os"
 	"sort"
 	"text/template"
 	"time"
 
+	"github.com/goccy/go-json"
 	api "github.com/macrat/ayd/lib-ayd"
 )
 
@@ -77,7 +77,7 @@ func IncidentsJSONEndpoint(s Store) http.HandlerFunc {
 
 		enc := json.NewEncoder(newFlushWriter(w))
 
-		handleError(s, "log.json", enc.Encode(newIncidentsInfo(s)))
+		handleError(s, "log.json", enc.EncodeContext(r.Context(), newIncidentsInfo(s)))
 	}
 }
 

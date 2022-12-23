@@ -3,7 +3,6 @@ package scheme
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -15,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/goccy/go-json"
 	"github.com/macrat/ayd/internal/scheme/textdecode"
 	api "github.com/macrat/ayd/lib-ayd"
 )

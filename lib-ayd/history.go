@@ -1,9 +1,10 @@
 package ayd
 
 import (
-	"encoding/json"
 	"sort"
 	"time"
+
+	"github.com/goccy/go-json"
 )
 
 // ProbeHistory is the status history data of single target

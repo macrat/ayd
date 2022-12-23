@@ -1,13 +1,13 @@
 package ayd_test
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/url"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/goccy/go-json"
 	"github.com/google/go-cmp/cmp"
 	"github.com/macrat/ayd/lib-ayd"
 )
@@ -112,7 +112,7 @@ func TestRecord(t *testing.T) {
 		},
 		{
 			String: `{"time":"2021-01-02T15:04:05+09:00", "status":"HEALTHY", "latency":123abc, "target":"ping:example.com", "message":"hello world"}`,
-			Error:  "invalid record: invalid character 'a' after object key:value pair",
+			Error:  "invalid record: json: float unexpected end of JSON input",
 		},
 		{
 			String: `{"time":"2021/01/02 15:04:05", "status":"HEALTHY", "latency":123.456, "target":"ping:example.com", "message":"hello world"}`,
@@ -188,7 +188,7 @@ func TestRecord(t *testing.T) {
 		if tt.Error != "" {
 			if err == nil {
 				t.Errorf("expected %q error when parse %#v but got nil", tt.Error, tt.String)
-			} else if diff := cmp.Diff(err.Error(), tt.Error); diff != "" {
+			} else if diff := cmp.Diff(tt.Error, err.Error()); diff != "" {
 				t.Errorf("unexpected error when parse %#v\n%s", tt.String, diff)
 			}
 			continue
@@ -218,7 +218,7 @@ func TestRecord(t *testing.T) {
 			t.Errorf("unexpected parsed message\nexpected: %#v\n but got: %#v", tt.Record.Message, r.Message)
 		}
 
-		if diff := cmp.Diff(tt.Record.Extra, r.Extra); diff != "" {
+		if diff := cmp.Diff(r.Extra, tt.Record.Extra); diff != "" {
 			t.Errorf("unexpected extra\n%s", diff)
 		}
 

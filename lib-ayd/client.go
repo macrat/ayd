@@ -1,10 +1,10 @@
 package ayd
 
 import (
-	"encoding/json"
 	"net/http"
 	"net/url"
 
+	"github.com/goccy/go-json"
 	"github.com/macrat/ayd/internal/ayderr"
 )
 

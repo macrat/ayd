@@ -3,7 +3,6 @@ package endpoint
 import (
 	"context"
 	_ "embed"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -11,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/goccy/go-json"
 	"github.com/macrat/ayd/internal/logconv"
 	api "github.com/macrat/ayd/lib-ayd"
 )
@@ -377,7 +377,7 @@ func LogJsonEndpoint(s Store) http.HandlerFunc {
 			records.P = u.String()
 		}
 
-		handleError(s, "log.json", enc.Encode(records))
+		handleError(s, "log.json", enc.EncodeContext(r.Context(), records))
 	}
 }
 

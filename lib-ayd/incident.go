@@ -1,8 +1,9 @@
 package ayd
 
 import (
-	"encoding/json"
 	"time"
+
+	"github.com/goccy/go-json"
 )
 
 // Incident is a period of failure or unknown status that has the same status and message

@@ -1,9 +1,10 @@
 package endpoint
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
+
+	"github.com/goccy/go-json"
 )
 
 // TargetsTextEndpoint replies target list in text.
@@ -24,6 +25,6 @@ func TargetsJSONEndpoint(s Store) http.HandlerFunc {
 
 		enc := json.NewEncoder(w)
 
-		handleError(s, "targets.json", enc.Encode(s.Targets()))
+		handleError(s, "targets.json", enc.EncodeContext(r.Context(), s.Targets()))
 	}
 }

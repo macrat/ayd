@@ -2,7 +2,6 @@ package scheme
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net"
@@ -12,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/goccy/go-json"
 	api "github.com/macrat/ayd/lib-ayd"
 )
 
@@ -163,7 +163,7 @@ func (s HTTPScheme) Alert(ctx context.Context, r Reporter, lastRecord api.Record
 	qs.Set("ayd_extra", "{}")
 
 	if lastRecord.Extra != nil {
-		if bs, err := json.Marshal(lastRecord.Extra); err == nil {
+		if bs, err := json.MarshalContext(ctx, lastRecord.Extra); err == nil {
 			qs.Set("ayd_extra", string(bs))
 		}
 	}

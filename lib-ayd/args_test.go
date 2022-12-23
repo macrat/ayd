@@ -131,7 +131,7 @@ func TestParseAlertPluginArgs(t *testing.T) {
 			"",
 			"",
 			nil,
-			`invalid record: invalid character 'w' looking for beginning of value`,
+			`invalid record: expected { character for map value`,
 		},
 	}
 

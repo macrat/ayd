@@ -1,12 +1,12 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 	"time"
 
+	"github.com/goccy/go-json"
 	"github.com/macrat/ayd/internal/logconv"
 	api "github.com/macrat/ayd/lib-ayd"
 	"github.com/mattn/go-isatty"

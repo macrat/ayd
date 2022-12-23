@@ -1,12 +1,12 @@
 package logconv
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"sort"
 	"time"
 
+	"github.com/goccy/go-json"
 	api "github.com/macrat/ayd/lib-ayd"
 	"github.com/xuri/excelize/v2"
 )

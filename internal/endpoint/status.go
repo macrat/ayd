@@ -2,9 +2,10 @@ package endpoint
 
 import (
 	_ "embed"
-	"encoding/json"
 	"net/http"
 	textTemplate "text/template"
+
+	"github.com/goccy/go-json"
 )
 
 //go:embed templates/status.html
@@ -41,6 +42,6 @@ func StatusJSONEndpoint(s Store) http.HandlerFunc {
 
 		enc := json.NewEncoder(newFlushWriter(w))
 
-		handleError(s, "status.json", enc.Encode(s.MakeReport(40)))
+		handleError(s, "status.json", enc.EncodeContext(r.Context(), s.MakeReport(40)))
 	}
 }

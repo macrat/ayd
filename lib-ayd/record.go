@@ -2,12 +2,12 @@ package ayd
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"sort"
 	"strings"
 	"time"
 
+	"github.com/goccy/go-json"
 	"github.com/macrat/ayd/internal/ayderr"
 )
 

@@ -2,11 +2,11 @@ package store
 
 import (
 	"bytes"
-	"encoding/json"
 	"errors"
 	"io"
 	"time"
 
+	"github.com/goccy/go-json"
 	api "github.com/macrat/ayd/lib-ayd"
 )
 

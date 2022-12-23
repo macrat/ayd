@@ -2,7 +2,6 @@ package endpoint_test
 
 import (
 	"context"
-	"encoding/json"
 	"io"
 	"net/http"
 	"os"
@@ -11,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/goccy/go-json"
 	"github.com/google/go-cmp/cmp"
 	"github.com/macrat/ayd/internal/endpoint"
 	"github.com/macrat/ayd/internal/store"

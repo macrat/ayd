@@ -2,7 +2,6 @@ package endpoint
 
 import (
 	_ "embed"
-	"encoding/json"
 	"fmt"
 	"html/template"
 	"sort"
@@ -11,6 +10,7 @@ import (
 	"time"
 
 	"github.com/dustin/go-humanize"
+	"github.com/goccy/go-json"
 	"github.com/google/uuid"
 	api "github.com/macrat/ayd/lib-ayd"
 )
