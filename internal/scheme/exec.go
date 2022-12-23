@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -119,17 +120,16 @@ func isUnknownExecutionError(err error) bool {
 	return false
 }
 
-func runExternalCommand(ctx context.Context, command string, args, env []string) (output string, status api.Status, err error) {
+func runExternalCommand(ctx context.Context, f io.Writer, command string, args, env []string) (api.Status, error) {
 	cmd := exec.CommandContext(ctx, command, args...)
 	cmd.Env = env
 
-	buf := &bytes.Buffer{}
-	cmd.Stdout = buf
-	cmd.Stderr = buf
+	cmd.Stdout = f
+	cmd.Stderr = f
 
-	err = cmd.Run()
+	err := cmd.Run()
 
-	status = api.StatusHealthy
+	status := api.StatusHealthy
 	if err != nil {
 		status = api.StatusFailure
 
@@ -138,13 +138,7 @@ func runExternalCommand(ctx context.Context, command string, args, env []string)
 		}
 	}
 
-	var e error
-	output, e = textdecode.Bytes(buf.Bytes())
-	if err == nil {
-		err = e
-	}
-
-	return
+	return status, err
 }
 
 func (s ExecScheme) run(ctx context.Context, r Reporter, extraEnv []string) {
@@ -156,15 +150,22 @@ func (s ExecScheme) run(ctx context.Context, r Reporter, extraEnv []string) {
 		args = []string{s.target.Fragment}
 	}
 
+	var buf bytes.Buffer
+
 	stime := time.Now()
-	output, status, err := runExternalCommand(
+	status, err := runExternalCommand(
 		ctx,
+		&buf,
 		filepath.FromSlash(s.target.Opaque),
 		args,
 		append(s.env, extraEnv...),
 	)
 	latency := time.Since(stime)
 
+	output, e := textdecode.Bytes(buf.Bytes())
+	if err == nil && e != nil {
+		err = e
+	}
 	message := strings.Trim(output, "\n")
 
 	if status != api.StatusHealthy && message == "" {

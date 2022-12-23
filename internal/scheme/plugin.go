@@ -4,11 +4,13 @@ import (
 	"bufio"
 	"context"
 	"errors"
+	"io"
 	"os"
 	"os/exec"
 	"strings"
 	"time"
 
+	"github.com/macrat/ayd/internal/scheme/textdecode"
 	api "github.com/macrat/ayd/lib-ayd"
 )
 
@@ -103,17 +105,30 @@ func (p PluginScheme) execute(ctx context.Context, r Reporter, scope string, arg
 		return
 	}
 
+	rb, wb := io.Pipe()
+	defer rb.Close()
+
 	stime := time.Now()
-	output, status, err := runExternalCommand(ctx, command, args, os.Environ())
-	latency := time.Since(stime)
+	var status api.Status
+	var latency time.Duration
+	go func() {
+		status, err = runExternalCommand(ctx, wb, command, args, os.Environ())
+		latency = time.Since(stime)
+		wb.Close()
+	}()
 
 	count := 0
 
 	var invalidLines []string
 
-	scanner := bufio.NewScanner(strings.NewReader(output))
+	scanner := bufio.NewScanner(rb)
 	for scanner.Scan() {
-		text := strings.TrimSpace(scanner.Text())
+		text, err := textdecode.Bytes(scanner.Bytes())
+		if err != nil {
+			invalidLines = append(invalidLines, scanner.Text())
+			continue
+		}
+		text = strings.TrimSpace(text)
 		if text == "" {
 			continue
 		}
