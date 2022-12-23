@@ -6,6 +6,26 @@ import (
 	"time"
 )
 
+func Test_fileScanner_longPeriod(t *testing.T) {
+	t.Parallel()
+
+	s, err := newFileScanner("testdata/long-period.log", time.Date(2021, 1, 2, 15, 0, 0, 0, time.UTC), time.Date(2021, 1, 2, 17, 0, 0, 0, time.UTC))
+	if err != nil {
+		t.Fatalf("failed to open scanner: %s", err)
+	}
+	defer s.Close()
+
+	var records []string
+	for s.Scan() {
+		records = append(records, s.Record().Message)
+	}
+
+	expected := []string{"hello world 1", "hello world 2"}
+	if !reflect.DeepEqual(expected, records) {
+		t.Errorf("unexpected records\nexpected: %v\n but got: %v", expected, records)
+	}
+}
+
 func Test_fileScannerSet(t *testing.T) {
 	t.Parallel()
 

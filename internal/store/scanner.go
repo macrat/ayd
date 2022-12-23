@@ -54,6 +54,9 @@ func (r *fileScanner) Scan() bool {
 			r.rec = rec
 			return true
 		}
+		if r.until.Add(70 * time.Minute).Before(rec.Time) {
+			return false
+		}
 	}
 }
 
