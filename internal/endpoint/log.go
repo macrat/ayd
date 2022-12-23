@@ -317,7 +317,7 @@ func LogJsonEndpoint(s Store) http.HandlerFunc {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "GET")
 
-		enc := json.NewEncoder(w)
+		enc := json.NewEncoder(newFlushWriter(w))
 
 		opts, err := newLogOptionsByRequest(s, "log.json", r, 7*24*time.Hour)
 		if err != nil {
@@ -395,7 +395,7 @@ func LogCSVEndpoint(s Store) http.HandlerFunc {
 		}
 		defer scanner.Close()
 
-		err = logconv.ToCSV(w, scanner)
+		err = logconv.ToCSV(newFlushWriter(w), scanner)
 		handleError(s, "log.csv", err)
 	}
 }
@@ -414,7 +414,7 @@ func LogLTSVEndpoint(s Store) http.HandlerFunc {
 		}
 		defer scanner.Close()
 
-		err = logconv.ToLTSV(w, scanner)
+		err = logconv.ToLTSV(newFlushWriter(w), scanner)
 		handleError(s, "log.ltsv", err)
 	}
 }
@@ -431,7 +431,7 @@ func LogXlsxEndpoint(s Store) http.HandlerFunc {
 		}
 		defer scanner.Close()
 
-		err = logconv.ToXlsx(w, scanner, time.Now())
+		err = logconv.ToXlsx(newFlushWriter(w), scanner, time.Now())
 		handleError(s, "log.xlsx", err)
 	}
 }
@@ -481,7 +481,7 @@ func LogHTMLEndpoint(s Store) http.HandlerFunc {
 		}
 
 		w.Header().Set("Content-Type", "text/html; charset=UTF-8")
-		handleError(s, "log.html", tmpl.Execute(w, logData{
+		handleError(s, "log.html", tmpl.Execute(newFlushWriter(w), logData{
 			Since:    opts.Since,
 			Until:    opts.Until,
 			Query:    query,

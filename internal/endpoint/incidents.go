@@ -22,7 +22,7 @@ func IncidentsHTMLEndpoint(s Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 
-		handleError(s, "incidents.html", tmpl.Execute(w, s.MakeReport(0)))
+		handleError(s, "incidents.html", tmpl.Execute(newFlushWriter(w), s.MakeReport(0)))
 	}
 }
 
@@ -35,7 +35,7 @@ func IncidentsRSSEndpoint(s Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/rss+xml")
 
-		handleError(s, "incidents.rss", tmpl.Execute(w, newIncidentsInfo(s)))
+		handleError(s, "incidents.rss", tmpl.Execute(newFlushWriter(w), newIncidentsInfo(s)))
 	}
 }
 
@@ -45,7 +45,7 @@ func IncidentsCSVEndpoint(s Store) http.HandlerFunc {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "GET")
 
-		c := csv.NewWriter(w)
+		c := csv.NewWriter(newFlushWriter(w))
 		c.Write([]string{"starts_at", "ends_at", "status", "target", "message"})
 
 		rs := newIncidentsInfo(s).Incidents
@@ -75,7 +75,7 @@ func IncidentsJSONEndpoint(s Store) http.HandlerFunc {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "GET")
 
-		enc := json.NewEncoder(w)
+		enc := json.NewEncoder(newFlushWriter(w))
 
 		handleError(s, "log.json", enc.Encode(newIncidentsInfo(s)))
 	}

@@ -16,7 +16,7 @@ func StatusHTMLEndpoint(s Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 
-		handleError(s, "status.html", tmpl.Execute(w, s.MakeReport(20)))
+		handleError(s, "status.html", tmpl.Execute(newFlushWriter(w), s.MakeReport(20)))
 	}
 }
 
@@ -29,7 +29,7 @@ func StatusTextEndpoint(s Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain; charset=UTF-8")
 
-		handleError(s, "status.txt", tmpl.Execute(w, s.MakeReport(40)))
+		handleError(s, "status.txt", tmpl.Execute(newFlushWriter(w), s.MakeReport(40)))
 	}
 }
 
@@ -39,7 +39,7 @@ func StatusJSONEndpoint(s Store) http.HandlerFunc {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "GET")
 
-		enc := json.NewEncoder(w)
+		enc := json.NewEncoder(newFlushWriter(w))
 
 		handleError(s, "status.json", enc.Encode(s.MakeReport(40)))
 	}
