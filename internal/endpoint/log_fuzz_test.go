@@ -39,7 +39,7 @@ func FuzzLogJsonEndpoint(f *testing.F) {
 	f.Fuzz(func(t *testing.T, query string) {
 		query = strings.ReplaceAll(query, ";", "%3B")
 
-		req, err := http.NewRequest("GET", "http://localhost:9000/log.tsv?"+query, nil)
+		req, err := http.NewRequest("GET", "http://localhost:9000/log.json?"+query, nil)
 		if err != nil {
 			t.Skip()
 		}
@@ -52,7 +52,7 @@ func FuzzLogJsonEndpoint(f *testing.F) {
 			return
 		}
 		if resp.Code != http.StatusOK {
-			t.Fatalf("unexpected status code from /log.tsv?%s: %d", query, resp.Code)
+			t.Fatalf("unexpected status code from /log.json?%s: %d", query, resp.Code)
 		}
 
 		body := resp.Body.String()
