@@ -21,7 +21,7 @@ const (
 )
 
 var (
-	LogRestoreBytes = int64(100 * 1024 * 1024)
+	LogRestoreBytes = int64(10 * 1024 * 1024)
 )
 
 type RecordHandler func(api.Record)

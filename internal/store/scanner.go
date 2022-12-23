@@ -25,6 +25,9 @@ func newFileScanner(path string, since, until time.Time) (*fileScanner, error) {
 	if err != nil {
 		return nil, err
 	}
+	if err := searchLog(f, since.Add(-70*time.Minute), 10*1024); err != nil {
+		return nil, err
+	}
 	return &fileScanner{
 		file:   f,
 		reader: bufio.NewReader(f),
