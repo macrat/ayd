@@ -416,7 +416,7 @@ For example, if the target URL has the scheme `xxx-yyy:`, Ayd will search these 
 The scheme names that supported by Ayd, `ayd`, and `alert`, are reserved and cannot be used by plugins.
 
 The plugin prints result to stdout, in the same format as [log file](#log-file).
-Plugins should not report results that are more than 1 hour old.
+Plugins should not report future results, or old results more than 1 hour.
 
 Ayd expects the output of the plugin to be in UTF-8.
 However, in Windows, the system's default character encoding can be used.

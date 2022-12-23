@@ -4,9 +4,19 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
 )
+
+func SetCurrentTime(t *testing.T, ct time.Time) {
+	currentTime = func() time.Time {
+		return ct
+	}
+	t.Cleanup(func() {
+		currentTime = time.Now
+	})
+}
 
 // PreparePluginPath set PATH to ./testdata/ directory.
 func PreparePluginPath(t *testing.T) {

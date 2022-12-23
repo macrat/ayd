@@ -14,6 +14,12 @@ import (
 	api "github.com/macrat/ayd/lib-ayd"
 )
 
+var (
+	// currentTime returns the current time.
+	// This function can override for testing.
+	currentTime = time.Now
+)
+
 // PluginScheme is the plugin handler. This implements both of Prober interface and Alerter interface.
 type PluginScheme struct {
 	target  *api.URL
@@ -140,6 +146,15 @@ func (p PluginScheme) execute(ctx context.Context, r Reporter, scope string, arg
 		}
 
 		rec.Time = rec.Time.Local()
+
+		current := currentTime()
+		if rec.Time.After(current) {
+			rec.Time = current
+		}
+		min := current.Add(-1 * time.Hour)
+		if rec.Time.Before(min) {
+			rec.Time = min
+		}
 
 		count++
 		r.Report(p.target, rec)

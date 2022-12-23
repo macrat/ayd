@@ -127,12 +127,13 @@ func TestPluginScheme_Probe(t *testing.T) {
 func TestPluginScheme_Probe_timezone(t *testing.T) {
 	PreparePluginPath(t)
 	t.Setenv("TZ", "UTC")
+	scheme.SetCurrentTime(t, time.Date(2001, 2, 3, 16, 10, 0, 0, time.UTC))
 
 	tests := []struct {
 		URL  string
 		Time time.Time
 	}{
-		{"plug:+0900", time.Date(2001, 2, 3, 16-9, 5, 6, 0, time.UTC)},
+		{"plug:+0900", time.Date(2001, 2, 3, 16, 5, 6, 0, time.UTC)},
 		{"plug-plus:utc", time.Date(2001, 2, 3, 16, 5, 6, 0, time.UTC)},
 	}
 
@@ -157,6 +158,51 @@ func TestPluginScheme_Probe_timezone(t *testing.T) {
 
 		if !rs[0].Time.Equal(tt.Time) {
 			t.Errorf("%s: unexpected time: %s", tt.URL, rs[0].Time)
+		}
+	}
+}
+
+func TestPluginScheme_Probe_trimTime(t *testing.T) {
+	PreparePluginPath(t)
+	t.Setenv("TZ", "UTC")
+
+	p, err := scheme.NewProber("plug:")
+	if err != nil {
+		t.Fatalf("failed to create plugin: %s", err)
+	}
+
+	base := time.Date(2001, 2, 3, 16, 5, 6, 0, time.UTC)
+
+	tests := []struct {
+		Cur time.Time
+		Out time.Time
+	}{
+		{base, base},
+		{base.Add(1 * time.Minute), base},
+		{base.Add(50 * time.Minute), base},
+		{base.Add(60 * time.Minute), base},
+		{base.Add(61 * time.Minute), base.Add(1 * time.Minute)},
+		{base.Add(-1 * time.Minute), base.Add(-1 * time.Minute)},
+	}
+
+	for i, tt := range tests {
+		scheme.SetCurrentTime(t, tt.Cur)
+
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+
+		rs := testutil.RunProbe(ctx, p)
+
+		if len(rs) != 1 {
+			t.Fatalf("%d: %s: unexpected number of results: %d", i, tt.Cur, len(rs))
+		}
+
+		if rs[0].Target.String() != "plug:" {
+			t.Errorf("%d: %s: unexpected target: %s", i, tt.Cur, rs[0].Target)
+		}
+
+		if !rs[0].Time.Equal(tt.Out) {
+			t.Errorf("%d: %s: unexpected time: %s", i, tt.Cur, rs[0].Time)
 		}
 	}
 }
