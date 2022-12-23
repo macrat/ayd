@@ -15,19 +15,22 @@ func Benchmark_endpoints(b *testing.B) {
 		Path     string
 		Endpoint func(endpoint.Store) http.HandlerFunc
 	}{
-		{"/status.html", endpoint.StatusHTMLEndpoint},
-		{"/status.txt", endpoint.StatusTextEndpoint},
-		{"/status.json", endpoint.StatusJSONEndpoint},
-		{"/incidents.html", endpoint.IncidentsHTMLEndpoint},
-		{"/incidents.rss", endpoint.IncidentsRSSEndpoint},
-		{"/incidents.csv", endpoint.IncidentsCSVEndpoint},
-		{"/log.html", endpoint.LogHTMLEndpoint},
-		{"/log.csv", endpoint.LogCSVEndpoint},
-		{"/log.xlsx", endpoint.LogXlsxEndpoint},
-		{"/log.ltsv", endpoint.LogLTSVEndpoint},
-		{"/log.json", endpoint.LogJsonEndpoint},
-		{"/metrics", endpoint.MetricsEndpoint},
-		{"/healthz", func(s endpoint.Store) http.HandlerFunc {
+		{"status.html", endpoint.StatusHTMLEndpoint},
+		{"status.txt", endpoint.StatusTextEndpoint},
+		{"status.json", endpoint.StatusJSONEndpoint},
+		{"incidents.html", endpoint.IncidentsHTMLEndpoint},
+		{"incidents.rss", endpoint.IncidentsRSSEndpoint},
+		{"incidents.csv", endpoint.IncidentsCSVEndpoint},
+		{"incidents.json", endpoint.IncidentsJSONEndpoint},
+		{"log.html", endpoint.LogHTMLEndpoint},
+		{"log.csv", endpoint.LogCSVEndpoint},
+		{"log.xlsx", endpoint.LogXlsxEndpoint},
+		{"log.ltsv", endpoint.LogLTSVEndpoint},
+		{"log.json", endpoint.LogJsonEndpoint},
+		{"targets.txt", endpoint.TargetsTextEndpoint},
+		{"targets.json", endpoint.TargetsJSONEndpoint},
+		{"metrics", endpoint.MetricsEndpoint},
+		{"healthz", func(s endpoint.Store) http.HandlerFunc {
 			return endpoint.HealthzEndpoint(s)
 		}},
 	}
@@ -39,7 +42,7 @@ func Benchmark_endpoints(b *testing.B) {
 
 			h := tt.Endpoint(s)
 
-			r := httptest.NewRequest("GET", tt.Path, nil)
+			r := httptest.NewRequest("GET", "/"+tt.Path, nil)
 
 			var buf bytes.Buffer
 
