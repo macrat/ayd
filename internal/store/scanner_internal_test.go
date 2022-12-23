@@ -1,9 +1,14 @@
 package store
 
 import (
+	"fmt"
+	"os"
+	"path/filepath"
 	"reflect"
 	"testing"
 	"time"
+
+	api "github.com/macrat/ayd/lib-ayd"
 )
 
 func Test_fileScanner_longPeriod(t *testing.T) {
@@ -69,5 +74,44 @@ func Test_fileScannerSet_empty(t *testing.T) {
 
 	if s.Scan() {
 		t.Fatalf("expected empty scanner but got record:\n%s", s.Record())
+	}
+}
+
+func Benchmark_fileScanner(b *testing.B) {
+	p := filepath.Join(b.TempDir(), "test.log")
+
+	baseTime := time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC)
+	recordsNum := 1000
+	logSize := 0
+
+	f, err := os.Create(p)
+	if err != nil {
+		b.Fatalf("failed to prepare test log: %s", err)
+	}
+	for i := 0; i < recordsNum; i++ {
+		r := api.Record{
+			Time:    baseTime.Add(time.Duration(i) * time.Minute),
+			Message: fmt.Sprintf("record %d", i),
+		}
+		if n, err := f.Write([]byte(r.String() + "\n")); err != nil {
+			b.Fatalf("failed to prepare test log: %s", err)
+		} else {
+			logSize += n
+		}
+	}
+	f.Close()
+
+	b.SetBytes(int64(logSize))
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		s, err := newFileScanner(p, time.Unix(0, 0), time.Date(2100, 1, 1, 0, 0, 0, 0, time.UTC))
+		if err != nil {
+			b.Fatalf("failed to open scanner: %s", err)
+		}
+
+		for s.Scan() {
+			s.Record()
+		}
 	}
 }

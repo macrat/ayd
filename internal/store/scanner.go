@@ -16,7 +16,6 @@ type fileScanner struct {
 	since  time.Time
 	until  time.Time
 	rec    api.Record
-	pos    int64
 }
 
 // newFileScanner creates a new [fileScanner] from file path, with period specification.
@@ -46,15 +45,15 @@ func (r *fileScanner) Scan() bool {
 		if err != nil {
 			return false
 		}
-		r.pos += int64(len(b))
 
-		var rec api.Record
-		err = rec.UnmarshalJSON(b)
-		if err == nil && !rec.Time.Before(r.since) && r.until.After(rec.Time) {
-			r.rec = rec
+		if err := r.rec.UnmarshalJSON(b); err != nil {
+			continue
+		}
+
+		if !r.rec.Time.Before(r.since) && r.until.After(r.rec.Time) {
 			return true
 		}
-		if r.until.Add(70 * time.Minute).Before(rec.Time) {
+		if r.until.Add(70 * time.Minute).Before(r.rec.Time) {
 			return false
 		}
 	}
