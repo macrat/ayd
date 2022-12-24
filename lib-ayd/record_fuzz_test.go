@@ -20,6 +20,7 @@ func FuzzParseRecord(f *testing.F) {
 	f.Add(`{"time":"2000-10-23T14:56:37Z", "status":"ABORTED", "latency":987654.321, "target":"alert:foobar:alert-url", "message":"cancelled"}`)
 	f.Add(`{"time":"2345-12-31T23:59:59.999-11:59","status":"UNKNOWN","latency":-1,"target":"http://@oh-no"}`)
 	f.Add(`{"target":"http://:@oh-nyo","status":"failure","time":"2345-12-31T23:59:59.999-11:59","latency":-1}`)
+	f.Add(`{ "target":"dummy:abc", "status":"Failure", "time":1234, "message" : "\xf2" }`)
 
 	f.Fuzz(func(t *testing.T, data string) {
 		r, err := ayd.ParseRecord(data)

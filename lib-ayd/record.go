@@ -9,6 +9,7 @@ import (
 
 	"github.com/goccy/go-json"
 	"github.com/macrat/ayd/internal/ayderr"
+	"golang.org/x/text/encoding/unicode"
 )
 
 func isReservedKey(key string) bool {
@@ -107,15 +108,18 @@ func (r Record) ReadableMessage() string {
 }
 
 // UnmarshalJSON implements the json.Unmarshaler interface.
-func (r *Record) UnmarshalJSON(data []byte) error {
+func (r *Record) UnmarshalJSON(data []byte) (err error) {
 	*r = Record{}
 
-	var raw map[string]interface{}
-	if err := json.Unmarshal(data, &raw); err != nil {
+	data, err = unicode.UTF8.NewDecoder().Bytes(data)
+	if err != nil {
 		return ayderr.New(ErrInvalidRecord, err, "invalid record")
 	}
 
-	var err error
+	var raw map[string]interface{}
+	if err = json.Unmarshal(data, &raw); err != nil {
+		return ayderr.New(ErrInvalidRecord, err, "invalid record")
+	}
 
 	if value, ok := raw["time"]; !ok {
 		return ayderr.New(ErrInvalidRecord, nil, "invalid record: time: missing required field")
