@@ -11,7 +11,7 @@ type decoder interface {
 
 // Bytes decodes []byte to string.
 func Bytes(b []byte) (string, error) {
-	dec := localeDecoder()
+	dec := localeDecoder
 	b, dec = bomOverride(b, dec)
 	s, err := dec.Bytes(b)
 	if err != nil {
