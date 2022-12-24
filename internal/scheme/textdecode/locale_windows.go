@@ -49,5 +49,5 @@ func init() {
 		enc = unicode.UTF8
 	}
 
-	localeDecoder = utf8Override{windowsEncoder}
+	localeDecoder = utf8Override{enc}
 }
