@@ -35,15 +35,17 @@ jobs:
           echo "short_commit=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
 
           echo "container_tags<<END_OF_TAGS" >> $GITHUB_ENV
-          if [ "${{ matrix.base }}" = "alpine" ]; then
-            echo "latest" >> $GITHUB_ENV
-            echo "${version}" >> $GITHUB_ENV
-            echo "${version%.*}" >> $GITHUB_ENV
-          fi
-          echo "${{ matrix.base }}" >> $GITHUB_ENV
-          echo "${{ matrix.base }}-latest" >> $GITHUB_ENV
-          echo "${{ matrix.base }}-${version}" >> $GITHUB_ENV
-          echo "${{ matrix.base }}-${version%.*}" >> $GITHUB_ENV
+          for registry in "ghcr.io/${{ github.repository }}" "${{ github.repository }}"; do
+            if [ "${{ matrix.base }}" = "alpine" ]; then
+              echo "${registry}:latest" >> $GITHUB_ENV
+              echo "${registry}:${version}" >> $GITHUB_ENV
+              echo "${registry}:${version%.*}" >> $GITHUB_ENV
+            fi
+            echo "${registry}:${{ matrix.base }}" >> $GITHUB_ENV
+            echo "${registry}:${{ matrix.base }}-latest" >> $GITHUB_ENV
+            echo "${registry}:${{ matrix.base }}-${version}" >> $GITHUB_ENV
+            echo "${registry}:${{ matrix.base }}-${version%.*}" >> $GITHUB_ENV
+          done
           echo "END_OF_TAGS" >> $GITHUB_ENV
 
           echo "container_labels<<END_OF_LABELS" >> $GITHUB_ENV
@@ -51,7 +53,7 @@ jobs:
           echo "org.opencontainers.image.description=The easiest alive monitoring tool." >> $GITHUB_ENV
           echo "org.opencontainers.image.url=https://github.com/macrat/ayd" >> $GITHUB_ENV
           echo "org.opencontainers.image.source=https://github.com/macrat/ayd" >> $GITHUB_ENV
-          echo "org.opencontainers.image.created=$(date +'%Y-%m-%d%%H:%M:%S%:z')" >> $GITHUB_ENV
+          echo "org.opencontainers.image.created=$(date +'%Y-%m-%dT%H:%M:%S%:z')" >> $GITHUB_ENV
           echo "org.opencontainers.image.version=${version}" >> $GITHUB_ENV
           echo "org.opencontainers.image.revision=${{ github.sha }}" >> $GITHUB_ENV
           echo "org.opencontainers.image.licenses=MIT" >> $GITHUB_ENV
