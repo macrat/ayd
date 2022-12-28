@@ -1,6 +1,7 @@
 package scheme
 
 import (
+	"math"
 	"testing"
 	"time"
 
@@ -83,6 +84,14 @@ func Test_parseExecMessage(t *testing.T) {
 			latencyOmit,
 			map[string]any{"empty": ""},
 		},
+		{
+			"::latency:: 12345678901234567890",
+			api.StatusHealthy,
+			"",
+			api.StatusHealthy,
+			time.Duration(math.MaxInt64),
+			map[string]any{},
+		},
 	}
 
 	for i, tt := range tests {
@@ -112,8 +121,8 @@ func Fuzz_parseExecMessage(f *testing.F) {
 	f.Add("::hello::world")
 	f.Add("hello\n::latency:: 123.4\nworld\n")
 	f.Add("foo\n::status:: degrade\n")
-	f.Add("::status::unknown\t\n::latency::123")
-	f.Add("a\n::foo::bar\n\nb\n::abc123::{\"hello\":\"world\"}\nc\n")
+	f.Add("::status::unknown\t\n::latency::12345678901234567890")
+	f.Add("a\n::foo::bar\n\nb\n::abc123::{\"hello\":\"world\"}\nc\n::latency::-1\n\nwah")
 
 	f.Fuzz(func(t *testing.T, message string) {
 		_, status, latency, extra := parseExecMessage(message, api.StatusHealthy, 42*time.Millisecond)

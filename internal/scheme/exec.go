@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -93,6 +94,9 @@ func parseExecMessage(message string, defaultStatus api.Status, defaultLatency t
 		case "latency":
 			if l, err := strconv.ParseFloat(m[2], 64); err == nil && l >= 0 {
 				latency = time.Duration(l * float64(time.Millisecond))
+				if latency < 0 {
+					latency = time.Duration(math.MaxInt64)
+				}
 			}
 			message = strings.ReplaceAll(message, m[0], "")
 		case "time", "target", "message":
