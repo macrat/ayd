@@ -50,7 +50,14 @@ func BenchmarkURL_String(b *testing.B) {
 }
 
 func TestRecord(t *testing.T) {
+	t.Setenv("TZ", "UTC")
+
 	tokyo := time.FixedZone("UTC+9", +9*60*60)
+	local := time.Local
+	time.Local = tokyo
+	t.Cleanup(func() {
+		time.Local = local
+	})
 
 	tests := []struct {
 		String string
@@ -181,6 +188,39 @@ func TestRecord(t *testing.T) {
 				},
 			},
 		},
+		{
+			String: `{"time":0,"target":"dummy:old"}`,
+			Encode: `{"time":"1970-01-01T00:00:00Z", "status":"UNKNOWN", "latency":0.000, "target":"dummy:old"}`,
+			Record: ayd.Record{
+				Time:    time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC),
+				Status:  ayd.StatusUnknown,
+				Latency: 0,
+				Target:  &ayd.URL{Scheme: "dummy", Opaque: "old"},
+				Message: "",
+			},
+		},
+		{
+			String: `{"time":-1000,"target":"dummy:old"}`,
+			Encode: `{"time":"1970-01-01T00:00:00Z", "status":"UNKNOWN", "latency":0.000, "target":"dummy:old"}`,
+			Record: ayd.Record{
+				Time:    time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC),
+				Status:  ayd.StatusUnknown,
+				Latency: 0,
+				Target:  &ayd.URL{Scheme: "dummy", Opaque: "old"},
+				Message: "",
+			},
+		},
+		{
+			String: `{"time":1e20,"target":"dummy:old"}`,
+			Encode: `{"time":"9999-12-31T23:59:59+09:00", "status":"UNKNOWN", "latency":0.000, "target":"dummy:old"}`,
+			Record: ayd.Record{
+				Time:    time.Date(9999, 12, 31, 23, 59, 59, 0, time.Local),
+				Status:  ayd.StatusUnknown,
+				Latency: 0,
+				Target:  &ayd.URL{Scheme: "dummy", Opaque: "old"},
+				Message: "",
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -227,7 +267,7 @@ func TestRecord(t *testing.T) {
 			expect = tt.String
 		}
 		if tt.Record.String() != expect {
-			t.Errorf("expected: %#v\n but got: %#v", expect, tt.Record.String())
+			t.Errorf("unexpected re-encoded record\nexpected: %#v\n but got: %#v", expect, tt.Record.String())
 		}
 	}
 }

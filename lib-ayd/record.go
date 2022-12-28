@@ -126,7 +126,16 @@ func (r *Record) UnmarshalJSON(data []byte) (err error) {
 	} else {
 		switch v := value.(type) {
 		case float64:
-			r.Time = time.UnixMilli(int64(v * 1000))
+			if v < 0 {
+				r.Time = time.UnixMilli(0)
+			} else {
+				maxTime := time.Date(9999, 12, 31, 23, 59, 59, 0, time.Local)
+				if v > float64(maxTime.Unix()) {
+					r.Time = maxTime
+				} else {
+					r.Time = time.UnixMilli(int64(v * 1000))
+				}
+			}
 		case string:
 			if r.Time, err = ParseTime(v); err != nil {
 				return ayderr.New(ErrInvalidRecord, err, "invalid record: time")
