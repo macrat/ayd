@@ -1,0 +1,73 @@
+name: Container
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    name: Build and Release
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        base: [scratch, alpine, ubuntu]
+    steps:
+      - uses: actions/checkout@v3
+      - uses: docker/setup-qemu-action@v2
+      - uses: docker/setup-buildx-action@v2
+
+      - name: Login DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Login GitHub
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate tags
+        id: tags
+        run: |
+          version="${GITHUB_REF##*/v}"
+          echo "version=${version}" >> $GITHUB_ENV
+          echo "short_commit=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+
+          echo "container_tags<<END_OF_TAGS" >> $GITHUB_ENV
+          if [ "${{ matrix.base }}" -eq "alpine" ]; then
+            echo "latest" >> $GITHUB_ENV
+            echo "${version}" >> $GITHUB_ENV
+            echo "${version%.*}" >> $GITHUB_ENV
+          fi
+          echo "${{ matrix.base }}" >> $GITHUB_ENV
+          echo "${{ matrix.base }}-latest" >> $GITHUB_ENV
+          echo "${{ matrix.base }}-${version}" >> $GITHUB_ENV
+          echo "${{ matrix.base }}-${version%.*}" >> $GITHUB_ENV
+          echo "END_OF_TAGS" >> $GITHUB_ENV
+
+          echo "container_labels<<END_OF_LABELS" >> $GITHUB_ENV
+          echo "org.opencontainers.image.title=Ayd" >> $GITHUB_ENV
+          echo "org.opencontainers.image.description=The easiest alive monitoring tool." >> $GITHUB_ENV
+          echo "org.opencontainers.image.url=https://github.com/macrat/ayd" >> $GITHUB_ENV
+          echo "org.opencontainers.image.source=https://github.com/macrat/ayd" >> $GITHUB_ENV
+          echo "org.opencontainers.image.created=$(date +'%Y-%m-%d%%H:%M:%S%:z')" >> $GITHUB_ENV
+          echo "org.opencontainers.image.version=${version}" >> $GITHUB_ENV
+          echo "org.opencontainers.image.revision=${{ github.sha }}" >> $GITHUB_ENV
+          echo "org.opencontainers.image.licenses=MIT" >> $GITHUB_ENV
+          echo "END_OF_LABELS" >> $GITHUB_ENV
+
+      - uses: docker/build-push-action@v3
+        with:
+          push: true
+          tags: ${{ env.container_tags }}
+          labels: ${{ env.container_labels }}
+          build-args: |
+            BASE_IMAGE=${{ matrix.base }}
+            VERSION=${{ env.version }}
+            COMMIT=${{ env.short_commit }}
+          platforms: linux/amd64,linux/arm64,linux/arm/v7
+          cache-from: type=gha,scope=buildkit-${{ matrix.base }}
+          cache-to: type=gha,mode=max,scope=buildkit-${{ matrix.base }}

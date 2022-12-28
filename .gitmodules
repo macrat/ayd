@@ -1,0 +1,9 @@
+[submodule "plugin-mailto-alert"]
+	path = _plugins/mailto-alert
+	url = https://github.com/macrat/ayd-mailto-alert.git
+[submodule "plugin-slack-alert"]
+	path = _plugins/slack-alert
+	url = https://github.com/macrat/ayd-slack-alert.git
+[submodule "plugin-smb-probe"]
+	path = _plugins/smb-probe
+	url = https://github.com/macrat/ayd-smb-probe.git

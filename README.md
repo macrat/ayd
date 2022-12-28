@@ -648,15 +648,23 @@ $ ayd conv -l ./ayd.log -o ayd_log.ltsv
 
 ##### Docker
 
-You can use [docker image](https://hub.docker.com/r/macrat/ayd) for execute Ayd.
-This image includes Ayd command and some plugins.
+There is a [docker image](https://hub.docker.com/r/macrat/ayd) for executing Ayd.
 
 ``` shell
 $ docker run --restart=always -v /var/log/ayd:/var/log/ayd macrat/ayd http://your-target.example.com
 ```
 
-Of course, you can also use docker-compose or Kubernetes, etc.
-Please see [ayd-docker](https://github.com/macrat/ayd-docker) repository for more information about this contianer image.
+The container image includes these plugins:
+
+- [SMB probe](https://github.com/macrat/ayd-smb-probe)
+- [email alert](https://github.com/macrat/ayd-mailto-alert)
+- [slack alert](https://github.com/macrat/ayd-slack-alert)
+
+There are 3 variants of the base images:
+
+- `latest`, `alpine`: Balanced variant. This is tiny but you can use shell.
+- `scratch`: Minimal variant. You can use this if you won't use shell.
+- `ubuntu`: Large variant. You can use `apt` command for adding command that you want.
 
 ##### Systemd
 
