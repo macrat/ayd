@@ -35,7 +35,7 @@ jobs:
           echo "short_commit=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
 
           echo "container_tags<<END_OF_TAGS" >> $GITHUB_ENV
-          if [ "${{ matrix.base }}" -eq "alpine" ]; then
+          if [ "${{ matrix.base }}" = "alpine" ]; then
             echo "latest" >> $GITHUB_ENV
             echo "${version}" >> $GITHUB_ENV
             echo "${version%.*}" >> $GITHUB_ENV
