@@ -20,6 +20,9 @@ func TestParseURL(t *testing.T) {
 		{"exec:/path/to/file", "exec:/path/to/file", "", "", "/path/to/file"},
 		{"source+exec:/path/to/file", "source+exec:/path/to/file", "", "", "/path/to/file"},
 		{"https://example.com/path/to", "https://example.com/path/to", "example.com", "/path/to", ""},
+		{"foo:/%00Aaあ亜%01", "foo:/%00Aaあ亜%01", "", "", "/%00Aaあ亜%01"},
+		{"foo:%00Aaあ亜%01", "foo:%00Aaあ亜%01", "", "", "%00Aaあ亜%01"},
+		{"foo://bar/%00Aaあ亜%01", "foo://bar/%00Aa%E3%81%82%E4%BA%9C%01", "bar", "/\x00Aaあ亜\x01", ""},
 	}
 
 	for _, tt := range tests {
@@ -71,6 +74,10 @@ func TestURL_String(t *testing.T) {
 		tt := tt
 		t.Run(tt.Input.String(), func(t *testing.T) {
 			result := tt.Input.String()
+
+			t.Logf("input: %#v", tt.Input)
+			t.Logf("output: %#v", result)
+
 			if tt.Output != result {
 				t.Errorf("expected output is %s but got %s", tt.Output, result)
 			}
@@ -89,6 +96,9 @@ func TestURL_marshalAndUnmarshal(t *testing.T) {
 		{"a:/b/c?d=e#f", "a:/b/c?d=e#f"},
 		{"a://b/c?d=e#f", "a://b/c?d=e#f"},
 		{"a://b:c@d", "a://b:xxxxx@d"},
+		{"foo:%00abc%01", "foo:%00abc%01"},
+		{"foo:/%00abc%01", "foo:/%00abc%01"},
+		{"foo://bar/%00abc%01", "foo://bar/%00abc%01"},
 	}
 
 	for _, tt := range tests {
