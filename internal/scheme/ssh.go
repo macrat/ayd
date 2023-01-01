@@ -1,27 +1,28 @@
 package scheme
 
 import (
-	"net"
-	"os"
-	"net/url"
-	"strings"
-	"errors"
-	"time"
 	"context"
+	"errors"
+	"net"
+	"net/url"
+	"os"
+	"strings"
+	"time"
 
-	"golang.org/x/crypto/ssh"
 	api "github.com/macrat/ayd/lib-ayd"
+	"golang.org/x/crypto/ssh"
 )
 
 var (
-	ErrInvalidFingerprint     = errors.New("invalid fingerprint format")
-	ErrFingerprintUnmatched   = errors.New("fingerprint unmatched")
+	ErrInvalidFingerprint   = errors.New("invalid fingerprint format")
+	ErrFingerprintUnmatched = errors.New("fingerprint unmatched")
+	ErrPasswordRequired     = errors.New("password or identityfile is required")
 )
 
 type sshConfig struct {
-	Host string
-	User string
-	Auth []ssh.AuthMethod
+	Host     string
+	User     string
+	Auth     []ssh.AuthMethod
 	CheckKey func(ssh.PublicKey) (ok bool)
 }
 
@@ -63,6 +64,8 @@ func newSSHConfig(u *api.URL) (sshConfig, error) {
 		c.Auth = []ssh.AuthMethod{
 			ssh.Password(password),
 		}
+	} else {
+		return c, ErrPasswordRequired
 	}
 
 	if fingerprint := query.Get("fingerprint"); fingerprint != "" {
@@ -88,8 +91,8 @@ func newSSHConfig(u *api.URL) (sshConfig, error) {
 }
 
 type sshConnection struct {
-	Client *ssh.Client
-	Banner string
+	Client      *ssh.Client
+	Banner      string
 	Fingerprint string
 }
 
@@ -148,9 +151,9 @@ func NewSSHProbe(u *api.URL) (SSHProbe, error) {
 	}
 
 	u = &api.URL{
-		Scheme: "ssh",
-		User: url.User(u.User.Username()),
-		Host: strings.ToLower(u.Host),
+		Scheme:   "ssh",
+		User:     url.User(u.User.Username()),
+		Host:     strings.ToLower(u.Host),
 		RawQuery: q.Encode(),
 		Fragment: u.Fragment,
 	}
@@ -167,7 +170,7 @@ func (s SSHProbe) Target() *api.URL {
 
 func (s SSHProbe) Probe(ctx context.Context, r Reporter) {
 	rec := api.Record{
-		Time: time.Now(),
+		Time:   time.Now(),
 		Target: s.target,
 		Status: api.StatusHealthy,
 	}
