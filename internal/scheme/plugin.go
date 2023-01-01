@@ -3,16 +3,21 @@ package scheme
 import (
 	"bufio"
 	"context"
-	"encoding/json"
 	"errors"
-	"fmt"
+	"io"
 	"os"
 	"os/exec"
-	"strconv"
 	"strings"
 	"time"
 
+	"github.com/macrat/ayd/internal/scheme/textdecode"
 	api "github.com/macrat/ayd/lib-ayd"
+)
+
+var (
+	// currentTime returns the current time.
+	// This function can override for testing.
+	currentTime = time.Now
 )
 
 // PluginScheme is the plugin handler. This implements both of Prober interface and Alerter interface.
@@ -22,16 +27,25 @@ type PluginScheme struct {
 }
 
 // pluginCandidates makes scheme name candidates of plugin by URL scheme.
-func pluginCandidates(scheme string) []string {
+// The output is priority ascending order, which means the first candidate has the lowest priority.
+func pluginCandidates(scheme, scope string) []string {
 	var xs []string
 
 	for i, x := range scheme {
 		if x == '-' || x == '+' {
-			xs = append(xs, scheme[:i])
+			xs = append(
+				xs,
+				"ayd-"+scheme[:i]+"-scheme",
+				"ayd-"+scheme[:i]+"-"+scope,
+			)
 		}
 	}
 
-	xs = append(xs, scheme)
+	xs = append(
+		xs,
+		"ayd-"+scheme+"-scheme",
+		"ayd-"+scheme+"-"+scope,
+	)
 
 	return xs
 }
@@ -39,9 +53,9 @@ func pluginCandidates(scheme string) []string {
 // findPlugin finds a plugin for URL scheme.
 // It choice the longest name plugin.
 func findPlugin(scheme, scope string) (commandName string, err error) {
-	candidates := pluginCandidates(scheme)
+	candidates := pluginCandidates(scheme, scope)
 	for i := range candidates {
-		commandName = "ayd-" + candidates[len(candidates)-i-1] + "-" + scope
+		commandName = candidates[len(candidates)-i-1]
 		_, err = exec.LookPath(commandName)
 		if err == nil || !errors.Is(err, exec.ErrNotFound) {
 			return
@@ -97,36 +111,69 @@ func (p PluginScheme) execute(ctx context.Context, r Reporter, scope string, arg
 		return
 	}
 
+	rb, wb := io.Pipe()
+	defer rb.Close()
+
 	stime := time.Now()
-	output, status, err := runExternalCommand(ctx, command, args, os.Environ())
-	latency := time.Since(stime)
+	var status api.Status
+	var latency time.Duration
+	go func() {
+		status, err = runExternalCommand(ctx, wb, command, args, os.Environ())
+		latency = time.Since(stime)
+		wb.Close()
+	}()
 
 	count := 0
 
-	scanner := bufio.NewScanner(strings.NewReader(output))
+	var invalidLines []string
+
+	scanner := bufio.NewScanner(rb)
 	for scanner.Scan() {
-		text := strings.TrimSpace(scanner.Text())
+		text, err := textdecode.Bytes(scanner.Bytes())
+		if err != nil {
+			invalidLines = append(invalidLines, scanner.Text())
+			continue
+		}
+		text = strings.TrimSpace(text)
 		if text == "" {
 			continue
 		}
 
 		rec, err := api.ParseRecord(text)
-		if err == nil {
-			count++
-			r.Report(p.target, rec)
+		if err != nil {
+			invalidLines = append(invalidLines, scanner.Text())
 			continue
 		}
 
+		rec.Time = rec.Time.Local()
+
+		current := currentTime()
+		if rec.Time.After(current) {
+			rec.Time = current
+		}
+		min := current.Add(-1 * time.Hour)
+		if rec.Time.Before(min) {
+			rec.Time = min
+		}
+
+		count++
+		r.Report(p.target, rec)
+	}
+
+	if invalidLines != nil {
 		r.Report(p.target, api.Record{
-			Time:    time.Now(),
-			Target:  &api.URL{Scheme: "ayd", Opaque: scope + ":plugin:" + p.target.String()},
+			Time:    stime,
+			Target:  p.target,
 			Status:  api.StatusUnknown,
-			Message: fmt.Sprintf("%s: %#v", err, text),
+			Message: "the plugin reported invalid records",
 			Latency: latency,
+			Extra: map[string]any{
+				"raw_message": strings.Join(invalidLines, "\n"),
+			},
 		})
 	}
 
-	if err != nil || count == 0 {
+	if err != nil || (invalidLines == nil && count == 0) {
 		msg := ""
 		if err != nil {
 			msg = err.Error()
@@ -151,18 +198,7 @@ func (p PluginScheme) Probe(ctx context.Context, r Reporter) {
 func (p PluginScheme) Alert(ctx context.Context, r Reporter, lastRecord api.Record) {
 	args := []string{
 		p.target.String(),
-		lastRecord.Time.Format(time.RFC3339),
-		lastRecord.Status.String(),
-		strconv.FormatFloat(float64(lastRecord.Latency.Microseconds())/1000.0, 'f', -1, 64),
-		lastRecord.Target.String(),
-		lastRecord.Message,
-		"{}",
-	}
-
-	if lastRecord.Extra != nil {
-		if bs, err := json.Marshal(lastRecord.Extra); err == nil {
-			args[len(args)-1] = string(bs)
-		}
+		lastRecord.String(),
 	}
 
 	p.execute(

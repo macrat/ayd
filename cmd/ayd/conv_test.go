@@ -3,6 +3,7 @@ package main_test
 import (
 	"bytes"
 	_ "embed"
+	"io"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -22,6 +23,9 @@ var testLogJson string
 
 //go:embed testdata/log.ltsv
 var testLogLtsv string
+
+//go:embed testdata/log.xlsx
+var testLogXlsx []byte
 
 func TestConvCommand_Run(t *testing.T) {
 	tests := []struct {
@@ -82,28 +86,28 @@ func TestConvCommand_Run(t *testing.T) {
 		},
 		{
 			[]string{"-j", "-c"},
-			testutil.DummyLog,
+			``,
 			"",
 			"error: flags for output format can not use multiple in the same time.\n",
 			2,
 		},
 		{
 			[]string{"-c", "./testdata/no-such-file"},
-			testutil.DummyLog,
+			``,
 			"",
 			"error: failed to open input log file: .*\n",
 			1,
 		},
 		{
 			[]string{"-h"},
-			testutil.DummyLog,
+			``,
 			main.ConvHelp,
 			"",
 			0,
 		},
 		{
 			[]string{"--no-such-option"},
-			testutil.DummyLog,
+			``,
 			"",
 			"unknown flag: --no-such-option\n\nPlease see `ayd conv -h` for more information.\n",
 			2,
@@ -121,7 +125,7 @@ func TestConvCommand_Run(t *testing.T) {
 				t.Errorf("expected exit code is %d but got %d", tt.code, code)
 			}
 
-			if diff := cmp.Diff(stdout.String(), tt.stdout); diff != "" {
+			if diff := cmp.Diff(tt.stdout, stdout.String()); diff != "" {
 				t.Errorf("unexpected stdout\n%s", diff)
 			}
 
@@ -155,8 +159,52 @@ func TestConvCommand_Run(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to read output file: %s", err)
 		}
-		if diff := cmp.Diff(string(output), testLogCSV); diff != "" {
+		if diff := cmp.Diff(testLogCSV, string(output)); diff != "" {
 			t.Errorf(diff)
 		}
 	})
+}
+
+func TestConvCommand_Run_xlsx(t *testing.T) {
+	stdin := strings.NewReader(testutil.DummyLog)
+	output := bytes.NewBuffer(nil)
+	cmd := main.ConvCommand{stdin, output, output}
+
+	temp := filepath.Join(t.TempDir(), "output.xlsx")
+
+	code := cmd.Run([]string{"ayd", "conv", "-x", "../../internal/testutil/testdata/test.log", "./testdata/additional.log", "-o", temp})
+	defer func() {
+		t.Logf("output:\n%s", output.String())
+	}()
+
+	if code != 0 {
+		t.Fatalf("expected exit code is 0 but got %d", code)
+	}
+
+	actual, err := os.Open(temp)
+	if err != nil {
+		t.Fatalf("failed to open output file: %s", err)
+	}
+	defer actual.Close()
+	as, _ := actual.Stat()
+
+	if !testutil.XlsxEqual(actual, int64(as.Size()), bytes.NewReader(testLogXlsx), int64(len(testLogXlsx))) {
+		t.Errorf("output file is different from snapshot.\nplease check testdata/actual/log.xlsx")
+
+		if err = os.MkdirAll("./testdata/actual", 0755); err != nil {
+			t.Fatalf("failed to create testdata/actual: %s", err)
+		}
+		actual, err := os.Open(temp)
+		if err != nil {
+			t.Fatalf("failed to open output file: %s", err)
+		}
+		defer actual.Close()
+		out, err := os.Create("testdata/actual/log.xlsx")
+		if err != nil {
+			t.Fatalf("failed to create actual file: %s", err)
+		}
+		if _, err = io.Copy(out, actual); err != nil {
+			t.Errorf("failed to write testdata/actual/log.xlsx: %s", err)
+		}
+	}
 }

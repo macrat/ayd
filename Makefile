@@ -24,7 +24,7 @@ resources: cmd/ayd/resource_windows_386.syso cmd/ayd/resource_windows_amd64.syso
 	cd cmd/ayd && go run github.com/josephspurrier/goversioninfo/cmd/goversioninfo@latest -platform-specific
 
 clean:
-	-rm ayd ayd.log
+	-rm ayd ayd_*.log
 
 install: ayd
 	sudo install ./ayd /usr/local/bin/ayd

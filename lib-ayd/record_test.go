@@ -1,13 +1,13 @@
 package ayd_test
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/url"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/goccy/go-json"
 	"github.com/google/go-cmp/cmp"
 	"github.com/macrat/ayd/lib-ayd"
 )
@@ -50,10 +50,18 @@ func BenchmarkURL_String(b *testing.B) {
 }
 
 func TestRecord(t *testing.T) {
+	t.Setenv("TZ", "UTC")
+
 	tokyo := time.FixedZone("UTC+9", +9*60*60)
+	local := time.Local
+	time.Local = tokyo
+	t.Cleanup(func() {
+		time.Local = local
+	})
 
 	tests := []struct {
 		String string
+		Encode string
 		Record ayd.Record
 		Error  string
 	}{
@@ -88,7 +96,8 @@ func TestRecord(t *testing.T) {
 			},
 		},
 		{
-			String: `{"time":"2021-01-02T15:04:05+09:00", "status":"DEGRADE", "latency":1027.890, "target":"dummy:"}`,
+			String: `{"time":"2021-01-02 15:04:05+09:00", "status":"Degrade", "latency":1027.890, "target":"dummy:"}`,
+			Encode: `{"time":"2021-01-02T15:04:05+09:00", "status":"DEGRADE", "latency":1027.890, "target":"dummy:"}`,
 			Record: ayd.Record{
 				Time:    time.Date(2021, 1, 2, 15, 4, 5, 0, tokyo),
 				Target:  &ayd.URL{Scheme: "dummy"},
@@ -98,8 +107,19 @@ func TestRecord(t *testing.T) {
 			},
 		},
 		{
+			String: `{"time":1641135845, "status":"healthy", "latency":12.345, "target":"dummy:"}`,
+			Encode: `{"time":"2022-01-02T15:04:05Z", "status":"HEALTHY", "latency":12.345, "target":"dummy:"}`,
+			Record: ayd.Record{
+				Time:    time.Date(2022, 1, 2, 15, 4, 5, 0, time.UTC),
+				Target:  &ayd.URL{Scheme: "dummy"},
+				Status:  ayd.StatusHealthy,
+				Message: "",
+				Latency: 12345 * time.Microsecond,
+			},
+		},
+		{
 			String: `{"time":"2021-01-02T15:04:05+09:00", "status":"HEALTHY", "latency":123abc, "target":"ping:example.com", "message":"hello world"}`,
-			Error:  "invalid record: invalid character 'a' after object key:value pair",
+			Error:  "invalid record: json: float unexpected end of JSON input",
 		},
 		{
 			String: `{"time":"2021/01/02 15:04:05", "status":"HEALTHY", "latency":123.456, "target":"ping:example.com", "message":"hello world"}`,
@@ -122,8 +142,8 @@ func TestRecord(t *testing.T) {
 			Error:  `invalid record: time: missing required field`,
 		},
 		{
-			String: `{"time":123, "status":"HEALTHY", "latency":123.456, "target":"ping:example.com", "message":"hello world"}`,
-			Error:  `invalid record: time: should be a string`,
+			String: `{"time":{}, "status":"HEALTHY", "latency":123.456, "target":"ping:example.com", "message":"hello world"}`,
+			Error:  `invalid record: time: should be a string or a number`,
 		},
 		{
 			String: `{"time":"2021-01-02T15:04:05+09:00", "status":null, "latency":123.456, "target":"ping:example.com", "message":"hello world"}`,
@@ -168,6 +188,39 @@ func TestRecord(t *testing.T) {
 				},
 			},
 		},
+		{
+			String: `{"time":0,"target":"dummy:past"}`,
+			Encode: `{"time":"1970-01-01T00:00:00Z", "status":"UNKNOWN", "latency":0.000, "target":"dummy:past"}`,
+			Record: ayd.Record{
+				Time:    time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC),
+				Status:  ayd.StatusUnknown,
+				Latency: 0,
+				Target:  &ayd.URL{Scheme: "dummy", Opaque: "past"},
+				Message: "",
+			},
+		},
+		{
+			String: `{"time":-1000,"target":"dummy:past"}`,
+			Encode: `{"time":"1970-01-01T00:00:00Z", "status":"UNKNOWN", "latency":0.000, "target":"dummy:past"}`,
+			Record: ayd.Record{
+				Time:    time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC),
+				Status:  ayd.StatusUnknown,
+				Latency: 0,
+				Target:  &ayd.URL{Scheme: "dummy", Opaque: "past"},
+				Message: "",
+			},
+		},
+		{
+			String: `{"time":1e20,"target":"dummy:future"}`,
+			Encode: `{"time":"9999-12-31T23:59:59+09:00", "status":"UNKNOWN", "latency":0.000, "target":"dummy:future"}`,
+			Record: ayd.Record{
+				Time:    time.Date(9999, 12, 31, 23, 59, 59, 0, time.Local),
+				Status:  ayd.StatusUnknown,
+				Latency: 0,
+				Target:  &ayd.URL{Scheme: "dummy", Opaque: "future"},
+				Message: "",
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -175,7 +228,7 @@ func TestRecord(t *testing.T) {
 		if tt.Error != "" {
 			if err == nil {
 				t.Errorf("expected %q error when parse %#v but got nil", tt.Error, tt.String)
-			} else if diff := cmp.Diff(err.Error(), tt.Error); diff != "" {
+			} else if diff := cmp.Diff(tt.Error, err.Error()); diff != "" {
 				t.Errorf("unexpected error when parse %#v\n%s", tt.String, diff)
 			}
 			continue
@@ -205,12 +258,16 @@ func TestRecord(t *testing.T) {
 			t.Errorf("unexpected parsed message\nexpected: %#v\n but got: %#v", tt.Record.Message, r.Message)
 		}
 
-		if diff := cmp.Diff(tt.Record.Extra, r.Extra); diff != "" {
+		if diff := cmp.Diff(r.Extra, tt.Record.Extra); diff != "" {
 			t.Errorf("unexpected extra\n%s", diff)
 		}
 
-		if tt.Record.String() != tt.String {
-			t.Errorf("expected: %#v\n but got: %#v", tt.String, tt.Record.String())
+		expect := tt.Encode
+		if expect == "" {
+			expect = tt.String
+		}
+		if tt.Record.String() != expect {
+			t.Errorf("unexpected re-encoded record\nexpected: %#v\n but got: %#v", expect, tt.Record.String())
 		}
 	}
 }

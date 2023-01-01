@@ -1,8 +1,9 @@
 package ayd
 
 import (
-	"encoding/json"
 	"time"
+
+	"github.com/goccy/go-json"
 )
 
 // Report is a report from Ayd server.

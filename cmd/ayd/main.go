@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/signal"
 	"text/template"
+	"time"
 
 	"github.com/macrat/ayd/internal/scheme"
 	"github.com/macrat/ayd/internal/store"
@@ -38,7 +38,8 @@ type AydCommand struct {
 	ShowVersion bool
 	ShowHelp    bool
 
-	Tasks []Task
+	Tasks     []Task
+	StartedAt time.Time
 }
 
 var defaultAydCommand = &AydCommand{
@@ -62,7 +63,7 @@ func (cmd *AydCommand) ParseArgs(args []string) (exitCode int) {
 	flags := pflag.NewFlagSet("ayd", pflag.ContinueOnError)
 
 	flags.IntVarP(&cmd.ListenPort, "port", "p", 9000, "HTTP listen port")
-	flags.StringVarP(&cmd.StorePath, "log-file", "f", "./ayd.log", "Path to log file")
+	flags.StringVarP(&cmd.StorePath, "log-file", "f", "ayd_%Y%m%d.log", "Path to log file")
 	flags.BoolVarP(&cmd.OneshotMode, "oneshot", "1", false, "Check status only once and exit")
 	flags.StringArrayVarP(&cmd.AlertURLs, "alert", "a", nil, "The alert URLs")
 	flags.StringVarP(&cmd.UserInfo, "user", "u", "", "Username and password for HTTP endpoint")
@@ -141,15 +142,15 @@ func (cmd *AydCommand) Run(args []string) (exitCode int) {
 		fmt.Fprintf(cmd.ErrStream, "error: failed to open log file: %s\n", err)
 		return 1
 	}
-	defer s.Close()
 
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
-	defer stop()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	if len(cmd.AlertURLs) > 0 {
 		alert, err := scheme.NewAlerterSet(cmd.AlertURLs)
 		if err != nil {
 			fmt.Fprintln(cmd.ErrStream, err)
+			s.Close()
 			return 2
 		}
 		s.OnStatusChanged = append(s.OnStatusChanged, func(r api.Record) {
@@ -158,10 +159,19 @@ func (cmd *AydCommand) Run(args []string) (exitCode int) {
 	}
 
 	if cmd.OneshotMode {
-		return cmd.RunOneshot(ctx, s)
+		exitCode = cmd.RunOneshot(ctx, s)
 	} else {
-		return cmd.RunServer(ctx, s)
+		exitCode = cmd.RunServer(ctx, s)
 	}
+
+	s.Close()
+
+	healthy, _ := s.Errors()
+	if exitCode == 0 && !healthy {
+		return 1
+	}
+
+	return exitCode
 }
 
 func main() {

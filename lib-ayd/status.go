@@ -1,5 +1,9 @@
 package ayd
 
+import (
+	"strings"
+)
+
 const (
 	// StatusFailure means the target is in FAILURE, but status check is success.
 	// System administrators have to do something action to the target system when this status.
@@ -7,18 +11,18 @@ const (
 
 	// StatusDegrade means success to status check and the target is worked but partially features or stability is DEGRADE.
 	// System administrators have to do something action to the target system when this status, but might not urgency.
-	StatusDegrade = -1
+	StatusDegrade Status = -1
 
 	// StatusUnknown means UNKNOWN current status because failed to check the target status.
 	// System administrators have to fix Ayd settings, or do something to the target system, when this status.
-	StatusUnknown = 0
+	StatusUnknown Status = 0
 
 	// StatusAborted means the status check ABORTED because stop by system administrator or other system program like systemd.
 	// System administrators don't have to do something on this status.
-	StatusAborted = 1
+	StatusAborted Status = 1
 
 	// StatusHealthy means success to status check and the target is HEALTHY.
-	StatusHealthy = 2
+	StatusHealthy Status = 2
 )
 
 // Status is the status of target service
@@ -28,7 +32,7 @@ type Status int8
 //
 // If passed unsupported status, it will returns StatusUnknown
 func ParseStatus(raw string) Status {
-	switch raw {
+	switch strings.ToUpper(raw) {
 	case "HEALTHY":
 		return StatusHealthy
 	case "DEGRADE":

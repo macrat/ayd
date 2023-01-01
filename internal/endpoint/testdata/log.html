@@ -15,10 +15,16 @@ html {
     --degrade: 221, 161, 0;
     --healthy: 137, 201, 35;
 }
+a {
+    color: #0000EE;
+}
 @media (prefers-color-scheme: dark) {
     html {
         --bg: var(--dark);
         --fg: var(--light);
+    }
+    a {
+        color: #AAAAFF;
     }
 }
 
@@ -136,15 +142,36 @@ main {
 article {
     overflow: auto;
 }
+
+.pager {
+    text-align: center;
+    margin: .5rem 0;
+}
+.pager-link {
+    display: inline-block;
+    padding: .2em .5em;
+    color: inherit;
+    text-decoration: none;
+}
+.pager-link.disabled {
+    color: rgba(var(--fg), .3);
+}
+
+.empty-log {
+    display: block;
+    text-align: center;
+    font-size: 150%;
+    color: rgba(var(--fg), .5);
+}
+
 table {
     width: 100%;
     border-collapse: collapse;
-    margin-bottom: 1rem;
 }
 th, td {
     border-right: 1px solid rgba(var(--fg), .1);
 }
-td:last-child {
+th:last-child, td:last-child {
     border-right: none;
 }
 tbody td {
@@ -158,17 +185,21 @@ input {
     max-width: 100%;
 }
 
-td.status::before {
-    content: '';
-    display: inline-block;
-    width: .5em;
-    height: 1em;
+td.status span {
+    display: block;
+    text-align: center;
 }
-td.aborted::before { background-color: rgb(var(--bg)) }
-td.degrade::before { background-color: rgb(var(--degrade)) }
-td.failure::before { background-color: rgb(var(--failure)) }
-td.healthy::before { background-color: rgb(var(--healthy)) }
-td.unknown::before { background-color: rgb(var(--fg)) }
+td.status span::after {
+    content: '';
+    display: block;
+    width: 100%;
+    height: 2px;
+}
+td.aborted span::after { background-color: rgb(var(--bg)) }
+td.degrade span::after { background-color: rgb(var(--degrade)) }
+td.failure span::after { background-color: rgb(var(--failure)) }
+td.healthy span::after { background-color: rgb(var(--healthy)) }
+td.unknown span::after { background-color: rgb(var(--fg)) }
 
 .latency {
     text-align: right;
@@ -177,13 +208,9 @@ td.unknown::before { background-color: rgb(var(--fg)) }
 .target, .message {
     font-family: monospace;
     white-space: pre-wrap;
+    overflow-wrap: anywhere;
 }
 
-.extra {
-    display: inline-block;
-    padding: .1em .2em;
-    border: 1px solid rgb(var(--fg));
-}
 .extra-label {
     font-weight: bold;
 }
@@ -244,6 +271,8 @@ footer span {
                         <a href="/log.html" type="text/html">Log</a>
                         <ul class="menu-types">
                             <li><a href="/log.csv" type="text/csv">CSV</a></li>
+                            <li><a href="/log.xlsx" type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">XLSX</a></li>
+                            <li><a href="/log.ltsv" type="text/plain">LTSV</a></li>
                             <li><a href="/log.json" type="application/json">json</a></li>
                         </ul>
                     </span>
@@ -263,80 +292,104 @@ footer span {
                 <input id="until" type="hidden" name="until" value="2021-01-03T00:00:00Z" />
             </div>
             <div>
-                <input name="query" size="50" value="" placeholder="e.g. >=1s example.com" autofocus />
+                <input type="search" name="query" size="50" value="" placeholder="e.g. >=1s example.com" autofocus />
                 <button type="submit">search</button>
             </div>
         </form>
     </article>
     <article>
+        
+        <div class="pager">
+            <a class="pager-link disabled" aria-label="There is not previous page.">&lt;</a>
+            <span aria-label="Showing record 1 to 7 out of 7.">1-7 of 7</span>
+            <a class="pager-link disabled" aria-label="There is no next page.">&gt;</a>
+            
+        </div>
+
         <table>
             <thead>
                 <tr>
-                    <th style="width: 25ex">timestamp</th>
+                    <th style="width: 25ex">time</th>
                     <th style="width: 7em">status</th>
-                    <th>latency</th>
-                    <th>target</th>
+                    <th style="width: 8ex">latency</th>
+                    <th style="min-width: 10em">target</th>
                     <th>message</th>
                 </tr>
             </thead>
             <tbody>
                 <tr>
                     <td><time title="[[MASKED_DATA]]">2021-01-02<span class="time-t">T</span>15:04:05<span class="timezone">Z</span></time></td>
-                    <td class="status healthy">HEALTHY</td>
-                    <td class="latency">123.456ms</td>
+                    <td class="status healthy"><span>HEALTHY</span></td>
+                    <td class="latency">123.5ms</td>
                     <td class="target">http://a.example.com</td>
                     <td class="message">hello world</td>
                 </tr>
                 <tr>
                     <td><time title="[[MASKED_DATA]]">2021-01-02<span class="time-t">T</span>15:04:05<span class="timezone">Z</span></time></td>
-                    <td class="status failure">FAILURE</td>
-                    <td class="latency">12.345ms</td>
+                    <td class="status failure"><span>FAILURE</span></td>
+                    <td class="latency">12.35ms</td>
                     <td class="target">http://b.example.com</td>
                     <td class="message">this is failure</td>
                 </tr>
                 <tr>
                     <td><time title="[[MASKED_DATA]]">2021-01-02<span class="time-t">T</span>15:04:06<span class="timezone">Z</span></time></td>
-                    <td class="status healthy">HEALTHY</td>
-                    <td class="latency">234.567ms</td>
+                    <td class="status healthy"><span>HEALTHY</span></td>
+                    <td class="latency">234.6ms</td>
                     <td class="target">http://a.example.com</td>
                     <td class="message">hello world!</td>
                 </tr>
                 <tr>
                     <td><time title="[[MASKED_DATA]]">2021-01-02<span class="time-t">T</span>15:04:06<span class="timezone">Z</span></time></td>
-                    <td class="status healthy">HEALTHY</td>
-                    <td class="latency">54.321ms</td>
+                    <td class="status healthy"><span>HEALTHY</span></td>
+                    <td class="latency">54.32ms</td>
                     <td class="target">http://b.example.com</td>
-                    <td class="message">this is healthy</td>
+                    <td class="message">this is healthy
+
+<span class="extra">{"<span class="extra-label">extra</span>": 1.234}</span></td>
                 </tr>
                 <tr>
                     <td><time title="[[MASKED_DATA]]">2021-01-02<span class="time-t">T</span>15:04:07<span class="timezone">Z</span></time></td>
-                    <td class="status healthy">HEALTHY</td>
-                    <td class="latency">345.678ms</td>
+                    <td class="status healthy"><span>HEALTHY</span></td>
+                    <td class="latency">345.7ms</td>
                     <td class="target">http://a.example.com</td>
                     <td class="message">hello world!!</td>
                 </tr>
                 <tr>
                     <td><time title="[[MASKED_DATA]]">2021-01-02<span class="time-t">T</span>15:04:08<span class="timezone">Z</span></time></td>
-                    <td class="status aborted">ABORTED</td>
+                    <td class="status aborted"><span>ABORTED</span></td>
                     <td class="latency">1.234ms</td>
                     <td class="target">http://c.example.com</td>
-                    <td class="message">this is aborted <span class="extra"><span class="extra-label">hello</span> world</span></td>
+                    <td class="message">this is aborted
+
+<span class="extra">{"<span class="extra-label">hello</span>": &#34;world&#34;}</span></td>
                 </tr>
                 <tr>
                     <td><time title="[[MASKED_DATA]]">2021-01-02<span class="time-t">T</span>15:04:09<span class="timezone">Z</span></time></td>
-                    <td class="status unknown">UNKNOWN</td>
+                    <td class="status unknown"><span>UNKNOWN</span></td>
                     <td class="latency">2.345ms</td>
                     <td class="target">http://c.example.com</td>
-                    <td class="message">this is unknown <span class="extra"><span class="extra-label">extra</span> [1,2,3]</span> <span class="extra"><span class="extra-label">hoge</span> fuga</span></td>
+                    <td class="message">this is unknown
+
+<span class="extra">{"<span class="extra-label">extra</span>": [1,2,3], "<span class="extra-label">hoge</span>": &#34;fuga&#34;}</span></td>
                 </tr>
             </tbody>
         </table>
+        
+        <div class="pager">
+            <a class="pager-link disabled" aria-label="There is not previous page.">&lt;</a>
+            <span aria-label="Showing record 1 to 7 out of 7.">1-7 of 7</span>
+            <a class="pager-link disabled" aria-label="There is no next page.">&gt;</a>
+            
+        </div>
+
         <div class="download-buttons">
-            7 of 7 records have shown<br />
             download all log as
             <a href="/log.csv?query=&amp;since=2021-01-01T00%3A00%3A00Z&amp;until=2021-01-03T00%3A00%3A00Z" type="text/csv" download="ayd-log.csv">CSV</a>
-            <a href="log.json?query=&amp;since=2021-01-01T00%3A00%3A00Z&amp;until=2021-01-03T00%3A00%3A00Z" type="application/json" download="ayd-log.json">JSON</a>
+            <a href="/log.xlsx?query=&amp;since=2021-01-01T00%3A00%3A00Z&amp;until=2021-01-03T00%3A00%3A00Z" type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" download="ayd-log.xlsx">XLSX</a>
+            <a href="/log.ltsv?query=&amp;since=2021-01-01T00%3A00%3A00Z&amp;until=2021-01-03T00%3A00%3A00Z" type="text/plain" download="ayd-log.ltsv">LTSV</a>
+            <a href="/log.json?query=&amp;since=2021-01-01T00%3A00%3A00Z&amp;until=2021-01-03T00%3A00%3A00Z" type="application/json" download="ayd-log.json">JSON</a>
         </div>
+        
     </article>
 
     <script>

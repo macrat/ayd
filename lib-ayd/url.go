@@ -63,7 +63,7 @@ func ParseURL(s string) (*URL, error) {
 		return nil, err
 	}
 	if u.Opaque == "" && barePathInOpaque(s) {
-		u.Opaque = u.Path
+		u.Opaque = escapeFragment(u.Path)
 		u.Path = ""
 	}
 	return (*URL)(u), nil

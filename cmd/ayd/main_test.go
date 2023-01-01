@@ -3,7 +3,10 @@ package main_test
 import (
 	"bytes"
 	"fmt"
+	"os"
+	"path/filepath"
 	"regexp"
+	"runtime"
 	"testing"
 
 	"github.com/macrat/ayd/cmd/ayd"
@@ -169,7 +172,7 @@ func TestAydCommand_Run(t *testing.T) {
 		},
 		{
 			Args:     []string{"ayd", "-f", "-", "-1", "-a", "dummy:#alert", "ping:localhost"},
-			Pattern:  `^\{"time":"[-+:0-9TZ]+", "status":"HEALTHY", "latency":[0-9]+\.[0-9]{3}, "target":"ping:localhost", "message":"All packets came back", "packets_recv":3, "packets_sent":3, "rtt_avg":[0-9]+(\.[0-9]*)?, "rtt_max":[0-9]+(\.[0-9]*)?, "rtt_min":[0-9]+(\.[0-9]*)?\}` + "\n$",
+			Pattern:  `^\{"time":"[-+:0-9TZ]+", "status":"HEALTHY", "latency":[0-9]+\.[0-9]{3}, "target":"ping:localhost", "message":"all packets came back", "packets_recv":3, "packets_sent":3, "rtt_avg":[0-9]+(\.[0-9]*)?, "rtt_max":[0-9]+(\.[0-9]*)?, "rtt_min":[0-9]+(\.[0-9]*)?\}` + "\n$",
 			ExitCode: 0,
 		},
 	}
@@ -196,5 +199,28 @@ func TestAydCommand_Run(t *testing.T) {
 				tt.Extra(t, cmd)
 			}
 		})
+	}
+}
+
+func TestAydCommand_Run_permissionDenied(t *testing.T) {
+	if runtime.GOOS != "linux" && runtime.GOOS != "darwin" {
+		t.Skip("permission test only works on *nix OS")
+	}
+
+	path := filepath.Join(t.TempDir(), "log")
+	if err := os.Mkdir(path, 0); err != nil {
+		t.Fatalf("failed to make test directory: %s", err)
+	}
+
+	buf := bytes.NewBuffer([]byte{})
+	cmd := main.AydCommand{
+		OutStream: buf,
+		ErrStream: buf,
+	}
+
+	code := cmd.Run([]string{"ayd", "-1", "-f", filepath.Join(path, "ayd.log"), "dummy:"})
+	t.Log(buf.String())
+	if code != 1 {
+		t.Errorf("unexpected return code: %d", code)
 	}
 }

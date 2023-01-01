@@ -68,7 +68,7 @@ func TestParseAlertPluginArgs(t *testing.T) {
 		Error   string
 	}{
 		{
-			[]string{"./ayd-test-alert", "foo:bar", "2001-02-03T16:05:06Z", "HEALTHY", "123.456", "bar:baz", "foo bar", `{"hello":"world"}`},
+			[]string{"./ayd-test-alert", "foo:bar", `{"time":"2001-02-03T16:05:06Z", "status":"HEALTHY", "latency":123.456, "target":"bar:baz", "message":"foo bar", "hello":"world"}`},
 			"foo:bar",
 			"2001-02-03 16:05:06 +0000 UTC",
 			"HEALTHY",
@@ -87,10 +87,10 @@ func TestParseAlertPluginArgs(t *testing.T) {
 			"",
 			"",
 			nil,
-			`invalid argument: should give exactly 7 arguments`,
+			`invalid argument: should give exactly 2 arguments`,
 		},
 		{
-			[]string{"./ayd-test-alert", "foo:bar", "2001-02-03T16:05:06Z", "HEALTHY", "123.456", "bar:baz", "foo bar", "{}", "unknown extra arg"},
+			[]string{"./ayd-test-alert", "foo:bar", `{"time":"2001-02-03T16:05:06Z", "status":"HEALTHY", "latency":123.456, "target":"bar:baz", "message":"foo bar", "hello":"world"}`, "extra something"},
 			"",
 			"",
 			"",
@@ -98,10 +98,10 @@ func TestParseAlertPluginArgs(t *testing.T) {
 			"",
 			"",
 			nil,
-			`invalid argument: should give exactly 7 arguments`,
+			`invalid argument: should give exactly 2 arguments`,
 		},
 		{
-			[]string{"./ayd-test-alert", "::invalid::", "2001-02-03T16:05:06Z", "HEALTHY", "123.456", "bar:baz", "foo bar", "{}"},
+			[]string{"./ayd-test-alert", "::invalid::", `{"time":"2001-02-03T16:05:06Z", "status":"HEALTHY", "latency":123.456, "target":"bar:baz", "message":"foo bar", "hello":"world"}`},
 			"",
 			"",
 			"",
@@ -112,7 +112,7 @@ func TestParseAlertPluginArgs(t *testing.T) {
 			`invalid alert URL: parse "::invalid::": missing protocol scheme`,
 		},
 		{
-			[]string{"./ayd-test-alert", "foo:bar", "2001-02-03T16:05:06Z", "HEALTHY", "123.456", "::invalid::", "foo bar", "{}"},
+			[]string{"./ayd-test-alert", "foo:bar", `{"time":"2001-02-03T16:05:06Z", "status":"HEALTHY", "latency":123.456, "target":"::invalid::", "message":"foo bar", "hello":"world"}`},
 			"",
 			"",
 			"",
@@ -120,10 +120,10 @@ func TestParseAlertPluginArgs(t *testing.T) {
 			"",
 			"",
 			nil,
-			`invalid target URL: parse "::invalid::": missing protocol scheme`,
+			`invalid record: target: parse "::invalid::": missing protocol scheme`,
 		},
 		{
-			[]string{"./ayd-test-alert", "foo:bar", "this is not a time", "HEALTHY", "123.456", "bar:baz", "foo bar", "{}"},
+			[]string{"./ayd-test-alert", "foo:bar", `wah`},
 			"",
 			"",
 			"",
@@ -131,29 +131,7 @@ func TestParseAlertPluginArgs(t *testing.T) {
 			"",
 			"",
 			nil,
-			`invalid timestamp: invalid format: "this is not a time"`,
-		},
-		{
-			[]string{"./ayd-test-alert", "foo:bar", "2001-02-03T16:05:06Z", "HEALTHY", "not a latency", "bar:baz", "foo bar", "{}"},
-			"",
-			"",
-			"",
-			"",
-			"",
-			"",
-			nil,
-			`invalid latency: strconv.ParseFloat: parsing "not a latency": invalid syntax`,
-		},
-		{
-			[]string{"./ayd-test-alert", "foo:bar", "2001-02-03T16:05:06Z", "HEALTHY", "123.456", "bar:baz", "foo bar", `invalid extra`},
-			"",
-			"",
-			"",
-			"",
-			"",
-			"",
-			nil,
-			"invalid extra values: invalid character 'i' looking for beginning of value",
+			`invalid record: expected { character for map value`,
 		},
 	}
 

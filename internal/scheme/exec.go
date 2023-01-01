@@ -3,9 +3,10 @@ package scheme
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"math"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -14,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/goccy/go-json"
 	"github.com/macrat/ayd/internal/scheme/textdecode"
 	api "github.com/macrat/ayd/lib-ayd"
 )
@@ -23,8 +25,7 @@ var (
 )
 
 var (
-	executeLatencyRe = regexp.MustCompile("(?m)^::latency::([0-9]+(?:\\.[0-9]+)?)(?:\n|$)")
-	executeStatusRe  = regexp.MustCompile("(?m)^::status::((?i:healthy|failure|aborted|unknown))(?:\n|$)")
+	executeMessageRegex = regexp.MustCompile("(?m)^::([^:.\n\t]+)::[ \t]*([^\n]*)[ \t]*(?:\n|$)")
 )
 
 func getExecuteEnvByURL(u *api.URL) []string {
@@ -75,24 +76,42 @@ func (s ExecScheme) Target() *api.URL {
 	return s.target
 }
 
-func getLatencyByMessage(message string, default_ time.Duration) (replacedMessage string, latency time.Duration) {
-	if m := executeLatencyRe.FindAllStringSubmatch(message, -1); m != nil {
-		if l, err := strconv.ParseFloat(m[len(m)-1][1], 64); err == nil {
-			return strings.Trim(executeLatencyRe.ReplaceAllString(message, ""), "\n"), time.Duration(l * float64(time.Millisecond))
+func parseExecMessage(message string, defaultStatus api.Status, defaultLatency time.Duration) (replacedMessage string, status api.Status, latency time.Duration, extra map[string]any) {
+	status = defaultStatus
+	latency = defaultLatency
+	extra = make(map[string]any)
+
+	ms := executeMessageRegex.FindAllStringSubmatch(message, -1)
+	if ms == nil {
+		return message, status, latency, extra
+	}
+
+	for _, m := range ms {
+		switch m[1] {
+		case "status":
+			status = api.ParseStatus(strings.ToUpper(m[2]))
+			message = strings.ReplaceAll(message, m[0], "")
+		case "latency":
+			if l, err := strconv.ParseFloat(m[2], 64); err == nil && l >= 0 {
+				latency = time.Duration(l * float64(time.Millisecond))
+				if latency < 0 {
+					latency = time.Duration(math.MaxInt64)
+				}
+			}
+			message = strings.ReplaceAll(message, m[0], "")
+		case "time", "target", "message":
+		default:
+			var value any
+			if json.Unmarshal([]byte(m[2]), &value) == nil {
+				extra[m[1]] = value
+			} else {
+				extra[m[1]] = m[2]
+			}
+			message = strings.ReplaceAll(message, m[0], "")
 		}
 	}
 
-	return message, default_
-}
-
-func getStatusByMessage(message string, default_ api.Status) (replacedMessage string, status api.Status) {
-	if m := executeStatusRe.FindAllStringSubmatch(message, -1); m != nil {
-		var status api.Status
-		status.UnmarshalText([]byte(strings.ToUpper(m[len(m)-1][1])))
-		return strings.Trim(executeStatusRe.ReplaceAllString(message, ""), "\n"), status
-	}
-
-	return message, default_
+	return strings.Trim(message, "\n"), status, latency, extra
 }
 
 func isUnknownExecutionError(err error) bool {
@@ -105,17 +124,16 @@ func isUnknownExecutionError(err error) bool {
 	return false
 }
 
-func runExternalCommand(ctx context.Context, command string, args, env []string) (output string, status api.Status, err error) {
+func runExternalCommand(ctx context.Context, f io.Writer, command string, args, env []string) (api.Status, error) {
 	cmd := exec.CommandContext(ctx, command, args...)
 	cmd.Env = env
 
-	buf := &bytes.Buffer{}
-	cmd.Stdout = buf
-	cmd.Stderr = buf
+	cmd.Stdout = f
+	cmd.Stderr = f
 
-	err = cmd.Run()
+	err := cmd.Run()
 
-	status = api.StatusHealthy
+	status := api.StatusHealthy
 	if err != nil {
 		status = api.StatusFailure
 
@@ -124,13 +142,7 @@ func runExternalCommand(ctx context.Context, command string, args, env []string)
 		}
 	}
 
-	var e error
-	output, e = textdecode.Bytes(buf.Bytes())
-	if err == nil {
-		err = e
-	}
-
-	return
+	return status, err
 }
 
 func (s ExecScheme) run(ctx context.Context, r Reporter, extraEnv []string) {
@@ -142,33 +154,39 @@ func (s ExecScheme) run(ctx context.Context, r Reporter, extraEnv []string) {
 		args = []string{s.target.Fragment}
 	}
 
+	var buf bytes.Buffer
+
 	stime := time.Now()
-	output, status, err := runExternalCommand(
+	status, err := runExternalCommand(
 		ctx,
+		&buf,
 		filepath.FromSlash(s.target.Opaque),
 		args,
 		append(s.env, extraEnv...),
 	)
 	latency := time.Since(stime)
 
+	output, e := textdecode.Bytes(buf.Bytes())
+	if err == nil && e != nil {
+		err = e
+	}
 	message := strings.Trim(output, "\n")
 
 	if status != api.StatusHealthy && message == "" {
 		message = err.Error()
 	}
 
-	message, latency = getLatencyByMessage(message, latency)
-	message, status = getStatusByMessage(message, status)
+	var extra map[string]any
+	message, status, latency, extra = parseExecMessage(message, status, latency)
 
-	var extra map[string]interface{}
 	if err == nil {
-		extra = map[string]interface{}{"exit_code": 0}
+		extra["exit_code"] = 0
 	} else {
 		var exitErr *exec.ExitError
 		if ctx.Err() == context.DeadlineExceeded || ctx.Err() == context.Canceled {
 			// do not add exit_code if command cancelled by Ayd.
 		} else if errors.As(err, &exitErr) && exitErr.ExitCode() >= 0 {
-			extra = map[string]interface{}{"exit_code": exitErr.ExitCode()}
+			extra["exit_code"] = exitErr.ExitCode()
 		}
 	}
 

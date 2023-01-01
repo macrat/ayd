@@ -1,0 +1,7 @@
+{"time":"2021-01-02T15:00:00Z","status":"HEALTHY","latency":123.456,"target":"http://hoge:fuga@example.com","message":"hello world 1"}
+{"time":"2021-01-02T16:00:00Z","status":"HEALTHY","latency":123.456,"target":"http://hoge:fuga@example.com","message":"hello world 2"}
+{"time":"2021-01-02T17:10:00Z","status":"HEALTHY","latency":123.456,"target":"http://hoge:fuga@example.com","message":"swapped"}
+{"time":"2021-01-02T17:00:00Z","status":"HEALTHY","latency":123.456,"target":"http://hoge:fuga@example.com","message":"hello world 3"}
+{"time":"2021-01-02T18:00:00Z","status":"HEALTHY","latency":123.456,"target":"http://hoge:fuga@example.com","message":"hello world 4"}
+{"time":"2021-01-02T19:00:00Z","status":"HEALTHY","latency":123.456,"target":"http://hoge:fuga@example.com","message":"hello world 5"}
+{"time":"2021-01-02T17:00:00Z","status":"HEALTHY","latency":123.456,"target":"http://hoge:fuga@example.com","message":"already breaked"}

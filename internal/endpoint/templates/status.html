@@ -190,7 +190,7 @@ section.status {
                 <span class="status-bit no-data" title="no data">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#no-data-icon" /></svg>
                 </span>{{ end }}{{ range .Records }}
-                <span class="status-bit {{ .Status | to_lower }}" title="{{ printf "%s\n%s in %s\n\n%s" (.Time | time2str) (.Status | to_lower) .Latency .ReadableMessage }}">
+                <span class="status-bit {{ .Status | to_lower }}" title="{{ printf "%s\n%s in %s\n\n%s" (.Time | time2str) (.Status | to_lower) (.Latency | latency2str) .ReadableMessage }}">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><use xlink:href="#{{ .Status | to_lower }}-icon" /></svg>
                 </span>{{ end }}
 

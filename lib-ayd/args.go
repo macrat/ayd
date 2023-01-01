@@ -1,16 +1,16 @@
 package ayd
 
 import (
-	"encoding/json"
 	"os"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/macrat/ayd/internal/ayderr"
 )
 
 // ProbePluginArgs is arguments for probe plugin
+//
+// Deprecated: since version 0.16. This struct will removed in future version.
+// Please parse using ParseURL instead of this.
 type ProbePluginArgs struct {
 	TargetURL *URL
 }
@@ -37,6 +37,9 @@ func ParseProbePluginArgs() (ProbePluginArgs, error) {
 }
 
 // AlertPluginArgs is arguments for alert plugin
+//
+// Deprecated: since version 0.16. This struct will removed in future version.
+// Please parse using ParseURL and ParseRecord instead of this.
 type AlertPluginArgs struct {
 	AlertURL  *URL
 	Time      time.Time
@@ -49,8 +52,8 @@ type AlertPluginArgs struct {
 
 // ParseAlertPluginArgsFrom is parse arguments for alert plugin
 func ParseAlertPluginArgsFrom(args []string) (AlertPluginArgs, error) {
-	if len(args) != 8 {
-		return AlertPluginArgs{}, ayderr.New(ErrArgumentCount, nil, "invalid argument: should give exactly 7 arguments")
+	if len(args) != 3 {
+		return AlertPluginArgs{}, ayderr.New(ErrArgumentCount, nil, "invalid argument: should give exactly 2 arguments")
 	}
 
 	alertURL, err := ParseURL(args[1])
@@ -58,36 +61,19 @@ func ParseAlertPluginArgsFrom(args []string) (AlertPluginArgs, error) {
 		return AlertPluginArgs{}, ayderr.New(ErrInvalidArgumentValue, err, "invalid alert URL")
 	}
 
-	timestamp, err := ParseTime(args[2])
+	record, err := ParseRecord(args[2])
 	if err != nil {
-		return AlertPluginArgs{}, ayderr.New(ErrInvalidArgumentValue, err, "invalid timestamp")
-	}
-
-	status := ParseStatus(strings.ToUpper(args[3]))
-
-	latency, err := strconv.ParseFloat(args[4], 64)
-	if err != nil {
-		return AlertPluginArgs{}, ayderr.New(ErrInvalidArgumentValue, err, "invalid latency")
-	}
-
-	targetURL, err := ParseURL(args[5])
-	if err != nil {
-		return AlertPluginArgs{}, ayderr.New(ErrInvalidArgumentValue, err, "invalid target URL")
-	}
-
-	var extra map[string]interface{}
-	if err := json.Unmarshal([]byte(args[7]), &extra); err != nil {
-		return AlertPluginArgs{}, ayderr.New(ErrInvalidArgumentValue, err, "invalid extra values")
+		return AlertPluginArgs{}, err
 	}
 
 	return AlertPluginArgs{
 		AlertURL:  alertURL,
-		Time:      timestamp,
-		Status:    status,
-		Latency:   time.Duration(latency) * time.Millisecond,
-		TargetURL: targetURL,
-		Message:   args[6],
-		Extra:     extra,
+		Time:      record.Time,
+		Status:    record.Status,
+		Latency:   record.Latency,
+		TargetURL: record.Target,
+		Message:   record.Message,
+		Extra:     record.Extra,
 	}, nil
 }
 

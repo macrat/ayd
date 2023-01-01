@@ -15,7 +15,9 @@ Options:
   -a, --alert=URL         The alert URL that the same format as the target URL.
                           You can use this option more than once.
   -f, --log-file=FILE     Path to log file. Log file is also used as a database.
-                          Ayd won't create log file if set "-" or empty. (default "./ayd.log")
+                          Ayd won't create log file if set "-" or empty.
+                          You can use time spec %Y, %y, %m, %d, %H, %M, in the file name.
+                          (default "ayd_%Y%m%d.log")
   -p, --port=PORT         Listen port of status page. (default 9000)
   -u, --user=USER[:PASS]  Username and password for HTTP basic auth.
   -c, --ssl-cert=FILE     Path to certificate file for HTTPS. Please set also -k.

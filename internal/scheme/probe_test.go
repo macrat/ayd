@@ -257,7 +257,7 @@ func AssertTimeout(t *testing.T, target string) {
 
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Nanosecond)
 		defer cancel()
-		time.Sleep(10 * time.Millisecond)
+		time.Sleep(100 * time.Millisecond)
 
 		records := testutil.RunProbe(ctx, p)
 		if len(records) != 1 {
@@ -277,6 +277,7 @@ func AssertTimeout(t *testing.T, target string) {
 
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel()
+		time.Sleep(100 * time.Millisecond)
 
 		records := testutil.RunProbe(ctx, p)
 		if len(records) != 1 {

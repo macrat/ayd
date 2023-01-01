@@ -14,8 +14,11 @@ import (
 	"golang.org/x/text/encoding/unicode"
 )
 
-var (
-	windowsCodePages = map[uint32]encoding.Encoding{
+// localeDecoder in Windows is a decoder for UTF8 or local charset that set by locale settings in OS.
+var localeDecoder decoder
+
+func init() {
+	enc, ok := map[uint32]encoding.Encoding{
 		1200:  unicode.UTF16(unicode.LittleEndian, unicode.IgnoreBOM),
 		1201:  unicode.UTF16(unicode.BigEndian, unicode.IgnoreBOM),
 		65001: unicode.UTF8,
@@ -41,15 +44,10 @@ var (
 
 		950:   traditionalchinese.Big5,
 		54936: simplifiedchinese.GB18030,
-	}
-)
-
-// localeDecoder in Windows returns decoder for UTF8 or local charset that set by locale settings in OS.
-func localeDecoder() decoder {
-	enc, ok := windowsCodePages[windows.GetACP()]
+	}[windows.GetACP()]
 	if !ok {
 		enc = unicode.UTF8
 	}
 
-	return utf8Override{enc.NewDecoder()}
+	localeDecoder = utf8Override{enc.NewDecoder()}
 }

@@ -1,11 +1,11 @@
 package endpoint_test
 
 import (
-	"encoding/json"
 	"io"
 	"net/http"
 	"testing"
 
+	"github.com/goccy/go-json"
 	"github.com/macrat/ayd/internal/testutil"
 )
 
@@ -15,32 +15,7 @@ func TestStatusHTMLEndpoint(t *testing.T) {
 }
 
 func TestStatusTextEndpoint(t *testing.T) {
-	tests := []struct {
-		URL  string
-		File string
-	}{
-		{"/status.txt", "./testdata/status.unicode.txt"},
-		{"/status.txt?charset=unicode", "./testdata/status.unicode.txt"},
-		{"/status.txt?charset=ascii", "./testdata/status.ascii.txt"},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.URL, func(t *testing.T) {
-			AssertEndpoint(t, tt.URL, tt.File, ` *Reported by Ayd \(.+\)`)
-		})
-	}
-
-	t.Run("/status.txt?charset=what", func(t *testing.T) {
-		srv := testutil.StartTestServer(t)
-		defer srv.Close()
-
-		u := srv.URL + "/status.txt?charset=what"
-		if resp, err := srv.Client().Get(u); err != nil {
-			t.Errorf("failed to get %s: %s", u, err)
-		} else if resp.StatusCode != http.StatusBadRequest {
-			t.Errorf("unexpected status: %s", resp.Status)
-		}
-	})
+	AssertEndpoint(t, "/status.txt", "./testdata/status.txt", ` *Reported by Ayd \(.+\)`)
 }
 
 func TestStatusJSONEndpoint(t *testing.T) {

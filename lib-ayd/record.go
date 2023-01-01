@@ -2,13 +2,14 @@ package ayd
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"sort"
 	"strings"
 	"time"
 
+	"github.com/goccy/go-json"
 	"github.com/macrat/ayd/internal/ayderr"
+	"golang.org/x/text/encoding/unicode"
 )
 
 func isReservedKey(key string) bool {
@@ -107,23 +108,40 @@ func (r Record) ReadableMessage() string {
 }
 
 // UnmarshalJSON implements the json.Unmarshaler interface.
-func (r *Record) UnmarshalJSON(data []byte) error {
+func (r *Record) UnmarshalJSON(data []byte) (err error) {
 	*r = Record{}
 
-	var raw map[string]interface{}
-	if err := json.Unmarshal(data, &raw); err != nil {
+	data, err = unicode.UTF8.NewDecoder().Bytes(data)
+	if err != nil {
 		return ayderr.New(ErrInvalidRecord, err, "invalid record")
 	}
 
-	var err error
+	var raw map[string]interface{}
+	if err = json.Unmarshal(data, &raw); err != nil {
+		return ayderr.New(ErrInvalidRecord, err, "invalid record")
+	}
 
 	if value, ok := raw["time"]; !ok {
 		return ayderr.New(ErrInvalidRecord, nil, "invalid record: time: missing required field")
 	} else {
-		if s, ok := value.(string); !ok {
-			return ayderr.New(ErrInvalidRecord, nil, "invalid record: time: should be a string")
-		} else if r.Time, err = ParseTime(s); err != nil {
-			return ayderr.New(ErrInvalidRecord, err, "invalid record: time")
+		switch v := value.(type) {
+		case float64:
+			if v < 0 {
+				r.Time = time.UnixMilli(0)
+			} else {
+				maxTime := time.Date(9999, 12, 31, 23, 59, 59, 0, time.Local)
+				if v > float64(maxTime.Unix()) {
+					r.Time = maxTime
+				} else {
+					r.Time = time.UnixMilli(int64(v * 1000))
+				}
+			}
+		case string:
+			if r.Time, err = ParseTime(v); err != nil {
+				return ayderr.New(ErrInvalidRecord, err, "invalid record: time")
+			}
+		default:
+			return ayderr.New(ErrInvalidRecord, nil, "invalid record: time: should be a string or a number")
 		}
 		delete(raw, "time")
 	}

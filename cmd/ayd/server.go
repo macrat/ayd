@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"os/signal"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/macrat/ayd/internal/endpoint"
@@ -14,26 +16,45 @@ import (
 	"github.com/robfig/cron/v3"
 )
 
-func (cmd *AydCommand) reportStartLog(s *store.Store, protocol, listen string) {
-	var tasks [][]string
+func (cmd *AydCommand) reportStartServer(s *store.Store, protocol, listen string) {
+	tasks := make(map[string][]string)
 
 	for _, t := range cmd.Tasks {
-		tasks = append(tasks, []string{
-			t.Schedule.String(),
-			t.Prober.Target().String(),
-		})
+		k := t.Schedule.String()
+		if l, ok := tasks[k]; ok {
+			tasks[k] = append(l, t.Prober.Target().String())
+		} else {
+			tasks[k] = []string{t.Prober.Target().String()}
+		}
 	}
 
+	cmd.StartedAt = time.Now()
+
+	u := &api.URL{Scheme: "ayd", Opaque: "server"}
+	s.Report(u, api.Record{
+		Time:    cmd.StartedAt,
+		Status:  api.StatusHealthy,
+		Target:  u,
+		Message: "start Ayd server",
+		Extra: map[string]interface{}{
+			"url":     fmt.Sprintf("%s://%s", protocol, listen),
+			"targets": tasks,
+			"version": fmt.Sprintf("%s (%s)", version, commit),
+		},
+	})
+}
+
+func (cmd *AydCommand) reportStopServer(s *store.Store, protocol, listen string) {
 	u := &api.URL{Scheme: "ayd", Opaque: "server"}
 	s.Report(u, api.Record{
 		Time:    time.Now(),
 		Status:  api.StatusHealthy,
 		Target:  u,
-		Message: fmt.Sprintf("start Ayd server"),
+		Message: "stop Ayd server",
 		Extra: map[string]interface{}{
 			"url":     fmt.Sprintf("%s://%s", protocol, listen),
-			"targets": tasks,
 			"version": fmt.Sprintf("%s (%s)", version, commit),
+			"since":   cmd.StartedAt.Format(time.RFC3339),
 		},
 	})
 }
@@ -54,9 +75,6 @@ func (cmd *AydCommand) RunServer(ctx context.Context, s *store.Store) (exitCode 
 		}
 	}
 
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-
 	scheduler := cron.New()
 
 	if err := s.Restore(); err != nil {
@@ -65,7 +83,20 @@ func (cmd *AydCommand) RunServer(ctx context.Context, s *store.Store) (exitCode 
 	}
 
 	listen := fmt.Sprintf("0.0.0.0:%d", cmd.ListenPort)
-	cmd.reportStartLog(s, protocol, listen)
+	cmd.reportStartServer(s, protocol, listen)
+
+	ctx, cancel := context.WithCancel(ctx)
+	go func() {
+		ch := make(chan os.Signal, 1)
+		signal.Notify(ch, syscall.SIGINT, syscall.SIGHUP)
+		select {
+		case <-ctx.Done():
+		case <-ch:
+			cmd.reportStopServer(s, protocol, listen)
+			cancel()
+		}
+	}()
+	defer cancel()
 
 	wg := &sync.WaitGroup{}
 	for _, t := range cmd.Tasks {
