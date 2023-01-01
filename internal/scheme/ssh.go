@@ -14,9 +14,9 @@ import (
 )
 
 var (
-	ErrInvalidFingerprint   = errors.New("invalid fingerprint format")
-	ErrFingerprintUnmatched = errors.New("fingerprint unmatched")
-	ErrPasswordRequired     = errors.New("password or identityfile is required")
+	ErrUnsupportedFingerprint = errors.New("unsupported fingerprint format")
+	ErrFingerprintUnmatched   = errors.New("fingerprint unmatched")
+	ErrSSHPasswordRequired    = errors.New("password or identityfile is required")
 )
 
 type sshConfig struct {
@@ -65,7 +65,7 @@ func newSSHConfig(u *api.URL) (sshConfig, error) {
 			ssh.Password(password),
 		}
 	} else {
-		return c, ErrPasswordRequired
+		return c, ErrSSHPasswordRequired
 	}
 
 	if fingerprint := query.Get("fingerprint"); fingerprint != "" {
@@ -79,7 +79,7 @@ func newSSHConfig(u *api.URL) (sshConfig, error) {
 				return ssh.FingerprintLegacyMD5(key) == fingerprint
 			}
 		default:
-			return c, ErrInvalidFingerprint
+			return c, ErrUnsupportedFingerprint
 		}
 	} else {
 		c.CheckKey = func(key ssh.PublicKey) bool {
@@ -94,10 +94,29 @@ type sshConnection struct {
 	Client      *ssh.Client
 	Banner      string
 	Fingerprint string
+	SourceAddr  string
+	TargetAddr  string
 }
 
 func (conn sshConnection) Close() error {
-	return conn.Client.Close()
+	if conn.Client != nil {
+		return conn.Client.Close()
+	}
+	return nil
+}
+
+func (conn sshConnection) MakeExtra() map[string]any {
+	extra := make(map[string]any)
+	if conn.Fingerprint != "" {
+		extra["fingerprint"] = conn.Fingerprint
+	}
+	if conn.SourceAddr != "" {
+		extra["source_addr"] = conn.SourceAddr
+	}
+	if conn.TargetAddr != "" {
+		extra["target_addr"] = conn.TargetAddr
+	}
+	return extra
 }
 
 func dialSSH(ctx context.Context, c sshConfig) (conn sshConnection, err error) {
@@ -109,7 +128,15 @@ func dialSSH(ctx context.Context, c sshConfig) (conn sshConnection, err error) {
 		}
 	}
 
-	conn.Client, err = ssh.Dial("tcp", c.Host, &ssh.ClientConfig{
+	rawConn, err := net.Dial("tcp", c.Host)
+	if err != nil {
+		return conn, err
+	}
+
+	conn.SourceAddr = rawConn.LocalAddr().String()
+	conn.TargetAddr = rawConn.RemoteAddr().String()
+
+	sshConn, chans, reqs, err := ssh.NewClientConn(rawConn, c.Host, &ssh.ClientConfig{
 		User: c.User,
 		Auth: c.Auth,
 		HostKeyCallback: func(hostname string, remote net.Addr, key ssh.PublicKey) error {
@@ -125,6 +152,13 @@ func dialSSH(ctx context.Context, c sshConfig) (conn sshConnection, err error) {
 		},
 		Timeout: timeout,
 	})
+	if err != nil {
+		rawConn.Close()
+		return conn, err
+	}
+
+	conn.Client = ssh.NewClient(sshConn, chans, reqs)
+
 	return
 }
 
@@ -141,6 +175,9 @@ func NewSSHProbe(u *api.URL) (SSHProbe, error) {
 	}
 
 	q := url.Values{}
+	if f := u.ToURL().Query().Get("identityfile"); f != "" {
+		q.Set("identityfile", f)
+	}
 	if f := u.ToURL().Query().Get("fingerprint"); f != "" {
 		q.Set("fingerprint", f)
 	}
@@ -152,7 +189,7 @@ func NewSSHProbe(u *api.URL) (SSHProbe, error) {
 
 	u = &api.URL{
 		Scheme:   "ssh",
-		User:     url.User(u.User.Username()),
+		User:     u.User,
 		Host:     strings.ToLower(u.Host),
 		RawQuery: q.Encode(),
 		Fragment: u.Fragment,
@@ -181,16 +218,11 @@ func (s SSHProbe) Probe(ctx context.Context, r Reporter) {
 	if err != nil {
 		rec.Status = api.StatusFailure
 		rec.Message = err.Error()
-		r.Report(s.target, rec)
-		return
+	} else {
+		rec.Message = conn.Banner
 	}
 
-	rec.Message = conn.Banner
-	rec.Extra = map[string]interface{}{
-		"fingerprint": conn.Fingerprint,
-		"source_addr": conn.Client.LocalAddr().String(),
-		"target_addr": conn.Client.RemoteAddr().String(),
-	}
+	rec.Extra = conn.MakeExtra()
 	r.Report(s.target, rec)
 
 	conn.Close()

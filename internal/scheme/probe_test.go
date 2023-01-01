@@ -222,7 +222,7 @@ func AssertProbe(t *testing.T, tests []ProbeTest, timeout int) {
 				t.Fatal("expected error on create probe but got nil")
 			}
 
-			target := regexp.MustCompile(":[^:]*@").ReplaceAllString(tt.Target, ":xxxxx@")
+			target := regexp.MustCompile("(://[^/:]*):[^@]*@").ReplaceAllString(tt.Target, "$1:xxxxx@")
 
 			if p.Target().String() != target {
 				t.Fatalf("got unexpected probe: expected %s but got %s", target, p.Target())
