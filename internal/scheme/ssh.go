@@ -95,7 +95,6 @@ func newSSHConfig(u *api.URL) (sshConfig, error) {
 
 type sshConnection struct {
 	Client      *ssh.Client
-	Banner      string
 	Fingerprint string
 	SourceAddr  string
 	TargetAddr  string
@@ -148,10 +147,6 @@ func dialSSH(ctx context.Context, c sshConfig) (conn sshConnection, err error) {
 			if !c.CheckKey(key) {
 				return ErrFingerprintUnmatched
 			}
-			return nil
-		},
-		BannerCallback: func(msg string) error {
-			conn.Banner = msg
 			return nil
 		},
 		Timeout: timeout,
@@ -227,7 +222,7 @@ func (s SSHProbe) Probe(ctx context.Context, r Reporter) {
 		rec.Status = api.StatusFailure
 		rec.Message = err.Error()
 	} else {
-		rec.Message = conn.Banner
+		rec.Message = "succeed to connect"
 	}
 
 	rec.Extra = conn.MakeExtra()
