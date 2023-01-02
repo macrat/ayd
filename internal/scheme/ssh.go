@@ -210,17 +210,18 @@ func (s SSHProbe) Target() *api.URL {
 }
 
 func (s SSHProbe) Probe(ctx context.Context, r Reporter) {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
+	defer cancel()
+
 	rec := api.Record{
 		Time:   time.Now(),
 		Target: s.target,
 		Status: api.StatusHealthy,
 	}
 
-	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
-	defer cancel()
-
 	conn, err := dialSSH(ctx, s.conf)
 	rec.Latency = time.Since(rec.Time)
+	conn.Close()
 
 	if err != nil {
 		rec.Status = api.StatusFailure
@@ -231,6 +232,4 @@ func (s SSHProbe) Probe(ctx context.Context, r Reporter) {
 
 	rec.Extra = conn.MakeExtra()
 	r.Report(s.target, timeoutOr(ctx, rec))
-
-	conn.Close()
 }
