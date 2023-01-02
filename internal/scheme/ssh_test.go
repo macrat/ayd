@@ -166,7 +166,7 @@ func TestSSHProbe_Probe(t *testing.T) {
 		{"ssh://keyusr@" + server.Addr + "?fingerprint=" + url.QueryEscape(server.Fingerprint) + "&identityfile=" + url.QueryEscape(server.BareKey), api.StatusHealthy, success("keyusr"), ""},
 		{"ssh://keyusr@" + server.Addr + "?identityfile=" + url.QueryEscape(dummyPath), api.StatusFailure, failedToAuth("publickey"), ""},
 		{"ssh://keyusr@" + server.Addr + "?identityfile=testdata%2Ffile.txt", api.StatusUnknown, "", "ssh: no key found"},
-		{"ssh://keyusr@" + server.Addr + "?identityfile=testdata%2Fno-such-file", api.StatusUnknown, "", "open testdata/no-such-file: no such file or directory"},
+		{"ssh://keyusr@" + server.Addr + "?identityfile=testdata%2Fno-such-file", api.StatusUnknown, "", "no such identity file: testdata/no-such-file"},
 		{"ssh://someone@" + server.Addr, api.StatusUnknown, success("pasusr"), "password or identityfile is required"},
 		{"ssh://foo:bar@" + server.Addr + "?fingerprint=abc", api.StatusUnknown, success("pasusr"), "unsupported fingerprint format"},
 	}, 10)

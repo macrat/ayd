@@ -3,6 +3,7 @@ package scheme
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net"
 	"net/url"
 	"os"
@@ -43,7 +44,9 @@ func newSSHConfig(u *api.URL) (sshConfig, error) {
 
 	if identityFile := query.Get("identityfile"); identityFile != "" {
 		pem, err := os.ReadFile(identityFile)
-		if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return c, fmt.Errorf("no such identity file: %s", identityFile)
+		} else if err != nil {
 			return c, err
 		}
 
