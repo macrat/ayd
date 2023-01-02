@@ -186,17 +186,17 @@ func NewSSHProbe(u *api.URL) (SSHProbe, error) {
 		q.Set("fingerprint", strings.ReplaceAll(f, " ", "+"))
 	}
 
-	conf, err := newSSHConfig(u)
-	if err != nil {
-		return SSHProbe{}, err
-	}
-
 	u = &api.URL{
 		Scheme:   "ssh",
 		User:     u.User,
 		Host:     strings.ToLower(u.Host),
 		RawQuery: q.Encode(),
 		Fragment: u.Fragment,
+	}
+
+	conf, err := newSSHConfig(u)
+	if err != nil {
+		return SSHProbe{}, err
 	}
 
 	return SSHProbe{
