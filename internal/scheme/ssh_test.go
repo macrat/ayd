@@ -170,4 +170,6 @@ func TestSSHProbe_Probe(t *testing.T) {
 		{"ssh://someone@" + server.Addr, api.StatusUnknown, success("pasusr"), "password or identityfile is required"},
 		{"ssh://foo:bar@" + server.Addr + "?fingerprint=abc", api.StatusUnknown, success("pasusr"), "unsupported fingerprint format"},
 	}, 10)
+
+	AssertTimeout(t, "ssh://pasusr:foobar@"+server.Addr)
 }

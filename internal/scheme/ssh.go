@@ -120,17 +120,18 @@ func (conn sshConnection) MakeExtra() map[string]any {
 }
 
 func dialSSH(ctx context.Context, c sshConfig) (conn sshConnection, err error) {
-	timeout := 5 * time.Minute
+	var dialer net.Dialer
+	rawConn, err := dialer.DialContext(ctx, "tcp", c.Host)
+	if err != nil {
+		return conn, err
+	}
+
+	timeout := 10 * time.Minute
 	if t, ok := ctx.Deadline(); ok {
 		x := time.Until(t)
 		if x < timeout {
 			timeout = x
 		}
-	}
-
-	rawConn, err := net.Dial("tcp", c.Host)
-	if err != nil {
-		return conn, err
 	}
 
 	conn.SourceAddr = rawConn.LocalAddr().String()
@@ -212,6 +213,9 @@ func (s SSHProbe) Probe(ctx context.Context, r Reporter) {
 		Status: api.StatusHealthy,
 	}
 
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
+	defer cancel()
+
 	conn, err := dialSSH(ctx, s.conf)
 	rec.Latency = time.Since(rec.Time)
 
@@ -223,7 +227,7 @@ func (s SSHProbe) Probe(ctx context.Context, r Reporter) {
 	}
 
 	rec.Extra = conn.MakeExtra()
-	r.Report(s.target, rec)
+	r.Report(s.target, timeoutOr(ctx, rec))
 
 	conn.Close()
 }
