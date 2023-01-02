@@ -19,6 +19,7 @@ $ ayd ping:192.168.1.1 https://example.com
 - Check service status using:
   * [HTTP/HTTPS](#http--https)
   * [FTP/FTPS](#ftp--ftps)
+  * [SSH](#ssh)
   * [ICMP echo (ping)](#ping)
   * [TCP connect](#tcp)
   * [DNS resolve](#dns)
@@ -116,6 +117,7 @@ Ayd supports below URL schemes in default.
 |------------------------------------|:------------------:|:------------------:|
 | [`http:` / `https:`](#http--https) | :heavy_check_mark: | :heavy_check_mark: |
 | [`ftp:` / `ftps:`](#ftp--ftps)     | :heavy_check_mark: | :heavy_check_mark: |
+| [`ssh:`](#ssh)                     | :heavy_check_mark: | :heavy_minus_sign: |
 | [`ping:`](#ping)                   | :heavy_check_mark: | :heavy_minus_sign: |
 | [`tcp:`](#tcp)                     | :heavy_check_mark: | :heavy_minus_sign: |
 | [`dns:`](#dns)                     | :heavy_check_mark: | :heavy_minus_sign: |
@@ -172,6 +174,27 @@ examples:
 
 Writes the same format logs as the [normal log file](#log-file), over FTP or FTPS, when the service status changed.
 It is pretty same as [file:](#file) scheme for alert but uses FTP/FTPS.
+
+#### ssh:
+
+Establish a SSH connection and check if the service is listening or not.
+
+This scheme supports these queries:
+
+- __identityfile__: Path to private key file like id\_rsa.
+- __fingerprint__: The fingerprint of the target service, starts with `SHA256:` or `MD5:`.
+
+SSH will timeout in 10 minutes and report as failure.
+
+examples:
+- `ssh://username:plain-password@example.com`
+- `ssh://username@example.com?identityfile=/path/to/id_rsa`
+- `ssh://username:passphrase-for-key@example.com?identityfile=/path/to/id_rsa`
+- `ssh://username@example.com?identityfile=/path/to/id_rsa&fingerprint=SHA256:AAAAAA...`
+
+##### as Alert
+
+`ssh:` does not support to be used as an alert URL.
 
 #### ping:
 
