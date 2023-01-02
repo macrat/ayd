@@ -180,7 +180,7 @@ func NewSSHProbe(u *api.URL) (SSHProbe, error) {
 		q.Set("identityfile", f)
 	}
 	if f := u.ToURL().Query().Get("fingerprint"); f != "" {
-		q.Set("fingerprint", f)
+		q.Set("fingerprint", strings.ReplaceAll(f, " ", "+"))
 	}
 
 	conf, err := newSSHConfig(u)
