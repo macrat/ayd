@@ -75,6 +75,11 @@ func TestTargetURLNormalize(t *testing.T) {
 		{"tcp://", api.URL{}, scheme.ErrMissingHost},
 		{"tcp:", api.URL{}, scheme.ErrMissingHost},
 
+		{"ssh://foo:bar@example.com", api.URL{Scheme: "ssh", Host: "example.com"}, nil},
+		{"ssh://foo:bar@example.com/path/to/somewhere", api.URL{Scheme: "ssh", Host: "example.com"}, nil},
+		{"ssh://foo:bar@example.com?fingerprint=SHA256:UWtP6l72VQ3183zItQ+/HsdF2h28k9rCGS/94j1n040", api.URL{Scheme: "ssh", Host: "example.com", RawQuery: "fingerprint=SHA256%3AUWtP6l72VQ3183zItQ%2B%2FHsdF2h28k9rCGS%2F94j1n040"}, nil},
+		{"ssH://fOo:Bar@Example.com?oh=no", api.URL{Scheme: "ssh", Host: "example.com"}, nil},
+
 		{"dns:example.com", api.URL{Scheme: "dns", Opaque: "example.com"}, nil},
 		{"dns:///example.com", api.URL{Scheme: "dns", Opaque: "example.com"}, nil},
 		{"dns://8.8.8.8/example.com", api.URL{Scheme: "dns", Host: "8.8.8.8", Path: "/example.com"}, nil},
@@ -217,7 +222,7 @@ func AssertProbe(t *testing.T, tests []ProbeTest, timeout int) {
 				t.Fatal("expected error on create probe but got nil")
 			}
 
-			target := regexp.MustCompile(":[^:]*@").ReplaceAllString(tt.Target, ":xxxxx@")
+			target := regexp.MustCompile("(://[^/:]*):[^@]*@").ReplaceAllString(tt.Target, "$1:xxxxx@")
 
 			if p.Target().String() != target {
 				t.Fatalf("got unexpected probe: expected %s but got %s", target, p.Target())

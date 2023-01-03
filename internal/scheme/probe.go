@@ -36,6 +36,8 @@ func NewProberFromURL(u *api.URL) (Prober, error) {
 		return NewPingProbe(u)
 	case "tcp", "tcp4", "tcp6":
 		return NewTCPProbe(u)
+	case "ssh":
+		return NewSSHProbe(u)
 	case "dns", "dns4", "dns6":
 		return NewDNSProbe(u)
 	case "file":

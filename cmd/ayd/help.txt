@@ -35,6 +35,11 @@ Targets:
   The target address for status checking.
   Specify with URL format like "ping:example.com" or "https://example.com/foo/bar".
 
+  ping, ping4, ping6:
+   Send 3 ICMP echo request in 1 second.
+   "ping4" and "ping6" is variants for specify IPv4 or IPv6.
+   e.g. ping:example.com
+
   http, https:
    Send HTTP request, and check status code is 2xx or not.
    It will follow redirect up to {{ .HTTPRedirectMax }} times.
@@ -47,10 +52,10 @@ Targets:
    Send LIST or MLSD command of FTP for status checking.
    e.g. ftp://example.com/path/to/file
 
-  ping, ping4, ping6:
-   Send 3 ICMP echo request in 1 second.
-   "ping4" and "ping6" is variants for specify IPv4 or IPv6.
-   e.g. ping:example.com
+  ssh:
+   Connect to SSH server.
+   e.g. ssh://username:password@example.com
+        ssh://username@example.com?identityfile=/path/to/id_rsa
 
   tcp, tcp4, tcp6:
    Connect to TCP port.

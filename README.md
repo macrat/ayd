@@ -17,9 +17,10 @@ $ ayd ping:192.168.1.1 https://example.com
 ## Features
 
 - Check service status using:
+  * [ICMP echo (ping)](#ping)
   * [HTTP/HTTPS](#http--https)
   * [FTP/FTPS](#ftp--ftps)
-  * [ICMP echo (ping)](#ping)
+  * [SSH](#ssh)
   * [TCP connect](#tcp)
   * [DNS resolve](#dns)
   * [file/directory existence](#file)
@@ -114,9 +115,10 @@ Ayd supports below URL schemes in default.
 
 | scheme                             |      as Target     |      as Alert      |
 |------------------------------------|:------------------:|:------------------:|
+| [`ping:`](#ping)                   | :heavy_check_mark: | :heavy_minus_sign: |
 | [`http:` / `https:`](#http--https) | :heavy_check_mark: | :heavy_check_mark: |
 | [`ftp:` / `ftps:`](#ftp--ftps)     | :heavy_check_mark: | :heavy_check_mark: |
-| [`ping:`](#ping)                   | :heavy_check_mark: | :heavy_minus_sign: |
+| [`ssh:`](#ssh)                     | :heavy_check_mark: | :heavy_minus_sign: |
 | [`tcp:`](#tcp)                     | :heavy_check_mark: | :heavy_minus_sign: |
 | [`dns:`](#dns)                     | :heavy_check_mark: | :heavy_minus_sign: |
 | [`file:`](#file)                   | :heavy_check_mark: | :heavy_check_mark: |
@@ -124,6 +126,26 @@ Ayd supports below URL schemes in default.
 | [`source:`](#source)               | :heavy_check_mark: | :heavy_check_mark: |
 
 You can use extra schemes with [plugin](#plugin) if you need.
+
+#### ping:
+
+Send ICMP echo request (a.k.a. ping command) and check if the target is connected or not.
+
+Ayd sends 3 packets in 1 second and expects all packets to return.
+These parameter can changed by `AYD_PING_PACKETS` and `AYD_PING_PERIOD` environment variable.
+
+You can specify IPv4 or IPv6 with `ping4:` or `ping6:` scheme.
+
+Ping will timeout in 30 seconds after sent all packets and report as failure.
+
+examples:
+- `ping:example.com`
+- `ping:192.168.1.1`
+- `ping:192.168.1.10#my-server`
+
+##### as Alert
+
+ping does not support to used as an alert URL.
 
 #### http: / https:
 
@@ -173,25 +195,26 @@ examples:
 Writes the same format logs as the [normal log file](#log-file), over FTP or FTPS, when the service status changed.
 It is pretty same as [file:](#file) scheme for alert but uses FTP/FTPS.
 
-#### ping:
+#### ssh:
 
-Send ICMP echo request (a.k.a. ping command) and check if the target is connected or not.
+Establish a SSH connection and check if the service is listening or not.
 
-Ayd sends 3 packets in 1 second and expects all packets to return.
-These parameter can changed by `AYD_PING_PACKETS` and `AYD_PING_PERIOD` environment variable.
+This scheme supports these queries:
 
-You can specify IPv4 or IPv6 with `ping4:` or `ping6:` scheme.
+- __identityfile__: Path to private key file like id\_rsa.
+- __fingerprint__: The fingerprint of the target service, starts with `SHA256:` or `MD5:`.
 
-Ping will timeout in 30 seconds after sent all packets and report as failure.
+SSH will timeout in 10 minutes and report as failure.
 
 examples:
-- `ping:example.com`
-- `ping:192.168.1.1`
-- `ping:192.168.1.10#my-server`
+- `ssh://username:plain-password@example.com`
+- `ssh://username@example.com?identityfile=/path/to/id_rsa`
+- `ssh://username:passphrase-for-key@example.com?identityfile=/path/to/id_rsa`
+- `ssh://username@example.com?identityfile=/path/to/id_rsa&fingerprint=SHA256:AAAAAA...`
 
 ##### as Alert
 
-ping does not support to used as an alert URL.
+`ssh:` does not support to be used as an alert URL.
 
 #### tcp:
 
