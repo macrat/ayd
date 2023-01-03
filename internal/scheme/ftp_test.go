@@ -8,7 +8,9 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"net"
 	"runtime"
+	"strconv"
 	"testing"
 	"time"
 
@@ -169,45 +171,63 @@ func (a FTPTestAuth) CheckPasswd(username, password string) (ok bool, err error)
 }
 
 // StartFTPServer starts FTP server for test.
-//
-// XXX: randomize port and avoid conflict
-func StartFTPServer(t *testing.T, port int) *FTPTestDriver {
+func StartFTPServer(t *testing.T) (driver *FTPTestDriver, addr string) {
 	t.Helper()
-	driver := &FTPTestDriver{}
+
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("failed to start ftp server: %s", err)
+	}
+
+	_, portStr, err := net.SplitHostPort(listener.Addr().String())
+	if err != nil {
+		listener.Close()
+		t.Fatalf("failed to get port: %s", err)
+	}
+	port, err := strconv.Atoi(portStr)
+	if err != nil {
+		listener.Close()
+		t.Fatalf("failed to parse port: %s", err)
+	}
+
+	driver = &FTPTestDriver{}
+
 	server := ftp.NewServer(&ftp.ServerOpts{
 		Factory: driver,
 		Auth:    FTPTestAuth{},
 		Port:    port,
 		Logger:  &ftp.DiscardLogger{},
 	})
-	go func() {
-		if err := server.ListenAndServe(); err != nil {
+	go func(listener net.Listener) {
+		if err := server.Serve(listener); err != nil {
 			panic(fmt.Errorf("failed to start ftp server: %w", err))
 		}
 		t.Cleanup(func() {
 			server.Shutdown()
+			listener.Close()
 		})
-	}()
-	return driver
+	}(listener)
+
+	return driver, listener.Addr().String()
 }
 
 func TestFTPScheme_Probe(t *testing.T) {
 	t.Parallel()
-	StartFTPServer(t, 21021)
+	_, addr := StartFTPServer(t)
 
 	// See also the comment of FTPFileInfo.ModTime.
 	mtime := fmt.Sprintf("%d-01-02T15:04:00Z", time.Now().Year())
 
 	AssertProbe(t, []ProbeTest{
-		{"ftp://localhost:21021/", api.StatusHealthy, "directory exists\n---\nfile_count: 1\nmtime: " + mtime + "\ntype: directory", ""},
-		{"ftp://hoge:fuga@localhost:21021/", api.StatusHealthy, "directory exists\n---\nfile_count: 1\nmtime: " + mtime + "\ntype: directory", ""},
-		{"ftp://foo:bar@localhost:21021/", api.StatusFailure, "530 Incorrect password, not logged in", ""},
-		{"ftp://localhost:21021/path/to", api.StatusHealthy, "directory exists\n---\nfile_count: 2\nmtime: " + mtime + "\ntype: directory", ""},
-		{"ftp://localhost:21021/path/to/file.txt", api.StatusHealthy, "file exists\n---\nfile_size: 123\nmtime: " + mtime + "\ntype: file", ""},
-		{"ftp://localhost:21021/no/such/file.txt", api.StatusFailure, "550 no such file", ""},
-		{"ftp://localhost:21021/slow-file", api.StatusFailure, "probe timed out", ""},
+		{"ftp://" + addr + "/", api.StatusHealthy, "directory exists\n---\nfile_count: 1\nmtime: " + mtime + "\ntype: directory", ""},
+		{"ftp://hoge:fuga@" + addr + "/", api.StatusHealthy, "directory exists\n---\nfile_count: 1\nmtime: " + mtime + "\ntype: directory", ""},
+		{"ftp://foo:bar@" + addr + "/", api.StatusFailure, "530 Incorrect password, not logged in", ""},
+		{"ftp://" + addr + "/path/to", api.StatusHealthy, "directory exists\n---\nfile_count: 2\nmtime: " + mtime + "\ntype: directory", ""},
+		{"ftp://" + addr + "/path/to/file.txt", api.StatusHealthy, "file exists\n---\nfile_size: 123\nmtime: " + mtime + "\ntype: file", ""},
+		{"ftp://" + addr + "/no/such/file.txt", api.StatusFailure, "550 no such file", ""},
+		{"ftp://" + addr + "/slow-file", api.StatusFailure, "probe timed out", ""},
 
-		{"ftps://localhost:21021/", api.StatusFailure, "550 Action not taken", ""},
+		{"ftps://" + addr + "/", api.StatusFailure, "550 Action not taken", ""},
 
 		{"ftp:///without-host", api.StatusUnknown, ``, "missing target host"},
 		{"ftp://hoge@localhost", api.StatusUnknown, ``, "password is required if set username"},
@@ -217,7 +237,7 @@ func TestFTPScheme_Probe(t *testing.T) {
 	if runtime.GOOS != "windows" {
 		// Windows doesn't report connection refused. Why?
 		AssertProbe(t, []ProbeTest{
-			{"ftp://localhost:12345/", api.StatusFailure, `(127\.0\.0\.1|\[::1\]):12345: connection refused`, ""},
+			{"ftp://localhost:10/", api.StatusFailure, `(127\.0\.0\.1|\[::1\]):10: connection refused`, ""},
 		}, 1)
 	}
 }
@@ -225,15 +245,15 @@ func TestFTPScheme_Probe(t *testing.T) {
 func TestFTPScheme_Alert(t *testing.T) {
 	t.Parallel()
 
-	a, err := scheme.NewAlerter("ftp://hoge:fuga@localhost:21121/alert.json")
+	driver, addr := StartFTPServer(t)
+
+	a, err := scheme.NewAlerter("ftp://hoge:fuga@" + addr + "/alert.json")
 	if err != nil {
 		t.Fatalf("failed to prepare FTPScheme: %s", err)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-
-	driver := StartFTPServer(t, 21121)
 
 	r := &testutil.DummyReporter{}
 	a.Alert(ctx, r, api.Record{
