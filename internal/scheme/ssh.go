@@ -51,7 +51,10 @@ func newSSHConfig(u *api.URL) (sshConfig, error) {
 			signer, err = ssh.ParsePrivateKey(pem)
 		}
 		if err != nil {
-			return c, err
+			if err.Error() == "ssh: no key found" {
+				return c, fmt.Errorf("invalid identity file: %s", identityFile)
+			}
+			return c, fmt.Errorf("identity file: %w", err)
 		}
 
 		c.Auth = []ssh.AuthMethod{

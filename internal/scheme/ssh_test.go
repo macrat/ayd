@@ -166,8 +166,10 @@ func TestSSHProbe_Probe(t *testing.T) {
 		{"ssh://keyusr@" + server.Addr + "?fingerprint=" + url.QueryEscape(server.FingerprintSHA) + "&identityfile=" + url.QueryEscape(server.BareKey), api.StatusHealthy, success, ""},
 		{"ssh://keyusr@" + server.Addr + "?fingerprint=" + url.QueryEscape(server.FingerprintMD5) + "&identityfile=" + url.QueryEscape(server.BareKey), api.StatusHealthy, success, ""},
 		{"ssh://keyusr@" + server.Addr + "?identityfile=" + url.QueryEscape(dummyPath), api.StatusFailure, failedToAuth("publickey"), ""},
-		{"ssh://keyusr@" + server.Addr + "?identityfile=testdata%2Ffile.txt", api.StatusUnknown, "", "ssh: no key found"},
+		{"ssh://keyusr@" + server.Addr + "?identityfile=testdata%2Ffile.txt", api.StatusUnknown, "", "invalid identity file: testdata/file.txt"},
 		{"ssh://keyusr@" + server.Addr + "?identityfile=testdata%2Fno-such-file", api.StatusUnknown, "", "no such identity file: testdata/no-such-file"},
+		{"ssh://keyusr:incorrect@" + server.Addr + "?identityfile=" + url.QueryEscape(server.EncryptedKey), api.StatusUnknown, "", "identity file: x509: decryption password incorrect"},
+		{"ssh://keyusr@" + server.Addr + "?identityfile=" + url.QueryEscape(server.EncryptedKey), api.StatusUnknown, "", "identity file: ssh: this private key is passphrase protected"},
 		{"ssh://someone@" + server.Addr, api.StatusUnknown, success, "password or identityfile is required"},
 		{"ssh://foo:bar@" + server.Addr + "?fingerprint=abc", api.StatusUnknown, success, "unsupported fingerprint format"},
 	}, 10)
