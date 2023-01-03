@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -82,7 +83,13 @@ func (cmd *AydCommand) RunServer(ctx context.Context, s *store.Store) (exitCode 
 		return 1
 	}
 
-	listen := fmt.Sprintf("0.0.0.0:%d", cmd.ListenPort)
+	listener, err := net.Listen("tcp", fmt.Sprintf("0.0.0.0:%d", cmd.ListenPort))
+	if err != nil {
+		fmt.Fprintf(cmd.ErrStream, "error: failed to start HTTP server: %s\n", err)
+		return 2
+	}
+	listen := listener.Addr().String()
+
 	cmd.reportStartServer(s, protocol, listen)
 
 	ctx, cancel := context.WithCancel(ctx)
@@ -135,11 +142,10 @@ func (cmd *AydCommand) RunServer(ctx context.Context, s *store.Store) (exitCode 
 		wg.Done()
 	}()
 
-	var err error
 	if protocol == "https" {
-		err = srv.ListenAndServeTLS(cmd.CertPath, cmd.KeyPath)
+		err = srv.ServeTLS(listener, cmd.CertPath, cmd.KeyPath)
 	} else {
-		err = srv.ListenAndServe()
+		err = srv.Serve(listener)
 	}
 	if err != http.ErrServerClosed {
 		s.ReportInternalError("endpoint", err.Error())
