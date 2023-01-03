@@ -14,12 +14,6 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-var (
-	ErrUnsupportedFingerprint = errors.New("unsupported fingerprint format")
-	ErrFingerprintUnmatched   = errors.New("fingerprint unmatched")
-	ErrSSHPasswordRequired    = errors.New("password or identityfile is required")
-)
-
 type sshConfig struct {
 	Host     string
 	User     string
@@ -68,7 +62,7 @@ func newSSHConfig(u *api.URL) (sshConfig, error) {
 			ssh.Password(password),
 		}
 	} else {
-		return c, ErrSSHPasswordRequired
+		return c, errors.New("password or identityfile is required")
 	}
 
 	if fingerprint := query.Get("fingerprint"); fingerprint != "" {
@@ -83,7 +77,7 @@ func newSSHConfig(u *api.URL) (sshConfig, error) {
 				return ssh.FingerprintLegacyMD5(key) == fingerprint
 			}
 		default:
-			return c, ErrUnsupportedFingerprint
+			return c, errors.New("unsupported fingerprint format")
 		}
 	} else {
 		c.CheckKey = func(key ssh.PublicKey) bool {
@@ -146,7 +140,7 @@ func dialSSH(ctx context.Context, c sshConfig) (conn sshConnection, err error) {
 		HostKeyCallback: func(hostname string, remote net.Addr, key ssh.PublicKey) error {
 			conn.Fingerprint = ssh.FingerprintSHA256(key)
 			if !c.CheckKey(key) {
-				return ErrFingerprintUnmatched
+				return errors.New("fingerprint unmatched")
 			}
 			return nil
 		},
