@@ -19,7 +19,7 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-func GenerateSSHKey(t testing.TB) (key *rsa.PrivateKey, fingerprint string) {
+func GenerateSSHKey(t testing.TB) (*rsa.PrivateKey, ssh.PublicKey) {
 	pri, err := rsa.GenerateKey(rand.Reader, 1024)
 	if err != nil {
 		t.Fatal(err)
@@ -30,7 +30,7 @@ func GenerateSSHKey(t testing.TB) (key *rsa.PrivateKey, fingerprint string) {
 		t.Fatal(err)
 	}
 
-	return pri, ssh.FingerprintSHA256(pub)
+	return pri, pub
 }
 
 func SaveSSHKey(t testing.TB, key *rsa.PrivateKey, name, passphrase string) (path string) {
@@ -59,13 +59,14 @@ func SaveSSHKey(t testing.TB, key *rsa.PrivateKey, name, passphrase string) (pat
 }
 
 type SSHServer struct {
-	Addr         string
-	BareKey      string
-	EncryptedKey string
-	Listener     net.Listener
-	Conf         *ssh.ServerConfig
-	Fingerprint  string
-	Stop         context.CancelFunc
+	Addr           string
+	BareKey        string
+	EncryptedKey   string
+	Listener       net.Listener
+	Conf           *ssh.ServerConfig
+	FingerprintSHA string
+	FingerprintMD5 string
+	Stop           context.CancelFunc
 }
 
 func (s SSHServer) Close() error {
@@ -93,6 +94,7 @@ func StartSSHServer(t testing.TB) SSHServer {
 	ctx, stop := context.WithCancel(context.Background())
 
 	pri, pub := GenerateSSHKey(t)
+	pubfinger := ssh.FingerprintSHA256(pub)
 
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
@@ -107,7 +109,7 @@ func StartSSHServer(t testing.TB) SSHServer {
 
 	conf := &ssh.ServerConfig{
 		PublicKeyCallback: func(conn ssh.ConnMetadata, key ssh.PublicKey) (*ssh.Permissions, error) {
-			if conn.User() == "keyusr" && ssh.FingerprintSHA256(key) == pub {
+			if conn.User() == "keyusr" && ssh.FingerprintSHA256(key) == pubfinger {
 				return &ssh.Permissions{}, nil
 			}
 			return nil, errors.New("failed to auth")
@@ -122,13 +124,14 @@ func StartSSHServer(t testing.TB) SSHServer {
 	conf.AddHostKey(signer)
 
 	srv := SSHServer{
-		Addr:         listener.Addr().String(),
-		BareKey:      SaveSSHKey(t, pri, "bare_rsa", ""),
-		EncryptedKey: SaveSSHKey(t, pri, "enc_rsa", "helloworld"),
-		Listener:     listener,
-		Conf:         conf,
-		Fingerprint:  srvPub,
-		Stop:         stop,
+		Addr:           listener.Addr().String(),
+		BareKey:        SaveSSHKey(t, pri, "bare_rsa", ""),
+		EncryptedKey:   SaveSSHKey(t, pri, "enc_rsa", "helloworld"),
+		Listener:       listener,
+		Conf:           conf,
+		FingerprintSHA: ssh.FingerprintSHA256(srvPub),
+		FingerprintMD5: "MD5:" + ssh.FingerprintLegacyMD5(srvPub),
+		Stop:           stop,
 	}
 
 	go srv.Serve(ctx)
@@ -141,7 +144,7 @@ func TestSSHProbe_Probe(t *testing.T) {
 
 	server := StartSSHServer(t)
 
-	extra := fmt.Sprintf("---\nfingerprint: %s\nsource_addr: [^ ]+\ntarget_addr: %s", regexp.QuoteMeta(server.Fingerprint), server.Addr)
+	extra := fmt.Sprintf("---\nfingerprint: %s\nsource_addr: [^ ]+\ntarget_addr: %s", regexp.QuoteMeta(server.FingerprintSHA), server.Addr)
 	success := "succeed to connect\n" + extra
 	failedToAuth := func(method string) string {
 		return fmt.Sprintf(`ssh: handshake failed: ssh: unable to authenticate, attempted methods \[none %s\], no supported methods remain`+"\n%s", method, extra)
@@ -153,12 +156,15 @@ func TestSSHProbe_Probe(t *testing.T) {
 	AssertProbe(t, []ProbeTest{
 		{"ssh://" + server.Addr, api.StatusUnknown, success, "username is required"},
 		{"ssh://pasusr:foobar@" + server.Addr, api.StatusHealthy, success, ""},
-		{"ssh://pasusr:foobar@" + server.Addr + "?fingerprint=" + url.QueryEscape(server.Fingerprint), api.StatusHealthy, success, ""},
+		{"ssh://pasusr:foobar@" + server.Addr + "?fingerprint=" + url.QueryEscape(server.FingerprintSHA), api.StatusHealthy, success, ""},
+		{"ssh://pasusr:foobar@" + server.Addr + "?fingerprint=" + url.QueryEscape(server.FingerprintMD5), api.StatusHealthy, success, ""},
 		{"ssh://pasusr:foobar@" + server.Addr + "?fingerprint=SHA256%3AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", api.StatusFailure, "ssh: handshake failed: fingerprint unmatched\n" + extra, ""},
+		{"ssh://pasusr:foobar@" + server.Addr + "?fingerprint=MD5%3AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", api.StatusFailure, "ssh: handshake failed: fingerprint unmatched\n" + extra, ""},
 		{"ssh://pasusr:invalid@" + server.Addr, api.StatusFailure, failedToAuth("password"), ""},
 		{"ssh://keyusr@" + server.Addr + "?identityfile=" + url.QueryEscape(server.BareKey), api.StatusHealthy, success, ""},
 		{"ssh://keyusr:helloworld@" + server.Addr + "?identityfile=" + url.QueryEscape(server.EncryptedKey), api.StatusHealthy, success, ""},
-		{"ssh://keyusr@" + server.Addr + "?fingerprint=" + url.QueryEscape(server.Fingerprint) + "&identityfile=" + url.QueryEscape(server.BareKey), api.StatusHealthy, success, ""},
+		{"ssh://keyusr@" + server.Addr + "?fingerprint=" + url.QueryEscape(server.FingerprintSHA) + "&identityfile=" + url.QueryEscape(server.BareKey), api.StatusHealthy, success, ""},
+		{"ssh://keyusr@" + server.Addr + "?fingerprint=" + url.QueryEscape(server.FingerprintMD5) + "&identityfile=" + url.QueryEscape(server.BareKey), api.StatusHealthy, success, ""},
 		{"ssh://keyusr@" + server.Addr + "?identityfile=" + url.QueryEscape(dummyPath), api.StatusFailure, failedToAuth("publickey"), ""},
 		{"ssh://keyusr@" + server.Addr + "?identityfile=testdata%2Ffile.txt", api.StatusUnknown, "", "ssh: no key found"},
 		{"ssh://keyusr@" + server.Addr + "?identityfile=testdata%2Fno-such-file", api.StatusUnknown, "", "no such identity file: testdata/no-such-file"},

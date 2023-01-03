@@ -73,11 +73,12 @@ func newSSHConfig(u *api.URL) (sshConfig, error) {
 
 	if fingerprint := query.Get("fingerprint"); fingerprint != "" {
 		switch {
-		case strings.HasPrefix(strings.ToUpper(fingerprint), "SHA256:"):
+		case strings.HasPrefix(fingerprint, "SHA256:"):
 			c.CheckKey = func(key ssh.PublicKey) bool {
 				return ssh.FingerprintSHA256(key) == fingerprint
 			}
-		case strings.HasPrefix(strings.ToUpper(fingerprint), "MD5:"):
+		case strings.HasPrefix(fingerprint, "MD5:"):
+			fingerprint := strings.ToLower(fingerprint)[len("MD5:"):]
 			c.CheckKey = func(key ssh.PublicKey) bool {
 				return ssh.FingerprintLegacyMD5(key) == fingerprint
 			}
