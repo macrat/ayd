@@ -13,9 +13,9 @@ RUN mkdir /output
 COPY . /usr/src
 
 RUN cd /usr/src/cmd/ayd && go build --trimpath -ldflags="-s -w -X 'main.version=$VERSION' -X 'main.commit=$COMMIT'" -buildvcs=false -o /output/ayd
-RUN cd /usr/src/_plugins/mailto-alert && go build --trimpath -ldflags="-s -w -X 'main.version=$VERSION' -X 'main.commit=$COMMIT'" -buildvcs=false -o /output/ayd-mailto-alert
-RUN cd /usr/src/_plugins/slack-alert && go build --trimpath -ldflags="-s -w -X 'main.version=$VERSION' -X 'main.commit=$COMMIT'" -buildvcs=false -o /output/ayd-slack-alert
-RUN cd /usr/src/_plugins/smb-probe && go build --trimpath -ldflags="-s -w -X 'main.version=$VERSION' -X 'main.commit=$COMMIT'" -buildvcs=false -o /output/ayd-smb-probe
+RUN cd /usr/src/_plugins/mailto-alert && go build --trimpath -ldflags="-s -w -X 'main.version=container-$VERSION' -X 'main.commit=$COMMIT'" -buildvcs=false -o /output/ayd-mailto-alert
+RUN cd /usr/src/_plugins/slack-alert && go build --trimpath -ldflags="-s -w -X 'main.version=container-$VERSION' -X 'main.commit=$COMMIT'" -buildvcs=false -o /output/ayd-slack-alert
+RUN cd /usr/src/_plugins/smb-probe && go build --trimpath -ldflags="-s -w -X 'main.version=container-$VERSION' -X 'main.commit=$COMMIT'" -buildvcs=false -o /output/ayd-smb-probe
 
 RUN apt-get update && apt-get install -y upx && upx --lzma /output/*
 
