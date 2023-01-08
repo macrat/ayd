@@ -71,11 +71,12 @@ Targets:
    Check the file or the directory existence.
    e.g. file:/path/to/file
 
-  exec:
+  exec:, exec+ssh:
    Execute external command.
    You can set 1st argument with fragment,
    and you can set environment variable with query.
    e.g. exec:/path/to/script?something_variable=awesome-value#argument-for-script
+        exec+ssh://user:pass@example.com/path/to/script?some_variable=value#first-argument
 
   source:
    Load a file, and test target URLs of each lines.
