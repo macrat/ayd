@@ -225,6 +225,8 @@ func TestSSHProbe_Probe(t *testing.T) {
 		{"ssh://keyusr@" + server.Addr + "?identityfile=" + url.QueryEscape(server.EncryptedKey), api.StatusUnknown, "", "identity file: ssh: this private key is passphrase protected"},
 		{"ssh://someone@" + server.Addr, api.StatusUnknown, success, "password or identityfile is required"},
 		{"ssh://foo:bar@" + server.Addr + "?fingerprint=abc", api.StatusUnknown, success, "unsupported fingerprint format"},
+
+		{"ssh://foo:bar@localhost:10", api.StatusFailure, `(\[::1\]|127\.0\.0\.1):10: connection refused`, ""},
 	}, 10)
 
 	AssertTimeout(t, "ssh://pasusr:foobar@"+server.Addr)

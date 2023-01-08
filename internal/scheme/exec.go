@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -289,27 +290,39 @@ func (s ExecSSHScheme) run(ctx context.Context, r Reporter, extraEnv map[string]
 	ctx, cancel := context.WithTimeout(ctx, 60*time.Minute)
 	defer cancel()
 
-	reportError := func(message string, err error, extra map[string]any) {
+	reportError := func(message string, extra map[string]any) {
 		r.Report(s.target, api.Record{
 			Time:    timestamp,
 			Target:  s.target,
 			Status:  api.StatusUnknown,
-			Message: fmt.Sprintf("%s: %s", message, err),
+			Message: message,
 			Latency: time.Since(timestamp),
 			Extra:   extra,
 		})
 	}
 
 	conn, err := dialSSH(ctx, s.conf)
-	if err != nil {
-		reportError("failed to connect", err, conn.MakeExtra())
+	var dnsErr *net.DNSError
+	var opErr *net.OpError
+	if errors.As(err, &dnsErr) {
+		reportError(dnsErrorToMessage(dnsErr), nil)
+		return
+	} else if errors.As(err, &opErr) && opErr.Op == "dial" {
+		msg := err.Error()
+		if opErr.Addr != nil {
+			msg = fmt.Sprintf("%s: connection refused", opErr.Addr)
+		}
+		reportError(msg, nil)
+		return
+	} else if err != nil {
+		reportError(fmt.Sprintf("failed to connect: %s", err), conn.MakeExtra())
 		return
 	}
 	defer conn.Close()
 
 	sess, err := conn.Client.NewSession()
 	if err != nil {
-		reportError("failed to create a session", err, conn.MakeExtra())
+		reportError(fmt.Sprintf("failed to create a session: %s", err), conn.MakeExtra())
 		return
 	}
 	defer sess.Close()

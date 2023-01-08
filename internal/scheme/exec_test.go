@@ -114,7 +114,7 @@ func TestExecSSHScheme_Probe(t *testing.T) {
 	extra := fmt.Sprintf("fingerprint: %s\nsource_addr: [^ ]+\ntarget_addr: %s", regexp.QuoteMeta(server.FingerprintSHA), server.Addr)
 
 	AssertProbe(t, []ProbeTest{
-		{"exec+ssh://pasusr:foobar@localhost:10/cmd", api.StatusUnknown, `failed to connect: dial tcp \[::1\]:10: connect: connection refused`, ""},
+		{"exec+ssh://pasusr:foobar@localhost:10/cmd", api.StatusUnknown, `(\[::1\]|127\.0\.0\.1):10: connection refused`, ""},
 		{"exec+ssh://pasusr:foobar@" + server.Addr + "/cmd", api.StatusHealthy, "exec \"/cmd\"\n---\nexit_code: 0\n" + extra, ""},
 		{"exec+ssh://pasusr:foobar@" + server.Addr + "/hello#world", api.StatusHealthy, "exec \"/hello\" \"world\"\n---\nexit_code: 0\n" + extra, ""},
 		{"exec+ssh://pasusr:foobar@" + server.Addr + "/this%20is#a%20test", api.StatusHealthy, "exec \"/this is\" \"a test\"\n---\nexit_code: 0\n" + extra, ""},
