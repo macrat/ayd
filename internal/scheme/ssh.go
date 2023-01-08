@@ -216,7 +216,19 @@ func (s SSHProbe) Probe(ctx context.Context, r Reporter) {
 	rec.Latency = time.Since(rec.Time)
 	conn.Close()
 
-	if err != nil {
+	var dnsErr *net.DNSError
+	var opErr *net.OpError
+	if errors.As(err, &dnsErr) {
+		rec.Status = api.StatusUnknown
+		rec.Message = dnsErrorToMessage(dnsErr)
+	} else if errors.As(err, &opErr) && opErr.Op == "dial" {
+		rec.Status = api.StatusFailure
+		if opErr.Addr == nil {
+			rec.Message = err.Error()
+		} else {
+			rec.Message = fmt.Sprintf("%s: connection refused", opErr.Addr)
+		}
+	} else if err != nil {
 		rec.Status = api.StatusFailure
 		rec.Message = err.Error()
 	} else {

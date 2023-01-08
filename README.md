@@ -355,6 +355,16 @@ If there are multiple keys with the same name in the output, only the last one w
 If you use `exec:` as an alert URL, Ayd sets some environment variables about the incident.
 The name of variable and meaning is the same as the queries of [HTTP scheme as alert](#http--https).
 
+##### exec+ssh:
+
+The `exec+ssh:` scheme is a variant of `exec:`.
+This scheme executes a command through a SSH connection, and check the exit code.
+Please see also [`exec:`](#exec) and [`ssh:`](#ssh).
+
+examples:
+- `exec+ssh://user:password@example.com/usr/bin/test.sh?env_value=variable`
+- `exec+ssh://user@example.com/usr/bin/test.sh?identityfile=/path/to/id_ed25519#first-argument`
+
 #### source:
 
 This is a special scheme for loading targets from a file, a remote host, or a command.
