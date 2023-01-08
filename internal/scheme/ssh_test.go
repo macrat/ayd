@@ -81,12 +81,65 @@ func (s SSHServer) Serve(ctx context.Context) {
 			break
 		}
 
-		_, _, reqs, err := ssh.NewServerConn(tcpConn, s.Conf)
+		_, chans, reqs, err := ssh.NewServerConn(tcpConn, s.Conf)
 		if err != nil {
 			continue
 		}
 
 		go ssh.DiscardRequests(reqs)
+
+		go func() {
+			for newChannel := range chans {
+				if newChannel.ChannelType() != "session" {
+					newChannel.Reject(ssh.UnknownChannelType, "unknown channel type")
+					continue
+				}
+				channel, requests, err := newChannel.Accept()
+				if err != nil {
+					return
+				}
+
+				go func(in <-chan *ssh.Request) {
+					for req := range in {
+						switch req.Type {
+						case "env":
+							req.Reply(true, nil)
+
+							var env struct {
+								Key   string
+								Value string
+							}
+							if err := ssh.Unmarshal(req.Payload, &env); err == nil {
+								fmt.Fprintf(channel, "env %s=%s\n", env.Key, env.Value)
+							}
+
+						case "exec":
+							req.Reply(true, nil)
+
+							cmd := string(req.Payload[4:])
+							fmt.Fprintf(channel, "exec %s", cmd)
+
+							var status struct {
+								Status uint32
+							}
+							if cmd == `"/error"` {
+								status.Status = 1
+							} else if cmd == `"/not-found"` {
+								status.Status = 127
+							}
+
+							if cmd != `"/crash"` {
+								channel.SendRequest("exit-status", false, ssh.Marshal(&status))
+							}
+							channel.Close()
+
+						default:
+							req.Reply(false, nil)
+						}
+					}
+				}(requests)
+			}
+		}()
 	}
 }
 

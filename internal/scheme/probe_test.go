@@ -108,6 +108,8 @@ func TestTargetURLNormalize(t *testing.T) {
 		{"exec+abc:testdata/test", api.URL{}, scheme.ErrUnsupportedScheme},
 		{"exec:", api.URL{}, scheme.ErrMissingCommand},
 		{"exec://", api.URL{}, scheme.ErrMissingCommand},
+		{"exec+ssh://root:abc@example.com/bin/cat#/etc/os-release", api.URL{Scheme: "exec+ssh", Host: "example.com", Path: "/bin/cat", Fragment: "/etc/os-release"}, nil},
+		{"exec+ssh://root:abc@example.com/bin/cat?fingerprint=SHA256:abc+def", api.URL{Scheme: "exec+ssh", Host: "example.com", Path: "/bin/cat", RawQuery: "fingerprint=SHA256%3Aabc%2Bdef"}, nil},
 
 		{"file:testdata/test.bat", api.URL{Scheme: "file", Opaque: "testdata/test.bat"}, nil},
 		{"file:./testdata/test.bat", api.URL{Scheme: "file", Opaque: "./testdata/test.bat"}, nil},
