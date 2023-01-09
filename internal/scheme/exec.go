@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"math"
-	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -306,17 +305,8 @@ func (s ExecSSHScheme) run(ctx context.Context, r Reporter, extraEnv map[string]
 	}
 
 	conn, err := dialSSH(ctx, conf)
-	var dnsErr *net.DNSError
-	var opErr *net.OpError
-	if errors.As(err, &dnsErr) {
-		reportError(dnsErrorToMessage(dnsErr), nil)
-		return
-	} else if errors.As(err, &opErr) && opErr.Op == "dial" {
-		msg := err.Error()
-		if opErr.Addr != nil {
-			msg = fmt.Sprintf("%s: connection refused", opErr.Addr)
-		}
-		reportError(msg, nil)
+	if errors.Is(err, sshError{}) {
+		reportError(err.Error(), nil)
 		return
 	} else if err != nil {
 		reportError(fmt.Sprintf("failed to connect: %s", err), conn.MakeExtra())

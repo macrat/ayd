@@ -119,11 +119,32 @@ func (conn sshConnection) MakeExtra() map[string]any {
 	return extra
 }
 
+type sshError struct {
+	Status  api.Status
+	Message string
+}
+
+func (err sshError) Error() string {
+	return err.Message
+}
+
 func dialSSH(ctx context.Context, c sshConfig) (conn sshConnection, err error) {
 	var dialer net.Dialer
 	rawConn, err := dialer.DialContext(ctx, "tcp", c.Host)
 	if err != nil {
-		return conn, err
+		var dnsErr *net.DNSError
+		var opErr *net.OpError
+		if errors.As(err, &dnsErr) {
+			return conn, sshError{api.StatusUnknown, dnsErrorToMessage(dnsErr)}
+		} else if errors.As(err, &opErr) && opErr.Op == "dial" {
+			if opErr.Addr == nil {
+				return conn, sshError{api.StatusFailure, err.Error()}
+			} else {
+				return conn, sshError{api.StatusFailure, fmt.Sprintf("%s: connection refused", opErr.Addr)}
+			}
+		} else {
+			return conn, sshError{api.StatusFailure, err.Error()}
+		}
 	}
 
 	timeout := 10 * time.Minute
@@ -221,18 +242,10 @@ func (s SSHProbe) Probe(ctx context.Context, r Reporter) {
 	rec.Latency = time.Since(rec.Time)
 	conn.Close()
 
-	var dnsErr *net.DNSError
-	var opErr *net.OpError
-	if errors.As(err, &dnsErr) {
-		rec.Status = api.StatusUnknown
-		rec.Message = dnsErrorToMessage(dnsErr)
-	} else if errors.As(err, &opErr) && opErr.Op == "dial" {
-		rec.Status = api.StatusFailure
-		if opErr.Addr == nil {
-			rec.Message = err.Error()
-		} else {
-			rec.Message = fmt.Sprintf("%s: connection refused", opErr.Addr)
-		}
+	var sshErr sshError
+	if errors.As(err, &sshErr) {
+		rec.Status = sshErr.Status
+		rec.Message = sshErr.Message
 	} else if err != nil {
 		rec.Status = api.StatusFailure
 		rec.Message = err.Error()
