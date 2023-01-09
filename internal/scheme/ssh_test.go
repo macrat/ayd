@@ -117,15 +117,22 @@ func (s SSHServer) Serve(ctx context.Context) {
 							req.Reply(true, nil)
 
 							cmd := string(req.Payload[4:])
-							fmt.Fprintf(channel, "exec %s", cmd)
 
 							var status struct {
 								Status uint32
 							}
-							if cmd == `"/error"` {
+							switch cmd {
+							case `"/error"`:
+								fmt.Fprintf(channel, "exec %s", cmd)
 								status.Status = 1
-							} else if cmd == `"/not-found"` {
+							case `"/not-found"`:
+								fmt.Fprintf(channel, "exec %s", cmd)
 								status.Status = 127
+							case `"/source"`:
+								fmt.Fprintf(channel, "dummy:healthy#foo\n")
+								fmt.Fprintf(channel, "dummy:healthy#bar\n")
+							default:
+								fmt.Fprintf(channel, "exec %s", cmd)
 							}
 
 							if cmd != `"/crash"` {

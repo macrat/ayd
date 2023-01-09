@@ -83,7 +83,7 @@ Targets:
    Lines in the file that starts with "#" will ignore as comments.
    e.g. source:/path/to/list.txt
 
-   This scheme has some variants: "source+http", "source+https", "source+ftp", "source+ftps", and "source+exec".
+   This scheme has some variants: "source+http", "source+https", "source+ftp", "source+ftps", "source+exec", and "source+ssh".
    e.g. source+https://example.com/list.txt
         source+ftp://example.com/list.txt
         source+exec:/path/to/script

@@ -66,6 +66,23 @@ func normalizeSourceURL(u *api.URL) (*api.URL, error) {
 			RawQuery: u.RawQuery,
 			Fragment: u.Fragment,
 		}, nil
+	case "source+ssh":
+		q := u.ToURL().Query()
+		if f := u.ToURL().Query().Get("fingerprint"); f != "" {
+			q.Set("fingerprint", strings.ReplaceAll(f, " ", "+"))
+		}
+		u := &api.URL{
+			Scheme:   "source+ssh",
+			User:     u.User,
+			Host:     u.Host,
+			Path:     u.Path,
+			RawQuery: q.Encode(),
+			Fragment: u.Fragment,
+		}
+		if _, err := newSSHConfig(u); err != nil {
+			return nil, err
+		}
+		return u, nil
 	case "source":
 		p := u.Opaque
 		if u.Opaque == "" {
@@ -246,6 +263,29 @@ func openExecSource(ctx context.Context, u *api.URL) (io.ReadCloser, error) {
 	return io.NopCloser(strings.NewReader(output)), nil
 }
 
+func openSSHSource(ctx context.Context, u *api.URL) (io.ReadCloser, error) {
+	conf, err := newSSHConfig(u)
+	if err != nil {
+		return nil, err
+	}
+
+	conn, err := dialSSH(ctx, conf)
+	if errors.Is(err, sshError{}) {
+		return nil, err
+	} else if err != nil {
+		return nil, fmt.Errorf("failed to connect: %s", err)
+	}
+	defer conn.Close()
+
+	env := make(map[string]string)
+	for k, v := range u.ToURL().Query() {
+		env[k] = v[len(v)-1]
+	}
+
+	output, _, _, err := conn.Exec(ctx, u.Path, u.Fragment, env)
+	return io.NopCloser(strings.NewReader(output)), nil
+}
+
 func openFileSource(ctx context.Context, u *api.URL) (io.ReadCloser, error) {
 	raw, err := os.ReadFile(u.Opaque)
 	if err != nil {
@@ -268,6 +308,8 @@ func openSource(ctx context.Context, u *api.URL) (io.ReadCloser, error) {
 		return openFTPSource(ctx, u)
 	case "source+exec":
 		return openExecSource(ctx, u)
+	case "source+ssh":
+		return openSSHSource(ctx, u)
 	default:
 		return openFileSource(ctx, u)
 	}
