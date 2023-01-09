@@ -162,7 +162,6 @@ func dialSSH(ctx context.Context, c sshConfig) (conn sshConnection, err error) {
 // SSHProbe is a Prober implementation for SSH protocol.
 type SSHProbe struct {
 	target *api.URL
-	conf   sshConfig
 }
 
 func NewSSHProbe(u *api.URL) (SSHProbe, error) {
@@ -187,14 +186,13 @@ func NewSSHProbe(u *api.URL) (SSHProbe, error) {
 		Fragment: u.Fragment,
 	}
 
-	conf, err := newSSHConfig(u)
+	_, err := newSSHConfig(u)
 	if err != nil {
 		return SSHProbe{}, err
 	}
 
 	return SSHProbe{
 		target: u,
-		conf:   conf,
 	}, nil
 }
 
@@ -212,7 +210,14 @@ func (s SSHProbe) Probe(ctx context.Context, r Reporter) {
 		Status: api.StatusHealthy,
 	}
 
-	conn, err := dialSSH(ctx, s.conf)
+	conf, err := newSSHConfig(s.target)
+	if err != nil {
+		rec.Message = err.Error()
+		r.Report(s.target, rec)
+		return
+	}
+
+	conn, err := dialSSH(ctx, conf)
 	rec.Latency = time.Since(rec.Time)
 	conn.Close()
 

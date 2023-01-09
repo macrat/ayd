@@ -248,7 +248,6 @@ func (s ExecLocalScheme) Alert(ctx context.Context, r Reporter, lastRecord api.R
 
 type ExecSSHScheme struct {
 	target *api.URL
-	conf   sshConfig
 	env    map[string]string
 }
 
@@ -263,7 +262,7 @@ func NewExecSSHScheme(u *api.URL) (ExecSSHScheme, error) {
 	}
 	u.RawQuery = q.Encode()
 
-	conf, err := newSSHConfig(u)
+	_, err := newSSHConfig(u)
 	if err != nil {
 		return ExecSSHScheme{}, err
 	}
@@ -275,7 +274,6 @@ func NewExecSSHScheme(u *api.URL) (ExecSSHScheme, error) {
 
 	return ExecSSHScheme{
 		target: u,
-		conf:   conf,
 		env:    env,
 	}, nil
 
@@ -301,7 +299,13 @@ func (s ExecSSHScheme) run(ctx context.Context, r Reporter, extraEnv map[string]
 		})
 	}
 
-	conn, err := dialSSH(ctx, s.conf)
+	conf, err := newSSHConfig(s.target)
+	if err != nil {
+		reportError(err.Error(), nil)
+		return
+	}
+
+	conn, err := dialSSH(ctx, conf)
 	var dnsErr *net.DNSError
 	var opErr *net.OpError
 	if errors.As(err, &dnsErr) {
