@@ -10,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/macrat/ayd/internal/scheme/shell"
+	"github.com/macrat/ayd/internal/scheme/textdecode"
 	api "github.com/macrat/ayd/lib-ayd"
 	"golang.org/x/crypto/ssh"
 )
@@ -178,6 +180,63 @@ func dialSSH(ctx context.Context, c sshConfig) (conn sshConnection, err error) {
 	conn.Client = ssh.NewClient(sshConn, chans, reqs)
 
 	return
+}
+
+func (conn sshConnection) Exec(ctx context.Context, command, argument string, env ...map[string]string) (output string, exitCode int, latency time.Duration, err error) {
+	sess, err := conn.Client.NewSession()
+	if err != nil {
+		return "", -1, 0, fmt.Errorf("failed to create a session: %w", err)
+	}
+	defer sess.Close()
+
+	for _, e := range env {
+		for k, v := range e {
+			if k != "identityfile" && k != "fingerprint" {
+				sess.Setenv(k, v)
+			}
+		}
+	}
+
+	command = shell.Escape(command)
+	if argument != "" {
+		command += " " + shell.Escape(argument)
+	}
+
+	done := make(chan struct{})
+	go func() {
+		select {
+		case <-ctx.Done():
+			sess.Signal(ssh.SIGINT)
+		case <-done:
+		}
+	}()
+
+	stime := time.Now()
+	rawOutput, err := sess.CombinedOutput(command)
+	latency = time.Since(stime)
+	close(done)
+
+	output, e := textdecode.UTF8(rawOutput)
+	if e != nil {
+		output = string(rawOutput)
+	}
+
+	if err == nil {
+		return output, 0, latency, err
+	}
+
+	var exitErr *ssh.ExitError
+	if errors.As(err, &exitErr) {
+		exitCode = exitErr.ExitStatus()
+		if exitCode == 126 || exitCode == 127 {
+			err = sshError{api.StatusUnknown, err.Error()}
+		} else {
+			err = sshError{api.StatusFailure, err.Error()}
+		}
+		return output, exitCode, latency, err
+	} else {
+		return output, -1, latency, err
+	}
 }
 
 // SSHProbe is a Prober implementation for SSH protocol.

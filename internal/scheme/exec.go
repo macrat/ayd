@@ -16,10 +16,8 @@ import (
 	"time"
 
 	"github.com/goccy/go-json"
-	"github.com/macrat/ayd/internal/scheme/shell"
 	"github.com/macrat/ayd/internal/scheme/textdecode"
 	api "github.com/macrat/ayd/lib-ayd"
-	"golang.org/x/crypto/ssh"
 )
 
 var (
@@ -314,50 +312,15 @@ func (s ExecSSHScheme) run(ctx context.Context, r Reporter, extraEnv map[string]
 	}
 	defer conn.Close()
 
-	sess, err := conn.Client.NewSession()
-	if err != nil {
-		reportError(fmt.Sprintf("failed to create a session: %s", err), conn.MakeExtra())
-		return
-	}
-	defer sess.Close()
-
-	for k, v := range s.env {
-		if k != "identityfile" && k != "fingerprint" {
-			sess.Setenv(k, v)
-		}
-	}
-	for k, v := range extraEnv {
-		sess.Setenv(k, v)
-	}
-
-	command := shell.Escape(s.target.Path)
-	if s.target.Fragment != "" {
-		command += " " + shell.Escape(s.target.Fragment)
-	}
-
-	stime := time.Now()
-	outputBytes, err := sess.CombinedOutput(command)
-	latency := time.Since(stime)
+	output, exitCode, latency, err := conn.Exec(ctx, s.target.Path, s.target.Fragment, s.env, extraEnv)
 
 	status := api.StatusHealthy
-	if err != nil {
+
+	var sshErr sshError
+	if errors.As(err, &sshErr) {
+		status = sshErr.Status
+	} else if err != nil {
 		status = api.StatusFailure
-
-		var exitErr *ssh.ExitError
-		if isUnknownExecutionError(err) || (errors.As(err, &exitErr) && exitErr.ExitStatus() == 126 || exitErr.ExitStatus() == 127) {
-			status = api.StatusUnknown
-		}
-	}
-
-	output, e := textdecode.UTF8(outputBytes)
-	if err == nil && e != nil {
-		err = e
-	}
-
-	var exitErr *ssh.ExitError
-	exitCode := -1
-	if errors.As(err, &exitErr) && exitErr.ExitStatus() >= 0 {
-		exitCode = exitErr.ExitStatus()
 	}
 
 	r.Report(s.target, execResultToRecord(ctx, timestamp, s.target, status, output, latency, conn.MakeExtra(), exitCode, err))
