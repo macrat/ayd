@@ -283,7 +283,7 @@ func (s SSHProbe) Probe(ctx context.Context, r Reporter) {
 	rec := api.Record{
 		Time:   time.Now(),
 		Target: s.target,
-		Status: api.StatusHealthy,
+		Status: api.StatusUnknown,
 	}
 
 	conf, err := newSSHConfig(s.target)
@@ -305,6 +305,7 @@ func (s SSHProbe) Probe(ctx context.Context, r Reporter) {
 		rec.Status = api.StatusFailure
 		rec.Message = err.Error()
 	} else {
+		rec.Status = api.StatusHealthy
 		rec.Message = "succeed to connect"
 	}
 

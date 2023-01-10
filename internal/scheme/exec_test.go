@@ -132,6 +132,28 @@ func TestExecSSHScheme_Probe(t *testing.T) {
 	}, 10)
 
 	AssertTimeout(t, "ssh://pasusr:foobar@"+server.Addr+"/cmd")
+
+	t.Run("interrupt", func(t *testing.T) {
+		p := testutil.NewProber(t, "exec+ssh://pasusr:foobar@"+server.Addr+"/slow")
+
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
+		defer cancel()
+
+		rs := testutil.RunProbe(ctx, p)
+
+		if len(rs) != 1 {
+			t.Fatalf("unexpected number for records found:\n%#v", rs)
+		}
+		if rs[0].Status != api.StatusFailure {
+			t.Errorf("expected FAILURE but got %s", rs[0].Status)
+		}
+		if rs[0].Message != "probe timed out" {
+			t.Errorf("unexpected message: %q", rs[0].Message)
+		}
+		if rs[0].Latency > 50*time.Millisecond {
+			t.Errorf("probe took too long: %s", rs[0].Latency)
+		}
+	})
 }
 
 func TestExecSSHScheme_Alert(t *testing.T) {

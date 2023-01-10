@@ -8,13 +8,16 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
 	"testing"
+	"time"
 
+	"github.com/macrat/ayd/internal/testutil"
 	api "github.com/macrat/ayd/lib-ayd"
 	"golang.org/x/crypto/ssh"
 )
@@ -131,6 +134,21 @@ func (s SSHServer) Serve(ctx context.Context) {
 							case `"/source"`:
 								fmt.Fprintf(channel, "dummy:healthy#foo\n")
 								fmt.Fprintf(channel, "dummy:healthy#bar\n")
+							case `"/slow"`:
+								timer := time.NewTicker(10 * time.Second)
+								defer timer.Stop()
+							LOOP:
+								for {
+									select {
+									case req := <-in:
+										if req.Type == "signal" {
+											break LOOP
+										}
+									case <-timer.C:
+										break LOOP
+									}
+								}
+								fmt.Fprintf(channel, "it was very slow\n")
 							default:
 								fmt.Fprintf(channel, "exec %s", cmd)
 							}
@@ -237,4 +255,54 @@ func TestSSHProbe_Probe(t *testing.T) {
 	}, 10)
 
 	AssertTimeout(t, "ssh://pasusr:foobar@"+server.Addr)
+
+	t.Run("remove-key", func(t *testing.T) {
+		key := filepath.Join(t.TempDir(), "id_rsa")
+
+		src, err := os.Open(server.BareKey)
+		if err != nil {
+			t.Fatalf("failed to open key file: %s", err)
+		}
+		defer src.Close()
+
+		dst, err := os.Create(key)
+		if err != nil {
+			t.Fatalf("failed to make second key file: %s", err)
+		}
+		defer dst.Close()
+
+		_, err = io.Copy(dst, src)
+		if err != nil {
+			t.Fatalf("failed to copy key file: %s", err)
+		}
+
+		p := testutil.NewProber(t, "ssh://keyusr@"+server.Addr+"?identityfile="+key)
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+
+		rs := testutil.RunProbe(ctx, p)
+		if len(rs) != 1 {
+			t.Fatalf("unexpected number of records:\n%#v", rs)
+		}
+		if rs[0].Status != api.StatusHealthy {
+			t.Errorf("unexpected status: %s", rs[0].Status)
+		}
+
+		err = os.Remove(key)
+		if err != nil {
+			t.Fatalf("failed to remove key file: %s", err)
+		}
+
+		rs = testutil.RunProbe(ctx, p)
+		if len(rs) != 1 {
+			t.Fatalf("unexpected number of records:\n%#v", rs)
+		}
+		if rs[0].Status != api.StatusUnknown {
+			t.Errorf("unexpected status: %s", rs[0].Status)
+		}
+		if rs[0].Message != "no such identity file: "+key {
+			t.Errorf("unexpected message: %q", rs[0].Message)
+		}
+	})
 }
