@@ -269,9 +269,9 @@ func TestSSHProbe_Probe(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to make second key file: %s", err)
 		}
-		defer dst.Close()
 
 		_, err = io.Copy(dst, src)
+		dst.Close()
 		if err != nil {
 			t.Fatalf("failed to copy key file: %s", err)
 		}
