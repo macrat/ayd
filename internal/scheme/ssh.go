@@ -138,12 +138,8 @@ func dialSSH(ctx context.Context, c sshConfig) (conn sshConnection, err error) {
 		var opErr *net.OpError
 		if errors.As(err, &dnsErr) {
 			return conn, sshError{api.StatusUnknown, dnsErrorToMessage(dnsErr)}
-		} else if errors.As(err, &opErr) && opErr.Op == "dial" {
-			if opErr.Addr == nil {
-				return conn, sshError{api.StatusFailure, err.Error()}
-			} else {
-				return conn, sshError{api.StatusFailure, fmt.Sprintf("%s: connection refused", opErr.Addr)}
-			}
+		} else if errors.As(err, &opErr) && opErr.Op == "dial" && opErr.Addr != nil {
+			return conn, sshError{api.StatusFailure, fmt.Sprintf("%s: connection refused", opErr.Addr)}
 		} else {
 			return conn, sshError{api.StatusFailure, err.Error()}
 		}

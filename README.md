@@ -428,6 +428,18 @@ examples:
 - `source+exec:./make-targets-list.exe`
 - `source+exec:/usr/local/bin/targets.sh`
 
+##### source+ssh:
+
+`source+ssh:` is a variant of `source:` like `source+exec:` but to execute command on remote host.
+It is execute script as the same way as [`exec+ssh:`](#exec) and load the output as a source file.
+
+__NOTE:__
+It's highly recommended to specify server's fingerprint for security reason.
+
+examples:
+- `source+ssh://name:pass@target/usr/bin/make-targets-list.exe?fingerprint=SHA256:AAAA...`
+- `source+ssh://name@target/usr/bin/make-targets-list.exe?identityfile=/path/to/key&fingerprint=SHA256:AAAA...`
+
 ##### as Alert
 
 Even if use it as an alert URL, the behavior is almost the same, but send alert to the all URLs loaded.

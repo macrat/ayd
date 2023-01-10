@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"net/url"
 	"os"
 	"path"
 	"path/filepath"
@@ -32,6 +33,8 @@ func TestSourceScheme_Probe(t *testing.T) {
 	defer server.Close()
 
 	StartFTPServer(t, 22121)
+
+	sshServer := StartSSHServer(t)
 
 	tests := []struct {
 		Target       string
@@ -102,6 +105,25 @@ func TestSourceScheme_Probe(t *testing.T) {
 			"dummy:healthy#def":   api.StatusHealthy,
 			"source+exec:" + filepath.ToSlash(path.Join(cwd, "testdata/listing-script?message=def#ayd")): api.StatusHealthy,
 		}, ""},
+
+		{"source+ssh://pasusr:foobar@" + sshServer.Addr + "/source", map[string]api.Status{
+			"dummy:healthy#foo": api.StatusHealthy,
+			"dummy:healthy#bar": api.StatusHealthy,
+			"source+ssh://pasusr:xxxxx@" + sshServer.Addr + "/source": api.StatusHealthy,
+		}, ""},
+		{"source+ssh://pasusr:foobar@" + sshServer.Addr + "/source?fingerprint=" + sshServer.FingerprintSHA, map[string]api.Status{
+			"dummy:healthy#foo": api.StatusHealthy,
+			"dummy:healthy#bar": api.StatusHealthy,
+			"source+ssh://pasusr:xxxxx@" + sshServer.Addr + "/source?fingerprint=" + url.QueryEscape(sshServer.FingerprintSHA): api.StatusHealthy,
+		}, ""},
+		{"source+ssh://keyusr@" + sshServer.Addr + "/source?identityfile=" + sshServer.BareKey, map[string]api.Status{
+			"dummy:healthy#foo": api.StatusHealthy,
+			"dummy:healthy#bar": api.StatusHealthy,
+			"source+ssh://keyusr@" + sshServer.Addr + "/source?identityfile=" + url.QueryEscape(sshServer.BareKey): api.StatusHealthy,
+		}, ""},
+		{"source+ssh://pasusr@" + sshServer.Addr + "/source", nil, "password or identityfile is required"},
+		{"source+ssh://pasusr:foobar@" + sshServer.Addr + "/source?fingerprint=SHA256:AAAAA", nil, "invalid source: ssh: handshake failed: fingerprint unmatched"},
+		{"source+ssh://pasusr:foobar@localhost:10/source", nil, `invalid source: (\[::1\]|127\.0\.0\.1):10: connection refused`},
 	}
 
 	for _, tt := range tests {

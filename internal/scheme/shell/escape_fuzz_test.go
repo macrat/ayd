@@ -37,7 +37,7 @@ func FuzzEscape(f *testing.F) {
 			t.Fatalf("failed to execute shell: %s", err)
 		}
 
-		output = output[3:len(output)-1] // drop "-- " and newline
+		output = output[3 : len(output)-1] // drop "-- " and newline
 
 		if string(output) != s {
 			t.Errorf("input: [%s], escaped: [%s], shell unescaped: [%s]", s, escaped, string(output))
