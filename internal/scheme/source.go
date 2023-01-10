@@ -270,10 +270,8 @@ func openSSHSource(ctx context.Context, u *api.URL) (io.ReadCloser, error) {
 	}
 
 	conn, err := dialSSH(ctx, conf)
-	if errors.Is(err, sshError{}) {
+	if err != nil {
 		return nil, err
-	} else if err != nil {
-		return nil, fmt.Errorf("failed to connect: %s", err)
 	}
 	defer conn.Close()
 

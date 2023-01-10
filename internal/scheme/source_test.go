@@ -122,9 +122,8 @@ func TestSourceScheme_Probe(t *testing.T) {
 			"source+ssh://keyusr@" + sshServer.Addr + "/source?identityfile=" + url.QueryEscape(sshServer.BareKey): api.StatusHealthy,
 		}, ""},
 		{"source+ssh://pasusr@" + sshServer.Addr + "/source", nil, "password or identityfile is required"},
-		{"source+ssh://pasusr:foobar@localhost:10/source", map[string]api.Status{
-			"source+ssh://pasusr:xxxxx@" + sshServer.Addr + "/source": api.StatusHealthy,
-		}, `invalid source: failed to connect: (\[::1\]|127\.0\.0\.1):10: connection refused`},
+		{"source+ssh://pasusr:foobar@" + sshServer.Addr + "/source?fingerprint=SHA256:AAAAA", nil, "invalid source: ssh: handshake failed: fingerprint unmatched"},
+		{"source+ssh://pasusr:foobar@localhost:10/source", nil, `invalid source: (\[::1\]|127\.0\.0\.1):10: connection refused`},
 	}
 
 	for _, tt := range tests {
