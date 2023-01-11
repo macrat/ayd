@@ -96,131 +96,119 @@ func TestPingSettings(t *testing.T) {
 	}
 }
 
-func TestResourceLocker(t *testing.T) {
-	rl := newResourceLocker()
+type DummyResource struct {
+	err   error
+	start int
+	stop  int
+}
 
-	startCount := 0
-	stopCount := 0
+func (r *DummyResource) Start() error {
+	r.start++
+	return r.err
+}
 
-	start := func() {
-		rl.Start(func() (func(), error) {
-			startCount++
-			return func() {
-				stopCount++
-			}, nil
-		})
-	}
-	stop := func() {
-		rl.Done()
-	}
+func (r *DummyResource) Stop() {
+	r.stop++
+}
+
+func TestSharedResource(t *testing.T) {
+	sr := newSharedResource(&DummyResource{})
 
 	assertCount := func(t *testing.T, start, stop int) {
 		t.Helper()
 
-		rl.Lock()
-		defer rl.Unlock()
+		sr.Lock()
+		defer sr.Unlock()
 
-		if startCount != start || stopCount != stop {
-			t.Errorf("unexpected count: start:%d stop:%d != start:%d stop:%d", startCount, stopCount, start, stop)
+		r := sr.resource
+
+		if r.start != start || r.stop != stop {
+			t.Errorf("unexpected count: start:%d stop:%d != start:%d stop:%d", r.start, r.stop, start, stop)
 		}
 	}
 
-	start()
-	start()
+	sr.Get()
+	sr.Get()
 	assertCount(t, 1, 0)
 
-	stop()
+	sr.Release()
 	assertCount(t, 1, 0)
 
-	stop()
+	sr.Release()
 	assertCount(t, 1, 1)
 
-	start()
+	sr.Get()
 	assertCount(t, 2, 1)
 
-	stop()
+	sr.Release()
 	assertCount(t, 2, 2)
 
-	stop()
+	sr.Release()
 	assertCount(t, 2, 2)
 }
 
-func TestResourceLocker_failedToStart(t *testing.T) {
-	rl := newResourceLocker()
+func TestSharedResource_failedToGet(t *testing.T) {
+	sr := newSharedResource(&DummyResource{})
 
-	want := errors.New("test error")
-
-	err := rl.Start(func() (func(), error) {
-		return nil, want
-	})
-	if err != want {
-		t.Errorf("error wanted but got %s", err)
-	}
-
-	err = rl.Start(func() (func(), error) {
-		return func() {}, nil
-	})
+	r, err := sr.Get()
 	if err != nil {
 		t.Errorf("error not wanted but got %s", err)
 	}
+
+	want := errors.New("test error")
+	r.err = want
+
+	_, err = sr.Get()
+	if err != nil {
+		t.Errorf("error not wanted but got %s", err)
+	}
+
+	sr.Release()
+	sr.Release()
+
+	_, err = sr.Get()
+	if err != want {
+		t.Logf("resource: %v", r)
+		t.Errorf("error wanted but got %v", err)
+	}
 }
 
-func TestResourceLocker_flooding(t *testing.T) {
-	rl := newResourceLocker()
-
-	startCount := 0
-	stopCount := 0
-
-	start := func() {
-		rl.Start(func() (func(), error) {
-			startCount++
-			return func() {
-				stopCount++
-			}, nil
-		})
-	}
+func TestSharedResource_flooding(t *testing.T) {
+	sr := newSharedResource(&DummyResource{})
 
 	for i := 0; i < 10000; i++ {
-		start()
+		sr.Get()
 	}
 	for i := 0; i < 10000; i++ {
-		rl.Done()
+		sr.Release()
 	}
 
-	rl.Lock()
-	defer rl.Unlock()
+	sr.Lock()
+	defer sr.Unlock()
 
-	if startCount != 1 {
-		t.Errorf("unexpected start count: %d", startCount)
+	if sr.resource.start != 1 {
+		t.Errorf("unexpected start count: %d", sr.resource.start)
 	}
 
-	if stopCount != 1 {
-		t.Errorf("unexpected stop count: %d", stopCount)
-	}
-}
-
-func BenchmarkResourceLocker_Start(b *testing.B) {
-	rl := newResourceLocker()
-
-	starter := func() (func(), error) {
-		return func() {}, nil
-	}
-
-	for i := 0; i < b.N; i++ {
-		rl.Start(starter)
+	if sr.resource.stop != 1 {
+		t.Errorf("unexpected stop count: %d", sr.resource.stop)
 	}
 }
 
-func BenchmarkResourceLocker_Done(b *testing.B) {
-	rl := newResourceLocker()
-
-	starter := func() (func(), error) {
-		return func() {}, nil
-	}
+func BenchmarkSharedResource_Get(b *testing.B) {
+	sr := newSharedResource(&DummyResource{})
 
 	for i := 0; i < b.N; i++ {
-		rl.Start(starter)
-		rl.Done()
+		sr.Get()
+	}
+}
+
+func BenchmarkSharedResource_Release(b *testing.B) {
+	sr := newSharedResource(&DummyResource{})
+
+	for i := 0; i < b.N; i++ {
+		sr.Get()
+		sr.Release()
 	}
 }
 

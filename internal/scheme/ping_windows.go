@@ -7,7 +7,7 @@ import (
 	"context"
 )
 
-func (p *autoPingerStruct) startPingers(ctx context.Context) error {
+func (p *simplePinger) startPingers(ctx context.Context) error {
 	if err := p.v4.Start(ctx); err != nil {
 		return err
 	}
