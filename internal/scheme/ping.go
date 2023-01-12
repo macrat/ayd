@@ -42,95 +42,110 @@ func pingSettings() (count int, interval, timeout time.Duration) {
 	return
 }
 
-type resourceLocker struct {
+type startStoper interface {
+	Start() error
+	Stop()
+}
+
+type sharedResource[T startStoper] struct {
 	sync.Mutex
 
 	doneSignal *sync.Cond
 	count      int
-	teardown   func()
+
+	resource T
 }
 
-func newResourceLocker() *resourceLocker {
-	rl := &resourceLocker{}
-	rl.doneSignal = sync.NewCond(rl)
-	return rl
+func newSharedResource[T startStoper](resource T) *sharedResource[T] {
+	sr := &sharedResource[T]{
+		resource: resource,
+	}
+	sr.doneSignal = sync.NewCond(sr)
+	return sr
 }
 
-func (rl *resourceLocker) Start(prepareResource func() (teardown func(), err error)) error {
-	rl.Lock()
-	defer rl.Unlock()
+func (sr *sharedResource[T]) Get() (resource T, err error) {
+	sr.Lock()
+	defer sr.Unlock()
 
-	if rl.count == 0 {
-		var err error
-		rl.teardown, err = prepareResource()
+	if sr.count == 0 {
+		err = sr.resource.Start()
 		if err != nil {
-			return err
+			return
 		}
 	}
 
-	rl.count++
+	sr.count++
 
-	return nil
+	return sr.resource, nil
 }
 
-func (rl *resourceLocker) Done() {
-	rl.Lock()
-	defer rl.Unlock()
+func (sr *sharedResource[T]) Release() {
+	sr.Lock()
+	defer sr.Unlock()
 
-	if rl.count > 0 {
-		rl.count--
+	if sr.count > 0 {
+		sr.count--
 
-		if rl.count == 0 {
-			rl.teardown()
+		if sr.count == 0 {
+			sr.resource.Stop()
 		}
 	}
 }
 
-type autoPingerStruct struct {
-	rl *resourceLocker
-	v4 *pinger.Pinger
-	v6 *pinger.Pinger
+type simplePinger struct {
+	v4   *pinger.Pinger
+	v6   *pinger.Pinger
+	stop context.CancelFunc
 }
 
-func newAutoPinger() *autoPingerStruct {
-	return &autoPingerStruct{
-		rl: newResourceLocker(),
-	}
-}
-
-func (p *autoPingerStruct) start() (teardown func(), err error) {
+func (p *simplePinger) Start() error {
 	p.v4 = pinger.NewIPv4()
 	p.v6 = pinger.NewIPv6()
 
 	ctx, stop := context.WithCancel(context.Background())
+	p.stop = stop
 
-	if err := p.startPingers(ctx); err != nil {
-		stop()
-		p.v4 = nil
-		p.v6 = nil
-		return nil, err
+	err := p.startPingers(ctx)
+	if err != nil {
+		p.Stop()
+		return err
 	}
 
-	return func() {
-		stop()
-		p.v4 = nil
-		p.v6 = nil
-	}, nil
+	return nil
+}
+
+func (p *simplePinger) Stop() {
+	p.v4 = nil
+	p.v6 = nil
+	p.stop()
+	p.stop = nil
+}
+
+type autoPingerStruct struct {
+	sr *sharedResource[*simplePinger]
+}
+
+func newAutoPinger() *autoPingerStruct {
+	return &autoPingerStruct{
+		sr: newSharedResource(&simplePinger{}),
+	}
 }
 
 func (p *autoPingerStruct) getFor(target net.IP) (*pinger.Pinger, error) {
-	if err := p.rl.Start(p.start); err != nil {
+	pinger, err := p.sr.Get()
+	if err != nil {
 		return nil, err
 	}
 
 	if target.To4() != nil {
-		return p.v4, nil
+		return pinger.v4, nil
 	}
-	return p.v6, nil
+	return pinger.v6, nil
 }
 
 func (p *autoPingerStruct) Ping(ctx context.Context, target *net.IPAddr) (startTime time.Time, duration time.Duration, result pinger.Result, err error) {
-	defer p.rl.Done()
+	defer p.sr.Release()
 
 	ping, err := p.getFor(target.IP)
 	if err != nil {
@@ -144,6 +159,15 @@ func (p *autoPingerStruct) Ping(ctx context.Context, target *net.IPAddr) (startT
 	duration = time.Since(startTime)
 
 	return
+}
+
+func (p *autoPingerStruct) Test() error {
+	_, err := p.sr.Get()
+	if err != nil {
+		return err
+	}
+	p.sr.Release()
+	return nil
 }
 
 func pingResultToRecord(ctx context.Context, target *api.URL, startTime time.Time, result pinger.Result) api.Record {
@@ -184,18 +208,6 @@ var (
 	autoPinger = newAutoPinger()
 )
 
-// checkPingPermission tries to prepare pinger for check if it has permission.
-func checkPingPermission() error {
-	stop, err := autoPinger.start()
-
-	if err != nil {
-		return err
-	}
-
-	stop()
-	return nil
-}
-
 // PingProbe is a Prober implementation for SNMP echo request aka ping.
 type PingProbe struct {
 	target *api.URL
@@ -207,7 +219,7 @@ func NewPingProbe(u *api.URL) (PingProbe, error) {
 		return PingProbe{}, ErrUnsupportedScheme
 	}
 
-	if err := checkPingPermission(); err != nil {
+	if err := autoPinger.Test(); err != nil {
 		return PingProbe{}, ayderr.New(ErrFailedToPreparePing, err, ErrFailedToPreparePing.Error())
 	}
 

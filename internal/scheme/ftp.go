@@ -74,12 +74,8 @@ func ftpConnectAndLogin(ctx context.Context, u *api.URL) (conn *ftp.ServerConn, 
 		if errors.As(err, &dnsErr) {
 			status = api.StatusUnknown
 			message = dnsErrorToMessage(dnsErr)
-		} else if errors.As(err, &opErr) && opErr.Op == "dial" {
-			if opErr.Addr == nil {
-				message = err.Error()
-			} else {
-				message = fmt.Sprintf("%s: connection refused", opErr.Addr)
-			}
+		} else if errors.As(err, &opErr) && opErr.Op == "dial" && opErr.Addr != nil {
+			message = fmt.Sprintf("%s: connection refused", opErr.Addr)
 		}
 
 		return

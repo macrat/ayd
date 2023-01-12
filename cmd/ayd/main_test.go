@@ -26,8 +26,6 @@ func MakeTestCommand(t testing.TB, taskArgs []string) (*main.AydCommand, *bytes.
 		OutStream: buf,
 		ErrStream: buf,
 
-		ListenPort: 9000,
-
 		Tasks: tasks,
 	}, buf
 }

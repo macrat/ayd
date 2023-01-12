@@ -123,24 +123,31 @@ func TestPathPattern_ListAll(t *testing.T) {
 	}
 }
 
-func FuzzPathPattern_Build(f *testing.F) {
-	f.Add("ayd_%y%m%d.log")
-	f.Add("%Y-%m-%dT%H:%M.txt")
-	f.Add("ayd/year=%Y/month=%m/day=%d/hour=%H/minute=%M/log.json")
-	f.Add("ayd-log/date=%Y%m%d/time=%H%M/ayd.log")
-	f.Add("/var/log/ayd/%Y/%m/%d/%H%M.log")
-	f.Add("%%percent%%%")
+func FuzzPathPattern(f *testing.F) {
+	f.Add("ayd_%y%m%d.log", time.Now().Unix())
+	f.Add("%Y-%m-%dT%H:%M.txt", time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC).Unix())
+	f.Add("ayd/year=%Y/month=%m/day=%d/hour=%H/minute=%M/log.json", time.Date(2099, 12, 31, 0, 0, 0, 0, time.UTC).Unix())
+	f.Add("ayd-log/date=%Y%m%d/time=%H%M/ayd.log", time.Now().Unix()-1000)
+	f.Add("/var/log/ayd/%Y/%m/%d/%H%M.log", time.Now().Unix()+1000)
+	f.Add("%%percent%%%", time.Now().Unix())
 
-	now := time.Now()
+	mintime := time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC).Unix()
+	maxtime := time.Date(2099, 12, 31, 23, 59, 59, int(time.Second-1), time.UTC).Unix()
 
-	f.Fuzz(func(t *testing.T, s string) {
-		if len(s) == 0 {
+	f.Fuzz(func(t *testing.T, s string, timestamp int64) {
+		if len(s) == 0 || timestamp < mintime || maxtime < timestamp {
 			t.Skip()
 		}
 
 		p := store.ParsePathPattern(s)
-		if len(p.Build(now)) == 0 {
-			t.Errorf("pattern %q made an empty string", s)
+
+		built := p.Build(time.Unix(timestamp, 0))
+		if len(built) == 0 {
+			t.Fatalf("pattern %q built an empty string", built)
+		}
+
+		if !p.Match(built, time.Unix(timestamp, 0), time.Unix(timestamp, 0)) {
+			t.Errorf("unexpected unmatch: %s == %s (%s)", time.Unix(timestamp, 0), built, s)
 		}
 	})
 }

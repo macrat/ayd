@@ -29,7 +29,7 @@ func TestTargetURLNormalize(t *testing.T) {
 	server := RunDummyHTTPServer()
 	defer server.Close()
 
-	StartFTPServer(t, 2121)
+	_, ftpaddr := StartFTPServer(t)
 
 	tests := []struct {
 		Input string
@@ -140,7 +140,7 @@ func TestTargetURLNormalize(t *testing.T) {
 		{"source+" + server.URL + "/", api.URL{Scheme: "source+http", Host: strings.Replace(server.URL, "http://", "", 1), Path: "/"}, nil},
 		{"source+" + server.URL, api.URL{Scheme: "source+http", Host: strings.Replace(server.URL, "http://", "", 1), Path: "/"}, nil},
 
-		{"source+ftp://localhost:2121/source.txt", api.URL{Scheme: "source+ftp", Host: "localhost:2121", Path: "/source.txt"}, nil},
+		{"source+ftp://" + ftpaddr + "/source.txt", api.URL{Scheme: "source+ftp", Host: ftpaddr, Path: "/source.txt"}, nil},
 
 		{"source+exec:./testdata/listing-script", api.URL{Scheme: "source+exec", Opaque: "./testdata/listing-script"}, nil},
 	}

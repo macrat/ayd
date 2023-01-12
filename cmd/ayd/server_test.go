@@ -2,7 +2,10 @@ package main_test
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"regexp"
 	"sync"
 	"testing"
@@ -55,7 +58,10 @@ func TestAydCommand_RunServer(t *testing.T) {
 }
 
 func TestRunServer_tls(t *testing.T) {
-	s := testutil.NewStore(t)
+	log, stdout := io.Pipe()
+	defer log.Close()
+	defer stdout.Close()
+	s := testutil.NewStoreWithConsole(t, stdout)
 	defer s.Close()
 
 	cert := testutil.NewCertificate(t)
@@ -75,9 +81,23 @@ func TestRunServer_tls(t *testing.T) {
 		wg.Done()
 	}()
 
-	time.Sleep(100 * time.Millisecond) // wait for start HTTP server
+	var startMessage struct {
+		URL string `json:"url"`
+	}
+	if err := json.NewDecoder(log).Decode(&startMessage); err != nil {
+		t.Fatalf("failed to parse start message: %s", err)
+	}
 
-	resp, err := cert.Client().Get("https://localhost:9000/status.html")
+	go func() {
+		// discard all outputs
+		io.Copy(io.Discard, log)
+	}()
+
+	req, err := http.NewRequestWithContext(ctx, "GET", startMessage.URL+"/status.html", nil)
+	if err != nil {
+		t.Fatalf("failed to make request: %s", err)
+	}
+	resp, err := cert.Client().Do(req)
 	if err != nil {
 		t.Fatalf("failed to fetch status page: %s", err)
 	}

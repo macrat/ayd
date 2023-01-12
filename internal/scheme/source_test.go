@@ -32,7 +32,7 @@ func TestSourceScheme_Probe(t *testing.T) {
 	server := RunDummyHTTPServer()
 	defer server.Close()
 
-	StartFTPServer(t, 22121)
+	_, ftpaddr := StartFTPServer(t)
 
 	sshServer := StartSSHServer(t)
 
@@ -87,10 +87,10 @@ func TestSourceScheme_Probe(t *testing.T) {
 			"source+" + server.URL + "/source/slow": api.StatusFailure,
 		}, ""},
 
-		{"source+ftp://localhost:22121/source.txt", map[string]api.Status{
+		{"source+ftp://" + ftpaddr + "/source.txt", map[string]api.Status{
 			"dummy:healthy#sub-list":                  api.StatusHealthy,
 			"dummy:healthy#healthy-list":              api.StatusHealthy,
-			"source+ftp://localhost:22121/source.txt": api.StatusHealthy,
+			"source+ftp://" + ftpaddr + "/source.txt": api.StatusHealthy,
 		}, ""},
 
 		{"source+exec:./testdata/listing-script?message=abc#world", map[string]api.Status{

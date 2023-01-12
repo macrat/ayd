@@ -352,17 +352,19 @@ func (p PathPattern) ListBetween(since, until time.Time) []string {
 }
 
 type timePattern struct {
-	Year   int
-	Month  int
-	Day    int
-	Hour   int
-	Minute int
+	Year       int
+	Month      int
+	Day        int
+	Hour       int
+	Minute     int
+	Second     int
+	Nanosecond int
 }
 
 var (
-	emptyTimePattern = timePattern{-1, -1, -1, -1, -1}
-	minTimePattern   = timePattern{0, 1, 1, 0, 0}
-	maxTimePattern   = timePattern{9999, 12, 31, 23, 59}
+	emptyTimePattern = timePattern{-1, -1, -1, -1, -1, 0, 0}
+	minTimePattern   = timePattern{0, 1, 1, 0, 0, 0, 0}
+	maxTimePattern   = timePattern{9999, 12, 31, 23, 59, 59, int(time.Second - 1)}
 )
 
 func (p timePattern) Exec(t time.Time, base timePattern) time.Time {
@@ -412,8 +414,8 @@ func (p timePattern) Time(loc *time.Location) time.Time {
 		p.Day,
 		p.Hour,
 		p.Minute,
-		0,
-		0,
+		p.Second,
+		p.Nanosecond,
 		loc,
 	)
 }
