@@ -16,7 +16,7 @@ services:
   ssh:
     build: ./sshd
     ports:
-      - '22:22'
+      - '2222:22'
     volumes:
       - storage:/tmp/data
 

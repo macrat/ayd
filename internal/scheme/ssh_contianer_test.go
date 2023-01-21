@@ -17,7 +17,7 @@ import (
 )
 
 func RunSSHCommandOnContainer(t testing.TB, command, arg string) string {
-	u, err := api.ParseURL("exec+ssh://foo:bar@localhost" + command + "#" + url.PathEscape(arg))
+	u, err := api.ParseURL("exec+ssh://foo:bar@localhost:2222" + command + "#" + url.PathEscape(arg))
 	if err != nil {
 		t.Fatalf("failed to parse URL for prepare test: %s", err)
 	}
@@ -58,12 +58,11 @@ func TestSSHProbe_Probe_withContainer(t *testing.T) {
 	fingerprint := GetContainerSSHFingerprint(t)
 	key := GenerateContainerSSHKey(t)
 
-	extra := "---\nfingerprint: " + regexp.QuoteMeta(fingerprint) + "\nsource_addr: (127\\.0\\.0\\.1|\\[::1\\]):[0-9]+\ntarget_addr: (127\\.0\\.0\\.1|\\[::1\\]):22"
+	extra := "---\nfingerprint: " + regexp.QuoteMeta(fingerprint) + "\nsource_addr: (127\\.0\\.0\\.1|\\[::1\\]):[0-9]+\ntarget_addr: (127\\.0\\.0\\.1|\\[::1\\]):2222"
 
 	AssertProbe(t, []ProbeTest{
-		{"ssh://foo:bar@localhost", api.StatusHealthy, "succeed to connect\n" + extra, ""},
-		{"ssh://foo:bar@localhost:22", api.StatusHealthy, "succeed to connect\n" + extra, ""},
-		{"ssh://foo:bar@localhost?fingerprint=" + url.QueryEscape(fingerprint), api.StatusHealthy, "succeed to connect\n" + extra, ""},
-		{"ssh://foo@localhost?fingerprint=" + url.QueryEscape(fingerprint) + "&identityfile=" + url.QueryEscape(key), api.StatusHealthy, "succeed to connect\n" + extra, ""},
+		{"ssh://foo:bar@localhost:2222", api.StatusHealthy, "succeed to connect\n" + extra, ""},
+		{"ssh://foo:bar@localhost:2222?fingerprint=" + url.QueryEscape(fingerprint), api.StatusHealthy, "succeed to connect\n" + extra, ""},
+		{"ssh://foo@localhost:2222?fingerprint=" + url.QueryEscape(fingerprint) + "&identityfile=" + url.QueryEscape(key), api.StatusHealthy, "succeed to connect\n" + extra, ""},
 	}, 10)
 }

@@ -24,20 +24,20 @@ func TestExecSSHScheme_withContainer(t *testing.T) {
 
 	extra := func(code int) string {
 		return fmt.Sprintf(
-			"---\nexit_code: %d\nfingerprint: %s\nsource_addr: (127\\.0\\.0\\.1|\\[::1\\]):[0-9]+\ntarget_addr: (127\\.0\\.0\\.1|\\[::1\\]):22",
+			"---\nexit_code: %d\nfingerprint: %s\nsource_addr: (127\\.0\\.0\\.1|\\[::1\\]):[0-9]+\ntarget_addr: (127\\.0\\.0\\.1|\\[::1\\]):2222",
 			code,
 			regexp.QuoteMeta(fingerprint),
 		)
 	}
 
 	AssertProbe(t, []ProbeTest{
-		{"exec+ssh://foo:bar@localhost/bin/ls#/home/foo/.ssh", api.StatusHealthy, "authorized_keys\n" + extra(0), ""},
-		{"exec+ssh://foo@localhost/bin/ls?identityfile=" + url.QueryEscape(key) + "#/home/foo/.ssh", api.StatusHealthy, "authorized_keys\n" + extra(0), ""},
+		{"exec+ssh://foo:bar@localhost:2222/bin/ls#/home/foo/.ssh", api.StatusHealthy, "authorized_keys\n" + extra(0), ""},
+		{"exec+ssh://foo@localhost:2222/bin/ls?identityfile=" + url.QueryEscape(key) + "#/home/foo/.ssh", api.StatusHealthy, "authorized_keys\n" + extra(0), ""},
 
-		{"exec+ssh://foo:bar@localhost/usr/local/bin/make-file?ayd_test_content=hello+world#/tmp/data/ssh/hello", api.StatusHealthy, extra(0), ""},
-		{"exec+ssh://foo:bar@localhost/bin/cat#/tmp/data/ssh/hello", api.StatusHealthy, "hello world\n" + extra(0), ""},
+		{"exec+ssh://foo:bar@localhost:2222/usr/local/bin/make-file?ayd_test_content=hello+world#/tmp/data/ssh/hello", api.StatusHealthy, extra(0), ""},
+		{"exec+ssh://foo:bar@localhost:2222/bin/cat#/tmp/data/ssh/hello", api.StatusHealthy, "hello world\n" + extra(0), ""},
 
-		{"exec+ssh://foo:bar@localhost/usr/local/bin/no-such-command", api.StatusUnknown, "ash: /usr/local/bin/no-such-command: not found\n" + extra(127), ""},
+		{"exec+ssh://foo:bar@localhost:2222/usr/local/bin/no-such-command", api.StatusUnknown, "ash: /usr/local/bin/no-such-command: not found\n" + extra(127), ""},
 	}, 10)
 
 	env := strings.Join([]string{
@@ -49,8 +49,8 @@ func TestExecSSHScheme_withContainer(t *testing.T) {
 		`ayd_time=2001-02-03T16:05:06Z`,
 	}, "\n")
 	AssertAlert(t, []ProbeTest{
-		{"exec+ssh://foo:bar@localhost/usr/local/bin/list-ayd-env", api.StatusHealthy, env + "\n" + extra(0), ""},
-		{"exec+ssh://foo:bar@localhost/usr/local/bin/list-ayd-env", api.StatusHealthy, env + "\n" + extra(0), ""},
-		{"exec+ssh://foo:bar@localhost/usr/local/bin/list-ayd-env", api.StatusHealthy, env + "\n" + extra(0), ""},
+		{"exec+ssh://foo:bar@localhost:2222/usr/local/bin/list-ayd-env", api.StatusHealthy, env + "\n" + extra(0), ""},
+		{"exec+ssh://foo:bar@localhost:2222/usr/local/bin/list-ayd-env", api.StatusHealthy, env + "\n" + extra(0), ""},
+		{"exec+ssh://foo:bar@localhost:2222/usr/local/bin/list-ayd-env", api.StatusHealthy, env + "\n" + extra(0), ""},
 	}, 10)
 }
