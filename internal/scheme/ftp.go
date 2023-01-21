@@ -199,6 +199,11 @@ func (s FTPScheme) Probe(ctx context.Context, r Reporter) {
 }
 
 func (s FTPScheme) Alert(ctx context.Context, r Reporter, lastRecord api.Record) {
+	target := &api.URL{
+		Scheme: "alert",
+		Opaque: s.target.String(),
+	}
+
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
 	defer cancel()
 
@@ -208,7 +213,7 @@ func (s FTPScheme) Alert(ctx context.Context, r Reporter, lastRecord api.Record)
 			Time:    stime,
 			Status:  status,
 			Latency: time.Since(stime),
-			Target:  s.target,
+			Target:  target,
 			Message: message,
 			Extra:   extra,
 		}))
