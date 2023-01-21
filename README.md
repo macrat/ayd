@@ -361,6 +361,8 @@ The `exec+ssh:` scheme is a variant of `exec:`.
 This scheme executes a command through a SSH connection, and check the exit code.
 Please see also [`exec:`](#exec) and [`ssh:`](#ssh).
 
+__IMPORTANT:__ Please allow to use environment variables by SSH server's setting. If you are using OpenSSH, please write like `AllowEnv ayd_*` in to `/etc/ssh/sshd_config`.
+
 examples:
 - `exec+ssh://user:password@example.com/usr/bin/test.sh?env_value=variable`
 - `exec+ssh://user@example.com/usr/bin/test.sh?identityfile=/path/to/id_ed25519#first-argument`
