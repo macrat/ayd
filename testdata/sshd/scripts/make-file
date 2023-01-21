@@ -1,0 +1,3 @@
+#!/bin/sh
+
+echo "$ayd_test_content" >> "$1"
