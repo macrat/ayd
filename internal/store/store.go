@@ -333,9 +333,6 @@ func (s *Store) setIncidentIfNeed(r api.Record, needCallback bool) {
 //
 // See also probeHistoryMap.Append about the arguments.
 func (s *Store) Report(source *api.URL, r api.Record) {
-	if _, ok := r.Target.User.Password(); ok {
-		r.Target.User = url.UserPassword(r.Target.User.Username(), "xxxxx")
-	}
 	r.Message = strings.Trim(r.Message, "\r\n")
 
 	s.writeCh <- r

@@ -272,6 +272,9 @@ func TestFTPScheme_Alert(t *testing.T) {
 		if r.Records[0].Status != api.StatusHealthy {
 			t.Errorf("unexpected status: %s", r.Records[0].Status)
 		}
+		if r.Records[0].Target.String() != "alert:ftp://hoge:xxxxx@"+addr+"/alert.json" {
+			t.Errorf("unexpected target: %s", r.Records[0].Target)
+		}
 		if r.Records[0].Message != fmt.Sprintf("uploaded %d bytes to the server", len(expected)) {
 			t.Errorf("unexpected message: %q", r.Records[0].Message)
 		}

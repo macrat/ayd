@@ -1,1 +1,0 @@
-# Plugins for Docker image
