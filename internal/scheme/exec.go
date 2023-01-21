@@ -273,7 +273,6 @@ func NewExecSSHScheme(u *api.URL) (ExecSSHScheme, error) {
 		target: u,
 		env:    env,
 	}, nil
-
 }
 
 func (s ExecSSHScheme) Target() *api.URL {
