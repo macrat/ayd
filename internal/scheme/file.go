@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -11,6 +12,91 @@ import (
 
 	api "github.com/macrat/ayd/lib-ayd"
 )
+
+type proberFS interface {
+	Stat(name string) (fs.FileInfo, error)
+	ReadDir(name string) ([]fs.DirEntry, error)
+}
+
+type alerterFS interface {
+	proberFS
+
+	OpenAppend(name string, perm fs.FileMode) (io.WriteCloser, error)
+}
+
+type localFS struct{}
+
+func (dir localFS) OpenAppend(name string, perm fs.FileMode) (io.WriteCloser, error) {
+	return os.OpenFile(name, os.O_APPEND|os.O_CREATE|os.O_WRONLY, perm)
+}
+
+func (dir localFS) Stat(name string) (fs.FileInfo, error) {
+	return os.Stat(name)
+}
+
+func (dir localFS) ReadDir(name string) ([]fs.DirEntry, error) {
+	return os.ReadDir(name)
+}
+
+func probeFS[FS proberFS](dir FS, path string, r *api.Record) {
+	stat, err := dir.Stat(path)
+	switch {
+	case errors.Is(err, fs.ErrNotExist):
+		r.Message = "no such file or directory"
+		r.Status = api.StatusFailure
+	case errors.Is(err, fs.ErrPermission):
+		r.Message = "permission denied"
+		r.Status = api.StatusFailure
+	case err != nil:
+		r.Message = fmt.Sprintf("failed to get information: %s", err)
+		r.Status = api.StatusUnknown
+	default:
+		r.Status = api.StatusHealthy
+		r.Extra = map[string]interface{}{
+			"mtime":      stat.ModTime().Format(time.RFC3339),
+			"permission": fmt.Sprintf("%03o", stat.Mode().Perm()),
+		}
+		if stat.IsDir() {
+			r.Message = "directory exists"
+			r.Extra["type"] = "directory"
+			if entries, err := dir.ReadDir(path); err == nil {
+				r.Extra["file_count"] = len(entries)
+			}
+		} else {
+			r.Message = "file exists"
+			r.Extra["type"] = "file"
+			r.Extra["file_size"] = stat.Size()
+		}
+	}
+	r.Latency = time.Since(r.Time)
+}
+
+func alertFS[FS alerterFS](dir FS, path string, r *api.Record, lastRecord api.Record) {
+	f, err := dir.OpenAppend(path, 0600)
+	if err != nil {
+		r.Status = api.StatusFailure
+		r.Message = fmt.Sprintf("failed to open target file: %s", err)
+		return
+	}
+	defer f.Close()
+
+	data, err := lastRecord.MarshalJSON()
+	if err != nil {
+		r.Status = api.StatusFailure
+		r.Message = fmt.Sprintf("failed to convert record: %s", err)
+		return
+	}
+
+	_, err = f.Write(append(data, '\n'))
+	if err != nil {
+		r.Status = api.StatusFailure
+		r.Message = fmt.Sprintf("failed to write record: %s", err)
+		return
+	}
+
+	r.Status = api.StatusHealthy
+	r.Message = fmt.Sprintf("wrote %d bytes to file", len(data)+1)
+}
 
 // FileScheme is a probe/alert implementation for local file.
 type FileScheme struct {
@@ -41,83 +127,25 @@ func (s FileScheme) Target() *api.URL {
 }
 
 func (s FileScheme) Probe(ctx context.Context, r Reporter) {
-	var status api.Status
-	var message string
-	var extra map[string]interface{}
-
-	stime := time.Now()
-
-	stat, err := os.Stat(s.target.Opaque)
-	switch {
-	case errors.Is(err, fs.ErrNotExist):
-		message = "no such file or directory"
-		status = api.StatusFailure
-	case errors.Is(err, fs.ErrPermission):
-		message = "permission denied"
-		status = api.StatusFailure
-	case err != nil:
-		message = fmt.Sprintf("failed to get information: %s", err)
-		status = api.StatusUnknown
-	default:
-		status = api.StatusHealthy
-		extra = map[string]interface{}{
-			"mtime":      stat.ModTime().Format(time.RFC3339),
-			"permission": fmt.Sprintf("%03o", stat.Mode().Perm()),
-		}
-		if stat.IsDir() {
-			message = "directory exists"
-			extra["type"] = "directory"
-			if entries, err := os.ReadDir(s.target.Opaque); err == nil {
-				extra["file_count"] = len(entries)
-			}
-		} else {
-			message = "file exists"
-			extra["type"] = "file"
-			extra["file_size"] = stat.Size()
-		}
+	rec := api.Record{
+		Time:   time.Now(),
+		Target: s.target,
 	}
 
-	r.Report(s.target, timeoutOr(ctx, api.Record{
-		Time:    stime,
-		Status:  status,
-		Latency: time.Since(stime),
-		Target:  s.target,
-		Message: message,
-		Extra:   extra,
-	}))
+	probeFS(localFS{}, s.target.Opaque, &rec)
+
+	r.Report(s.target, timeoutOr(ctx, rec))
 }
 
 func (s FileScheme) Alert(ctx context.Context, r Reporter, lastRecord api.Record) {
 	r = AlertReporter{s.target, r}
 
-	report := func(status api.Status, message string) {
-		r.Report(s.target, timeoutOr(ctx, api.Record{
-			Time:    time.Now(),
-			Status:  status,
-			Target:  s.target,
-			Message: message,
-		}))
+	rec := api.Record{
+		Time:   time.Now(),
+		Target: s.target,
 	}
 
-	f, err := os.OpenFile(s.target.Opaque, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
-	if err != nil {
-		report(api.StatusFailure, fmt.Sprintf("failed to open target file: %s", err))
-		return
-	}
-	defer f.Close()
+	alertFS(localFS{}, s.target.Opaque, &rec, lastRecord)
 
-	data, err := lastRecord.MarshalJSON()
-	if err != nil {
-		report(api.StatusFailure, fmt.Sprintf("failed to convert record: %s", err))
-		return
-	}
-
-	_, err = f.Write(data)
-	if err != nil {
-		report(api.StatusFailure, fmt.Sprintf("failed to write record: %s", err))
-		return
-	}
-	f.Write([]byte("\n"))
-
-	report(api.StatusHealthy, fmt.Sprintf("wrote %d bytes to file", len(data)+1))
+	r.Report(s.target, timeoutOr(ctx, rec))
 }
