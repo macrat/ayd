@@ -203,7 +203,7 @@ func (p PluginScheme) Alert(ctx context.Context, r Reporter, lastRecord api.Reco
 
 	p.execute(
 		ctx,
-		AlertReporter{&api.URL{Scheme: "alert", Opaque: p.target.String()}, r},
+		AlertReporter{p.target, r},
 		"alert",
 		args,
 	)
