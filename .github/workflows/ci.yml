@@ -15,7 +15,7 @@ jobs:
       - name: Start test containers
         run: cd testdata && docker compose up -d
       - name: Test
-        run: go test -race -coverprofile=cov -covermode=atomic -tags=githubci -tags=container ./...
+        run: go test -race -coverprofile=cov -covermode=atomic -tags='githubci container' ./...
       - uses: codecov/codecov-action@v3
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
