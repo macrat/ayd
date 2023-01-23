@@ -81,7 +81,7 @@ func (s SFTPScheme) Target() *api.URL {
 func (s SFTPScheme) dial(ctx context.Context, rec *api.Record) (sfs sftpFS, ok bool) {
 	conf, err := newSSHConfig(s.target)
 	if err != nil {
-		rec.Status = api.StatusFailure
+		rec.Status = api.StatusUnknown
 		rec.Message = err.Error()
 		return sfs, false
 	}
@@ -125,6 +125,7 @@ func (s SFTPScheme) Probe(ctx context.Context, r Reporter) {
 		r.Report(s.target, timeoutOr(ctx, rec))
 		return
 	}
+	rec.Extra = nil
 
 	probeFS(sfs, s.target.Path, &rec)
 
@@ -149,6 +150,7 @@ func (s SFTPScheme) Alert(ctx context.Context, r Reporter, lastRecord api.Record
 		r.Report(s.target, timeoutOr(ctx, rec))
 		return
 	}
+	rec.Extra = nil
 
 	alertFS(sfs, s.target.Path, &rec, lastRecord)
 

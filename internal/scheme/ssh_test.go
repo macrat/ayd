@@ -19,6 +19,7 @@ import (
 
 	"github.com/macrat/ayd/internal/testutil"
 	api "github.com/macrat/ayd/lib-ayd"
+	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -78,13 +79,29 @@ func (s SSHServer) Close() error {
 }
 
 func (s SSHServer) Serve(ctx context.Context) {
+	filesystem := sftp.InMemHandler()
+	filesystem.FileCmd.Filecmd(sftp.NewRequest("Mkdir", "/hello"))
+	filesystem.FileCmd.Filecmd(sftp.NewRequest("Mkdir", "/empty"))
+	fr := sftp.NewRequest("Put", "/hello/world")
+	fr.Flags = 2 | 8 // flag for write and create
+	if w, err := filesystem.FilePut.Filewrite(fr); err != nil {
+		fmt.Println(err)
+	} else {
+		w.WriteAt([]byte("hello world"), 0)
+	}
+	fr = sftp.NewRequest("Put", "/hello/foobar")
+	fr.Flags = 2 | 8 // flag for write and create
+	if w, err := filesystem.FilePut.Filewrite(fr); err == nil {
+		w.WriteAt([]byte("abc"), 0)
+	}
+
 	for {
 		tcpConn, err := s.Listener.Accept()
 		if err != nil {
 			break
 		}
 
-		_, chans, reqs, err := ssh.NewServerConn(tcpConn, s.Conf)
+		sshConn, chans, reqs, err := ssh.NewServerConn(tcpConn, s.Conf)
 		if err != nil {
 			continue
 		}
@@ -158,6 +175,22 @@ func (s SSHServer) Serve(ctx context.Context) {
 							}
 							channel.Close()
 
+						case "subsystem":
+							if string(req.Payload[4:]) == "sftp" && sshConn.User() != "nosftp" {
+								server := sftp.NewRequestServer(channel, filesystem)
+								if err != nil {
+									req.Reply(false, nil)
+									break
+								}
+								req.Reply(true, nil)
+
+								if err = server.Serve(); err == io.EOF {
+									server.Close()
+								}
+							} else {
+								req.Reply(false, nil)
+							}
+
 						default:
 							req.Reply(false, nil)
 						}
@@ -196,6 +229,9 @@ func StartSSHServer(t testing.TB) SSHServer {
 			if conn.User() == "pasusr" && string(password) == "foobar" {
 				return &ssh.Permissions{}, nil
 			}
+			if conn.User() == "nosftp" && string(password) == "nosftp" {
+				return &ssh.Permissions{}, nil
+			}
 			return nil, errors.New("failed to auth")
 		},
 	}
@@ -232,7 +268,7 @@ func TestSSHProbe_Probe(t *testing.T) {
 	dummyPath := SaveSSHKey(t, dummyKey, "dummy_rsa", "")
 
 	AssertProbe(t, []ProbeTest{
-		{"ssh://" + server.Addr, api.StatusUnknown, success, "username is required"},
+		{"ssh://" + server.Addr, api.StatusUnknown, "", "username is required"},
 		{"ssh://pasusr:foobar@" + server.Addr, api.StatusHealthy, success, ""},
 		{"ssh://pasusr:foobar@" + server.Addr + "?fingerprint=" + url.QueryEscape(server.FingerprintSHA), api.StatusHealthy, success, ""},
 		{"ssh://pasusr:foobar@" + server.Addr + "?fingerprint=" + url.QueryEscape(server.FingerprintMD5), api.StatusHealthy, success, ""},
