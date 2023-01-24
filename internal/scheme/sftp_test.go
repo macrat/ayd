@@ -1,11 +1,15 @@
 package scheme_test
 
 import (
+	"context"
 	"net/url"
+	"os"
 	"regexp"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/macrat/ayd/internal/testutil"
 	api "github.com/macrat/ayd/lib-ayd"
 )
 
@@ -13,6 +17,9 @@ func TestSFTPScheme_Probe(t *testing.T) {
 	t.Parallel()
 
 	server := StartSSHServer(t)
+
+	dummyKey, _ := GenerateSSHKey(t)
+	dummyPath := SaveSSHKey(t, dummyKey, "dummy_rsa", "")
 
 	AssertProbe(t, []ProbeTest{
 		{"sftp://pasusr:foobar@" + server.Addr, api.StatusHealthy, strings.Join([]string{
@@ -57,7 +64,40 @@ func TestSFTPScheme_Probe(t *testing.T) {
 			`target_addr: (127\.0\.0\.1|\[::1\]):[0-9]+`,
 		}, "\n"), ""},
 		{"sftp://foo:bar@localhost:10", api.StatusFailure, `(127\.0\.0\.1|\[::1\]):10: connection refused`, ""},
+
+		{"sftp://keyusr@" + server.Addr + "/empty?identityfile=" + url.QueryEscape(dummyPath), api.StatusFailure, strings.Join([]string{
+			`failed to connect: ssh: handshake failed: ssh: unable to authenticate, attempted methods \[none publickey\], no supported methods remain`,
+			`---`,
+			`fingerprint: ` + regexp.QuoteMeta(server.FingerprintSHA),
+			`source_addr: (127\.0\.0\.1|\[::1\]):[0-9]+`,
+			`target_addr: (127\.0\.0\.1|\[::1\]):[0-9]+`,
+		}, "\n"), ""},
 	}, 10)
+
+	AssertTimeout(t, "sftp://pasusr:foobar@"+server.Addr)
+
+	t.Run("key-removed", func(t *testing.T) {
+		p := testutil.NewProber(t, "sftp://keyusr@"+server.Addr+"/empty?identityfile="+url.QueryEscape(dummyPath))
+
+		os.Remove(dummyPath)
+
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		rs := testutil.RunProbe(ctx, p)
+
+		if len(rs) != 1 {
+			t.Fatalf("unexpected number of records:\n%v", rs)
+		}
+
+		if rs[0].Message != "no such identity file: "+dummyPath {
+			t.Errorf("unexpected message: %q", rs[0].Message)
+		}
+
+		if rs[0].Status != api.StatusUnknown {
+			t.Errorf("unexpected status: %s", rs[0].Status)
+		}
+	})
 }
 
 func TestSFTPScheme_Alert(t *testing.T) {
