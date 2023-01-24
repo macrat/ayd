@@ -57,6 +57,11 @@ Targets:
    e.g. ssh://username:password@example.com
         ssh://username@example.com?identityfile=/path/to/id_rsa
 
+  sftp:
+   Connect to SFTP server and check whether if the file/directory exists.
+   e.g. sftp://username:password@example.com/path/to/file
+        sftp://username@example.com/path/fo/file?identityfile=/path/to/id_rsa
+
   tcp, tcp4, tcp6:
    Connect to TCP port.
    "tcp4" and "tcp6" is variants for specify IPv4 or IPv6.
