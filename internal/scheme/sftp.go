@@ -125,6 +125,7 @@ func (s SFTPScheme) Probe(ctx context.Context, r Reporter) {
 		r.Report(s.target, timeoutOr(ctx, rec))
 		return
 	}
+	defer sfs.Close()
 	rec.Extra = nil
 
 	probeFS(sfs, s.target.Path, &rec)
@@ -150,6 +151,7 @@ func (s SFTPScheme) Alert(ctx context.Context, r Reporter, lastRecord api.Record
 		r.Report(s.target, timeoutOr(ctx, rec))
 		return
 	}
+	defer sfs.Close()
 	rec.Extra = nil
 
 	alertFS(sfs, s.target.Path, &rec, lastRecord)
