@@ -234,6 +234,8 @@ func TestFTPScheme_Probe(t *testing.T) {
 		{"ftp://:fuga@localhost", api.StatusUnknown, ``, "username is required if set password"},
 	}, 1)
 
+	AssertTimeout(t, "ftp://"+addr)
+
 	if runtime.GOOS != "windows" {
 		// Windows doesn't report connection refused. Why?
 		AssertProbe(t, []ProbeTest{
