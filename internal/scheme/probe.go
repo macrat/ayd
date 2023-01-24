@@ -38,6 +38,8 @@ func NewProberFromURL(u *api.URL) (Prober, error) {
 		return NewTCPProbe(u)
 	case "ssh":
 		return NewSSHProbe(u)
+	case "sftp":
+		return NewSFTPScheme(u)
 	case "dns", "dns4", "dns6":
 		return NewDNSProbe(u)
 	case "file":

@@ -21,6 +21,7 @@ $ ayd ping:192.168.1.1 https://example.com
   * [HTTP/HTTPS](#http--https)
   * [FTP/FTPS](#ftp--ftps)
   * [SSH](#ssh)
+  * [SFTP](#sftp)
   * [TCP connect](#tcp)
   * [DNS resolve](#dns)
   * [file/directory existence](#file)
@@ -119,6 +120,7 @@ Ayd supports below URL schemes in default.
 | [`http:` / `https:`](#http--https) | :heavy_check_mark: | :heavy_check_mark: |
 | [`ftp:` / `ftps:`](#ftp--ftps)     | :heavy_check_mark: | :heavy_check_mark: |
 | [`ssh:`](#ssh)                     | :heavy_check_mark: | :heavy_minus_sign: |
+| [`sftp:`](#sftp)                   | :heavy_check_mark: | :heavy_check_mark: |
 | [`tcp:`](#tcp)                     | :heavy_check_mark: | :heavy_minus_sign: |
 | [`dns:`](#dns)                     | :heavy_check_mark: | :heavy_minus_sign: |
 | [`file:`](#file)                   | :heavy_check_mark: | :heavy_check_mark: |
@@ -215,6 +217,22 @@ examples:
 ##### as Alert
 
 `ssh:` does not support to be used as an alert URL.
+
+#### sftp:
+
+Connect to an SFTP server and check whether if the file or directory exists or not. 
+
+This scheme supports the same queries as [ssh:](#ssh) scheme.
+
+SFTP will timeout in 10 minutes and report as failure.
+examples:
+- `sftp://foo:bar@example.com/`
+- `sftp://foo@example.com/path/to/directory?identityfile=/path/to/id_rsa`
+
+##### as Alert
+
+Writes the same format logs as the [normal log file](#log-file), over SFTP, when the service status changed.
+It is pretty same as [file:](#file) scheme for alert but uses SFTP.
 
 #### tcp:
 
