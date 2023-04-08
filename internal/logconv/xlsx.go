@@ -128,7 +128,14 @@ func ToXlsx(w io.Writer, s api.LogScanner, createdAt time.Time) error {
 		}
 	}
 
-	if err := xlsx.SetPanes("log", `{"freeze":true, "split":false, "x_split":0, "y_split":1, "top_left_cell":"A2", "active_pane":"topLeft"}`); err != nil {
+	if err := xlsx.SetPanes("log", &excelize.Panes{
+		Freeze:      true,
+		Split:       false,
+		XSplit:      0,
+		YSplit:      1,
+		TopLeftCell: "A2",
+		ActivePane:  "topLeft",
+	}); err != nil {
 		return err
 	}
 
@@ -137,7 +144,7 @@ func ToXlsx(w io.Writer, s api.LogScanner, createdAt time.Time) error {
 	xlsx.SetColWidth("log", "D", "D", 30)
 	xlsx.SetColWidth("log", "E", "E", 30)
 
-	xlsx.AutoFilter("log", "A1", excelPos(uint(4+len(extraKeys)), 0), "")
+	xlsx.AutoFilter("log", "A1:"+excelPos(uint(4+len(extraKeys)), 0), nil)
 
 	return xlsx.Write(w)
 }
