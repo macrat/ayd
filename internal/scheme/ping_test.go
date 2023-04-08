@@ -13,8 +13,6 @@ import (
 )
 
 func TestPingProbe_Probe(t *testing.T) {
-	t.Parallel()
-
 	if _, err := scheme.NewPingProbe(&api.URL{Scheme: "ping", Opaque: "localhost"}); err != nil {
 		t.Fatalf("failed to check ping permission: %s", err)
 	}
@@ -39,6 +37,8 @@ func TestPingProbe_Probe(t *testing.T) {
 	}, 2)
 
 	t.Run("timeout", func(t *testing.T) {
+		t.Parallel()
+
 		p := testutil.NewProber(t, "ping:localhost")
 
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Nanosecond)
@@ -61,6 +61,8 @@ func TestPingProbe_Probe(t *testing.T) {
 	})
 
 	t.Run("cancel", func(t *testing.T) {
+		t.Parallel()
+
 		p := testutil.NewProber(t, "ping:localhost")
 
 		ctx, cancel := context.WithCancel(context.Background())
