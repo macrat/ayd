@@ -56,7 +56,7 @@ func normalizeSourceURL(u *api.URL) (*api.URL, error) {
 		if u.Opaque == "" {
 			p = u.Path
 
-			if p == "" {
+			if p == "" || p == "/" {
 				return nil, ErrMissingCommand
 			}
 		}
@@ -81,6 +81,9 @@ func normalizeSourceURL(u *api.URL) (*api.URL, error) {
 		}
 		if _, err := newSSHConfig(u); err != nil {
 			return nil, err
+		}
+		if u.Path == "" || u.Path == "/" {
+			return nil, ErrMissingCommand
 		}
 		return u, nil
 	case "source":

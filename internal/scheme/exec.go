@@ -168,7 +168,7 @@ func NewExecLocalScheme(u *api.URL) (ExecLocalScheme, error) {
 		Fragment: u.Fragment,
 	}
 
-	if path == "" {
+	if path == "" || path == "/" {
 		return ExecLocalScheme{}, ErrMissingCommand
 	}
 

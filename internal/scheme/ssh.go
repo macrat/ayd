@@ -16,6 +16,11 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
+var (
+	ErrMissingSSHUsername   = errors.New("username is required")
+	ErrMissingSSHIdentifier = errors.New("password or identityfile is required")
+)
+
 type sshConfig struct {
 	Host     string
 	User     string
@@ -24,6 +29,10 @@ type sshConfig struct {
 }
 
 func newSSHConfig(u *api.URL) (sshConfig, error) {
+	if u.ToURL().Hostname() == "" {
+		return sshConfig{}, ErrMissingHost
+	}
+
 	c := sshConfig{
 		Host: u.Host,
 	}
@@ -32,7 +41,7 @@ func newSSHConfig(u *api.URL) (sshConfig, error) {
 	}
 
 	if u.User == nil {
-		return c, errors.New("username is required")
+		return c, ErrMissingSSHUsername
 	}
 	c.User = u.User.Username()
 
@@ -67,7 +76,7 @@ func newSSHConfig(u *api.URL) (sshConfig, error) {
 			ssh.Password(password),
 		}
 	} else {
-		return c, errors.New("password or identityfile is required")
+		return c, ErrMissingSSHIdentifier
 	}
 
 	if fingerprint := query.Get("fingerprint"); fingerprint != "" {

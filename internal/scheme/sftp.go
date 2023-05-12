@@ -50,6 +50,11 @@ type SFTPScheme struct {
 }
 
 func NewSFTPScheme(u *api.URL) (SFTPScheme, error) {
+	_, separator, _ := SplitScheme(u.Scheme)
+	if separator != 0 {
+		return SFTPScheme{}, ErrUnsupportedScheme
+	}
+
 	q := url.Values{}
 	if f := u.ToURL().Query().Get("identityfile"); f != "" {
 		q.Set("identityfile", f)

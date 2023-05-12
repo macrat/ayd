@@ -62,6 +62,9 @@ func TestTargetURLNormalize(t *testing.T) {
 		{"ftp://example.com", api.URL{Scheme: "ftp", Host: "example.com", Path: "/"}, nil},
 		{"ftp://example.com/?abc=def", api.URL{Scheme: "ftp", Host: "example.com", Path: "/"}, nil},
 		{"ftps://example.com/foo/bar/.././bar/", api.URL{Scheme: "ftps", Host: "example.com", Path: "/foo/bar"}, nil},
+		{"ftp://:hoge@example.com", api.URL{}, scheme.ErrMissingFTPUsername},
+		{"ftp://", api.URL{}, scheme.ErrMissingHost},
+		{"ftps://", api.URL{}, scheme.ErrMissingHost},
 
 		{"tcp:example.com:80", api.URL{Scheme: "tcp", Host: "example.com:80"}, nil},
 		{"tcp://example.com:80/foo/bar?hoge=fuga#piyo", api.URL{Scheme: "tcp", Host: "example.com:80", Fragment: "piyo"}, nil},
@@ -81,6 +84,17 @@ func TestTargetURLNormalize(t *testing.T) {
 		{"ssH://fOo:Bar@Example.com?oh=no", api.URL{Scheme: "ssh", Host: "example.com"}, nil},
 		{"ssH-abc://fOo:Bar@Example.com?oh=no", api.URL{}, scheme.ErrUnsupportedScheme},
 		{"ssh+def://fOo:Bar@Example.com?oh=no", api.URL{}, scheme.ErrUnsupportedScheme},
+		{"ssh://foo@example.com", api.URL{}, scheme.ErrMissingSSHIdentifier},
+		{"ssh:", api.URL{}, scheme.ErrMissingHost},
+		{"ssh://example.com", api.URL{}, scheme.ErrMissingSSHUsername},
+
+		{"sftp://foo:bar@example.com", api.URL{Scheme: "sftp", Host: "example.com"}, nil},
+		{"sftp://foo:bar@example.com/path/to/file", api.URL{Scheme: "sftp", Host: "example.com", Path: "/path/to/file"}, nil},
+		{"sftp://foo:bar@example.com?fingerprint=SHA256:UWtP6l72VQ3183zItQ+/HsdF2h28k9rCGS/94j1n040", api.URL{Scheme: "sftp", Host: "example.com", RawQuery: "fingerprint=SHA256%3AUWtP6l72VQ3183zItQ%2B%2FHsdF2h28k9rCGS%2F94j1n040"}, nil},
+		{"SFtp://foo:bar@example.com", api.URL{Scheme: "sftp", Host: "example.com"}, nil},
+		{"sftp-abc://foo:bar@example.com", api.URL{}, scheme.ErrUnsupportedScheme},
+		{"sftp:", api.URL{}, scheme.ErrMissingHost},
+		{"sftp://example.com", api.URL{}, scheme.ErrMissingSSHUsername},
 
 		{"dns:example.com", api.URL{Scheme: "dns", Opaque: "example.com"}, nil},
 		{"dns:///example.com", api.URL{Scheme: "dns", Opaque: "example.com"}, nil},
@@ -110,8 +124,12 @@ func TestTargetURLNormalize(t *testing.T) {
 		{"exec+abc:testdata/test", api.URL{}, scheme.ErrUnsupportedScheme},
 		{"exec:", api.URL{}, scheme.ErrMissingCommand},
 		{"exec://", api.URL{}, scheme.ErrMissingCommand},
+		{"exec:///", api.URL{}, scheme.ErrMissingCommand},
 		{"exec+ssh://root:abc@example.com/bin/cat#/etc/os-release", api.URL{Scheme: "exec+ssh", Host: "example.com", Path: "/bin/cat", Fragment: "/etc/os-release"}, nil},
 		{"exec+ssh://root:abc@example.com/bin/cat?fingerprint=SHA256:abc+def", api.URL{Scheme: "exec+ssh", Host: "example.com", Path: "/bin/cat", RawQuery: "fingerprint=SHA256%3Aabc%2Bdef"}, nil},
+		{"exec+ssh:///bin/cat", api.URL{}, scheme.ErrMissingHost},
+		{"exec+ssh://example.com/bin/cat", api.URL{}, scheme.ErrMissingSSHUsername},
+		{"exec+ssh://root@example.com/bin/cat", api.URL{}, scheme.ErrMissingSSHIdentifier},
 
 		{"file:testdata/test.bat", api.URL{Scheme: "file", Opaque: "testdata/test.bat"}, nil},
 		{"file:./testdata/test.bat", api.URL{Scheme: "file", Opaque: "./testdata/test.bat"}, nil},
@@ -129,6 +147,8 @@ func TestTargetURLNormalize(t *testing.T) {
 		{"source+ftp:", api.URL{}, scheme.ErrMissingHost},
 		{"source+ftps:", api.URL{}, scheme.ErrMissingHost},
 		{"source+exec:", api.URL{}, scheme.ErrMissingCommand},
+		{"source+exec:///", api.URL{}, scheme.ErrMissingCommand},
+		{"source+ssh:", api.URL{}, scheme.ErrMissingHost},
 		{"source+ftp://example.com/", api.URL{}, scheme.ErrMissingFile},
 		{"source+ftps://example.com/", api.URL{}, scheme.ErrMissingFile},
 
@@ -143,6 +163,10 @@ func TestTargetURLNormalize(t *testing.T) {
 		{"source+ftp://" + ftpaddr + "/source.txt", api.URL{Scheme: "source+ftp", Host: ftpaddr, Path: "/source.txt"}, nil},
 
 		{"source+exec:./testdata/listing-script", api.URL{Scheme: "source+exec", Opaque: "./testdata/listing-script"}, nil},
+
+		{"source+ssh://example.com", api.URL{}, scheme.ErrMissingSSHUsername},
+		{"source+ssh://foo@example.com", api.URL{}, scheme.ErrMissingSSHIdentifier},
+		{"source+ssh://foo:bar@example.com", api.URL{}, scheme.ErrMissingCommand},
 	}
 
 	for _, tt := range tests {
