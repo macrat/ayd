@@ -180,7 +180,7 @@ func main() {
 		case "oneshot":
 			os.Args[1] = "-1"
 			os.Exit(defaultAydCommand.Run(os.Args))
-		case "conv":
+		case "conv", "convert":
 			os.Exit(defaultConvCommand.Run(os.Args))
 		}
 	}
