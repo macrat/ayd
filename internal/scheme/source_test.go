@@ -124,6 +124,15 @@ func TestSourceScheme_Probe(t *testing.T) {
 		{"source+ssh://pasusr@" + sshServer.Addr + "/source", nil, "password or identityfile is required"},
 		{"source+ssh://pasusr:foobar@" + sshServer.Addr + "/source?fingerprint=SHA256:AAAAA", nil, "invalid source: ssh: handshake failed: fingerprint unmatched"},
 		{"source+ssh://pasusr:foobar@localhost:10/source", nil, `invalid source: (\[::1\]|127\.0\.0\.1):10: connection refused`},
+
+		{"source+sftp://pasusr:foobar@" + sshServer.Addr + "/source.txt", map[string]api.Status{
+			"dummy:healthy#healthy-list":                                   api.StatusHealthy,
+			"dummy:healthy#sub-list":                                       api.StatusHealthy,
+			"source+sftp://pasusr:xxxxx@" + sshServer.Addr + "/source.txt": api.StatusHealthy,
+		}, ""},
+		{"source+sftp://pasusr@" + sshServer.Addr + "/source", nil, "password or identityfile is required"},
+		{"source+sftp://pasusr:foobar@" + sshServer.Addr + "/source?fingerprint=SHA256:AAAAA", nil, "invalid source: ssh: handshake failed: fingerprint unmatched"},
+		{"source+sftp://pasusr:foobar@localhost:10/source", nil, `invalid source: (\[::1\]|127\.0\.0\.1):10: connection refused`},
 	}
 
 	for _, tt := range tests {

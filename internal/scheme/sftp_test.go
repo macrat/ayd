@@ -25,7 +25,7 @@ func TestSFTPScheme_Probe(t *testing.T) {
 		{"sftp://pasusr:foobar@" + server.Addr, api.StatusHealthy, strings.Join([]string{
 			"directory exists",
 			"---",
-			"file_count: 2",
+			"file_count: 3",
 			"mtime: 20[-0-9]{8}T[0-9:Z+-]*",
 			"permission: 755",
 			"type: directory",
@@ -122,7 +122,7 @@ func TestSFTPScheme_Alert(t *testing.T) {
 		{"sftp://pasusr:foobar@" + server.Addr, api.StatusHealthy, strings.Join([]string{
 			"directory exists",
 			"---",
-			"file_count: 3",
+			"file_count: 4",
 			"mtime: 20[-0-9]{8}T[0-9:Z+-]*",
 			"permission: 755",
 			"type: directory",

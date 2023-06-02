@@ -427,7 +427,7 @@ For example, Ayd will execute everything even if HTTP server responses `exec:rm#
 examples:
 - `source+https://example.com/targets.txt`
 
-##### source+ftp: / source+ftps:
+##### source+ftp: / source+ftps: / source+sftp:
 
 `source+ftp:` and `source+ftps:` is variants of `source:` that very similar to `source+http:`.
 These download source file via FTP/FTPS and load it.
@@ -437,7 +437,8 @@ Please don't use it if you can't completely trust the source file in the FTP ser
 For example, Ayd will execute everything even if the FTP server responses `exec:rm#/your/important/directory`
 
 examples:
-- `source+ftps://example.com/targets.txt`
+- `source+ftps://user:password@example.com/targets.txt`
+- `source+sftp://user@example.com/targets.txt?identityfile=/path/to/id_rsa`
 
 ##### source+exec:
 

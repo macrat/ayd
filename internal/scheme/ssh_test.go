@@ -89,6 +89,13 @@ func (s SSHServer) Serve(ctx context.Context) {
 	} else {
 		w.WriteAt([]byte("hello world"), 0)
 	}
+	fr = sftp.NewRequest("Put", "/source.txt")
+	fr.Flags = 2 | 8 // flag for write and create
+	if w, err := filesystem.FilePut.Filewrite(fr); err != nil {
+		fmt.Println(err)
+	} else {
+		w.WriteAt(healthySourceList, 0)
+	}
 	fr = sftp.NewRequest("Put", "/hello/foobar")
 	fr.Flags = 2 | 8 // flag for write and create
 	if w, err := filesystem.FilePut.Filewrite(fr); err == nil {

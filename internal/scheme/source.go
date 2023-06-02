@@ -20,6 +20,7 @@ import (
 	"github.com/macrat/ayd/internal/ayderr"
 	"github.com/macrat/ayd/internal/scheme/textdecode"
 	api "github.com/macrat/ayd/lib-ayd"
+	"github.com/pkg/sftp"
 )
 
 var (
@@ -73,6 +74,26 @@ func normalizeSourceURL(u *api.URL) (*api.URL, error) {
 		}
 		u := &api.URL{
 			Scheme:   "source+ssh",
+			User:     u.User,
+			Host:     u.Host,
+			Path:     u.Path,
+			RawQuery: q.Encode(),
+			Fragment: u.Fragment,
+		}
+		if _, err := newSSHConfig(u); err != nil {
+			return nil, err
+		}
+		if u.Path == "" || u.Path == "/" {
+			return nil, ErrMissingCommand
+		}
+		return u, nil
+	case "source+sftp":
+		q := u.ToURL().Query()
+		if f := u.ToURL().Query().Get("fingerprint"); f != "" {
+			q.Set("fingerprint", strings.ReplaceAll(f, " ", "+"))
+		}
+		u := &api.URL{
+			Scheme:   "source+sftp",
 			User:     u.User,
 			Host:     u.Host,
 			Path:     u.Path,
@@ -287,6 +308,25 @@ func openSSHSource(ctx context.Context, u *api.URL) (io.ReadCloser, error) {
 	return io.NopCloser(strings.NewReader(output)), nil
 }
 
+func openSFTPSource(ctx context.Context, u *api.URL) (io.ReadCloser, error) {
+	conf, err := newSSHConfig(u)
+	if err != nil {
+		return nil, err
+	}
+
+	ssh, err := dialSSH(ctx, conf)
+	if err != nil {
+		return nil, err
+	}
+
+	conn, err := sftp.NewClient(ssh.Client)
+	if err != nil {
+		return nil, err
+	}
+
+	return conn.OpenFile(u.Path, os.O_RDONLY)
+}
+
 func openFileSource(ctx context.Context, u *api.URL) (io.ReadCloser, error) {
 	raw, err := os.ReadFile(u.Opaque)
 	if err != nil {
@@ -311,6 +351,8 @@ func openSource(ctx context.Context, u *api.URL) (io.ReadCloser, error) {
 		return openExecSource(ctx, u)
 	case "source+ssh":
 		return openSSHSource(ctx, u)
+	case "source+sftp":
+		return openSFTPSource(ctx, u)
 	default:
 		return openFileSource(ctx, u)
 	}
