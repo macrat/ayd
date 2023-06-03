@@ -576,8 +576,19 @@ The above command means checking `your-service.example.com` every 5 minutes from
  │ │ │ ┌──── month (1 - 12)
  │ │ │ │ ┌─── [optional] day of the week (0 - 6 (sunday - saturday))
  │ │ │ │ │
-'* * * * *'
+'* * * * ?'
 ```
+
+There are some special values for ease to specify.
+
+| special spec             | standard spec | description                                   |
+|--------------------------|---------------|-----------------------------------------------|
+| `@yearly` or `@annually` | `0 0 1 1 ?`   | Check once a year at 1st January.             |
+| `@monthly`               | `0 0 1 * ?`   | Check once a month at the first day of month. |
+| `@daily`                 | `0 0 * * ?`   | Check once a day at midnight.                 |
+| `@hourly`                | `0 * * * ?`   | Check once an hour.                           |
+| `@reboot`                | -             | Check once when Ayd started.                  |
+| `@after 5m`              | -             | Check once after 5 minutes after Ayd started. |
 
 
 ### Status pages and endpoints
