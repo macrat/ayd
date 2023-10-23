@@ -217,6 +217,7 @@ examples:
 ##### as Alert
 
 `ssh:` does not support to be used as an alert URL.
+Please use [`exec+ssh:`](#execssh) for executing a command over SSH.
 
 #### sftp:
 
