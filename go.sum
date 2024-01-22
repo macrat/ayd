@@ -38,6 +38,8 @@ github.com/macrat/go-parallel-pinger v1.1.3 h1:WpD2jHXoOn/A2Uy0CAvd85lpNHzX0jnO0
 github.com/macrat/go-parallel-pinger v1.1.3/go.mod h1:6Vkhm1prLe3/7Go6AUE6M9n0UjD94IwDK0iz/SystUc=
 github.com/macrat/go-parallel-pinger v1.1.4 h1:n14HXR+Ab7ZVTIJgLBSpb/sC6pOd8gUphKZnvCZHlrU=
 github.com/macrat/go-parallel-pinger v1.1.4/go.mod h1:cfLNncUkmaLoN1dNacTELkXYgvM0cMLg1hu4k/VzR2k=
+github.com/macrat/go-parallel-pinger v1.1.5 h1:3uA9YTuimnjIBmDo3icdKewPSfaR1eYFbiZ9k/Wfdqg=
+github.com/macrat/go-parallel-pinger v1.1.5/go.mod h1:Z043cPHlREgOeLUpcDjIbVpu4qVTjXvY6mL+hRQhqMw=
 github.com/mattn/go-isatty v0.0.16 h1:bq3VjFmv/sOjHtdEhmkEV4x1AJtvUvOJ2PFAZ5+peKQ=
 github.com/mattn/go-isatty v0.0.16/go.mod h1:kYGgaQfpe5nmfYZH+SKPsOc2e4SrIfOl2e/yFXSvRLM=
 github.com/mattn/go-isatty v0.0.18 h1:DOKFKCQ7FNG2L1rbrmstDN4QVRdS89Nkh85u68Uwp98=
