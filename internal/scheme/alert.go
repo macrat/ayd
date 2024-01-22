@@ -36,6 +36,8 @@ func NewAlerterFromURL(u *api.URL) (Alerter, error) {
 		return nil, ErrUnsupportedAlertScheme
 	case "tcp", "tcp4", "tcp6":
 		return nil, ErrUnsupportedAlertScheme
+	case "sftp":
+		return NewSFTPScheme(u)
 	case "dns", "dns4", "dns6":
 		return nil, ErrUnsupportedAlertScheme
 	case "file":

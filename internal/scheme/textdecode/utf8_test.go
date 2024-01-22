@@ -31,3 +31,26 @@ func TestUTF8Override(t *testing.T) {
 		})
 	}
 }
+
+func TestUTF8(t *testing.T) {
+	tests := []struct {
+		Input  string
+		Output string
+	}{
+		{"こんにちは\r\n\rUTF8", "こんにちは\n\nUTF8"},
+		{"invalid \xFF\xFF", "invalid \uFFFD\uFFFD"},
+	}
+
+	for _, tt := range tests {
+		t.Run(fmt.Sprintf("%#v", string(tt.Input)), func(t *testing.T) {
+			output, err := UTF8([]byte(tt.Input))
+			if err != nil {
+				t.Fatalf("failed to transform: %s", err)
+			}
+
+			if string(output) != tt.Output {
+				t.Errorf("expected %q but got %q", tt.Output, string(output))
+			}
+		})
+	}
+}
