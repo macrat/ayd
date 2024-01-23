@@ -1,14 +1,14 @@
 ARG BASE_IMAGE=alpine
 
 
-FROM golang:latest AS builder
+FROM golang:1-bullseye AS builder
 
 ARG VERSION=HEAD
 ARG COMMIT=UNKNOWN
 
 RUN mkdir /output
 
-RUN apt-get update && apt-get install -y upx && apt-get clean -y && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y upx-ucl && apt-get clean -y && rm -rf /var/lib/apt/lists/*
 
 COPY go.mod go.sum /usr/src/ayd/
 RUN cd /usr/src/ayd && go mod download
@@ -37,7 +37,7 @@ COPY . /usr/src/ayd/
 RUN cd /usr/src/ayd/cmd/ayd && \
     CGO_ENABLED=0 go build --trimpath -ldflags="-s -w -X 'main.version=$VERSION' -X 'main.commit=$COMMIT'" -buildvcs=false -o /output/ayd
 
-RUN upx --lzma /output/*
+RUN upx-ucl --lzma /output/*
 
 
 FROM $BASE_IMAGE
