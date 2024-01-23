@@ -40,9 +40,11 @@ archives:
       _
       {{- .Version -}}
       _
-      {{- if .Arch "386" -}}
+      {{- .Os -}}
+      _
+      {{- if eq .Arch "386" -}}
         i386
-      {{- else if .Arch "amd64" -}}
+      {{- else if eq .Arch "amd64" -}}
         x86_64
       {{- else -}}
         {{- .Arch -}}
