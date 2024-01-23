@@ -15,9 +15,9 @@ RUN cd /usr/src/ayd && go mod download
 
 RUN git config --global advice.detachedHead false
 ARG PLUGINS="\
-        ayd-mailto-alert:0.8.0 \
-        ayd-slack-alert:0.8.0 \
-        ayd-smb-probe:0.3.1 \
+        ayd-mailto-alert:0.8.2 \
+        ayd-slack-alert:0.8.2 \
+        ayd-smb-probe:0.3.2 \
     "
 RUN for x in $PLUGINS; do \
       export plugin=${x%:*} version=${x#*:} && \
