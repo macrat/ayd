@@ -19,7 +19,7 @@ builds:
       - '-X main.version={{ .Version }}'
       - '-X main.commit={{ .ShortCommit }}'
     hooks:
-      post: 'upx --lzma {{ .Path }}'
+      post: 'upx-ucl --lzma {{ .Path }}'
   - id: without-upx
     env:
       - CGO_ENABLED=0
