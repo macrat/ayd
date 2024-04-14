@@ -19,7 +19,7 @@ builds:
       - '-X main.version={{ .Version }}'
       - '-X main.commit={{ .ShortCommit }}'
     hooks:
-      post: 'upx --lzma {{ .Path }}'
+      post: 'upx-ucl --lzma {{ .Path }}'
   - id: without-upx
     env:
       - CGO_ENABLED=0
@@ -35,9 +35,20 @@ builds:
 
 archives:
   - format: tar.gz
-    replacements:
-      386: i386
-      amd64: x86_64
+    name_template: >-
+      {{- .ProjectName -}}
+      _
+      {{- .Version -}}
+      _
+      {{- .Os -}}
+      _
+      {{- if eq .Arch "386" -}}
+        i386
+      {{- else if eq .Arch "amd64" -}}
+        x86_64
+      {{- else -}}
+        {{- .Arch -}}
+      {{- end -}}
     format_overrides:
       - goos: windows
         format: zip
