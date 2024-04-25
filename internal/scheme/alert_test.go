@@ -315,7 +315,7 @@ func AssertAlert(t *testing.T, tests []ProbeTest, timeout int) {
 			}
 
 			r := rs[0]
-			if r.Target.String() != "alert:"+tt.Target {
+			if r.Target.String() != "alert:"+a.Target().String() {
 				t.Errorf("got a record of unexpected target: %s", r.Target)
 			}
 			if r.Status != tt.Status {

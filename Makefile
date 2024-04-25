@@ -7,10 +7,14 @@ ayd: ${SOURCES}
 	CGO_ENABLED=0 go build -ldflags="-s -w -X main.version=${VERSION} -X main.commit=${COMMIT}" -trimpath -o ayd ./cmd/ayd
 
 
-.PHONY: test cover fmt resources clean install
+.PHONY: test containertest cover fmt resources clean install
 
 test:
 	go test -race -cover ./...
+
+containertest:
+	cd testdata && docker compose up -d
+	go test -race -cover -tags=container ./...; cd testdata && docker compose down -v
 
 cover:
 	go test -race -coverprofile=cov ./... && go tool cover -html=cov; rm cov
