@@ -5,49 +5,38 @@ import (
 )
 
 type stringMatcher interface {
-	Match(s string) bool
+	Match(string) bool
 }
-
-type globTokenType int8
 
 type globMatcher struct {
-	Tokens []string
-	Suffix string
-	MinLength int
-}
-
-func globMatch(tokens []string, minLength int, suffix, target string) bool {
-	switch len(tokens) {
-	case 0:
-		return true
-	case 1:
-		return strings.HasPrefix(target, tokens[0])
-	}
-
-	if !strings.HasPrefix(target, tokens[0]) {
-		return false
-	}
-
-	target = target[len(tokens[0]):]
-	minLength -= len(tokens[0])
-
-	for i := 0; i < len(target)-minLength; i++ {
-		if globMatch(tokens[1:], minLength, suffix, target[i:]) {
-			return true
-		}
-	}
-
-	return false
+	Prefix       string
+	Suffix       string
+	Chunks       []string
+	ChunksLength int
 }
 
 func (g globMatcher) Match(s string) bool {
-	if len(g.Tokens) == 0 {
-		return s == g.Suffix
-	}
-	if len(s) < g.MinLength || !strings.HasSuffix(s, g.Suffix) {
+	if len(s) < len(g.Prefix)+g.ChunksLength+len(g.Suffix) {
 		return false
 	}
-	return globMatch(g.Tokens, g.MinLength, g.Suffix, s)
+
+	if s[:len(g.Prefix)] != g.Prefix || s[len(s)-len(g.Suffix):] != g.Suffix {
+		return false
+	}
+
+	minlen := g.ChunksLength + len(g.Suffix)
+
+	idx := len(g.Prefix)
+	for _, chunk := range g.Chunks {
+		minlen -= len(chunk)
+		i := strings.Index(s[idx:len(s)-minlen], chunk)
+		if i == -1 {
+			return false
+		}
+		idx += i + len(chunk)
+	}
+
+	return true
 }
 
 type exactMatcher struct {
@@ -75,31 +64,31 @@ func (s suffixMatcher) Match(str string) bool {
 }
 
 type globBuilder struct {
-	tokens []string
-	buf    strings.Builder
-	minLength int
-	feeded bool
-	withPrefix bool
-	withSuffix bool
-	esc    bool
-}
-
-func newGlobBuilder() *globBuilder {
-	return &globBuilder{
-		withPrefix: true,
-	}
+	prefixClosed bool
+	prefix       string
+	noSuffix     bool
+	chunks       []string
+	buf          strings.Builder
+	chunksLength int
+	esc          bool
 }
 
 func (b *globBuilder) closeBuf() {
 	if b.buf.Len() > 0 {
-		b.tokens = append(b.tokens, b.buf.String())
-		b.minLength += b.buf.Len()
+		if b.prefixClosed {
+			b.chunks = append(b.chunks, b.buf.String())
+			b.chunksLength += b.buf.Len()
+		} else {
+			b.prefix = b.buf.String()
+			b.prefixClosed = true
+		}
 		b.buf.Reset()
 	}
 }
 
 func (b *globBuilder) Feed(r rune) {
-	b.withSuffix = true
+	b.noSuffix = false
+
 	if b.esc {
 		switch r {
 		case 'n':
@@ -119,50 +108,39 @@ func (b *globBuilder) Feed(r rune) {
 	case '\\':
 		b.esc = true
 	case '*':
-		b.withSuffix = false
-		if b.feeded {
-			b.closeBuf()
+		b.noSuffix = true
+		if b.buf.Len() == 0 && !b.prefixClosed {
+			b.prefixClosed = true
 		} else {
-			b.withPrefix = false
-			b.tokens = append(b.tokens, "")
+			b.closeBuf()
 		}
 	default:
 		b.buf.WriteRune(r)
 	}
-
-	b.feeded = true
 }
 
-func (b *globBuilder) Build() stringMatcher {
-	b.closeBuf()
-	if len(b.tokens) == 0 {
-		return globMatcher{}
-	}
-
-	if len(b.tokens) == 1 {
+// Build a matcher from the current state of the builder.
+// If the interesting flag is false, the matcher will always return true.
+func (b *globBuilder) Build() (matcher stringMatcher, interesting bool) {
+	if len(b.chunks) == 0 {
 		switch {
-		case b.withPrefix && b.withSuffix:
-			return exactMatcher{b.tokens[0]}
-		case b.withPrefix:
-			return prefixMatcher{b.tokens[0]}
+		case b.prefix != "" && b.noSuffix:
+			return prefixMatcher{b.prefix}, true
+		case b.prefix == "" && !b.noSuffix:
+			if b.prefixClosed {
+				return suffixMatcher{b.buf.String()}, true
+			} else {
+				return exactMatcher{b.buf.String()}, true
+			}
+		case b.prefix == "" && b.noSuffix:
+			return globMatcher{}, false
 		}
 	}
 
-	if len(b.tokens) == 2 && b.tokens[0] == "" && b.withSuffix {
-		return suffixMatcher{b.tokens[1]}
-	}
-
-
-	g := globMatcher{
-		Tokens: b.tokens,
-		MinLength: b.minLength,
-		Suffix: "",
-	}
-
-	if b.withSuffix {
-		g.Tokens = g.Tokens[:len(g.Tokens)-1]
-		g.Suffix = b.tokens[len(b.tokens)-1]
-	}
-
-	return g
+	return globMatcher{
+		Prefix:       b.prefix,
+		Suffix:       b.buf.String(),
+		Chunks:       b.chunks,
+		ChunksLength: b.chunksLength,
+	}, true
 }
