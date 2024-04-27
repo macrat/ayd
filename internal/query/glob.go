@@ -24,16 +24,16 @@ func (g globMatcher) Match(s string) bool {
 		return false
 	}
 
-	minlen := g.ChunksLength + len(g.Suffix)
+	left := len(g.Prefix)
+	right := len(s) - g.ChunksLength - len(g.Suffix)
 
-	idx := len(g.Prefix)
 	for _, chunk := range g.Chunks {
-		minlen -= len(chunk)
-		i := strings.Index(s[idx:len(s)-minlen], chunk)
+		right += len(chunk)
+		i := strings.Index(s[left:right], chunk)
 		if i == -1 {
 			return false
 		}
-		idx += i + len(chunk)
+		left += i + len(chunk)
 	}
 
 	return true
