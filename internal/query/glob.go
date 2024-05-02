@@ -68,79 +68,80 @@ type globBuilder struct {
 	prefix       string
 	noSuffix     bool
 	chunks       []string
-	buf          strings.Builder
 	chunksLength int
 	esc          bool
 }
 
-func (b *globBuilder) closeBuf() {
-	if b.buf.Len() > 0 {
-		if b.prefixClosed {
-			b.chunks = append(b.chunks, b.buf.String())
-			b.chunksLength += b.buf.Len()
-		} else {
-			b.prefix = b.buf.String()
-			b.prefixClosed = true
-		}
-		b.buf.Reset()
+func (b *globBuilder) Reset() {
+	b.prefixClosed = false
+	b.prefix = ""
+	b.noSuffix = false
+	b.chunks = nil
+	b.chunksLength = 0
+	b.esc = false
+}
+
+func (b *globBuilder) FeedLiteral(s string) {
+	b.noSuffix = false
+	if b.prefixClosed {
+		b.chunks = append(b.chunks, s)
+		b.chunksLength += len(s)
+	} else {
+		b.prefix = s
+		b.prefixClosed = true
 	}
 }
 
-func (b *globBuilder) Feed(r rune) {
-	b.noSuffix = false
-
-	if b.esc {
-		switch r {
-		case 'n':
-			b.buf.WriteRune('\n')
-		case 'r':
-			b.buf.WriteRune('\r')
-		case 't':
-			b.buf.WriteRune('\t')
-		default:
-			b.buf.WriteRune(r)
-		}
-		b.esc = false
-		return
-	}
-
-	switch r {
-	case '\\':
-		b.esc = true
-	case '*':
-		b.noSuffix = true
-		if b.buf.Len() == 0 && !b.prefixClosed {
-			b.prefixClosed = true
-		} else {
-			b.closeBuf()
-		}
-	default:
-		b.buf.WriteRune(r)
-	}
+func (b *globBuilder) FeedStar() {
+	b.noSuffix = true
+	b.prefixClosed = true
 }
 
 // Build a matcher from the current state of the builder.
-// If the interesting flag is false, the matcher will always return true.
-func (b *globBuilder) Build() (matcher stringMatcher, interesting bool) {
+func (b *globBuilder) Build() stringMatcher {
+	if !b.prefixClosed {
+		return exactMatcher{}
+	}
+
+	var suffix string
+	if len(b.chunks) > 0 && !b.noSuffix {
+		suffix = b.chunks[len(b.chunks)-1]
+		b.chunks = b.chunks[:len(b.chunks)-1]
+		b.chunksLength -= len(suffix)
+	}
+
 	if len(b.chunks) == 0 {
-		switch {
-		case b.prefix != "" && b.noSuffix:
-			return prefixMatcher{b.prefix}, true
-		case b.prefix == "" && !b.noSuffix:
-			if b.prefixClosed {
-				return suffixMatcher{b.buf.String()}, true
+		if b.prefix != "" && suffix == "" {
+			if b.noSuffix {
+				return prefixMatcher{Str: b.prefix}
 			} else {
-				return exactMatcher{b.buf.String()}, true
+				return exactMatcher{Str: b.prefix}
 			}
-		case b.prefix == "" && b.noSuffix:
-			return globMatcher{}, false
+		}
+		if b.prefix == "" && suffix != "" {
+			return suffixMatcher{Str: suffix}
 		}
 	}
 
 	return globMatcher{
 		Prefix:       b.prefix,
-		Suffix:       b.buf.String(),
+		Suffix:       suffix,
 		Chunks:       b.chunks,
 		ChunksLength: b.chunksLength,
-	}, true
+	}
+}
+
+// makeGlob makes a new stringMatcher from a list of strings.
+// A string in the list means a literal string, and nil means a wildcard.
+// For example, "hello*world" in glob syntax is represented as ["hello", nil, "world"].
+func makeGlob(query []*string) stringMatcher {
+	var glob globBuilder
+	for _, s := range query {
+		if s == nil {
+			glob.FeedStar()
+		} else {
+			glob.FeedLiteral(*s)
+		}
+	}
+	return glob.Build()
 }

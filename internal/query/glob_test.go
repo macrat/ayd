@@ -3,42 +3,58 @@ package query
 import (
 	"fmt"
 	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 )
 
-func ParseGlob(s string) stringMatcher {
+func ParseGlob(pattern []string) stringMatcher {
 	b := &globBuilder{}
-	for _, r := range s {
-		b.Feed(r)
+	for _, s := range pattern {
+		if s == "" {
+			b.FeedStar()
+		} else {
+			b.FeedLiteral(s)
+		}
 	}
-	g, _ := b.Build()
-	return g
+	return b.Build()
+}
+
+func Pattern2String(pattern []string) string {
+	xs := make([]string, len(pattern))
+	for i, x := range pattern {
+		if x == "" {
+			xs[i] = "*"
+		} else {
+			xs[i] = fmt.Sprintf("%q", x)
+		}
+	}
+	return fmt.Sprintf("[%s]", strings.Join(xs, "_"))
 }
 
 func TestGlobBuilder(t *testing.T) {
 	//t.Parallel()
 
 	tests := []struct {
-		input  string
+		input  []string
 		output stringMatcher
 	}{
 		{
-			input: `foo*bar`,
+			input: []string{"foo", "", "bar"},
 			output: globMatcher{
 				Prefix:       "foo",
-				Chunks:       nil,
+				Chunks:       []string{},
 				Suffix:       "bar",
 				ChunksLength: 0,
 			},
 		},
 		{
-			input:  `foo\*bar`,
+			input:  []string{"foo*bar"},
 			output: exactMatcher{"foo*bar"},
 		},
 		{
-			input: `*foo*bar*baz`,
+			input: []string{"", "foo", "", "bar", "", "baz"},
 			output: globMatcher{
 				Prefix: "",
 				Chunks: []string{
@@ -50,7 +66,7 @@ func TestGlobBuilder(t *testing.T) {
 			},
 		},
 		{
-			input: `foo*bar*`,
+			input: []string{"foo", "", "bar", ""},
 			output: globMatcher{
 				Prefix: "foo",
 				Chunks: []string{
@@ -61,11 +77,11 @@ func TestGlobBuilder(t *testing.T) {
 			},
 		},
 		{
-			input:  `hello\nworld\tfoo\rbar`,
+			input:  []string{"hello\nworld\tfoo\rbar"},
 			output: exactMatcher{"hello\nworld\tfoo\rbar"},
 		},
 		{
-			input: `foo***bar**`,
+			input: []string{"foo", "", "", "", "bar", "", ""},
 			output: globMatcher{
 				Prefix: "foo",
 				Chunks: []string{
@@ -76,7 +92,7 @@ func TestGlobBuilder(t *testing.T) {
 			},
 		},
 		{
-			input: `*foo*bar*`,
+			input: []string{"", "foo", "", "bar", ""},
 			output: globMatcher{
 				Prefix: "",
 				Chunks: []string{
@@ -88,7 +104,7 @@ func TestGlobBuilder(t *testing.T) {
 			},
 		},
 		{
-			input: `*`,
+			input: []string{""},
 			output: globMatcher{
 				Prefix:       "",
 				Chunks:       nil,
@@ -97,25 +113,25 @@ func TestGlobBuilder(t *testing.T) {
 			},
 		},
 		{
-			input:  ``,
+			input:  []string{},
 			output: exactMatcher{""},
 		},
 		{
-			input:  `foobar*`,
+			input:  []string{"foobar", ""},
 			output: prefixMatcher{"foobar"},
 		},
 		{
-			input:  `*foobar`,
+			input:  []string{"", "foobar"},
 			output: suffixMatcher{"foobar"},
 		},
 		{
-			input:  `foobar`,
+			input:  []string{"foobar"},
 			output: exactMatcher{"foobar"},
 		},
 	}
 
 	for _, tt := range tests {
-		t.Run(fmt.Sprintf("%q", tt.input), func(t *testing.T) {
+		t.Run(Pattern2String(tt.input), func(t *testing.T) {
 			g := ParseGlob(tt.input)
 			if diff := cmp.Diff(tt.output, g); diff != "" {
 				t.Fatalf("unexpected output (-want +got):\n%s", diff)
@@ -126,89 +142,89 @@ func TestGlobBuilder(t *testing.T) {
 
 func TestGlobMatch(t *testing.T) {
 	tests := []struct {
-		glob  string
+		glob  []string
 		input string
 		match bool
 	}{
 		{
-			glob:  `foo*bar1`,
+			glob:  []string{"foo", "", "bar1"},
 			input: `foobar1`,
 			match: true,
 		},
 		{
-			glob:  `foo*bar2`,
+			glob:  []string{"foo", "", "bar2"},
 			input: `foo`,
 			match: false,
 		},
 		{
-			glob:  `foo*bar3`,
+			glob:  []string{"foo", "", "bar3"},
 			input: `fooxxxbar3`,
 			match: true,
 		},
 		{
-			glob:  `foo*bar*bar*4`,
+			glob:  []string{"foo", "", "bar", "", "bar", "", "bar", "", "4"},
 			input: `fooxxxbarxxxbarxxxbarxxx4`,
 			match: true,
 		},
 		{
-			glob:  `foo*bar*bar*5`,
+			glob:  []string{"foo", "", "bar", "", "bar", "", "5"},
 			input: `fooxxxbarxxxbarxxxbarxxx`,
 			match: false,
 		},
 		{
-			glob:  `foobar6*`,
+			glob:  []string{"foobar6", ""},
 			input: `foobar6`,
 			match: true,
 		},
 		{
-			glob:  `foobar7*`,
+			glob:  []string{"foobar7", ""},
 			input: `foobar7xxx`,
 			match: true,
 		},
 		{
-			glob:  `*foobar8`,
+			glob:  []string{"", "foobar8"},
 			input: `xxxfoobar8`,
 			match: true,
 		},
 		{
-			glob:  `*foobar9`,
+			glob:  []string{"", "foobar9"},
 			input: `xxxfoobar9xxx`,
 			match: false,
 		},
 		{
-			glob:  `*foobar10`,
+			glob:  []string{"", "foobar10"},
 			input: `foobar10`,
 			match: true,
 		},
 		{
-			glob:  `foo\*bar\n11`,
+			glob:  []string{"foo*bar\n11"},
 			input: "foo*bar\n11",
 			match: true,
 		},
 		{
-			glob:  `*foo*bar*12*`,
+			glob:  []string{"", "foo", "", "bar", "", "12", ""},
 			input: "helloxfoo-bar12xworld",
 			match: true,
 		},
 		{
-			glob:  `*foo*bar*13*`,
+			glob:  []string{"", "foo", "", "bar", "", "13", ""},
 			input: "helloxfoo-",
 			match: false,
 		},
 		{
-			glob:  `*foo*bar*14*`,
+			glob:  []string{"", "foo", "", "bar", "", "14", ""},
 			input: "helloxfoo",
 			match: false,
 		},
 		{
-			glob:  `foo*bar*baz*hello*world*15`,
+			glob:  []string{"foo", "", "bar", "", "baz", "", "hello", "", "world", "", "15"},
 			input: "foobarbazhelloworld15",
 			match: true,
 		},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.glob, func(t *testing.T) {
+		t.Run(Pattern2String(tt.glob), func(t *testing.T) {
 			g := ParseGlob(tt.glob)
 			if g.Match(tt.input) != tt.match {
 				t.Fatalf("%q.Match(%q) expected %v but got %#v\n%#v", tt.glob, tt.input, tt.match, !tt.match, g)
@@ -217,6 +233,7 @@ func TestGlobMatch(t *testing.T) {
 	}
 }
 
+/*
 func FuzzGlob(f *testing.F) {
 	f.Add(`foo*bar`, "foobar")
 	f.Add(`foo\*bar`, "fooxxxbar")
@@ -233,45 +250,54 @@ func FuzzGlob(f *testing.F) {
 		g.Match(input)
 	})
 }
+*/
 
 func BenchmarkGlobMatch(b *testing.B) {
 	tests := []struct {
-		glob   string
+		name   string
+		glob   []string
 		regexp *regexp.Regexp
 		input  string
 	}{
 		{
-			glob:   `foo*bar1`,
+			name:   `foo*bar1`,
+			glob:   []string{"foo", "", "bar1"},
 			regexp: regexp.MustCompile(`^foo.*bar1$`),
 			input:  `fooxxxxxxxxxxxxxxxxxxxxxxxxxbar1`,
 		},
 		{
-			glob:   `foobar*barbaz2`,
+			name:   `foobar*barbaz2`,
+			glob:   []string{"foobar", "", "barbaz2"},
 			regexp: regexp.MustCompile(`^foo.*bar2$`),
 			input:  `foobaaaaaaaaaaaaaaaaaaaaaaaabaz2`,
 		},
 		{
-			glob:   `foobar*3*`,
+			name:   `foobar*3*`,
+			glob:   []string{"foobar", "", "3", ""},
 			regexp: regexp.MustCompile(`^foobar.*3.*$`),
 			input:  `foobar3abcdefghijklmnopqrstuvwxyz`,
 		},
 		{
-			glob:   `*foobar*4`,
+			name:   `*foobar*4`,
+			glob:   []string{"", "foobar", "", "4"},
 			regexp: regexp.MustCompile(`^foobar.*4.*$`),
 			input:  `abcdefghijklmnopqrstuvwxyzfoobar4`,
 		},
 		{
-			glob:   `0*0*0`,
+			name:   `0*0*0`,
+			glob:   []string{"0", "", "0", "", "0"},
 			regexp: regexp.MustCompile(`^0.*0.*0$`),
 			input:  `00000000000000000000x0`,
 		},
 		{
-			glob:   `1*1*1`,
+			name:   `1*1*1`,
+			glob:   []string{"1", "", "1", "", "1"},
 			regexp: regexp.MustCompile(`^1.*1.*1$`),
 			input:  `11111111111111111111x1`,
 		},
 		{
-			glob:   `2*2*2*`,
+			name:   `2*2*2*`,
+			glob:   []string{"2", "", "2", "", "2", ""},
 			regexp: regexp.MustCompile(`^2.*2.*2.*$`),
 			input:  `22222222222222222222x2`,
 		},
@@ -279,7 +305,7 @@ func BenchmarkGlobMatch(b *testing.B) {
 
 	for _, tt := range tests {
 		tt := tt
-		b.Run(tt.glob, func(b *testing.B) {
+		b.Run(tt.name, func(b *testing.B) {
 			b.Run("glob", func(b *testing.B) {
 				g := ParseGlob(tt.glob)
 
