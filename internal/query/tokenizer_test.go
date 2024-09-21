@@ -14,7 +14,7 @@ func SimpleKeyword(s []string, op operator) token {
 	}
 	return token{
 		Type: simpleKeywordToken,
-		Value: parseStringValueMatcher(ss, op),
+		Value: parseValueMatcher(ss, op),
 	}
 }
 
@@ -118,18 +118,22 @@ func TestTokenizer(t *testing.T) {
 			},
 		},
 		{
-			// BUG: Why is this test passing? This should be falling back to simple keyword such as "<a" and ">b".
-			Query: "<a >b =c !=d <=e >=f <>g ==h == <",
+			Query: "<a >b =c !=d <>e f= g< <1ms >2002-02-20T14:02Z <=3s >=4 <>5 ==6.7 == <",
 			Want: []token{
-				SimpleKeyword([]string{"a"}, opLessThan),
-				SimpleKeyword([]string{"b"}, opGreaterThan),
+				SimpleKeyword([]string{"<a"}, opIncludes),
+				SimpleKeyword([]string{">b"}, opIncludes),
 				SimpleKeyword([]string{"c"}, opEqual),
 				NOT,
 				SimpleKeyword([]string{"d"}, opEqual),
-				SimpleKeyword([]string{"e"}, opLessEqual),
-				SimpleKeyword([]string{"f"}, opGreaterEqual),
-				SimpleKeyword([]string{"g"}, opNotEqual),
-				SimpleKeyword([]string{"h"}, opEqual),
+				SimpleKeyword([]string{"e"}, opNotEqual),
+				FieldKeyword([]string{"f"}, opEqual, []string{}),
+				SimpleKeyword([]string{"g<"}, opIncludes),
+				SimpleKeyword([]string{"1ms"}, opLessThan),
+				SimpleKeyword([]string{"2002-02-20T14:02Z"}, opGreaterThan),
+				SimpleKeyword([]string{"3s"}, opLessEqual),
+				SimpleKeyword([]string{"4"}, opGreaterEqual),
+				SimpleKeyword([]string{"5"}, opNotEqual),
+				SimpleKeyword([]string{"6.7"}, opEqual),
 				SimpleKeyword([]string{"=="}, opIncludes),
 				SimpleKeyword([]string{"<"}, opIncludes),
 			},

@@ -43,9 +43,9 @@ type token struct {
 func (t token) String() string {
 	if t.Value != nil {
 		if t.Key != nil{
-			return fmt.Sprintf("%s(%v %v)", t.Type, t.Key, t.Value)
+			return fmt.Sprintf("%s(%v %#v)", t.Type, t.Key, t.Value)
 		} else {
-			return fmt.Sprintf("%s(%v)", t.Type, t.Value)
+			return fmt.Sprintf("%s(%#v)", t.Type, t.Value)
 		}
 	}
 	return t.Type.String()
@@ -282,7 +282,8 @@ func (t *tokenizer) scanKeyword() {
 				left = ss
 			} else {
 				ss = append(append(ss, tokens[len(tokens)-2].Value...), tokens[len(tokens)-1].Value...)
-				right = parseValueMatcher(ss, op)
+				op = opIncludes
+				right = parseValueMatcher(ss, opIncludes)
 			}
 		} else {
 			var r []*string
