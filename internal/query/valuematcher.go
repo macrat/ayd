@@ -4,17 +4,77 @@ import (
 	"fmt"
 	"strconv"
 	"time"
+	"errors"
 
 	api "github.com/macrat/ayd/lib-ayd"
+)
+
+var (
+	errValueNotOrderable = errors.New("value is not orderable")
 )
 
 type valueMatcher interface {
 	Match(value any) bool
 }
 
+func parseOrderingValueMatcher(ss []*string, opCode operator) (valueMatcher, error) {
+	if len(ss) != 1 || ss[0] == nil {
+		return nil, errValueNotOrderable
+	}
+	s := *ss[0]
+
+	if n, err := strconv.ParseFloat(s, 64); err == nil {
+		return numberValueMatcher{Op: opCode, Value: n}, nil
+	}
+	if d, err := time.ParseDuration(s); err == nil {
+		return durationValueMatcher{Op: opCode, Value: d}, nil
+	}
+	if t, err := api.ParseTime(s); err == nil {
+		return timeValueMatcher{Op: opCode, Value: t}, nil
+	}
+	return nil, errValueNotOrderable
+}
+
+func parseValueMatcher(ss []*string, opCode operator) valueMatcher {
+	if len(ss) == 1 && ss[0] != nil {
+		if m, err := parseOrderingValueMatcher(ss, opCode); err == nil {
+			return m
+		}
+	}
+
+	return parseStringValueMatcher(ss, opCode)
+}
+
+type anyValueMatcher struct{}
+
+func (anyValueMatcher) Match(value any) bool {
+	return true
+}
+
+type neverValueMatcher struct{}
+
+func (neverValueMatcher) Match(value any) bool {
+	return false
+}
+
 type stringValueMatcher struct {
 	Not     bool
 	Matcher stringMatcher
+}
+
+func parseStringValueMatcher(ss []*string, opCode operator) valueMatcher {
+	if opCode == opIncludes {
+		return stringValueMatcher{
+			Matcher: makeGlob(append(append([]*string{nil}, ss...), nil)),
+		}
+	} else if opCode & (opEqual|opNotEqual) != 0 {
+		return stringValueMatcher{
+			Not: opCode == opNotEqual,
+			Matcher: makeGlob(ss),
+		}
+	}
+
+	return neverValueMatcher{}
 }
 
 func (m stringValueMatcher) Match(value any) bool {

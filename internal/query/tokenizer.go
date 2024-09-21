@@ -2,11 +2,7 @@ package query
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
-	"time"
-
-	api "github.com/macrat/ayd/lib-ayd"
 )
 
 type tokenType int
@@ -16,7 +12,8 @@ const (
 	rparenToken
 	orToken
 	notToken
-	atomToken
+	simpleKeywordToken
+	fieldKeywordToken
 )
 
 func (t tokenType) String() string {
@@ -29,20 +26,29 @@ func (t tokenType) String() string {
 		return "OR"
 	case notToken:
 		return "NOT"
-	case atomToken:
-		return "ATOM"
+	case simpleKeywordToken:
+		return "SIMPLE_KEYWORD"
+	case fieldKeywordToken:
+		return "FIELD_KEYWORD"
 	}
 	panic("unreachable")
 }
 
 type token struct {
 	Type  tokenType
-	Value atomValue
-}
-
-type atomValue struct {
 	Key   stringMatcher
 	Value valueMatcher
+}
+
+func (t token) String() string {
+	if t.Value != nil {
+		if t.Key != nil{
+			return fmt.Sprintf("%s(%v %v)", t.Type, t.Key, t.Value)
+		} else {
+			return fmt.Sprintf("%s(%v)", t.Type, t.Value)
+		}
+	}
+	return t.Type.String()
 }
 
 type tokenizer struct {
@@ -105,29 +111,49 @@ func (t *tokenizer) Scan() bool {
 		t.buf = token{Type: notToken}
 		t.remain = t.remain[3:]
 	default:
-		t.scanAtom()
+		t.scanKeyword()
 	}
 	return true
 }
 
-func (t *tokenizer) tokenizeAtom() (hasLeft bool, left []*string, opCode operator, opStr string, right []*string) {
-	var buf strings.Builder
-	closeBuf := func() {
-		if buf.Len() == 0 {
-			return
-		}
-		s := buf.String()
-		if opCode == 0 {
-			left = append(left, &s)
-		} else {
-			right = append(right, &s)
-		}
-		buf.Reset()
-	}
+type keywordTokenType int
 
+const (
+	literalToken keywordTokenType = iota
+	operatorToken
+)
+
+type keywordToken struct {
+	Type  keywordTokenType
+	Op    operator
+	Value []*string
+}
+
+func (t *tokenizer) scanKeyword() {
+	var tokens []keywordToken
+
+	var buf strings.Builder
+	var strings []*string
 	escape := false
 	quote := false
+	hasOp := false
+	startWithQuote := false
 	i := 0
+
+	closeBuf := func() {
+		if buf.Len() > 0 {
+			s := buf.String()
+			buf.Reset()
+			strings = append(strings, &s)
+		}
+		if len(strings) > 0 {
+			tokens = append(tokens, keywordToken{
+				Type:  literalToken,
+				Value: strings,
+			})
+			strings = nil
+		}
+	}
 
 	for ; i < len(t.remain); i++ {
 		c := t.remain[i]
@@ -148,16 +174,34 @@ func (t *tokenizer) tokenizeAtom() (hasLeft bool, left []*string, opCode operato
 			escape = true
 		} else if c == '"' {
 			quote = !quote
+			if i == 0 {
+				startWithQuote = true
+			}
 		} else if quote {
 			buf.WriteByte(t.remain[i])
-		} else if len(left) == 0 && len(t.remain) > i+1 && (t.remain[i:i+2] == "!=" || t.remain[i:i+2] == "<>") {
+		} else if len(t.remain) > i+1 && (t.remain[i:i+2] == "!=" || t.remain[i:i+2] == "<>") {
 			closeBuf()
-			opStr = t.remain[i : i+2]
-			opCode = opNotEqual
+
+			hasOp = true
+			opStr := t.remain[i : i+2]
+			opCode := opNotEqual
+			if opStr[0] == '=' {
+				opCode = opEqual
+			}
+			tokens = append(tokens, keywordToken{
+				Type:  operatorToken,
+				Op: opCode,
+				Value: []*string{&opStr},
+			})
+
 			i++
 			continue
-		} else if len(left) == 0 && (c == '<' || c == '>' || c == '=') {
+		} else if c == '<' || c == '>' || c == '=' {
 			closeBuf()
+
+			hasOp = true
+			opStr := t.remain[i : i+1]
+			var opCode operator
 			switch c {
 			case '<':
 				opCode = opLessThan
@@ -167,123 +211,104 @@ func (t *tokenizer) tokenizeAtom() (hasLeft bool, left []*string, opCode operato
 				opCode = opEqual
 			}
 			if len(t.remain) > i+1 && t.remain[i+1] == '=' {
-				opStr = t.remain[i : i+2]
 				opCode |= opEqual
+				opStr += "="
 				i++
-			} else {
-				opStr = t.remain[i : i+1]
 			}
+			tokens = append(tokens, keywordToken{
+				Type:  operatorToken,
+				Op: opCode,
+				Value: []*string{&opStr},
+			})
+
 			continue
 		} else if c == '*' {
-			closeBuf()
-			if opCode == 0 {
-				left = append(left, nil)
-			} else {
-				right = append(right, nil)
-			}
+			strings = append(strings, nil)
 		} else if c == ' ' || c == '\t' || c == '\n' || c == '(' || c == ')' {
 			break
 		} else {
 			buf.WriteByte(t.remain[i])
 		}
-
-		if opCode == 0 {
-			hasLeft = true
-		}
 	}
 
 	closeBuf()
 
+	if len(tokens) == 0 {
+		panic("unreachable")
+	}
+
+	var left []*string
+	var right valueMatcher
+	var op operator
+
+	if len(tokens) > 1 {
+		for i := 0; i < len(tokens); i++ {
+			if tokens[i].Type == operatorToken && tokens[i].Op & (opEqual | opNotEqual) != 0 {
+				op = tokens[i].Op
+
+				for j := 0; j < i; j++ {
+					left = append(left, tokens[j].Value...)
+				}
+
+				var r []*string
+				for j := i + 1; j < len(tokens); j++ {
+					r = append(r, tokens[j].Value...)
+				}
+				right = parseValueMatcher(r, op)
+
+				break
+			}
+		}
+	}
+
+	if op == 0 {
+		if !hasOp || tokens[len(tokens)-1].Type == operatorToken {
+			var r []*string
+			for i := 0; i < len(tokens); i++ {
+				r = append(r, tokens[i].Value...)
+			}
+			right = parseValueMatcher(r, op)
+		} else if hasOp {
+			op = tokens[len(tokens)-2].Op
+
+			var ss []*string
+			for i := 0; i < len(tokens)-2; i++ {
+				ss = append(ss, tokens[i].Value...)
+			}
+
+			var err error
+			right, err = parseOrderingValueMatcher(tokens[len(tokens)-1].Value, op)
+			if err == nil {
+				left = ss
+			} else {
+				ss = append(append(ss, tokens[len(tokens)-2].Value...), tokens[len(tokens)-1].Value...)
+				right = parseValueMatcher(ss, op)
+			}
+		} else {
+			var r []*string
+			for i := 0; i < len(tokens); i++ {
+				r = append(r, tokens[i].Value...)
+			}
+			right = parseValueMatcher(r, op)
+		}
+	}
+
+	if len(left) != 0 || op != opIncludes && startWithQuote {
+		t.buf = token{
+			Type: fieldKeywordToken,
+			Key:  makeGlob(left),
+			Value: right,
+		}
+	} else {
+		t.buf = token{
+			Type: simpleKeywordToken,
+			Value: right,
+		}
+	}
+
 	t.remain = t.remain[i:]
 
 	return
-}
-
-func (t *tokenizer) scanAtom() {
-	hasLeft, left, opCode, opStr, right := t.tokenizeAtom()
-
-	appendLiteral := func(s string) {
-		if len(left) == 0 || left[len(left)-1] == nil {
-			left = append(left, &s)
-		} else {
-			l := *left[len(left)-1] + s
-			left[len(left)-1] = &l
-		}
-	}
-
-	mergeLeftAndRight := func() {
-		appendLiteral(opStr)
-		if len(right) > 0 && right[0] != nil {
-			appendLiteral(*right[0])
-			left = append(left, right[1:]...)
-		} else {
-			left = append(left, right...)
-		}
-		opCode = 0
-		right = nil
-	}
-
-	// The right side can not be empty if the operator is not an equality operator.
-	// For example, `message=` means the message is empty, but `latency>` makes no sense.
-	if len(right) == 0 && opCode & ^(opEqual|opNotEqual) != 0 {
-		appendLiteral(opStr)
-		opCode = 0
-	}
-
-	var value valueMatcher
-
-	// When operator is an order comparison operator, the right side should be numeric, time, or duration.
-	// If it's not, the query should be treated as just a normal string.
-	if opCode&(opLessThan|opGreaterThan) != 0 {
-		if len(right) != 1 {
-			// If the right side includes glob star, it will be treated as a string.
-			mergeLeftAndRight()
-		} else {
-			if f, err := strconv.ParseFloat(*right[0], 64); err == nil {
-				value = numberValueMatcher{Op: opCode, Value: f}
-			} else if d, err := time.ParseDuration(*right[0]); err == nil {
-				value = durationValueMatcher{Op: opCode, Value: d}
-			} else if t, err := api.ParseTime(*right[0]); err == nil {
-				value = timeValueMatcher{Op: opCode, Value: t}
-			} else {
-				mergeLeftAndRight()
-			}
-		}
-	}
-
-	if value == nil {
-		if opCode == 0 {
-			value = stringValueMatcher{
-				Not:     opCode == opNotEqual,
-				Matcher: makeGlob(left),
-			}
-		} else {
-			value = stringValueMatcher{
-				Not:     opCode == opNotEqual,
-				Matcher: makeGlob(right),
-			}
-		}
-	}
-
-	if !hasLeft {
-		// TODO: This can be optimized by checking the type of the right side.
-		// For example, if the right side is a duration, the query can only be matched with the latency.
-		t.buf = token{Type: atomToken, Value: atomValue{
-			Value: value,
-		}}
-	} else {
-		// TODO: The left side must be a field name, even though it seems empty (it can be happened in some specific queries like `""=value`).
-		// There should care about the left side is exactMatcher or other stringMatcher, because exactMatcher can be more faster than checking all fields using stringMatcher.
-		t.buf = token{Type: atomToken, Value: atomValue{
-			Key:   makeGlob(left),
-			Value: value,
-		}}
-	}
-
-	fmt.Printf("hasLeft: %v\n", hasLeft)
-	fmt.Printf("left: %#v\n", left)
-	fmt.Printf("op: %v(%04b)\n", opStr, opCode)
-	fmt.Printf("right: %#v\n", right)
 }
 
 func (t *tokenizer) Token() token {

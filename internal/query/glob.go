@@ -135,13 +135,25 @@ func (b *globBuilder) Build() stringMatcher {
 // A string in the list means a literal string, and nil means a wildcard.
 // For example, "hello*world" in glob syntax is represented as ["hello", nil, "world"].
 func makeGlob(query []*string) stringMatcher {
+	if len(query) == 0 {
+		return exactMatcher{}
+	}
+
 	var glob globBuilder
+	var buf strings.Builder
 	for _, s := range query {
 		if s == nil {
+			if buf.Len() > 0 {
+				glob.FeedLiteral(buf.String())
+				buf.Reset()
+			}
 			glob.FeedStar()
 		} else {
-			glob.FeedLiteral(*s)
+			buf.WriteString(*s)
 		}
+	}
+	if buf.Len() > 0 {
+		glob.FeedLiteral(buf.String())
 	}
 	return glob.Build()
 }

@@ -2,10 +2,49 @@ package query
 
 import (
 	"testing"
-	//	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp"
 )
 
-/*
+func SimpleKeyword(s []string, op operator) token {
+	ss := make([]*string, len(s))
+	for x := range s {
+		if s[x] != "" {
+			ss[x] = &s[x]
+		}
+	}
+	return token{
+		Type: simpleKeywordToken,
+		Value: parseStringValueMatcher(ss, op),
+	}
+}
+
+func FieldKeyword(field []string, op operator, value []string) token {
+	ff := make([]*string, len(field))
+	for x := range field {
+		if field[x] != "" {
+			ff[x] = &field[x]
+		}
+	}
+	vv := make([]*string, len(value))
+	for x := range value {
+		if value[x] != "" {
+			vv[x] = &value[x]
+		}
+	}
+	return token{
+		Type: fieldKeywordToken,
+		Key: makeGlob(ff),
+		Value: parseValueMatcher(vv, op),
+	}
+}
+
+var (
+	LPAREN = token{Type: lparenToken}
+	RPAREN = token{Type: rparenToken}
+	OR = token{Type: orToken}
+	NOT = token{Type: notToken}
+)
+
 func TestTokenizer(t *testing.T) {
 	tests := []struct {
 		Query string
@@ -14,126 +53,133 @@ func TestTokenizer(t *testing.T) {
 		{
 			Query: "a and b",
 			Want: []token{
-				{Type: atomToken, Value: &atomValue{Right: "a"}},
-				{Type: atomToken, Value: &atomValue{Right: "b"}},
+				SimpleKeyword([]string{"a"}, opIncludes),
+				SimpleKeyword([]string{"b"}, opIncludes),
 			},
 		},
 		{
 			Query: "hello (world OR foo) AND -bar",
 			Want: []token{
-				{Type: atomToken, Value: &atomValue{Right: "hello"}},
-				{Type: lparenToken},
-				{Type: atomToken, Value: &atomValue{Right: "world"}},
-				{Type: orToken},
-				{Type: atomToken, Value: &atomValue{Right: "foo"}},
-				{Type: rparenToken},
-				{Type: notToken},
-				{Type: atomToken, Value: &atomValue{Right: "bar"}},
+				SimpleKeyword([]string{"hello"}, opIncludes),
+				LPAREN,
+				SimpleKeyword([]string{"world"}, opIncludes),
+				OR,
+				SimpleKeyword([]string{"foo"}, opIncludes),
+				RPAREN,
+				NOT,
+				SimpleKeyword([]string{"bar"}, opIncludes),
 			},
 		},
 		{
 			Query: "-- not ((foo)bar)",
 			Want: []token{
-				{Type: notToken},
-				{Type: notToken},
-				{Type: notToken},
-				{Type: lparenToken},
-				{Type: lparenToken},
-				{Type: atomToken, Value: &atomValue{Right: "foo"}},
-				{Type: rparenToken},
-				{Type: atomToken, Value: &atomValue{Right: "bar"}},
-				{Type: rparenToken},
+				NOT,
+				NOT,
+				NOT,
+				LPAREN,
+				LPAREN,
+				SimpleKeyword([]string{"foo"}, opIncludes),
+				RPAREN,
+				SimpleKeyword([]string{"bar"}, opIncludes),
+				RPAREN,
 			},
 		},
 		{
 			Query: "o n orange nothing",
 			Want: []token{
-				{Type: atomToken, Value: &atomValue{Right: "o"}},
-				{Type: atomToken, Value: &atomValue{Right: "n"}},
-				{Type: atomToken, Value: &atomValue{Right: "orange"}},
-				{Type: atomToken, Value: &atomValue{Right: "nothing"}},
+				SimpleKeyword([]string{"o"}, opIncludes),
+				SimpleKeyword([]string{"n"}, opIncludes),
+				SimpleKeyword([]string{"orange"}, opIncludes),
+				SimpleKeyword([]string{"nothing"}, opIncludes),
 			},
 		},
 		{
-			Query: "hello=world foo==bar abc<def ghi>=jkl mno!=pqr stu<>vwx",
+			Query: "hello=world foo==bar abc<123 def>=456 ghi!=jkl mno<>pqr",
 			Want: []token{
-				{Type: atomToken, Value: &atomValue{Left: "hello", Op: opEqual, Right: "world"}},
-				{Type: atomToken, Value: &atomValue{Left: "foo", Op: opEqual, Right: "bar"}},
-				{Type: atomToken, Value: &atomValue{Left: "abc", Op: opLessThan, Right: "def"}},
-				{Type: atomToken, Value: &atomValue{Left: "ghi", Op: opGreaterEqual, Right: "jkl"}},
-				{Type: atomToken, Value: &atomValue{Left: "mno", Op: opNotEqual, Right: "pqr"}},
-				{Type: atomToken, Value: &atomValue{Left: "stu", Op: opNotEqual, Right: "vwx"}},
+				FieldKeyword([]string{"hello"}, opEqual, []string{"world"}),
+				FieldKeyword([]string{"foo"}, opEqual, []string{"bar"}),
+				FieldKeyword([]string{"abc"}, opLessThan, []string{"123"}),
+				FieldKeyword([]string{"def"}, opGreaterEqual, []string{"456"}),
+				FieldKeyword([]string{"ghi"}, opNotEqual, []string{"jkl"}),
+				FieldKeyword([]string{"mno"}, opNotEqual, []string{"pqr"}),
 			},
 		},
 		{
-			Query: "foo=bar=baz a>b c<d e>=f g<=h i<>j k!=l m==n",
+			Query: "foo=bar=baz a>1s b<2m c>=2003-03-30T15:03Z d<=4 e<>f g!=h i==j",
 			Want: []token{
-				{Type: atomToken, Value: &atomValue{Left: "foo", Op: opEqual, Right: "bar=baz"}},
-				{Type: atomToken, Value: &atomValue{Left: "a", Op: opGreaterThan, Right: "b"}},
-				{Type: atomToken, Value: &atomValue{Left: "c", Op: opLessThan, Right: "d"}},
-				{Type: atomToken, Value: &atomValue{Left: "e", Op: opGreaterEqual, Right: "f"}},
-				{Type: atomToken, Value: &atomValue{Left: "g", Op: opLessEqual, Right: "h"}},
-				{Type: atomToken, Value: &atomValue{Left: "i", Op: opNotEqual, Right: "j"}},
-				{Type: atomToken, Value: &atomValue{Left: "k", Op: opNotEqual, Right: "l"}},
-				{Type: atomToken, Value: &atomValue{Left: "m", Op: opEqual, Right: "n"}},
+				FieldKeyword([]string{"foo"}, opEqual, []string{"bar=baz"}),
+				FieldKeyword([]string{"a"}, opGreaterThan, []string{"1s"}),
+				FieldKeyword([]string{"b"}, opLessThan, []string{"2m"}),
+				FieldKeyword([]string{"c"}, opGreaterEqual, []string{"2003-03-30T15:03Z"}),
+				FieldKeyword([]string{"d"}, opLessEqual, []string{"4"}),
+				FieldKeyword([]string{"e"}, opNotEqual, []string{"f"}),
+				FieldKeyword([]string{"g"}, opNotEqual, []string{"h"}),
+				FieldKeyword([]string{"i"}, opEqual, []string{"j"}),
 			},
 		},
 		{
+			// BUG: Why is this test passing? This should be falling back to simple keyword such as "<a" and ">b".
 			Query: "<a >b =c !=d <=e >=f <>g ==h == <",
 			Want: []token{
-				{Type: atomToken, Value: &atomValue{Op: opLessThan, Right: "a"}},
-				{Type: atomToken, Value: &atomValue{Op: opGreaterThan, Right: "b"}},
-				{Type: atomToken, Value: &atomValue{Op: opEqual, Right: "c"}},
-				{Type: notToken},
-				{Type: atomToken, Value: &atomValue{Op: opEqual, Right: "d"}},
-				{Type: atomToken, Value: &atomValue{Op: opLessEqual, Right: "e"}},
-				{Type: atomToken, Value: &atomValue{Op: opGreaterEqual, Right: "f"}},
-				{Type: atomToken, Value: &atomValue{Op: opNotEqual, Right: "g"}},
-				{Type: atomToken, Value: &atomValue{Op: opEqual, Right: "h"}},
-				{Type: atomToken, Value: &atomValue{Right: "=="}},
-				{Type: atomToken, Value: &atomValue{Right: "<"}},
+				SimpleKeyword([]string{"a"}, opLessThan),
+				SimpleKeyword([]string{"b"}, opGreaterThan),
+				SimpleKeyword([]string{"c"}, opEqual),
+				NOT,
+				SimpleKeyword([]string{"d"}, opEqual),
+				SimpleKeyword([]string{"e"}, opLessEqual),
+				SimpleKeyword([]string{"f"}, opGreaterEqual),
+				SimpleKeyword([]string{"g"}, opNotEqual),
+				SimpleKeyword([]string{"h"}, opEqual),
+				SimpleKeyword([]string{"=="}, opIncludes),
+				SimpleKeyword([]string{"<"}, opIncludes),
 			},
 		},
 		{
 			Query: `hello \and world foo\ bar \(baz\)`,
 			Want: []token{
-				{Type: atomToken, Value: &atomValue{Right: "hello"}},
-				{Type: atomToken, Value: &atomValue{Right: "and"}},
-				{Type: atomToken, Value: &atomValue{Right: "world"}},
-				{Type: atomToken, Value: &atomValue{Right: "foo bar"}},
-				{Type: atomToken, Value: &atomValue{Right: "(baz)"}},
+				SimpleKeyword([]string{"hello"}, opIncludes),
+				SimpleKeyword([]string{"and"}, opIncludes),
+				SimpleKeyword([]string{"world"}, opIncludes),
+				SimpleKeyword([]string{"foo bar"}, opIncludes),
+				SimpleKeyword([]string{"(baz)"}, opIncludes),
 			},
 		},
 		{
 			Query: `hello "world foo" bar "baz`,
 			Want: []token{
-				{Type: atomToken, Value: &atomValue{Right: "hello"}},
-				{Type: atomToken, Value: &atomValue{Right: "world foo"}},
-				{Type: atomToken, Value: &atomValue{Right: "bar"}},
-				{Type: atomToken, Value: &atomValue{Right: "baz"}},
+				SimpleKeyword([]string{"hello"}, opIncludes),
+				SimpleKeyword([]string{"world foo"}, opIncludes),
+				SimpleKeyword([]string{"bar"}, opIncludes),
+				SimpleKeyword([]string{"baz"}, opIncludes),
 			},
 		},
 		{
 			Query: `hello "world\"foo" bar "(baz)"`,
 			Want: []token{
-				{Type: atomToken, Value: &atomValue{Right: "hello"}},
-				{Type: atomToken, Value: &atomValue{Right: `world"foo`}},
-				{Type: atomToken, Value: &atomValue{Right: "bar"}},
-				{Type: atomToken, Value: &atomValue{Right: "(baz)"}},
+				SimpleKeyword([]string{"hello"}, opIncludes),
+				SimpleKeyword([]string{`world"foo`}, opIncludes),
+				SimpleKeyword([]string{"bar"}, opIncludes),
+				SimpleKeyword([]string{"(baz)"}, opIncludes),
 			},
 		},
 		{
 			Query: `hello" "world"("`,
 			Want: []token{
-				{Type: atomToken, Value: &atomValue{Right: "hello world("}},
+				SimpleKeyword([]string{"hello world("}, opIncludes),
 			},
 		},
 		{
 			Query: `hello\nworld foo\rbar abc\tdef`,
 			Want: []token{
-				{Type: atomToken, Value: &atomValue{Right: "hello\nworld"}},
-				{Type: atomToken, Value: &atomValue{Right: "foo\rbar"}},
-				{Type: atomToken, Value: &atomValue{Right: "abc\tdef"}},
+				SimpleKeyword([]string{"hello\nworld"}, opIncludes),
+				SimpleKeyword([]string{"foo\rbar"}, opIncludes),
+				SimpleKeyword([]string{"abc\tdef"}, opIncludes),
+			},
+		},
+		{
+			Query: `this<is>key=and>>this<<is==value`,
+			Want: []token{
+				FieldKeyword([]string{"this<is>key"}, opEqual, []string{"and>>this<<is==value"}),
 			},
 		},
 	}
@@ -143,7 +189,7 @@ func TestTokenizer(t *testing.T) {
 			tok := newTokenizer(test.Query)
 			var got []token
 			for tok.Scan() {
-				got = append(got, tok.token())
+				got = append(got, tok.Token())
 			}
 			if diff := cmp.Diff(test.Want, got); diff != "" {
 				t.Errorf("(-want, +got)\n%s", diff)
@@ -151,11 +197,14 @@ func TestTokenizer(t *testing.T) {
 		})
 	}
 }
-*/
 
+/*
 func TestTokenizer(t *testing.T) {
-	tok := newTokenizer("hello=world")
+	s := "hello=world foobar AND -test OR you<5 <5s"
+	t.Logf("input: %s", s)
+	tok := newTokenizer(s)
 	for tok.Scan() {
-		t.Logf("%#v", tok.Token())
+		t.Logf("%v", tok.Token())
 	}
 }
+*/

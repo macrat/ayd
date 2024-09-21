@@ -10,15 +10,13 @@ import (
 )
 
 func ParseGlob(pattern []string) stringMatcher {
-	b := &globBuilder{}
-	for _, s := range pattern {
-		if s == "" {
-			b.FeedStar()
-		} else {
-			b.FeedLiteral(s)
+	ss := make([]*string, len(pattern))
+	for i, s := range pattern {
+		if s != "" {
+			ss[i] = &pattern[i]
 		}
 	}
-	return b.Build()
+	return makeGlob(ss)
 }
 
 func Pattern2String(pattern []string) string {
@@ -126,6 +124,10 @@ func TestGlobBuilder(t *testing.T) {
 		},
 		{
 			input:  []string{"foobar"},
+			output: exactMatcher{"foobar"},
+		},
+		{
+			input:  []string{"foo", "bar"},
 			output: exactMatcher{"foobar"},
 		},
 	}
