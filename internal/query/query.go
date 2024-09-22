@@ -108,11 +108,14 @@ func (q *And) Optimize() Query {
 	qs := make([]Query, 0, len(q.Queries))
 	for _, q := range q.Queries {
 		q = q.Optimize()
-		if and, ok := q.(*And); ok && (!and.paren || len(and.Queries) <= 1) {
+		if and, ok := q.(*And); ok {
 			qs = append(qs, and.Queries...)
 		} else {
 			qs = append(qs, q)
 		}
+	}
+	if len(qs) == 1 {
+		return qs[0]
 	}
 	return &And{Queries: qs, paren: q.paren}
 }
@@ -212,7 +215,7 @@ type FieldQuery struct {
 }
 
 func (q *FieldQuery) String() string {
-	return fmt.Sprintf("(%s:%s)", q.Key, q.Value)
+	return fmt.Sprintf("%q%s", q.Key, q.Value)
 }
 
 func (q *FieldQuery) Match(r api.Record) bool {

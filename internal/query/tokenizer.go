@@ -244,7 +244,7 @@ func (t *tokenizer) scanKeyword() {
 
 	if len(tokens) > 1 {
 		for i := 0; i < len(tokens); i++ {
-			if tokens[i].Type == operatorToken && tokens[i].Op&(opEqual|opNotEqual) != 0 {
+			if tokens[i].Type == operatorToken && (tokens[i].Op == opEqual || tokens[i].Op == opNotEqual) {
 				op = tokens[i].Op
 
 				for j := 0; j < i; j++ {
