@@ -15,19 +15,20 @@ const (
 func (o operator) String() string {
 	switch o {
 	case opIncludes:
-		return "opIncludes"
+		return "in"
 	case opGreaterEqual:
-		return "opGreaterEqual"
+		return ">="
 	case opGreaterThan:
-		return "opGreaterThan"
+		return ">"
 	case opEqual:
-		return "opEqual"
+		return "="
 	case opLessThan:
-		return "opLessThan"
+		return "<"
 	case opLessEqual:
-		return "opLessEqual"
+		return "<="
 	case opNotEqual:
-		return "opNotEqual"
+		return "!="
+	default:
+		panic("unreachable")
 	}
-	panic("unreachable")
 }

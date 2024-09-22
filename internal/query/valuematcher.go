@@ -1,10 +1,11 @@
 package query
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
-	"errors"
 
 	api "github.com/macrat/ayd/lib-ayd"
 )
@@ -14,63 +15,76 @@ var (
 )
 
 type valueMatcher interface {
+	fmt.Stringer
+
 	Match(value any) bool
 }
 
-func parseOrderingValueMatcher(ss []*string, opCode operator) (valueMatcher, error) {
+func newOrderingValueMatcher(ss []*string, opCode operator) (valueMatcher, error) {
 	if len(ss) != 1 || ss[0] == nil {
 		return nil, errValueNotOrderable
 	}
 	s := *ss[0]
 
 	if n, err := strconv.ParseFloat(s, 64); err == nil {
-		return numberValueMatcher{Op: opCode, Value: n}, nil
+		return numberValueMatcher{Op: opCode, Value: n, Str: s}, nil
 	}
 	if d, err := time.ParseDuration(s); err == nil {
-		return durationValueMatcher{Op: opCode, Value: d}, nil
+		return durationValueMatcher{Op: opCode, Value: d, Str: s}, nil
 	}
 	if t, err := api.ParseTime(s); err == nil {
-		return timeValueMatcher{Op: opCode, Value: t}, nil
+		return timeValueMatcher{Op: opCode, Value: t, Str: s}, nil
 	}
 	return nil, errValueNotOrderable
 }
 
-func parseValueMatcher(ss []*string, opCode operator) valueMatcher {
+func newValueMatcher(ss []*string, opCode operator) valueMatcher {
 	if len(ss) == 1 && ss[0] != nil {
-		if m, err := parseOrderingValueMatcher(ss, opCode); err == nil {
+		if m, err := newOrderingValueMatcher(ss, opCode); err == nil {
 			return m
 		}
 	}
 
-	return parseStringValueMatcher(ss, opCode)
-}
-
-type anyValueMatcher struct{}
-
-func (anyValueMatcher) Match(value any) bool {
-	return true
+	return newStringValueMatcher(ss, opCode)
 }
 
 type neverValueMatcher struct{}
+
+func (neverValueMatcher) String() string {
+	return "never"
+}
 
 func (neverValueMatcher) Match(value any) bool {
 	return false
 }
 
 type stringValueMatcher struct {
-	Not     bool
+	Op      operator
 	Matcher stringMatcher
 }
 
-func parseStringValueMatcher(ss []*string, opCode operator) valueMatcher {
+func (m stringValueMatcher) String() string {
+	switch m.Op {
+	case opNotEqual:
+		return fmt.Sprintf("!=%q", m.Matcher)
+	case opEqual:
+		return fmt.Sprintf("=%q", m.Matcher)
+	default:
+		panic("unexpected operator")
+	}
+}
+
+func newStringValueMatcher(ss []*string, opCode operator) valueMatcher {
 	if opCode == opIncludes {
 		return stringValueMatcher{
-			Matcher: makeGlob(append(append([]*string{nil}, ss...), nil)),
+			Op:      opEqual,
+			Matcher: newStringMatcher(append(append([]*string{nil}, ss...), nil)),
 		}
-	} else if opCode & (opEqual|opNotEqual) != 0 {
+	} else if opCode&(opEqual|opNotEqual) != 0 {
+		m := newStringMatcher(ss)
 		return stringValueMatcher{
-			Not: opCode == opNotEqual,
-			Matcher: makeGlob(ss),
+			Op:      opCode,
+			Matcher: m,
 		}
 	}
 
@@ -81,11 +95,13 @@ func (m stringValueMatcher) Match(value any) bool {
 	var s string
 	if v, ok := value.(string); ok {
 		s = v
+	} else if stringer, ok := value.(fmt.Stringer); ok {
+		s = stringer.String()
 	} else {
 		s = fmt.Sprintf("%v", value)
 	}
 
-	if m.Not {
+	if m.Op == opNotEqual {
 		return !m.Matcher.Match(s)
 	}
 	return m.Matcher.Match(s)
@@ -94,6 +110,11 @@ func (m stringValueMatcher) Match(value any) bool {
 type numberValueMatcher struct {
 	Op    operator
 	Value float64
+	Str   string
+}
+
+func (m numberValueMatcher) String() string {
+	return fmt.Sprintf("%s%f", m.Op, m.Value)
 }
 
 func (m numberValueMatcher) Match(value any) bool {
@@ -104,6 +125,9 @@ func (m numberValueMatcher) Match(value any) bool {
 	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32:
 		n = float64(v.(int))
 	case string:
+		if m.Op == opIncludes && strings.Contains(v, m.Str) {
+			return true
+		}
 		if f, err := strconv.ParseFloat(v, 64); err == nil {
 			n = f
 		} else {
@@ -117,19 +141,19 @@ func (m numberValueMatcher) Match(value any) bool {
 		return false
 	}
 
+	if m.Op&opEqual != 0 && n == m.Value {
+		return true
+	}
+
 	switch m.Op {
-	case opEqual:
-		return n == m.Value
 	case opLessThan:
 		return n < m.Value
 	case opGreaterThan:
 		return n > m.Value
-	case opLessEqual:
-		return n <= m.Value
-	case opGreaterEqual:
-		return n >= m.Value
 	case opNotEqual:
 		return n != m.Value
+	case opIncludes:
+		return n == m.Value
 	}
 
 	return false
@@ -138,6 +162,11 @@ func (m numberValueMatcher) Match(value any) bool {
 type timeValueMatcher struct {
 	Op    operator
 	Value time.Time
+	Str   string
+}
+
+func (m timeValueMatcher) String() string {
+	return fmt.Sprintf("%s%s", m.Op, m.Value.Format(time.RFC3339))
 }
 
 func (m timeValueMatcher) Match(value any) bool {
@@ -146,6 +175,9 @@ func (m timeValueMatcher) Match(value any) bool {
 	case time.Time:
 		t = v
 	case string:
+		if m.Op == opIncludes && strings.Contains(v, m.Str) {
+			return true
+		}
 		if ts, err := api.ParseTime(v); err == nil {
 			t = ts
 		} else {
@@ -170,6 +202,8 @@ func (m timeValueMatcher) Match(value any) bool {
 		return t.After(m.Value)
 	case opNotEqual:
 		return !t.Equal(m.Value)
+	case opIncludes:
+		return t.Equal(m.Value)
 	}
 
 	return false
@@ -178,6 +212,11 @@ func (m timeValueMatcher) Match(value any) bool {
 type durationValueMatcher struct {
 	Op    operator
 	Value time.Duration
+	Str   string
+}
+
+func (m durationValueMatcher) String() string {
+	return fmt.Sprintf("%s%s", m.Op, m.Value)
 }
 
 func (m durationValueMatcher) Match(value any) bool {
@@ -186,6 +225,9 @@ func (m durationValueMatcher) Match(value any) bool {
 	case time.Duration:
 		d = v
 	case string:
+		if m.Op == opIncludes && strings.Contains(v, m.Str) {
+			return true
+		}
 		if ds, err := time.ParseDuration(v); err == nil {
 			d = ds
 		} else {
@@ -210,6 +252,8 @@ func (m durationValueMatcher) Match(value any) bool {
 		return d > m.Value
 	case opNotEqual:
 		return d != m.Value
+	case opIncludes:
+		return d == m.Value
 	}
 
 	return false

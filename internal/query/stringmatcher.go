@@ -1,10 +1,13 @@
 package query
 
 import (
+	"fmt"
 	"strings"
 )
 
 type stringMatcher interface {
+	fmt.Stringer
+
 	Match(string) bool
 }
 
@@ -13,6 +16,18 @@ type globMatcher struct {
 	Suffix       string
 	Chunks       []string
 	ChunksLength int
+}
+
+func (g globMatcher) String() string {
+	var buf strings.Builder
+	buf.WriteString(g.Prefix)
+	for _, chunk := range g.Chunks {
+		buf.WriteString("*")
+		buf.WriteString(strings.ReplaceAll(chunk, "*", "\\*"))
+	}
+	buf.WriteString("*")
+	buf.WriteString(g.Suffix)
+	return buf.String()
 }
 
 func (g globMatcher) Match(s string) bool {
@@ -43,12 +58,20 @@ type exactMatcher struct {
 	Str string
 }
 
+func (e exactMatcher) String() string {
+	return strings.ReplaceAll(e.Str, "*", "\\*")
+}
+
 func (e exactMatcher) Match(s string) bool {
 	return e.Str == s
 }
 
 type prefixMatcher struct {
 	Str string
+}
+
+func (p prefixMatcher) String() string {
+	return strings.ReplaceAll(p.Str, "*", "\\*") + "*"
 }
 
 func (p prefixMatcher) Match(s string) bool {
@@ -59,8 +82,24 @@ type suffixMatcher struct {
 	Str string
 }
 
+func (s suffixMatcher) String() string {
+	return "*" + strings.ReplaceAll(s.Str, "*", "\\*")
+}
+
 func (s suffixMatcher) Match(str string) bool {
 	return strings.HasSuffix(str, s.Str)
+}
+
+type includeMatcher struct {
+	Str string
+}
+
+func (i includeMatcher) String() string {
+	return "*" + strings.ReplaceAll(i.Str, "*", "\\*") + "*"
+}
+
+func (i includeMatcher) Match(str string) bool {
+	return strings.Contains(str, i.Str)
 }
 
 type globBuilder struct {
@@ -123,6 +162,10 @@ func (b *globBuilder) Build() stringMatcher {
 		}
 	}
 
+	if b.prefix == "" && suffix == "" && len(b.chunks) == 1 {
+		return includeMatcher{Str: b.chunks[0]}
+	}
+
 	return globMatcher{
 		Prefix:       b.prefix,
 		Suffix:       suffix,
@@ -131,10 +174,10 @@ func (b *globBuilder) Build() stringMatcher {
 	}
 }
 
-// makeGlob makes a new stringMatcher from a list of strings.
+// newStringMatcher makes a new stringMatcher from a list of strings.
 // A string in the list means a literal string, and nil means a wildcard.
 // For example, "hello*world" in glob syntax is represented as ["hello", nil, "world"].
-func makeGlob(query []*string) stringMatcher {
+func newStringMatcher(query []*string) stringMatcher {
 	if len(query) == 0 {
 		return exactMatcher{}
 	}

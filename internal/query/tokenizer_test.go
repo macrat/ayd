@@ -1,8 +1,8 @@
 package query
 
 import (
-	"testing"
 	"github.com/google/go-cmp/cmp"
+	"testing"
 )
 
 func SimpleKeyword(s []string, op operator) token {
@@ -13,8 +13,8 @@ func SimpleKeyword(s []string, op operator) token {
 		}
 	}
 	return token{
-		Type: simpleKeywordToken,
-		Value: parseValueMatcher(ss, op),
+		Type:  simpleKeywordToken,
+		Value: newValueMatcher(ss, op),
 	}
 }
 
@@ -32,20 +32,22 @@ func FieldKeyword(field []string, op operator, value []string) token {
 		}
 	}
 	return token{
-		Type: fieldKeywordToken,
-		Key: makeGlob(ff),
-		Value: parseValueMatcher(vv, op),
+		Type:  fieldKeywordToken,
+		Key:   newStringMatcher(ff),
+		Value: newValueMatcher(vv, op),
 	}
 }
 
 var (
 	LPAREN = token{Type: lparenToken}
 	RPAREN = token{Type: rparenToken}
-	OR = token{Type: orToken}
-	NOT = token{Type: notToken}
+	OR     = token{Type: orToken}
+	NOT    = token{Type: notToken}
 )
 
 func TestTokenizer(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		Query string
 		Want  []token
@@ -201,14 +203,3 @@ func TestTokenizer(t *testing.T) {
 		})
 	}
 }
-
-/*
-func TestTokenizer(t *testing.T) {
-	s := "hello=world foobar AND -test OR you<5 <5s"
-	t.Logf("input: %s", s)
-	tok := newTokenizer(s)
-	for tok.Scan() {
-		t.Logf("%v", tok.Token())
-	}
-}
-*/

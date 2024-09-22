@@ -42,7 +42,7 @@ type token struct {
 
 func (t token) String() string {
 	if t.Value != nil {
-		if t.Key != nil{
+		if t.Key != nil {
 			return fmt.Sprintf("%s(%v %#v)", t.Type, t.Key, t.Value)
 		} else {
 			return fmt.Sprintf("%s(%#v)", t.Type, t.Value)
@@ -190,7 +190,7 @@ func (t *tokenizer) scanKeyword() {
 			}
 			tokens = append(tokens, keywordToken{
 				Type:  operatorToken,
-				Op: opCode,
+				Op:    opCode,
 				Value: []*string{&opStr},
 			})
 
@@ -217,17 +217,18 @@ func (t *tokenizer) scanKeyword() {
 			}
 			tokens = append(tokens, keywordToken{
 				Type:  operatorToken,
-				Op: opCode,
+				Op:    opCode,
 				Value: []*string{&opStr},
 			})
 
 			continue
 		} else if c == '*' {
+			closeBuf()
 			strings = append(strings, nil)
 		} else if c == ' ' || c == '\t' || c == '\n' || c == '(' || c == ')' {
 			break
 		} else {
-			buf.WriteByte(t.remain[i])
+			buf.WriteByte(c)
 		}
 	}
 
@@ -243,7 +244,7 @@ func (t *tokenizer) scanKeyword() {
 
 	if len(tokens) > 1 {
 		for i := 0; i < len(tokens); i++ {
-			if tokens[i].Type == operatorToken && tokens[i].Op & (opEqual | opNotEqual) != 0 {
+			if tokens[i].Type == operatorToken && tokens[i].Op&(opEqual|opNotEqual) != 0 {
 				op = tokens[i].Op
 
 				for j := 0; j < i; j++ {
@@ -254,7 +255,7 @@ func (t *tokenizer) scanKeyword() {
 				for j := i + 1; j < len(tokens); j++ {
 					r = append(r, tokens[j].Value...)
 				}
-				right = parseValueMatcher(r, op)
+				right = newValueMatcher(r, op)
 
 				break
 			}
@@ -267,7 +268,7 @@ func (t *tokenizer) scanKeyword() {
 			for i := 0; i < len(tokens); i++ {
 				r = append(r, tokens[i].Value...)
 			}
-			right = parseValueMatcher(r, op)
+			right = newValueMatcher(r, op)
 		} else if hasOp {
 			op = tokens[len(tokens)-2].Op
 
@@ -277,32 +278,32 @@ func (t *tokenizer) scanKeyword() {
 			}
 
 			var err error
-			right, err = parseOrderingValueMatcher(tokens[len(tokens)-1].Value, op)
+			right, err = newOrderingValueMatcher(tokens[len(tokens)-1].Value, op)
 			if err == nil {
 				left = ss
 			} else {
 				ss = append(append(ss, tokens[len(tokens)-2].Value...), tokens[len(tokens)-1].Value...)
 				op = opIncludes
-				right = parseValueMatcher(ss, opIncludes)
+				right = newValueMatcher(ss, opIncludes)
 			}
 		} else {
 			var r []*string
 			for i := 0; i < len(tokens); i++ {
 				r = append(r, tokens[i].Value...)
 			}
-			right = parseValueMatcher(r, op)
+			right = newValueMatcher(r, op)
 		}
 	}
 
 	if len(left) != 0 || op != opIncludes && startWithQuote {
 		t.buf = token{
-			Type: fieldKeywordToken,
-			Key:  makeGlob(left),
+			Type:  fieldKeywordToken,
+			Key:   newStringMatcher(left),
 			Value: right,
 		}
 	} else {
 		t.buf = token{
-			Type: simpleKeywordToken,
+			Type:  simpleKeywordToken,
 			Value: right,
 		}
 	}

@@ -16,7 +16,7 @@ func ParseGlob(pattern []string) stringMatcher {
 			ss[i] = &pattern[i]
 		}
 	}
-	return makeGlob(ss)
+	return newStringMatcher(ss)
 }
 
 func Pattern2String(pattern []string) string {
@@ -32,7 +32,7 @@ func Pattern2String(pattern []string) string {
 }
 
 func TestGlobBuilder(t *testing.T) {
-	//t.Parallel()
+	t.Parallel()
 
 	tests := []struct {
 		input  []string
@@ -234,25 +234,6 @@ func TestGlobMatch(t *testing.T) {
 		})
 	}
 }
-
-/*
-func FuzzGlob(f *testing.F) {
-	f.Add(`foo*bar`, "foobar")
-	f.Add(`foo\*bar`, "fooxxxbar")
-	f.Add(`*foo*bar`, "fooabcbar")
-	f.Add(`foo*bar*`, "foo123barbaz")
-	f.Add(`hello\nworld\tfoo\rbar`, "hello\nworld\tfoo\rbar")
-	f.Add(`0*0*0`, "000000000000000000000000000001")
-	f.Add(``, "")
-
-	f.Fuzz(func(t *testing.T, pattern string, input string) {
-		g := ParseGlob(pattern)
-		g.Match(input)
-		g.Match(input)
-		g.Match(input)
-	})
-}
-*/
 
 func BenchmarkGlobMatch(b *testing.B) {
 	tests := []struct {
