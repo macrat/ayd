@@ -3,14 +3,21 @@ package query
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	api "github.com/macrat/ayd/lib-ayd"
+)
+
+var (
+	minTime = time.Time{}
+	maxTime = time.Unix(2<<31-1, 0)
 )
 
 type Query interface {
 	fmt.Stringer
 
 	Match(api.Record) bool
+	Period() (time.Time, time.Time)
 	Optimize() Query
 }
 
@@ -30,12 +37,24 @@ func ParseQuery(query string) Query {
 			for len(stack) > 1 && !stack[len(stack)-1].paren {
 				stack = stack[:len(stack)-1]
 			}
-			top := stack[len(stack)-1]
-			top.Queries = append(
-				top.Queries[:len(top.Queries)-1],
-				&Or{Queries: []Query{top.Queries[len(top.Queries)-1], q}},
-			)
+			stack[len(stack)-1].Queries = []Query{
+				&Or{Queries: []Query{
+					&And{Queries: stack[len(stack)-1].Queries},
+					q,
+				}},
+			}
 		} else {
+			if len(stack[len(stack)-1].Queries) >= 1 {
+				if or, ok := stack[len(stack)-1].Queries[len(stack[len(stack)-1].Queries)-1].(*Or); ok {
+					last := or.Queries[len(or.Queries)-1]
+					if and, ok := last.(*And); ok {
+						and.Queries = append(and.Queries, q)
+					} else {
+						or.Queries[len(or.Queries)-1] = &And{Queries: []Query{last, q}}
+					}
+					return
+				}
+			}
 			stack[len(stack)-1].Queries = append(stack[len(stack)-1].Queries, q)
 		}
 
@@ -104,6 +123,21 @@ func (q *And) Match(r api.Record) bool {
 	return true
 }
 
+func (q *And) Period() (time.Time, time.Time) {
+	start := minTime
+	end := maxTime
+	for _, query := range q.Queries {
+		s, e := query.Period()
+		if s.After(start) {
+			start = s
+		}
+		if e.Before(end) {
+			end = e
+		}
+	}
+	return start, end
+}
+
 func (q *And) Optimize() Query {
 	qs := make([]Query, 0, len(q.Queries))
 	for _, q := range q.Queries {
@@ -145,6 +179,35 @@ func (q *Or) Match(r api.Record) bool {
 	return false
 }
 
+func (q *Or) Period() (time.Time, time.Time) {
+	hasStart := false
+	hasEnd := false
+	start := maxTime
+	end := minTime
+	for _, query := range q.Queries {
+		s, e := query.Period()
+		if !s.IsZero() {
+			hasStart = true
+			if s.Before(start) {
+				start = s
+			}
+		}
+		if !e.IsZero() {
+			hasEnd = true
+			if e.After(end) {
+				end = e
+			}
+		}
+	}
+	if !hasStart {
+		start = minTime
+	}
+	if !hasEnd {
+		end = maxTime
+	}
+	return start, end
+}
+
 func (q *Or) Optimize() Query {
 	qs := make([]Query, 0, len(q.Queries))
 	for _, q := range q.Queries {
@@ -164,6 +227,17 @@ type Not struct {
 
 func (q *Not) String() string {
 	return "(NOT " + q.Query.String() + ")"
+}
+
+func (q *Not) Period() (time.Time, time.Time) {
+	start, end := q.Query.Period()
+	if start.IsZero() && !end.Equal(maxTime) {
+		return end, maxTime
+	}
+	if !start.IsZero() && end.Equal(maxTime) {
+		return minTime, start
+	}
+	return minTime, maxTime
 }
 
 func (q *Not) Match(r api.Record) bool {
@@ -205,6 +279,21 @@ func (q *SimpleQuery) Match(r api.Record) bool {
 	return false
 }
 
+func (q *SimpleQuery) Period() (time.Time, time.Time) {
+	if t, ok := q.Value.(timeValueMatcher); ok {
+		if t.Op&opGreaterThan != 0 {
+			return t.Value, maxTime
+		}
+		if t.Op&opLessThan != 0 {
+			return minTime, t.Value
+		}
+		if t.Op&opEqual != 0 {
+			return t.Value, t.Value
+		}
+	}
+	return minTime, maxTime
+}
+
 func (q *SimpleQuery) Optimize() Query {
 	return q
 }
@@ -242,6 +331,21 @@ func (q *FieldQuery) Match(r api.Record) bool {
 	}
 
 	return false
+}
+
+func (q *FieldQuery) Period() (time.Time, time.Time) {
+	if t, ok := q.Value.(timeValueMatcher); ok && q.Key.Match("time") {
+		if t.Op&opGreaterThan != 0 {
+			return t.Value, maxTime
+		}
+		if t.Op&opLessThan != 0 {
+			return minTime, t.Value
+		}
+		if t.Op&opEqual != 0 {
+			return t.Value, t.Value
+		}
+	}
+	return minTime, maxTime
 }
 
 func (q *FieldQuery) Optimize() Query {

@@ -235,7 +235,12 @@ func (t *tokenizer) scanKeyword() {
 	closeBuf()
 
 	if len(tokens) == 0 {
-		panic("unreachable")
+		t.remain = t.remain[i:]
+		t.buf = token{
+			Type:  simpleKeywordToken,
+			Value: anyValueMatcher{},
+		}
+		return
 	}
 
 	var left []*string

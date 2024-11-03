@@ -11,7 +11,8 @@ import (
 )
 
 var (
-	errValueNotOrderable = errors.New("value is not orderable")
+	errValueNotOrderable  = errors.New("value is not orderable")
+	errIncorrectValueType = errors.New("incorrect value type")
 )
 
 type valueMatcher interface {
@@ -32,8 +33,8 @@ func newOrderingValueMatcher(ss []*string, opCode operator) (valueMatcher, error
 	if d, err := time.ParseDuration(s); err == nil {
 		return durationValueMatcher{Op: opCode, Value: d, Str: s}, nil
 	}
-	if t, err := api.ParseTime(s); err == nil {
-		return timeValueMatcher{Op: opCode, Value: t, Str: s}, nil
+	if t, err := parseTimeValueMatcher(opCode, s); err == nil {
+		return t, nil
 	}
 	return nil, errValueNotOrderable
 }
@@ -51,11 +52,21 @@ func newValueMatcher(ss []*string, opCode operator) valueMatcher {
 type neverValueMatcher struct{}
 
 func (neverValueMatcher) String() string {
-	return "never"
+	return "NEVER"
 }
 
 func (neverValueMatcher) Match(value any) bool {
 	return false
+}
+
+type anyValueMatcher struct{}
+
+func (anyValueMatcher) String() string {
+	return "ANY"
+}
+
+func (anyValueMatcher) Match(value any) bool {
+	return true
 }
 
 type stringValueMatcher struct {
@@ -163,6 +174,89 @@ type timeValueMatcher struct {
 	Op    operator
 	Value time.Time
 	Str   string
+}
+
+type timeformat struct {
+	Layout     string
+	Resolution time.Duration
+}
+
+var timeformats = []timeformat{}
+
+func init() {
+	dfs := []string{
+		"2006-01-02T",
+		"2006-01-02_",
+		"2006-01-02 ",
+		"20060102 ",
+		"20060102T",
+		"20060102_",
+	}
+	tfs := []timeformat{
+		{"15", time.Hour},
+		{"15:04", time.Minute},
+		{"15:04:05", time.Second},
+		{"15:04:05.999999999", time.Nanosecond},
+		{"1504", time.Minute},
+		{"150405", time.Second},
+		{"150405.999999999", time.Nanosecond},
+	}
+	zfs := []string{
+		"Z07:00",
+		"Z0700",
+		"Z07",
+	}
+	for _, df := range dfs {
+		for _, tf := range tfs {
+			for _, zf := range zfs {
+				timeformats = append(timeformats, timeformat{
+					Layout:     df + tf.Layout + zf,
+					Resolution: tf.Resolution,
+				}, timeformat{
+					Layout:     df + tf.Layout,
+					Resolution: tf.Resolution,
+				})
+			}
+		}
+	}
+	timeformats = append(
+		timeformats,
+		timeformat{"2006-01-02", 24 * time.Hour},
+		timeformat{"2006/01/02", 24 * time.Hour},
+		timeformat{"2006/1/2", 24 * time.Hour},
+	)
+}
+
+func parseTimeValueMatcher(op operator, value string) (timeValueMatcher, error) {
+	x := strings.ToUpper(strings.TrimSpace(value))
+	for _, f := range timeformats {
+		t, err := time.Parse(f.Layout, x)
+		if err == nil {
+			if op == opGreaterThan || op == opLessEqual {
+				t = t.Add(f.Resolution).Add(-1)
+			}
+			return timeValueMatcher{Op: op, Value: t, Str: value}, nil
+		}
+	}
+
+	extraformats := []timeformat{
+		{"15:04:05.999999999", time.Nanosecond},
+		{"15:04:05", time.Second},
+		{"15:04", time.Minute},
+	}
+	for _, f := range extraformats {
+		t, err := time.Parse(f.Layout, x)
+		if err == nil {
+			if op == opGreaterThan || op == opLessEqual {
+				t = t.Add(f.Resolution).Add(-1)
+			}
+			year, month, day := time.Now().Date()
+			t = t.AddDate(year, int(month)-1, day-1)
+			return timeValueMatcher{Op: op, Value: t, Str: value}, nil
+		}
+	}
+
+	return timeValueMatcher{}, errIncorrectValueType
 }
 
 func (m timeValueMatcher) String() string {
