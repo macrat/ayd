@@ -185,9 +185,6 @@ func (t *tokenizer) scanKeyword() {
 			hasOp = true
 			opStr := t.remain[i : i+2]
 			opCode := opNotEqual
-			if opStr[0] == '=' {
-				opCode = opEqual
-			}
 			tokens = append(tokens, keywordToken{
 				Type:  operatorToken,
 				Op:    opCode,
@@ -274,7 +271,7 @@ func (t *tokenizer) scanKeyword() {
 				r = append(r, tokens[i].Value...)
 			}
 			right = newValueMatcher(r, op)
-		} else if hasOp {
+		} else {
 			op = tokens[len(tokens)-2].Op
 
 			var ss []*string
@@ -291,12 +288,6 @@ func (t *tokenizer) scanKeyword() {
 				op = opIncludes
 				right = newValueMatcher(ss, opIncludes)
 			}
-		} else {
-			var r []*string
-			for i := 0; i < len(tokens); i++ {
-				r = append(r, tokens[i].Value...)
-			}
-			right = newValueMatcher(r, op)
 		}
 	}
 

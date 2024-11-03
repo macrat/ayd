@@ -34,9 +34,6 @@ func ParseQuery(query string) Query {
 			q = &Not{Query: q}
 		}
 		if orMode {
-			for len(stack) > 1 && !stack[len(stack)-1].paren {
-				stack = stack[:len(stack)-1]
-			}
 			stack[len(stack)-1].Queries = []Query{
 				&Or{Queries: []Query{
 					&And{Queries: stack[len(stack)-1].Queries},
@@ -69,9 +66,6 @@ func ParseQuery(query string) Query {
 			pushQuery(and)
 			stack = append(stack, and)
 		case rparenToken:
-			for len(stack) > 1 && !stack[len(stack)-1].paren {
-				stack = stack[:len(stack)-1]
-			}
 			if len(stack) > 1 {
 				stack = stack[:len(stack)-1]
 			} else {
@@ -180,30 +174,16 @@ func (q *Or) Match(r api.Record) bool {
 }
 
 func (q *Or) Period() (time.Time, time.Time) {
-	hasStart := false
-	hasEnd := false
 	start := maxTime
 	end := minTime
 	for _, query := range q.Queries {
 		s, e := query.Period()
-		if !s.IsZero() {
-			hasStart = true
-			if s.Before(start) {
-				start = s
-			}
+		if s.Before(start) {
+			start = s
 		}
-		if !e.IsZero() {
-			hasEnd = true
-			if e.After(end) {
-				end = e
-			}
+		if e.After(end) {
+			end = e
 		}
-	}
-	if !hasStart {
-		start = minTime
-	}
-	if !hasEnd {
-		end = maxTime
 	}
 	return start, end
 }
@@ -281,15 +261,7 @@ func (q *SimpleQuery) Match(r api.Record) bool {
 
 func (q *SimpleQuery) Period() (time.Time, time.Time) {
 	if t, ok := q.Value.(timeValueMatcher); ok {
-		if t.Op&opGreaterThan != 0 {
-			return t.Value, maxTime
-		}
-		if t.Op&opLessThan != 0 {
-			return minTime, t.Value
-		}
-		if t.Op&opEqual != 0 {
-			return t.Value, t.Value
-		}
+		return t.Period()
 	}
 	return minTime, maxTime
 }
@@ -335,15 +307,7 @@ func (q *FieldQuery) Match(r api.Record) bool {
 
 func (q *FieldQuery) Period() (time.Time, time.Time) {
 	if t, ok := q.Value.(timeValueMatcher); ok && q.Key.Match("time") {
-		if t.Op&opGreaterThan != 0 {
-			return t.Value, maxTime
-		}
-		if t.Op&opLessThan != 0 {
-			return minTime, t.Value
-		}
-		if t.Op&opEqual != 0 {
-			return t.Value, t.Value
-		}
+		return t.Period()
 	}
 	return minTime, maxTime
 }

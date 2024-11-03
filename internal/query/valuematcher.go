@@ -75,13 +75,10 @@ type stringValueMatcher struct {
 }
 
 func (m stringValueMatcher) String() string {
-	switch m.Op {
-	case opNotEqual:
+	if m.Op == opNotEqual {
 		return fmt.Sprintf("!=%q", m.Matcher)
-	case opEqual:
+	} else {
 		return fmt.Sprintf("=%q", m.Matcher)
-	default:
-		panic("unexpected operator")
 	}
 }
 
@@ -99,7 +96,7 @@ func newStringValueMatcher(ss []*string, opCode operator) valueMatcher {
 		}
 	}
 
-	return neverValueMatcher{}
+	panic("unexpected operator")
 }
 
 func (m stringValueMatcher) Match(value any) bool {
@@ -171,9 +168,10 @@ func (m numberValueMatcher) Match(value any) bool {
 }
 
 type timeValueMatcher struct {
-	Op    operator
-	Value time.Time
-	Str   string
+	Op         operator
+	Value      time.Time
+	Resolution time.Duration
+	Str        string
 }
 
 type timeformat struct {
@@ -235,7 +233,7 @@ func parseTimeValueMatcher(op operator, value string) (timeValueMatcher, error) 
 			if op == opGreaterThan || op == opLessEqual {
 				t = t.Add(f.Resolution).Add(-1)
 			}
-			return timeValueMatcher{Op: op, Value: t, Str: value}, nil
+			return timeValueMatcher{Op: op, Value: t, Resolution: f.Resolution, Str: value}, nil
 		}
 	}
 
@@ -252,7 +250,7 @@ func parseTimeValueMatcher(op operator, value string) (timeValueMatcher, error) 
 			}
 			year, month, day := time.Now().Date()
 			t = t.AddDate(year, int(month)-1, day-1)
-			return timeValueMatcher{Op: op, Value: t, Str: value}, nil
+			return timeValueMatcher{Op: op, Value: t, Resolution: f.Resolution, Str: value}, nil
 		}
 	}
 
@@ -294,13 +292,26 @@ func (m timeValueMatcher) Match(value any) bool {
 		return t.Before(m.Value)
 	case opGreaterThan:
 		return t.After(m.Value)
+	case opEqual, opIncludes:
+		return !t.Before(m.Value) && t.Before(m.Value.Add(m.Resolution))
 	case opNotEqual:
-		return !t.Equal(m.Value)
-	case opIncludes:
-		return t.Equal(m.Value)
+		return t.Before(m.Value) || !t.Before(m.Value.Add(m.Resolution))
 	}
 
 	return false
+}
+
+func (m timeValueMatcher) Period() (time.Time, time.Time) {
+	if m.Op&opGreaterThan != 0 {
+		return m.Value, maxTime
+	}
+	if m.Op&opLessThan != 0 {
+		return minTime, m.Value
+	}
+	if m.Op&opNotEqual != 0 {
+		return minTime, maxTime
+	}
+	return m.Value, m.Value.Add(m.Resolution).Add(-1)
 }
 
 type durationValueMatcher struct {
@@ -330,7 +341,7 @@ func (m durationValueMatcher) Match(value any) bool {
 	case int:
 		d = time.Duration(v) * time.Millisecond
 	case float64:
-		d = time.Duration(v) * time.Millisecond
+		d = time.Duration(v * float64(time.Millisecond))
 	default:
 		return false
 	}
@@ -339,11 +350,13 @@ func (m durationValueMatcher) Match(value any) bool {
 		return true
 	}
 
-	switch m.Op {
-	case opLessThan:
+	if m.Op&opLessThan != 0 {
 		return d < m.Value
-	case opGreaterThan:
+	}
+	if m.Op&opGreaterThan != 0 {
 		return d > m.Value
+	}
+	switch m.Op {
 	case opNotEqual:
 		return d != m.Value
 	case opIncludes:

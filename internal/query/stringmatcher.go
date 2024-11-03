@@ -111,15 +111,6 @@ type globBuilder struct {
 	esc          bool
 }
 
-func (b *globBuilder) Reset() {
-	b.prefixClosed = false
-	b.prefix = ""
-	b.noSuffix = false
-	b.chunks = nil
-	b.chunksLength = 0
-	b.esc = false
-}
-
 func (b *globBuilder) FeedLiteral(s string) {
 	b.noSuffix = false
 	if b.prefixClosed {
@@ -138,10 +129,6 @@ func (b *globBuilder) FeedStar() {
 
 // Build a matcher from the current state of the builder.
 func (b *globBuilder) Build() stringMatcher {
-	if !b.prefixClosed {
-		return exactMatcher{}
-	}
-
 	var suffix string
 	if len(b.chunks) > 0 && !b.noSuffix {
 		suffix = b.chunks[len(b.chunks)-1]
