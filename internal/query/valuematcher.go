@@ -143,8 +143,6 @@ func (m numberValueMatcher) Match(value any) bool {
 		}
 	case time.Duration:
 		n = float64(v.Microseconds()) / 1000
-	case time.Time:
-		n = float64(v.Unix())
 	default:
 		return false
 	}
@@ -153,11 +151,13 @@ func (m numberValueMatcher) Match(value any) bool {
 		return true
 	}
 
-	switch m.Op {
-	case opLessThan:
+	if m.Op&opLessThan != 0 {
 		return n < m.Value
-	case opGreaterThan:
+	}
+	if m.Op&opGreaterThan != 0 {
 		return n > m.Value
+	}
+	switch m.Op {
 	case opNotEqual:
 		return n != m.Value
 	case opIncludes:

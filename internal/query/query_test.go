@@ -220,12 +220,79 @@ func TestStringValueMatcher(t *testing.T) {
 		{`status=HEALTHY 2`, R{Status: lib.StatusFailure, Message: "HEALTHY 2"}, false},
 		{`=FAILURE 1`, R{Status: lib.StatusFailure, Message: "FAILURE 1"}, true},
 		{`=FAILURE 2`, R{Status: lib.StatusHealthy, Message: "FAILURE 2"}, false},
+		{`status!=HEALTHY 1`, R{Status: lib.StatusHealthy, Message: "1"}, false},
+		{`status!=HEALTHY 2`, R{Status: lib.StatusFailure, Message: "2"}, true},
+
+		{`int=12*`, R{Extra: map[string]any{"int": 123}}, true},
+		{`int=123*`, R{Extra: map[string]any{"int": 123}}, true},
+		{`int=1234*`, R{Extra: map[string]any{"int": 123}}, false},
+
+		{`float=1*.1*`, R{Extra: map[string]any{"float": 123.123}}, true},
+		{`float=2*.2*`, R{Extra: map[string]any{"float": 123.123}}, false},
+
+		{`array=hello`, R{Extra: map[string]any{"array": []any{"hello", "world"}}}, true},
+		{`array=wor*`, R{Extra: map[string]any{"array": []any{"hello", "world"}}}, true},
+		{`array=foo`, R{Extra: map[string]any{"array": []any{"hello", "world"}}}, false},
 	})
 }
 
 func TestNumberValueMatcher(t *testing.T) {
-	t.Skip("not implemented yet")
-	RunQueryTest(t, []QueryTest{})
+	RunQueryTest(t, []QueryTest{
+		{`int=1`, R{Extra: map[string]any{"int": 1}}, true},
+		{`int=2`, R{Extra: map[string]any{"int": 1}}, false},
+		{`int<3`, R{Extra: map[string]any{"int": 3}}, false},
+		{`int<4`, R{Extra: map[string]any{"int": 3}}, true},
+		{`int>5`, R{Extra: map[string]any{"int": 6}}, true},
+		{`int>6`, R{Extra: map[string]any{"int": 6}}, false},
+		{`int<=7`, R{Extra: map[string]any{"int": 8}}, false},
+		{`int<=8`, R{Extra: map[string]any{"int": 8}}, true},
+		{`int<=9`, R{Extra: map[string]any{"int": 8}}, true},
+		{`int>=10`, R{Extra: map[string]any{"int": 11}}, true},
+		{`int>=11`, R{Extra: map[string]any{"int": 11}}, true},
+		{`int>=12`, R{Extra: map[string]any{"int": 11}}, false},
+		{`int!=13`, R{Extra: map[string]any{"int": 14}}, true},
+		{`int!=14`, R{Extra: map[string]any{"int": 14}}, false},
+		{`int!=15`, R{Extra: map[string]any{"int": 14}}, true},
+
+		{`float=1.5`, R{Extra: map[string]any{"float": 1.5}}, true},
+		{`float=2.5`, R{Extra: map[string]any{"float": 1.5}}, false},
+		{`float<3.5`, R{Extra: map[string]any{"float": 3.5}}, false},
+		{`float<4.5`, R{Extra: map[string]any{"float": 3.5}}, true},
+		{`float>5.5`, R{Extra: map[string]any{"float": 6.5}}, true},
+		{`float>6.5`, R{Extra: map[string]any{"float": 6.5}}, false},
+		{`float<=7.5`, R{Extra: map[string]any{"float": 8.5}}, false},
+		{`float<=8.5`, R{Extra: map[string]any{"float": 8.5}}, true},
+		{`float<=9.5`, R{Extra: map[string]any{"float": 8.5}}, true},
+		{`float>=10.5`, R{Extra: map[string]any{"float": 11.5}}, true},
+		{`float>=11.5`, R{Extra: map[string]any{"float": 11.5}}, true},
+		{`float>=12.5`, R{Extra: map[string]any{"float": 11.5}}, false},
+		{`float!=13.5`, R{Extra: map[string]any{"float": 14.5}}, true},
+		{`float!=14.5`, R{Extra: map[string]any{"float": 14.5}}, false},
+		{`float!=15.5`, R{Extra: map[string]any{"float": 14.5}}, true},
+
+		{`str=1`, R{Extra: map[string]any{"str": "1"}}, true},
+		{`str=2.5`, R{Extra: map[string]any{"str": "2.5"}}, true},
+		{`3`, R{Message: "12345"}, true},
+		{`4`, R{Message: "67890"}, false},
+		{`str=5`, R{Extra: map[string]any{"str": "five"}}, false},
+
+		{`latency=1`, R{Latency: time.Millisecond}, true},
+		{`latency=2`, R{Latency: time.Millisecond}, false},
+		{`latency<3`, R{Latency: time.Millisecond * 4}, false},
+		{`latency<4`, R{Latency: time.Millisecond * 4}, false},
+		{`latency<5`, R{Latency: time.Millisecond * 4}, true},
+		{`latency<=6`, R{Latency: time.Millisecond * 7}, false},
+		{`latency<=7`, R{Latency: time.Millisecond * 7}, true},
+		{`latency<=8`, R{Latency: time.Millisecond * 7}, true},
+		{`latency>9`, R{Latency: time.Millisecond * 10}, true},
+		{`latency>10`, R{Latency: time.Millisecond * 10}, false},
+		{`latency>11`, R{Latency: time.Millisecond * 10}, false},
+		{`latency>=12`, R{Latency: time.Millisecond * 13}, true},
+		{`latency>=13`, R{Latency: time.Millisecond * 13}, true},
+		{`latency>=14`, R{Latency: time.Millisecond * 13}, false},
+
+		{`time=123`, R{}, false},
+	})
 }
 
 func TestTimeValueMatcher(t *testing.T) {

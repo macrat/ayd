@@ -297,8 +297,16 @@ func (q *FieldQuery) Match(r api.Record) bool {
 	}
 
 	for key, value := range r.Extra {
-		if q.Key.Match(key) && q.Value.Match(value) {
-			return true
+		if q.Key.Match(key) {
+			if vs, ok := value.([]any); ok {
+				for _, v := range vs {
+					if q.Value.Match(v) {
+						return true
+					}
+				}
+			} else if q.Value.Match(value) {
+				return true
+			}
 		}
 	}
 
