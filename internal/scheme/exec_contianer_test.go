@@ -37,7 +37,7 @@ func TestExecSSHScheme_withContainer(t *testing.T) {
 		{"exec+ssh://foo:bar@localhost:2222/usr/local/bin/make-file?ayd_test_content=hello+world#/tmp/data/ssh/hello", api.StatusHealthy, extra(0), ""},
 		{"exec+ssh://foo:bar@localhost:2222/bin/cat#/tmp/data/ssh/hello", api.StatusHealthy, "hello world\n" + extra(0), ""},
 
-		{"exec+ssh://foo:bar@localhost:2222/usr/local/bin/no-such-command", api.StatusUnknown, "ash: /usr/local/bin/no-such-command: not found\n" + extra(127), ""},
+		{"exec+ssh://foo:bar@localhost:2222/usr/local/bin/no-such-command", api.StatusUnknown, "a?sh: /usr/local/bin/no-such-command: not found\n" + extra(127), ""},
 	}, 10)
 
 	env := strings.Join([]string{
