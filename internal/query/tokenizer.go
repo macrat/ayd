@@ -37,15 +37,20 @@ func (t tokenType) String() string {
 type token struct {
 	Type  tokenType
 	Key   stringMatcher
+	Not   bool
 	Value valueMatcher
 }
 
 func (t token) String() string {
 	if t.Value != nil {
+		not := ""
+		if t.Not {
+			not = "!"
+		}
 		if t.Key != nil {
-			return fmt.Sprintf("%s(%v %#v)", t.Type, t.Key, t.Value)
+			return fmt.Sprintf("%s%s(%v %#v)", not, t.Type, t.Key, t.Value)
 		} else {
-			return fmt.Sprintf("%s(%#v)", t.Type, t.Value)
+			return fmt.Sprintf("%s%s(%#v)", not, t.Type, t.Value)
 		}
 	}
 	return t.Type.String()
@@ -257,7 +262,7 @@ func (t *tokenizer) scanKeyword() {
 				for j := i + 1; j < len(tokens); j++ {
 					r = append(r, tokens[j].Value...)
 				}
-				right = newValueMatcher(r, op)
+				right = newValueMatcher(r, op&opNotMask)
 
 				break
 			}
@@ -270,7 +275,7 @@ func (t *tokenizer) scanKeyword() {
 			for i := 0; i < len(tokens); i++ {
 				r = append(r, tokens[i].Value...)
 			}
-			right = newValueMatcher(r, op)
+			right = newValueMatcher(r, op&opNotMask)
 		} else {
 			op = tokens[len(tokens)-2].Op
 
@@ -280,7 +285,7 @@ func (t *tokenizer) scanKeyword() {
 			}
 
 			var err error
-			right, err = newOrderingValueMatcher(tokens[len(tokens)-1].Value, op)
+			right, err = newOrderingValueMatcher(tokens[len(tokens)-1].Value, op&opNotMask)
 			if err == nil {
 				left = ss
 			} else {
@@ -295,11 +300,13 @@ func (t *tokenizer) scanKeyword() {
 		t.buf = token{
 			Type:  fieldKeywordToken,
 			Key:   newStringMatcher(left),
+			Not:   op == opNotEqual,
 			Value: right,
 		}
 	} else {
 		t.buf = token{
 			Type:  simpleKeywordToken,
+			Not:   op == opNotEqual,
 			Value: right,
 		}
 	}

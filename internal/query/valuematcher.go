@@ -6,8 +6,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	api "github.com/macrat/ayd/lib-ayd"
 )
 
 var (
@@ -49,16 +47,6 @@ func newValueMatcher(ss []*string, opCode operator) valueMatcher {
 	return newStringValueMatcher(ss, opCode)
 }
 
-type neverValueMatcher struct{}
-
-func (neverValueMatcher) String() string {
-	return "NEVER"
-}
-
-func (neverValueMatcher) Match(value any) bool {
-	return false
-}
-
 type anyValueMatcher struct{}
 
 func (anyValueMatcher) String() string {
@@ -75,11 +63,7 @@ type stringValueMatcher struct {
 }
 
 func (m stringValueMatcher) String() string {
-	if m.Op == opNotEqual {
-		return fmt.Sprintf("!=%q", m.Matcher)
-	} else {
-		return fmt.Sprintf("=%q", m.Matcher)
-	}
+	return fmt.Sprintf("=%q", m.Matcher)
 }
 
 func newStringValueMatcher(ss []*string, opCode operator) valueMatcher {
@@ -88,15 +72,12 @@ func newStringValueMatcher(ss []*string, opCode operator) valueMatcher {
 			Op:      opEqual,
 			Matcher: newStringMatcher(append(append([]*string{nil}, ss...), nil)),
 		}
-	} else if opCode&(opEqual|opNotEqual) != 0 {
-		m := newStringMatcher(ss)
+	} else {
 		return stringValueMatcher{
 			Op:      opCode,
-			Matcher: m,
+			Matcher: newStringMatcher(ss),
 		}
 	}
-
-	panic("unexpected operator")
 }
 
 func (m stringValueMatcher) Match(value any) bool {
@@ -109,9 +90,6 @@ func (m stringValueMatcher) Match(value any) bool {
 		s = fmt.Sprintf("%v", value)
 	}
 
-	if m.Op == opNotEqual {
-		return !m.Matcher.Match(s)
-	}
 	return m.Matcher.Match(s)
 }
 
@@ -157,14 +135,7 @@ func (m numberValueMatcher) Match(value any) bool {
 	if m.Op&opGreaterThan != 0 {
 		return n > m.Value
 	}
-	switch m.Op {
-	case opNotEqual:
-		return n != m.Value
-	case opIncludes:
-		return n == m.Value
-	}
-
-	return false
+	return n == m.Value
 }
 
 type timeValueMatcher struct {
@@ -222,6 +193,15 @@ func init() {
 		timeformat{"2006-01-02", 24 * time.Hour},
 		timeformat{"2006/01/02", 24 * time.Hour},
 		timeformat{"2006/1/2", 24 * time.Hour},
+		timeformat{time.Layout, time.Second},
+		timeformat{time.ANSIC, time.Second},
+		timeformat{time.UnixDate, time.Second},
+		timeformat{time.RubyDate, time.Second},
+		timeformat{time.RFC822, time.Second},
+		timeformat{time.RFC822Z, time.Second},
+		timeformat{time.RFC850, time.Second},
+		timeformat{time.RFC1123, time.Second},
+		timeformat{time.RFC1123Z, time.Second},
 	)
 }
 
@@ -270,15 +250,15 @@ func (m timeValueMatcher) Match(value any) bool {
 		if m.Op == opIncludes && strings.Contains(v, m.Str) {
 			return true
 		}
-		if ts, err := api.ParseTime(v); err == nil {
-			t = ts
+		if ts, err := parseTimeValueMatcher(opIncludes, v); err == nil {
+			t = ts.Value
 		} else {
 			return false
 		}
 	case int:
 		t = time.Unix(int64(v), 0)
 	case float64:
-		t = time.Unix(int64(v), 0)
+		t = time.UnixMicro(int64(v * 1e6))
 	default:
 		return false
 	}
@@ -287,31 +267,13 @@ func (m timeValueMatcher) Match(value any) bool {
 		return true
 	}
 
-	switch m.Op {
-	case opLessThan:
-		return t.Before(m.Value)
-	case opGreaterThan:
-		return t.After(m.Value)
-	case opEqual, opIncludes:
-		return !t.Before(m.Value) && t.Before(m.Value.Add(m.Resolution))
-	case opNotEqual:
-		return t.Before(m.Value) || !t.Before(m.Value.Add(m.Resolution))
-	}
-
-	return false
-}
-
-func (m timeValueMatcher) Period() (time.Time, time.Time) {
-	if m.Op&opGreaterThan != 0 {
-		return m.Value, maxTime
-	}
 	if m.Op&opLessThan != 0 {
-		return minTime, m.Value
+		return t.Before(m.Value)
 	}
-	if m.Op&opNotEqual != 0 {
-		return minTime, maxTime
+	if m.Op&opGreaterThan != 0 {
+		return t.After(m.Value)
 	}
-	return m.Value, m.Value.Add(m.Resolution).Add(-1)
+	return !t.Before(m.Value) && t.Before(m.Value.Add(m.Resolution))
 }
 
 type durationValueMatcher struct {
@@ -356,12 +318,5 @@ func (m durationValueMatcher) Match(value any) bool {
 	if m.Op&opGreaterThan != 0 {
 		return d > m.Value
 	}
-	switch m.Op {
-	case opNotEqual:
-		return d != m.Value
-	case opIncludes:
-		return d == m.Value
-	}
-
-	return false
+	return d == m.Value
 }

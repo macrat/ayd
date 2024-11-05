@@ -3,21 +3,14 @@ package query
 import (
 	"fmt"
 	"strings"
-	"time"
 
 	api "github.com/macrat/ayd/lib-ayd"
-)
-
-var (
-	minTime = time.Time{}
-	maxTime = time.Unix(2<<31-1, 0)
 )
 
 type Query interface {
 	fmt.Stringer
 
 	Match(api.Record) bool
-	Period() (time.Time, time.Time)
 	Optimize() Query
 }
 
@@ -82,9 +75,17 @@ func ParseQuery(query string) Query {
 		case notToken:
 			notMode = !notMode
 		case simpleKeywordToken:
-			pushQuery(&SimpleQuery{Value: tok.Token().Value})
+			if tok.Token().Not {
+				pushQuery(&Not{&SimpleQuery{Value: tok.Token().Value}})
+			} else {
+				pushQuery(&SimpleQuery{Value: tok.Token().Value})
+			}
 		case fieldKeywordToken:
-			pushQuery(&FieldQuery{Key: tok.Token().Key, Value: tok.Token().Value})
+			if tok.Token().Not {
+				pushQuery(&Not{&FieldQuery{Key: tok.Token().Key, Value: tok.Token().Value}})
+			} else {
+				pushQuery(&FieldQuery{Key: tok.Token().Key, Value: tok.Token().Value})
+			}
 		}
 	}
 
@@ -115,21 +116,6 @@ func (q *And) Match(r api.Record) bool {
 		}
 	}
 	return true
-}
-
-func (q *And) Period() (time.Time, time.Time) {
-	start := minTime
-	end := maxTime
-	for _, query := range q.Queries {
-		s, e := query.Period()
-		if s.After(start) {
-			start = s
-		}
-		if e.Before(end) {
-			end = e
-		}
-	}
-	return start, end
 }
 
 func (q *And) Optimize() Query {
@@ -173,21 +159,6 @@ func (q *Or) Match(r api.Record) bool {
 	return false
 }
 
-func (q *Or) Period() (time.Time, time.Time) {
-	start := maxTime
-	end := minTime
-	for _, query := range q.Queries {
-		s, e := query.Period()
-		if s.Before(start) {
-			start = s
-		}
-		if e.After(end) {
-			end = e
-		}
-	}
-	return start, end
-}
-
 func (q *Or) Optimize() Query {
 	qs := make([]Query, 0, len(q.Queries))
 	for _, q := range q.Queries {
@@ -207,17 +178,6 @@ type Not struct {
 
 func (q *Not) String() string {
 	return "(NOT " + q.Query.String() + ")"
-}
-
-func (q *Not) Period() (time.Time, time.Time) {
-	start, end := q.Query.Period()
-	if start.IsZero() && !end.Equal(maxTime) {
-		return end, maxTime
-	}
-	if !start.IsZero() && end.Equal(maxTime) {
-		return minTime, start
-	}
-	return minTime, maxTime
 }
 
 func (q *Not) Match(r api.Record) bool {
@@ -257,13 +217,6 @@ func (q *SimpleQuery) Match(r api.Record) bool {
 		return true
 	}
 	return false
-}
-
-func (q *SimpleQuery) Period() (time.Time, time.Time) {
-	if t, ok := q.Value.(timeValueMatcher); ok {
-		return t.Period()
-	}
-	return minTime, maxTime
 }
 
 func (q *SimpleQuery) Optimize() Query {
@@ -311,13 +264,6 @@ func (q *FieldQuery) Match(r api.Record) bool {
 	}
 
 	return false
-}
-
-func (q *FieldQuery) Period() (time.Time, time.Time) {
-	if t, ok := q.Value.(timeValueMatcher); ok && q.Key.Match("time") {
-		return t.Period()
-	}
-	return minTime, maxTime
 }
 
 func (q *FieldQuery) Optimize() Query {

@@ -2,6 +2,7 @@ package query
 
 import (
 	"github.com/google/go-cmp/cmp"
+
 	"testing"
 )
 
@@ -12,8 +13,14 @@ func SimpleKeyword(s []string, op operator) token {
 			ss[x] = &s[x]
 		}
 	}
+	not := false
+	if op == opNotEqual {
+		not = true
+		op = opEqual
+	}
 	return token{
 		Type:  simpleKeywordToken,
+		Not:   not,
 		Value: newValueMatcher(ss, op),
 	}
 }
@@ -31,9 +38,15 @@ func FieldKeyword(field []string, op operator, value []string) token {
 			vv[x] = &value[x]
 		}
 	}
+	not := false
+	if op == opNotEqual {
+		not = true
+		op = opEqual
+	}
 	return token{
 		Type:  fieldKeywordToken,
 		Key:   newStringMatcher(ff),
+		Not:   not,
 		Value: newValueMatcher(vv, op),
 	}
 }

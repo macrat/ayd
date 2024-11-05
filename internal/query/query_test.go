@@ -39,10 +39,10 @@ func TestParseQuery(t *testing.T) {
 		{`"a b" c\ d`, `(AND ="*a b*" ="*c d*")`},
 		{"*a b* *c* d*e *f*g*", `(AND ="*a*" ="*b*" ="*c*" ="*d*e*" ="*f*g*")`},
 		{"=*a =b* =*c* =d*e =*f*g*", `(AND ="*a" ="b*" ="*c*" ="d*e" ="*f*g*")`},
-		{"=a <>b >1 <2s >=2003-03-30T15:33Z <=4h 5ms", `(AND ="a" !="b" >1.000000 <2s >=2003-03-30T15:33:00Z <=4h0m0s in5ms)`},
+		{"=a <>b >1 <2s >=2003-03-30T15:33Z <=4h 5ms", `(AND ="a" (NOT ="b") >1.000000 <2s >=2003-03-30T15:33:00Z <=4h0m0s in5ms)`},
 		{"<a >b <=c >=d ==e f<g", `(AND ="*<a*" ="*>b*" ="*<=c*" ="*>=d*" ="e" ="*f<g*")`},
-		{"a=b c!=d e>1 f<2s g>=2003-03-30T15:33Z h<=4h", `(AND "a"="b" "c"!="d" "e">1.000000 "f"<2s "g">=2003-03-30T15:33:00Z "h"<=4h0m0s)`},
-		{"<a>b=<c d=e=f g!=h!=i j=k<>l", `(AND "<a>b"="<c" "d"="e=f" "g"!="h!=i" "j"="k<>l")`},
+		{"a=b c!=d e>1 f<2s g>=2003-03-30T15:33Z h<=4h", `(AND "a"="b" (NOT "c"="d") "e">1.000000 "f"<2s "g">=2003-03-30T15:33:00Z "h"<=4h0m0s)`},
+		{"<a>b=<c d=e=f g!=h!=i j=k<>l", `(AND "<a>b"="<c" "d"="e=f" (NOT "g"="h!=i") "j"="k<>l")`},
 		{"target=https://example.com latency>1s", `(AND "target"="https://example.com" "latency">1s)`},
 		{"HEALTHY <100ms", `(AND ="*HEALTHY*" <100ms)`},
 		{"", `(AND)`},
@@ -93,54 +93,6 @@ func FuzzParseQuery(f *testing.F) {
 	f.Fuzz(func(t *testing.T, input string) {
 		ParseQuery(input)
 	})
-}
-
-func TestQuery_Period(t *testing.T) {
-	minTime := time.Time{}
-	maxTime := time.Unix(2<<31-1, 0)
-
-	tests := []struct {
-		query string
-		start time.Time
-		end   time.Time
-	}{
-		{"a", minTime, maxTime},
-		{"a b", minTime, maxTime},
-		{"a=b", minTime, maxTime},
-		{"<2024-01-02T15:04:05Z", minTime, time.Date(2024, 1, 2, 15, 4, 5, 0, time.UTC)},
-		{">=2024-01-02T15:04:05Z", time.Date(2024, 1, 2, 15, 4, 5, 0, time.UTC), maxTime},
-		{"=2024-01-02T15:04:05Z", time.Date(2024, 1, 2, 15, 4, 5, 0, time.UTC), time.Date(2024, 1, 2, 15, 4, 5, 999999999, time.UTC)},
-		{">=2024-01-02 <2024-02-03", time.Date(2024, 1, 2, 0, 0, 0, 0, time.UTC), time.Date(2024, 2, 3, 0, 0, 0, 0, time.UTC)},
-		{">2024-01-02 <2024-02-03", time.Date(2024, 1, 2, 23, 59, 59, 999999999, time.UTC), time.Date(2024, 2, 3, 0, 0, 0, 0, time.UTC)},
-		{">2024-01-01 >=2024-02-01", time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC), maxTime},
-		{"<=2024-01-01 <2024-02-01", minTime, time.Date(2024, 1, 1, 23, 59, 59, 999999999, time.UTC)},
-		{">=2024-01-01 <2024-02-01 OR >=2024-03-01 <2024-04-01", time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2024, 4, 1, 0, 0, 0, 0, time.UTC)},
-		{"<2024-01-01 OR <2024-02-01", minTime, time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC)},
-		{">=2024-01-01 OR >=2024-02-01", time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), maxTime},
-		{"<2024-01-01 a", minTime, time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
-		{"<2024-01-01 OR a", minTime, maxTime},
-		{">=2024-01-01 a", time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), maxTime},
-		{">=2024-01-01 OR a", minTime, maxTime},
-		{"-2024-01-01", minTime, maxTime},
-		{"<>2024-01-01", minTime, maxTime},
-		{"NOT (<2024-01-01)", time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), maxTime},
-		{"NOT (>=2024-01-01)", minTime, time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
-		{"NOT (>=2024-01-01 <2024-02-01)", minTime, maxTime},
-		{"time<2024-01-01", minTime, time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
-		{"time>=2024-01-01", time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), maxTime},
-		{"time=2024-01-01", time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2024, 1, 1, 23, 59, 59, 999999999, time.UTC)},
-		{"time!=2024-01-01", minTime, maxTime},
-	}
-
-	for _, test := range tests {
-		t.Run(test.query, func(t *testing.T) {
-			q := ParseQuery(test.query)
-			start, end := q.Period()
-			if start != test.start || end != test.end {
-				t.Errorf("unexpected result for %q\n got %s >>> %s\nwant %s >>> %s", test.query, start, end, test.start, test.end)
-			}
-		})
-	}
 }
 
 type R struct {
@@ -213,13 +165,22 @@ func TestStringValueMatcher(t *testing.T) {
 		{`http*://example.com/1`, R{Target: "https://example.com/1"}, true},
 		{`http*://example.com/2`, R{Target: "http://example.com/2"}, true},
 		{`http*://example.com/3`, R{Target: "https://www.example.com/3"}, false},
+		{`target=*://localhost*`, R{Target: "http://localhost:8080"}, true},
+		{`target=*localhost*`, R{Target: "http://example.com", Extra: map[string]any{"non-target": "localhost"}}, false},
 		{`=HEALTHY`, R{Message: "HEALTHY"}, true},
-		{`=HEALTHY 2`, R{Status: lib.StatusHealthy, Message: "2"}, true},
+		{`=HEALTHY 1`, R{Status: lib.StatusHealthy, Message: "1"}, true},
+		{`=HEALTHY 2`, R{Status: lib.StatusFailure, Message: "2"}, false},
 		{`status=HEALTHY`, R{Status: lib.StatusHealthy, Message: "FAILURE"}, true},
 		{`status=HEALTHY 1`, R{Status: lib.StatusHealthy, Message: "HEALTHY 1"}, true},
 		{`status=HEALTHY 2`, R{Status: lib.StatusFailure, Message: "HEALTHY 2"}, false},
 		{`=FAILURE 1`, R{Status: lib.StatusFailure, Message: "FAILURE 1"}, true},
 		{`=FAILURE 2`, R{Status: lib.StatusHealthy, Message: "FAILURE 2"}, false},
+		{`<>HEALTHY 1`, R{Status: lib.StatusHealthy, Message: "1"}, false},
+		{`<>HEALTHY 2`, R{Status: lib.StatusFailure, Message: "2"}, true},
+		{`!=HEALTHY 1`, R{Status: lib.StatusHealthy, Message: "1"}, false},
+		{`!=HEALTHY 2`, R{Status: lib.StatusFailure, Message: "2"}, true},
+		{`NOT =HEALTHY 1`, R{Status: lib.StatusHealthy, Message: "1"}, false},
+		{`NOT =HEALTHY 2`, R{Status: lib.StatusFailure, Message: "2"}, true},
 		{`status!=HEALTHY 1`, R{Status: lib.StatusHealthy, Message: "1"}, false},
 		{`status!=HEALTHY 2`, R{Status: lib.StatusFailure, Message: "2"}, true},
 
@@ -296,8 +257,56 @@ func TestNumberValueMatcher(t *testing.T) {
 }
 
 func TestTimeValueMatcher(t *testing.T) {
-	t.Skip("not implemented yet")
-	RunQueryTest(t, []QueryTest{})
+	RunQueryTest(t, []QueryTest{
+		{`2006-01-02T15:04:05Z`, R{Time: "2006-01-02T15:04:05Z"}, true},
+		{`2006-01-02T15:04:06Z`, R{Time: "2006-01-02T15:04:05Z"}, false},
+		{`2000-01-01`, R{Time: "2000-01-01T00:00:00Z"}, true},
+		{`2000-01-02`, R{Time: "2000-01-02T13:45:00Z"}, true},
+		{`2000-01-03`, R{Time: "2000-01-03T23:59:59Z"}, true},
+		{`2000-01-04`, R{Time: "2000-01-03T00:00:00Z"}, false},
+		{`2000-01-05`, R{Time: "2000-01-06T00:00:00Z"}, false},
+		{`=2000-01-01`, R{Time: "2000-01-01T00:00:00Z"}, true},
+		{`=2000-01-02`, R{Time: "2000-01-02T23:59:59Z"}, true},
+		{`=2024-12-31T15:04:06+09:00`, R{Time: "2024-12-31T06:04:06Z"}, true},
+		{`time=2000-01-03`, R{Time: "2000-01-03T23:59:59Z"}, true},
+		{`time=2000-01-04`, R{Time: "2000-01-03T00:00:00Z"}, false},
+
+		{`<>2000-01-02`, R{Time: "2000-01-01T23:59:59Z"}, true},
+		{`<>2000-01-03`, R{Time: "2000-01-03T00:00:00Z"}, false},
+		{`<>2000-01-04`, R{Time: "2000-01-04T23:50:50Z"}, false},
+		{`<>2000-01-05`, R{Time: "2000-01-06T00:00:00Z"}, true},
+
+		{`<2000-01-01`, R{Time: "2000-01-02T23:59:59Z"}, false},
+		{`<2000-01-02`, R{Time: "2000-01-02T23:59:59Z"}, false},
+		{`<2000-01-03`, R{Time: "2000-01-02T23:59:59Z"}, true},
+
+		{`<=2000-01-01`, R{Time: "2000-01-02T23:59:59Z"}, false},
+		{`<=2000-01-02`, R{Time: "2000-01-02T23:59:59Z"}, true},
+		{`<=2000-01-03`, R{Time: "2000-01-02T23:59:59Z"}, true},
+
+		{`>2000-01-01`, R{Time: "2000-01-02T00:00:00Z"}, true},
+		{`>2000-01-02`, R{Time: "2000-01-02T00:00:00Z"}, false},
+		{`>2000-01-03`, R{Time: "2000-01-02T00:00:00Z"}, false},
+
+		{`>=2000-01-01`, R{Time: "2000-01-02T00:00:00Z"}, true},
+		{`>=2000-01-02`, R{Time: "2000-01-02T00:00:00Z"}, true},
+		{`>=2000-01-03`, R{Time: "2000-01-02T00:00:00Z"}, false},
+
+		{`>=2000-01-01 <=2000-01-01`, R{Time: "2000-01-01T00:00:00Z"}, true},
+		{`>=2000-01-02 <=2000-01-02`, R{Time: "2000-01-01T00:00:00Z"}, false},
+
+		{`str=2000-01-01`, R{Extra: map[string]any{"str": "2000-01-01T00:00:00Z"}}, true},
+		{`str=2000-01-02`, R{Extra: map[string]any{"str": "2000-01-01T00:00:00Z"}}, false},
+		{`str=2000-01-03`, R{Extra: map[string]any{"str": "2000-01-03"}}, true},
+		{`str=2000-01-04`, R{Extra: map[string]any{"str": "2000-01-03"}}, false},
+		{`2000-01-05`, R{Message: "today is 2000-01-05"}, true},
+		{`str=2000-01-06`, R{Extra: map[string]any{"str": "not a date"}}, false},
+
+		{`int=1970-01-01`, R{Extra: map[string]any{"int": 0}}, true},
+		{`int=2024-01-01T00:00:00Z`, R{Extra: map[string]any{"int": 1704067200}}, true},
+		{`float=1970-01-01`, R{Extra: map[string]any{"float": 0.1}}, true},
+		{`float=2024-01-01T00:00:00Z`, R{Extra: map[string]any{"float": 1704067200.1}}, true},
+	})
 }
 
 func TestDurationValueMatcher(t *testing.T) {

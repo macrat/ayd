@@ -43,6 +43,18 @@ func init() {
 			}
 		}
 	}
+	timeformats = append(
+		timeformats,
+		time.Layout,
+		time.ANSIC,
+		time.UnixDate,
+		time.RubyDate,
+		time.RFC822,
+		time.RFC822Z,
+		time.RFC850,
+		time.RFC1123,
+		time.RFC1123Z,
+	)
 }
 
 // ParseTime parses time string in Ayd way.
