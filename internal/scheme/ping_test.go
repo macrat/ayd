@@ -1,5 +1,3 @@
-//go:build !githubci || !linux
-
 package scheme_test
 
 import (
