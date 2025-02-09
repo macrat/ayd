@@ -117,7 +117,7 @@ func parseExecMessage(message string, defaultStatus api.Status, defaultLatency t
 func isUnknownExecutionError(err error) bool {
 	if e := errors.Unwrap(err); e != nil {
 		switch e.Error() {
-		case "no such file or directory", "permission denied", "executable file not found in $PATH", "file does not exist", "executable file not found in %PATH%":
+		case "no such file or directory", "permission denied", "executable file not found in $PATH", "file does not exist", "executable file not found in %PATH%", "The system cannot find the file specified.":
 			return true
 		}
 	}
