@@ -81,7 +81,7 @@ func TestExecScheme_Probe_unknownError(t *testing.T) {
 	}
 
 	rs := testutil.RunProbe(ctx, p)
-	if rs[0].Status != api.StatusUnknown || (!strings.Contains(rs[0].Message, "no such file or directory") && !strings.Contains(rs[0].Message, "file does not exist")) {
+	if rs[0].Status != api.StatusUnknown || (!strings.Contains(rs[0].Message, "no such file or directory") && !strings.Contains(rs[0].Message, "file does not exist") && !strings.Contains(rs[0].Message, "The system cannot find the file specified.")) {
 		t.Errorf("unexpected result:\n%s", rs[0])
 	}
 }
