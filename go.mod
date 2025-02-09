@@ -9,7 +9,7 @@ require (
 	github.com/google/go-cmp v0.6.0
 	github.com/google/uuid v1.6.0
 	github.com/jlaffaye/ftp v0.2.0
-	github.com/macrat/go-parallel-pinger v1.1.5
+	github.com/macrat/go-parallel-pinger v1.1.6
 	github.com/mattn/go-isatty v0.0.20
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/spf13/pflag v1.0.6
