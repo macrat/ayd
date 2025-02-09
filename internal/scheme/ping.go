@@ -19,7 +19,7 @@ var (
 	ErrFailedToPreparePing = errors.New("failed to setup ping service")
 )
 
-func pingSettings() (count int, interval, timeout time.Duration) {
+func pingSettings() (count int, interval, timeout time.Duration, privileged *bool) {
 	var err error
 
 	count, err = strconv.Atoi(os.Getenv("AYD_PING_PACKETS"))
@@ -38,6 +38,15 @@ func pingSettings() (count int, interval, timeout time.Duration) {
 	interval = d / time.Duration(count)
 
 	timeout = d + 30*time.Second
+
+	pri := strings.ToLower(os.Getenv("AYD_PING_PRIVILEGED"))
+	if pri == "1" || pri == "true" || pri == "yes" || pri == "on" {
+		p := true
+		privileged = &p
+	} else if pri == "0" || pri == "false" || pri == "no" || pri == "off" {
+		p := false
+		privileged = &p
+	}
 
 	return
 }
@@ -100,8 +109,15 @@ type simplePinger struct {
 }
 
 func (p *simplePinger) Start() error {
+	_, _, _, privileged := pingSettings()
+
 	p.v4 = pinger.NewIPv4()
 	p.v6 = pinger.NewIPv6()
+
+	if privileged != nil {
+		p.v4.SetPrivileged(*privileged)
+		p.v6.SetPrivileged(*privileged)
+	}
 
 	ctx, stop := context.WithCancel(context.Background())
 	p.stop = stop
@@ -152,7 +168,7 @@ func (p *autoPingerStruct) Ping(ctx context.Context, target *net.IPAddr) (startT
 		return time.Now(), 0, pinger.Result{}, err
 	}
 
-	packets, interval, _ := pingSettings()
+	packets, interval, _, _ := pingSettings()
 
 	startTime = time.Now()
 	result, err = ping.Ping(ctx, target, packets, interval)
@@ -248,7 +264,7 @@ func (s PingProbe) proto() string {
 }
 
 func (s PingProbe) Probe(ctx context.Context, r Reporter) {
-	_, _, timeout := pingSettings()
+	_, _, timeout, _ := pingSettings()
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 

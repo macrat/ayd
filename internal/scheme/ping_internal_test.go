@@ -79,7 +79,7 @@ func TestPingSettings(t *testing.T) {
 				t.Setenv(kv[0], kv[1])
 			}
 
-			count, interval, timeout := pingSettings()
+			count, interval, timeout, _ := pingSettings()
 
 			if count != tt.Count {
 				t.Errorf("expected %d packets but got %d", tt.Count, count)
