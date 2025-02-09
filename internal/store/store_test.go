@@ -786,21 +786,26 @@ func TestStore_logRotate(t *testing.T) {
 		}
 	}
 
+	wait := 10 * time.Millisecond
+	if runtime.GOOS == "windows" {
+		wait = 100 * time.Millisecond
+	}
+
 	assert()
 
 	report(2001, 2, 3, 16, 5)
 	report(2001, 2, 3, 16, 6)
-	time.Sleep(10 * time.Millisecond)
+	time.Sleep(wait)
 	assert(2)
 
 	report(2001, 2, 4, 16, 50)
 	report(2001, 2, 3, 16, 7)
-	time.Sleep(10 * time.Millisecond)
+	time.Sleep(wait)
 	assert(3, 1)
 
 	report(2001, 2, 4, 16, 5)
 	report(2001, 2, 3, 4, 5)
-	time.Sleep(10 * time.Millisecond)
+	time.Sleep(wait)
 	assert(1, 3, 2)
 
 	r, err := s.OpenLog(time.Date(2001, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2002, 1, 1, 0, 0, 0, 0, time.UTC))
