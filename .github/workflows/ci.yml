@@ -11,37 +11,37 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest]
     steps:
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@v5
         with:
-          go-version: 1.21.x
-      - uses: actions/checkout@v3
+          go-version: 1.23.x
+      - uses: actions/checkout@v4
       - name: Test
         run: go test -race -coverprofile=cov -covermode=atomic -tags=githubci ./...
-      - uses: codecov/codecov-action@v3
+      - uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          file: ./cov
+          files: ./cov
 
   test-windows:
     name: Test Windows
     runs-on: windows-latest
     steps:
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@v5
         with:
-          go-version: 1.21.x
-      - uses: actions/checkout@v3
+          go-version: 1.23.x
+      - uses: actions/checkout@v4
       - name: Test
         run: go test -coverprofile=cov -covermode=atomic -tags=githubci ./...
-      - uses: codecov/codecov-action@v3
+      - uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          file: ./cov
+          files: ./cov
 
   analyze:
     name: CodeQL
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: github/codeql-action/init@v2
         with:
           languages: go
@@ -53,15 +53,15 @@ jobs:
     if: "contains(github.ref, 'tags/v')"
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@v5
         with:
-          go-version: 1.21.x
-      - uses: actions/checkout@v3
+          go-version: 1.23.x
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - name: Install upx-ucl
         run: sudo apt install upx-ucl -y
-      - uses: goreleaser/goreleaser-action@v3
+      - uses: goreleaser/goreleaser-action@v6
         with:
           version: latest
           args: release --clean
@@ -77,17 +77,17 @@ jobs:
       matrix:
         base: [scratch, alpine, ubuntu]
     steps:
-      - uses: actions/checkout@v3
-      - uses: docker/setup-qemu-action@v2
-      - uses: docker/setup-buildx-action@v2
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
 
       - name: Login DockerHub
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Login GitHub
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
@@ -125,7 +125,7 @@ jobs:
           echo "org.opencontainers.image.licenses=MIT" >> $GITHUB_ENV
           echo "END_OF_LABELS" >> $GITHUB_ENV
 
-      - uses: docker/build-push-action@v3
+      - uses: docker/build-push-action@v6
         with:
           push: true
           tags: ${{ env.container_tags }}

@@ -31,8 +31,8 @@ func TestDNSScheme_Probe(t *testing.T) {
 		{"dns:example.com?type=NS", api.StatusHealthy, succeed + `ns: \["[a-z]\.iana-servers\.net\."(,"[a-z]\.iana-servers\.net\.")*\]`, ""},
 		{"dns://8.8.4.4/example.com?type=NS", api.StatusHealthy, succeed + `ns: \["[a-z]\.iana-servers\.net\."(,"[a-z]\.iana-servers\.net\.")*\]`, ""},
 
-		{"dns:example.com?type=TXT", api.StatusHealthy, succeed + `txt: \[("v=spf1 -all","[0-9a-z]{32}"|"[0-9a-z]{32}","v=spf1 -all")\]`, ""},
-		{"dns://1.1.1.1/example.com?type=TXT", api.StatusHealthy, succeed + `txt: \[("v=spf1 -all","[0-9a-z]{32}"|"[0-9a-z]{32}","v=spf1 -all")\]`, ""},
+		{"dns:example.com?type=TXT", api.StatusHealthy, succeed + `txt: \[("v=spf1 -all","[_0-9a-z]{32}"|"[_0-9a-z]{32}","v=spf1 -all")\]`, ""},
+		{"dns://1.1.1.1/example.com?type=TXT", api.StatusHealthy, succeed + `txt: \[("v=spf1 -all","[_0-9a-z]{32}"|"[_0-9a-z]{32}","v=spf1 -all")\]`, ""},
 
 		{"dns:example.com?type=UNKNOWN", api.StatusUnknown, ``, "unsupported DNS type"},
 	}, 10)
