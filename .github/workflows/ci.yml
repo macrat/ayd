@@ -61,7 +61,7 @@ jobs:
 
   release:
     name: Release Binary
-    needs: [test-unix, test-windows, analyze]
+    needs: [test-linux, test-macos, test-windows, analyze]
     if: "contains(github.ref, 'tags/v')"
     runs-on: ubuntu-latest
     steps:
@@ -82,7 +82,7 @@ jobs:
 
   container:
     name: Release Container
-    needs: [test-unix, test-windows, analyze]
+    needs: [test-linux, test-macos, test-windows, analyze]
     if: "contains(github.ref, 'tags/v')"
     runs-on: ubuntu-latest
     strategy:
