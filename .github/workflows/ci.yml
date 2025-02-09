@@ -4,12 +4,24 @@ on:
   push:
 
 jobs:
-  test-unix:
-    name: Test Unix
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest]
+  test-linux:
+    name: Test Linux
+    runs-on: ubuntu-latest
+    container:
+      image: "golang:1.23"
+      options: --cap-add=NET_RAW
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test
+        run: go test -race -coverprofile=cov -covermode=atomic -tags=githubci ./...
+      - uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./cov
+
+  test-macos:
+    name: Test MacOS
+    runs-on: macos-latest
     steps:
       - uses: actions/setup-go@v5
         with:
