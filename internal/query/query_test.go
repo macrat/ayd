@@ -48,6 +48,11 @@ func TestParseQuery(t *testing.T) {
 		{"", `(AND)`},
 		{`"`, `ANY`},
 		{`""`, `ANY`},
+		{` `, `(AND)`},
+		{"\t", `(AND)`},
+		{"\n", `(AND)`},
+		{`a\\b`, `="*a\\b*"`},
+		{`a\"b`, `="*a\"b*"`},
 	}
 
 	for _, test := range tests {
@@ -194,6 +199,10 @@ func TestStringValueMatcher(t *testing.T) {
 		{`array=hello`, R{Extra: map[string]any{"array": []any{"hello", "world"}}}, true},
 		{`array=wor*`, R{Extra: map[string]any{"array": []any{"hello", "world"}}}, true},
 		{`array=foo`, R{Extra: map[string]any{"array": []any{"hello", "world"}}}, false},
+
+		{`hello world`, R{Message: "hello world"}, true},
+		{`hello =*world1`, R{Message: "hello world1"}, true},
+		{`hello =*world2`, R{Message: "hello world2 "}, false},
 	})
 }
 
@@ -342,5 +351,88 @@ func TestDurationValueMatcher(t *testing.T) {
 		{`int=5.678s`, R{Extra: map[string]any{"int": 56789}}, false},
 		{`float=12340us`, R{Extra: map[string]any{"float": 12.34}}, true},
 		{`float=23450us`, R{Extra: map[string]any{"float": 12.34}}, false},
+	})
+}
+
+func TestQuery_complexQueries(t *testing.T) {
+	RunQueryTest(t, []QueryTest{
+		{`(foo OR bar) A`, R{Message: "foo A"}, true},
+		{`(foo OR bar) B`, R{Message: "bar B"}, true},
+		{`(foo OR bar) C`, R{Message: "baz C"}, false},
+
+		{`(foo AND bar) A`, R{Message: "foo A"}, false},
+		{`(foo AND bar) B`, R{Message: "bar B"}, false},
+		{`(foo AND bar) C`, R{Message: "foo bar C"}, true},
+
+		{`(foo OR bar) AND (baz OR qux)`, R{Message: "foo baz"}, true},
+		{`(foo OR bar) AND (baz OR qux)`, R{Message: "bar qux"}, true},
+		{`(foo OR bar) AND (baz OR qux)`, R{Message: "foo qux"}, true},
+		{`(foo OR bar) AND (baz OR qux)`, R{Message: "bar baz"}, true},
+
+		{`(foo AND bar) OR (baz AND qux)`, R{Message: "foo bar"}, true},
+		{`(foo AND bar) OR (baz AND qux)`, R{Message: "baz qux"}, true},
+		{`(foo AND bar) OR (baz AND qux)`, R{Message: "foo qux"}, false},
+		{`(foo AND bar) OR (baz AND qux)`, R{Message: "bar baz"}, false},
+
+		{`(aa bb) OR (cc dd) OR (ee ff)`, R{Message: "aa bb"}, true},
+		{`(aa bb) OR (cc dd) OR (ee ff)`, R{Message: "aa cc"}, false},
+
+		{`NOT (foo OR bar)`, R{Message: "test message"}, true},
+		{`NOT (foo OR bar)`, R{Message: "foo test"}, false},
+		{`NOT (foo OR bar)`, R{Message: "bar test"}, false},
+
+		{`(NOT foo) AND (NOT bar)`, R{Message: "test message"}, true},
+		{`(NOT foo) AND (NOT bar)`, R{Message: "foo test"}, false},
+		{`(NOT foo) AND (NOT bar)`, R{Message: "test bar"}, false},
+		{`(NOT foo) AND bar`, R{Message: "test bar"}, true},
+		{`(NOT foo) AND bar`, R{Message: "foo bar"}, false},
+
+		{`status=HEALTHY AND latency<100ms`, R{Status: lib.StatusHealthy, Latency: time.Millisecond * 50}, true},
+		{`status=HEALTHY AND latency<100ms`, R{Status: lib.StatusHealthy, Latency: time.Millisecond * 150}, false},
+		{`status=HEALTHY AND latency<100ms`, R{Status: lib.StatusFailure, Latency: time.Millisecond * 50}, false},
+
+		{`target=*example* AND (status=HEALTHY OR latency<100ms)`,
+			R{Target: "https://example.com", Status: lib.StatusHealthy, Latency: time.Millisecond * 150}, true},
+		{`target=*example* AND (status=HEALTHY OR latency<100ms)`,
+			R{Target: "https://example.com", Status: lib.StatusFailure, Latency: time.Millisecond * 50}, true},
+		{`target=*example* AND (status=HEALTHY OR latency<100ms)`,
+			R{Target: "https://example.com", Status: lib.StatusFailure, Latency: time.Millisecond * 150}, false},
+		{`target=*example* AND (status=HEALTHY OR latency<100ms)`,
+			R{Target: "https://another.org", Status: lib.StatusHealthy, Latency: time.Millisecond * 50}, false},
+
+		{`NOT (status=HEALTHY AND latency<1s)`, R{Status: lib.StatusHealthy, Latency: time.Millisecond * 500}, false},
+		{`NOT (status=HEALTHY AND latency<1s)`, R{Status: lib.StatusHealthy, Latency: time.Second * 2}, true},
+		{`NOT (status=HEALTHY AND latency<1s)`, R{Status: lib.StatusFailure, Latency: time.Millisecond * 500}, true},
+
+		{`((foo AND bar) OR (baz AND qux)) AND time>=2000-01-01`,
+			R{Message: "foo bar test", Time: "2000-01-01T00:00:00Z"}, true},
+		{`((foo AND bar) OR (baz AND qux)) AND time>=2000-01-01`,
+			R{Message: "baz qux test", Time: "2000-01-01T00:00:00Z"}, true},
+		{`((foo AND bar) OR (baz AND qux)) AND time>=2000-01-01`,
+			R{Message: "foo bar test", Time: "1999-12-31T23:59:59Z"}, false},
+		{`((foo AND bar) OR (baz AND qux)) AND time>=2000-01-01`,
+			R{Message: "foo test", Time: "2000-01-01T00:00:00Z"}, false},
+
+		{`message=*error* AND (latency>500ms OR status=FAILURE)`,
+			R{Message: "connection error", Latency: time.Millisecond * 600, Status: lib.StatusHealthy}, true},
+		{`message=*error* AND (latency>500ms OR status=FAILURE)`,
+			R{Message: "connection error", Latency: time.Millisecond * 400, Status: lib.StatusFailure}, true},
+		{`message=*error* AND (latency>500ms OR status=FAILURE)`,
+			R{Message: "connection error", Latency: time.Millisecond * 400, Status: lib.StatusHealthy}, false},
+		{`message=*error* AND (latency>500ms OR status=FAILURE)`,
+			R{Message: "successful", Latency: time.Millisecond * 600, Status: lib.StatusFailure}, false},
+
+		{`(count=1 OR size=2) AND (name=test OR value=10)`,
+			R{Extra: map[string]any{"count": 1, "name": "test"}}, true},
+		{`(count=1 OR size=2) AND (name=test OR value=10)`,
+			R{Extra: map[string]any{"size": 2, "value": 10}}, true},
+		{`(count=1 OR size=2) AND (name=test OR value=10)`,
+			R{Extra: map[string]any{"count": 1, "value": 5}}, false},
+		{`(count=1 OR size=2) AND (name=test OR value=10)`,
+			R{Extra: map[string]any{"count": 2, "name": "other"}}, false},
+
+		{`*error* AND NOT (timeout OR connection)`, R{Message: "server error occurred"}, true},
+		{`*error* AND NOT (timeout OR connection)`, R{Message: "timeout error occurred"}, false},
+		{`*error* AND NOT (timeout OR connection)`, R{Message: "connection error occurred"}, false},
 	})
 }

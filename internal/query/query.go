@@ -16,7 +16,6 @@ type Query interface {
 
 func ParseQuery(query string) Query {
 	stack := []*And{{paren: true}}
-
 	tok := newTokenizer(query)
 
 	orMode := false
