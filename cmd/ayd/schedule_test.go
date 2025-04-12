@@ -24,6 +24,7 @@ func TestParseCronSchedule(t *testing.T) {
 		{"@monthly", "@monthly", "0 0 1 * ?", ""},
 		{"@weekly", "@weekly", "0 0 * * 0", ""},
 		{"@daily", "@daily", "0 0 * * ?", ""},
+		{"@hourly", "@hourly", "0 * * * ?", ""},
 	}
 
 	for _, tt := range tests {

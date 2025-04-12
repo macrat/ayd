@@ -72,6 +72,8 @@ func ParseCronSchedule(spec string) (CronSchedule, error) {
 		spec = "0 0 * * 0"
 	case "@daily":
 		spec = "0 0 * * ?"
+	case "@hourly":
+		spec = "0 * * * ?"
 	default:
 		delimiter := regexp.MustCompile("[ \t]+")
 
