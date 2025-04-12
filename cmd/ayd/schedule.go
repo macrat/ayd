@@ -123,6 +123,9 @@ func ParseAfterSchedule(spec string) (Schedule, error) {
 		return nil, err
 	}
 
+	if delay < 0 {
+		return nil, fmt.Errorf("invalid schedule spec: %q", spec)
+	}
 	if delay == 0 {
 		return RebootSchedule{}, nil
 	}
