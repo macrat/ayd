@@ -228,7 +228,7 @@ func init() {
 func parseTimeValueMatcher(op operator, value string) (timeValueMatcher, error) {
 	x := strings.ToUpper(strings.TrimSpace(value))
 	for _, f := range timeformats {
-		t, err := time.Parse(f.Layout, x)
+		t, err := time.ParseInLocation(f.Layout, x, time.Local)
 		if err == nil {
 			if op == opGreaterThan || op == opLessEqual {
 				t = t.Add(f.Resolution).Add(-1)
@@ -243,7 +243,7 @@ func parseTimeValueMatcher(op operator, value string) (timeValueMatcher, error) 
 		{"15:04", time.Minute},
 	}
 	for _, f := range extraformats {
-		t, err := time.Parse(f.Layout, x)
+		t, err := time.ParseInLocation(f.Layout, x, time.Local)
 		if err == nil {
 			if op == opGreaterThan || op == opLessEqual {
 				t = t.Add(f.Resolution).Add(-1)

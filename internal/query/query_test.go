@@ -257,6 +257,8 @@ func TestNumberValueMatcher(t *testing.T) {
 }
 
 func TestTimeValueMatcher(t *testing.T) {
+	t.Setenv("TZ", "UTC")
+
 	RunQueryTest(t, []QueryTest{
 		{`2006-01-02T15:04:05Z`, R{Time: "2006-01-02T15:04:05Z"}, true},
 		{`2006-01-02T15:04:06Z`, R{Time: "2006-01-02T15:04:05Z"}, false},
