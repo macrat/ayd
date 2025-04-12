@@ -588,6 +588,30 @@ func TestStore_incident(t *testing.T) {
 	assertIncidents(s.IncidentHistory(), "dummy://test:xxxxx@incident-test-1", "dummy://test:xxxxx@incident-test-1", "dummy://test:xxxxx@incident-test-2", "dummy://test:xxxxx@incident-test-2")
 	assertLastIncident("2-2")
 	assertCallbackCount(6)
+
+	// start another incident
+	appendRecord("incident-test-3", "l", "this message (localhost:1234) includes address.", api.StatusFailure)
+	assertIncidents(s.CurrentIncidents(), "dummy://test:xxxxx@incident-test-3")
+	assertIncidents(s.IncidentHistory(), "dummy://test:xxxxx@incident-test-1", "dummy://test:xxxxx@incident-test-1", "dummy://test:xxxxx@incident-test-2", "dummy://test:xxxxx@incident-test-2")
+	assertLastIncident("this message (localhost:1234) includes address.")
+	assertCallbackCount(7)
+
+	// port number difference should be ignored
+	appendRecord("incident-test-3", "m", "this message (localhost:2345) includes address.", api.StatusFailure)
+	assertIncidents(s.CurrentIncidents(), "dummy://test:xxxxx@incident-test-3")
+	assertIncidents(s.IncidentHistory(), "dummy://test:xxxxx@incident-test-1", "dummy://test:xxxxx@incident-test-1", "dummy://test:xxxxx@incident-test-2", "dummy://test:xxxxx@incident-test-2")
+	assertLastIncident("this message (localhost:1234) includes address.")
+	if s.CurrentIncidents()[0].Message != "this message (localhost:2345) includes address." {
+		t.Errorf("incident message should be updated: %s", s.CurrentIncidents()[0].Message)
+	}
+	assertCallbackCount(7)
+
+	// well-known port number should not be ignored
+	appendRecord("incident-test-3", "n", "this message (localhost:80) includes address.", api.StatusFailure)
+	assertIncidents(s.CurrentIncidents(), "dummy://test:xxxxx@incident-test-3")
+	assertIncidents(s.IncidentHistory(), "dummy://test:xxxxx@incident-test-1", "dummy://test:xxxxx@incident-test-1", "dummy://test:xxxxx@incident-test-2", "dummy://test:xxxxx@incident-test-2", "dummy://test:xxxxx@incident-test-3")
+	assertLastIncident("this message (localhost:80) includes address.")
+	assertCallbackCount(8)
 }
 
 func TestStore_delayedIncident(t *testing.T) {

@@ -13,6 +13,7 @@ import (
 	"github.com/goccy/go-json"
 	"github.com/google/go-cmp/cmp"
 	"github.com/macrat/ayd/internal/endpoint"
+	"github.com/macrat/ayd/internal/query"
 	"github.com/macrat/ayd/internal/store"
 	"github.com/macrat/ayd/internal/testutil"
 	api "github.com/macrat/ayd/lib-ayd"
@@ -142,7 +143,7 @@ func TestLogScanner(t *testing.T) {
 				return endpoint.FilterScanner{
 					api.NewLogScannerWithPeriod(f, since, until),
 					nil,
-					endpoint.ParseQuery("healthy"),
+					query.ParseQuery("healthy"),
 				}
 			},
 		},
@@ -283,135 +284,6 @@ func TestContextScanner_cancel(t *testing.T) {
 
 	if cs.Scan() {
 		t.Fatalf("unexpectedly succeed to scan record: %s", cs.Record())
-	}
-}
-
-func TestQuery(t *testing.T) {
-	tests := []struct {
-		Query  string
-		Record api.Record
-		Expect bool
-	}{
-		{
-			"dummy:healthy",
-			api.Record{
-				Target:  &api.URL{Scheme: "dummy", Opaque: "healthy"},
-				Message: "foobar",
-			},
-			true,
-		},
-		{
-			"dummy:",
-			api.Record{
-				Target:  &api.URL{Scheme: "dummy", Opaque: "healthy"},
-				Message: "foobar",
-			},
-			true,
-		},
-		{
-			"foo bar",
-			api.Record{
-				Target:  &api.URL{Scheme: "dummy", Opaque: "healthy"},
-				Message: "foobar",
-			},
-			true,
-		},
-		{
-			"healthy bar",
-			api.Record{
-				Target:  &api.URL{Scheme: "dummy", Opaque: "healthy"},
-				Message: "foobar",
-			},
-			true,
-		},
-		{
-			"healthy baz",
-			api.Record{
-				Target:  &api.URL{Scheme: "dummy", Opaque: "healthy"},
-				Message: "foobar",
-			},
-			false,
-		},
-		{
-			"failure bar",
-			api.Record{
-				Target:  &api.URL{Scheme: "dummy", Opaque: "healthy"},
-				Message: "foobar",
-			},
-			false,
-		},
-		{
-			"failure healthy",
-			api.Record{
-				Status:  api.StatusFailure,
-				Target:  &api.URL{Scheme: "dummy", Opaque: "healthy"},
-				Message: "foobar",
-			},
-			true,
-		},
-		{
-			"-unknown",
-			api.Record{
-				Status:  api.StatusFailure,
-				Target:  &api.URL{Scheme: "dummy", Opaque: "healthy"},
-				Message: "foobar",
-			},
-			true,
-		},
-		{
-			"-HEALTHY",
-			api.Record{
-				Status:  api.StatusFailure,
-				Target:  &api.URL{Scheme: "dummy", Opaque: "healthy"},
-				Message: "foobar",
-			},
-			false,
-		},
-		{
-			"<100ms",
-			api.Record{
-				Latency: 50 * time.Millisecond,
-				Target:  &api.URL{Scheme: "dummy", Opaque: "healthy"},
-				Message: "foobar",
-			},
-			true,
-		},
-		{
-			"<10ms >0s",
-			api.Record{
-				Latency: 50 * time.Millisecond,
-				Target:  &api.URL{Scheme: "dummy", Opaque: "healthy"},
-				Message: "foobar",
-			},
-			false,
-		},
-		{
-			">=50ms <=1s",
-			api.Record{
-				Latency: 50 * time.Millisecond,
-				Target:  &api.URL{Scheme: "dummy", Opaque: "healthy"},
-				Message: "foobar",
-			},
-			true,
-		},
-		{
-			"=50ms !=100ms",
-			api.Record{
-				Latency: 50 * time.Millisecond,
-				Target:  &api.URL{Scheme: "dummy", Opaque: "healthy"},
-				Message: "foobar",
-			},
-			true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.Query, func(t *testing.T) {
-			result := endpoint.ParseQuery(tt.Query).Match(tt.Record)
-			if result != tt.Expect {
-				t.Errorf("expected %#v but got %#v", tt.Expect, result)
-			}
-		})
 	}
 }
 

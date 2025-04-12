@@ -71,10 +71,10 @@ func TestPluginScheme_Probe(t *testing.T) {
 		if rs[1].Status != api.StatusUnknown {
 			t.Errorf("got unexpected status: %s", rs[1].Status)
 		}
-		if rs[1].Message != "the plugin reported invalid records" {
+		if rs[1].Message != "the plugin reported invalid lines" {
 			t.Errorf("got unexpected message: %s", rs[1].Message)
 		}
-		if diff := cmp.Diff(map[string]any{"raw_message": "this is invalid"}, rs[1].Extra); diff != "" {
+		if diff := cmp.Diff(map[string]any{"invalid_lines": []scheme.InvalidLine{{Line: "this is invalid", Err: "invalid record: expected { character for map value"}}}, rs[1].Extra); diff != "" {
 			t.Errorf("got unexpected extra values: %s", diff)
 		}
 	})

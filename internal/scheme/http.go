@@ -96,14 +96,14 @@ func (s HTTPScheme) Target() *api.URL {
 func (s HTTPScheme) responseToRecord(resp *http.Response, err error) api.Record {
 	status := api.StatusFailure
 	message := ""
-	var extra map[string]interface{}
+	var extra map[string]any
 
 	if err == nil {
 		message = resp.Status
 		if 200 <= resp.StatusCode && resp.StatusCode <= 299 {
 			status = api.StatusHealthy
 		}
-		extra = map[string]interface{}{
+		extra = map[string]any{
 			"proto":       resp.Proto,
 			"status_code": resp.StatusCode,
 		}
@@ -135,6 +135,10 @@ func (s HTTPScheme) responseToRecord(resp *http.Response, err error) api.Record 
 func (s HTTPScheme) run(ctx context.Context, r Reporter, req *http.Request) {
 	st := time.Now()
 	resp, err := httpClient.Do(req)
+	if err == nil {
+		// Do not care about the response body.
+		resp.Body.Close()
+	}
 	d := time.Since(st)
 
 	rec := s.responseToRecord(resp, err)

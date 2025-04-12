@@ -24,6 +24,7 @@ func newFileScanner(path string, since, until time.Time) (*fileScanner, error) {
 	if err != nil {
 		return nil, err
 	}
+	// The log records from plugins can be delayed by up to 60 minutes. To make sure find all records, make 70 minutes clearance.
 	if err := searchLog(f, since.Add(-70*time.Minute), 10*1024); err != nil {
 		return nil, err
 	}
@@ -53,6 +54,7 @@ func (r *fileScanner) Scan() bool {
 		if !r.rec.Time.Before(r.since) && r.until.After(r.rec.Time) {
 			return true
 		}
+		// The log records from plugins can be delayed by up to 60 minutes. To make sure find all records, make 70 minutes clearance.
 		if r.until.Add(70 * time.Minute).Before(r.rec.Time) {
 			return false
 		}

@@ -96,6 +96,11 @@ func (p PluginScheme) Target() *api.URL {
 	return p.target
 }
 
+type InvalidLine struct {
+	Line string `json:"line"`
+	Err  string `json:"error"`
+}
+
 func (p PluginScheme) execute(ctx context.Context, r Reporter, scope string, args []string) {
 	ctx, cancel := context.WithTimeout(ctx, 60*time.Minute)
 	defer cancel()
@@ -125,13 +130,16 @@ func (p PluginScheme) execute(ctx context.Context, r Reporter, scope string, arg
 
 	count := 0
 
-	var invalidLines []string
+	var invalidLines []InvalidLine
 
 	scanner := bufio.NewScanner(rb)
 	for scanner.Scan() {
 		text, err := textdecode.Bytes(scanner.Bytes())
 		if err != nil {
-			invalidLines = append(invalidLines, scanner.Text())
+			invalidLines = append(invalidLines, InvalidLine{
+				Line: scanner.Text(),
+				Err:  err.Error(),
+			})
 			continue
 		}
 		text = strings.TrimSpace(text)
@@ -141,7 +149,10 @@ func (p PluginScheme) execute(ctx context.Context, r Reporter, scope string, arg
 
 		rec, err := api.ParseRecord(text)
 		if err != nil {
-			invalidLines = append(invalidLines, scanner.Text())
+			invalidLines = append(invalidLines, InvalidLine{
+				Line: scanner.Text(),
+				Err:  err.Error(),
+			})
 			continue
 		}
 
@@ -165,10 +176,10 @@ func (p PluginScheme) execute(ctx context.Context, r Reporter, scope string, arg
 			Time:    stime,
 			Target:  p.target,
 			Status:  api.StatusUnknown,
-			Message: "the plugin reported invalid records",
+			Message: "the plugin reported invalid lines",
 			Latency: latency,
 			Extra: map[string]any{
-				"raw_message": strings.Join(invalidLines, "\n"),
+				"invalid_lines": invalidLines,
 			},
 		})
 	}
