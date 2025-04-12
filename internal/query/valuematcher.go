@@ -108,8 +108,28 @@ func (m numberValueMatcher) Match(value any) bool {
 	switch v := value.(type) {
 	case float64:
 		n = v
-	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32:
-		n = float64(v.(int))
+	case int:
+		n = float64(v)
+	case int8:
+		n = float64(v)
+	case int16:
+		n = float64(v)
+	case int32:
+		n = float64(v)
+	case int64:
+		n = float64(v)
+	case uint:
+		n = float64(v)
+	case uint8:
+		n = float64(v)
+	case uint16:
+		n = float64(v)
+	case uint32:
+		n = float64(v)
+	case uint64:
+		n = float64(v)
+	case float32:
+		n = float64(v)
 	case string:
 		if m.Op == opIncludes && strings.Contains(v, m.Str) {
 			return true
