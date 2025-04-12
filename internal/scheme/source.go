@@ -118,7 +118,7 @@ func normalizeSourceURL(u *api.URL) (*api.URL, error) {
 		}
 		return &api.URL{
 			Scheme:   "source",
-			Opaque:   path.Clean(filepath.ToSlash(p)),
+			Opaque:   filepath.ToSlash(filepath.Clean(p)),
 			Fragment: u.Fragment,
 		}, nil
 	default:
