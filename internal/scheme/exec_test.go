@@ -221,6 +221,6 @@ func TestExecSSHScheme_Alert(t *testing.T) {
 	}
 
 	if r.Records[0].Extra["target_addr"] != server.Addr {
-		t.Errorf("unexpected target_addr: expected %v but got %v", server.Addr, r.Records[0].Extra["source_addr"])
+		t.Errorf("unexpected target_addr: expected %v but got %v", server.Addr, r.Records[0].Extra["target_addr"])
 	}
 }
