@@ -22,7 +22,7 @@ jobs:
     steps:
       - uses: actions/setup-go@v5
         with:
-          go-version: 1.23.x
+          go-version: 1.24.x
       - uses: actions/checkout@v4
       - name: Test
         run: go test -race -coverprofile=cov -covermode=atomic -tags=githubci ./...
@@ -37,7 +37,7 @@ jobs:
     steps:
       - uses: actions/setup-go@v5
         with:
-          go-version: 1.23.x
+          go-version: 1.24.x
       - uses: actions/checkout@v4
       - name: Test
         run: go test -coverprofile=cov -covermode=atomic -tags=githubci ./...
@@ -64,7 +64,7 @@ jobs:
     steps:
       - uses: actions/setup-go@v5
         with:
-          go-version: 1.23.x
+          go-version: 1.24.x
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
