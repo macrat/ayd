@@ -12,6 +12,7 @@ import (
 
 	"github.com/goccy/go-json"
 	"github.com/macrat/ayd/internal/logconv"
+	"github.com/macrat/ayd/internal/query"
 	api "github.com/macrat/ayd/lib-ayd"
 )
 
@@ -36,7 +37,7 @@ type logOptions struct {
 	Since, Until  time.Time
 	Limit, Offset uint64
 	Targets       []string
-	Query         Query
+	Query         query.Query
 }
 
 func newLogOptionsByRequest(s Store, scope string, r *http.Request, defaultPeriod time.Duration) (opts logOptions, err error) {
@@ -75,7 +76,7 @@ func newLogOptionsByRequest(s Store, scope string, r *http.Request, defaultPerio
 
 	opts.Targets = qs["target"]
 
-	if q := ParseQuery(qs.Get("query")); len(qs) > 0 {
+	if q := query.ParseQuery(qs.Get("query")); len(qs) > 0 {
 		opts.Query = q
 	}
 
@@ -131,7 +132,7 @@ func (s *PagingScanner) Close() error {
 type FilterScanner struct {
 	Scanner api.LogScanner
 	Targets []string
-	Query   Query
+	Query   query.Query
 }
 
 func (f FilterScanner) Close() error {
@@ -151,7 +152,11 @@ func (f FilterScanner) filterByTarget(target string) bool {
 }
 
 func (f FilterScanner) filterByQuery(r api.Record) bool {
-	return f.Query.Match(f.Record())
+	if f.Query != nil {
+		return f.Query.Match(r)
+	} else {
+		return true
+	}
 }
 
 func (f FilterScanner) Scan() bool {
@@ -165,91 +170,6 @@ func (f FilterScanner) Scan() bool {
 
 func (f FilterScanner) Record() api.Record {
 	return f.Scanner.Record()
-}
-
-type keyword interface {
-	Match(status string, latency time.Duration, target, message string) bool
-}
-
-type strKeyword string
-
-func (k strKeyword) Match(status string, latency time.Duration, target, message string) bool {
-	q := string(k)
-	return status == q || strings.Contains(target, q) || strings.Contains(message, q)
-}
-
-type strNotKeyword string
-
-func (k strNotKeyword) Match(status string, latency time.Duration, target, message string) bool {
-	return !strKeyword(k).Match(status, latency, target, message)
-}
-
-type durKeyword struct {
-	operator string
-	duration time.Duration
-}
-
-func parseDurKeyword(s string) (result durKeyword, ok bool) {
-	for _, operator := range []string{"<=", "<", ">=", ">", "!=", "="} {
-		if strings.HasPrefix(s, operator) {
-			result.operator = operator
-			var err error
-			result.duration, err = time.ParseDuration(s[len(operator):])
-			return result, err == nil
-		}
-	}
-	return result, false
-}
-
-func (k durKeyword) Match(status string, latency time.Duration, target, message string) bool {
-	switch k.operator {
-	case "<":
-		return latency < k.duration
-	case "<=":
-		return latency <= k.duration
-	case ">":
-		return latency > k.duration
-	case ">=":
-		return latency >= k.duration
-	case "!=":
-		return latency != k.duration
-	case "=":
-		return latency == k.duration
-	default:
-		return false
-	}
-}
-
-type Query []keyword
-
-func ParseQuery(query string) Query {
-	var qs Query
-	for _, q := range strings.Split(strings.ToLower(query), " ") {
-		q = strings.TrimSpace(q)
-		if q != "" {
-			if dur, ok := parseDurKeyword(q); ok {
-				qs = append(qs, dur)
-			} else if len(q) > 2 && q[0] == '-' {
-				qs = append(qs, strNotKeyword(q[1:]))
-			} else {
-				qs = append(qs, strKeyword(q))
-			}
-		}
-	}
-	return qs
-}
-
-func (qs Query) Match(r api.Record) bool {
-	status := strings.ToLower(r.Status.String())
-	target := strings.ToLower(r.Target.String())
-	message := strings.ToLower(r.ReadableMessage())
-
-	for _, q := range qs {
-		if !q.Match(status, r.Latency, target, message) {
-			return false
-		}
-	}
-	return true
 }
 
 type ContextScanner struct {
