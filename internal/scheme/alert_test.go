@@ -149,10 +149,10 @@ func TestAlerter(t *testing.T) {
 		if r.Records[0].Status != api.StatusUnknown {
 			t.Errorf("unexpected status of record: %s", r.Records[0].Status)
 		}
-		if r.Records[0].Message != "the plugin reported invalid records" {
+		if r.Records[0].Message != "the plugin reported invalid lines" {
 			t.Errorf("unexpected message of record: %s", r.Records[0].Message)
 		}
-		if diff := cmp.Diff(map[string]any{"raw_message": "this is invalid record"}, r.Records[0].Extra); diff != "" {
+		if diff := cmp.Diff(map[string]any{"invalid_lines": []scheme.InvalidLine{{Line: "this is invalid record", Err: "invalid record: expected { character for map value"}}}, r.Records[0].Extra); diff != "" {
 			t.Errorf("got unexpected extra values: %s", diff)
 		}
 	})
