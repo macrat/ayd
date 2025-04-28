@@ -207,6 +207,10 @@ var (
 		"url2uuid": func(u *api.URL) string {
 			return uuid.NewSHA1(uuid.NameSpaceURL, []byte(u.String())).String()
 		},
+		"incident2uuid": func(i api.Incident) string {
+			target := uuid.NewSHA1(uuid.NameSpaceURL, []byte(i.Target.String()))
+			return uuid.NewSHA1(target, []byte(fmt.Sprintf("%s:%s", i.StartsAt.Format(time.RFC3339), i.Message))).String()
+		},
 		"uint2humanize": func(n uint64) string {
 			var ss []string
 			for n > 999 {

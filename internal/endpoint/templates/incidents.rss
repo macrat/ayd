@@ -9,7 +9,7 @@
         <pubDate>{{ .ReportedAt | time2rfc822 }}</pubDate>
 {{ range .Incidents }}
         <item>
-            <guid isPermaLink="false">TODO</guid>
+            <guid isPermaLink="false">{{ . | incident2uuid }}</guid>
             <pubDate>{{ .StartsAt | time2rfc822 }}</pubDate>
             <title>[{{ .Status }}] {{ .Target }}</title>
             <category domain="status">{{ if .EndsAt.IsZero }}ongoing{{ else }}{{ .EndsAt | time2str }}{{ end }}</category>

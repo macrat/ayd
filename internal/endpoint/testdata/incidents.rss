@@ -8,7 +8,7 @@
         [[MASKED_DATA]]
 
         <item>
-            <guid isPermaLink="false">TODO</guid>
+            <guid isPermaLink="false">fd290afe-9f5d-51d4-af50-d40e576525f5</guid>
             [[MASKED_DATA]]
             <title>[FAILURE] http://b.example.com</title>
             <category domain="status">2021-01-02T15:04:06Z</category>
@@ -21,7 +21,7 @@
 <pre>this is failure</pre>]]></description>
         </item>
         <item>
-            <guid isPermaLink="false">TODO</guid>
+            <guid isPermaLink="false">148a5d55-da11-5773-94bc-29792a7b872d</guid>
             [[MASKED_DATA]]
             <title>[UNKNOWN] http://c.example.com</title>
             <category domain="status">ongoing</category>
