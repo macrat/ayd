@@ -34,3 +34,24 @@ func (o operator) String() string {
 		panic("unreachable")
 	}
 }
+
+func (o operator) Invert() (result operator, ok bool) {
+	switch o {
+	case opIncludes:
+		return 0, false // THere is no operator for "not in"
+	case opGreaterEqual:
+		return opLessThan, true
+	case opGreaterThan:
+		return opLessEqual, true
+	case opLessThan:
+		return opGreaterEqual, true
+	case opLessEqual:
+		return opGreaterThan, true
+	case opEqual:
+		return opNotEqual, true
+	case opNotEqual:
+		return opEqual, true
+	default:
+		return 0, false
+	}
+}

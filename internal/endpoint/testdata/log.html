@@ -286,14 +286,7 @@ footer span {
     <article style="text-align: center">
         <form>
             <div>
-                <input id="since-date" type="date" value="2021-01-01" aria-label="since date" /><input id="since-time" type="time" value="00:00" aria-label="since time" />
-                -
-                <input id="until-date" type="date" value="2021-01-03" aria-label="until date" /><input id="until-time" type="time" value="00:00" aria-label="until time" />
-                <input id="since" type="hidden" name="since" value="2021-01-01T00:00:00Z" />
-                <input id="until" type="hidden" name="until" value="2021-01-03T00:00:00Z" />
-            </div>
-            <div>
-                <input type="search" name="query" size="50" value="" placeholder="e.g. latency>=1s example.com OR foobar.com" autofocus />
+                <input type="search" name="q" size="50" value="[[MASKED_DATA]]:00Z time&lt;2021-01-03T00:00:00Z" placeholder="e.g. [[MASKED_DATA]] latency&gt;1s OR status!=HEALTHY" autofocus />
                 <button type="submit">search</button>
             </div>
         </form>
@@ -385,40 +378,13 @@ footer span {
 
         <div class="download-buttons">
             download all log as
-            <a href="/log.csv?query=&amp;since=2021-01-01T00%3A00%3A00Z&amp;until=2021-01-03T00%3A00%3A00Z" type="text/csv" download="ayd-log.csv">CSV</a>
-            <a href="/log.xlsx?query=&amp;since=2021-01-01T00%3A00%3A00Z&amp;until=2021-01-03T00%3A00%3A00Z" type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" download="ayd-log.xlsx">XLSX</a>
-            <a href="/log.ltsv?query=&amp;since=2021-01-01T00%3A00%3A00Z&amp;until=2021-01-03T00%3A00%3A00Z" type="text/plain" download="ayd-log.ltsv">LTSV</a>
-            <a href="/log.json?query=&amp;since=2021-01-01T00%3A00%3A00Z&amp;until=2021-01-03T00%3A00%3A00Z" type="application/json" download="ayd-log.json">JSON</a>
+            <a href="/log.csv?q=time%3E%3D2021-01-01T00%3A00%3A00Z&#43;time%3C2021-01-03T00%3A00%3A00Z" type="text/csv" download="ayd-log.csv">CSV</a>
+            <a href="/log.xlsx?q=time%3E%3D2021-01-01T00%3A00%3A00Z&#43;time%3C2021-01-03T00%3A00%3A00Z" type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" download="ayd-log.xlsx">XLSX</a>
+            <a href="/log.ltsv?q=time%3E%3D2021-01-01T00%3A00%3A00Z&#43;time%3C2021-01-03T00%3A00%3A00Z" type="text/plain" download="ayd-log.ltsv">LTSV</a>
+            <a href="/log.json?q=time%3E%3D2021-01-01T00%3A00%3A00Z&#43;time%3C2021-01-03T00%3A00%3A00Z" type="application/json" download="ayd-log.json">JSON</a>
         </div>
         
     </article>
-
-    <script>
-const tzMinutes = -(new Date().getTimezoneOffset());
-const tz = tzMinutes === 0 ? (
-    'Z'
-) : (
-    (tzMinutes > 0 ? '+' : '') + `${Math.floor(tzMinutes/60)}`.padStart(2, '0') + ':' + `${tzMinutes%60}`.padStart(2, '0')
-);
-
-[[
-    document.getElementById('since'),
-    [document.getElementById('since-date'), document.getElementById('since-time')],
-], [
-    document.getElementById('until'),
-    [document.getElementById('until-date'), document.getElementById('until-time')],
-]].forEach(([output, [date, time]]) => {
-    [date, time].forEach((elm) => elm.addEventListener('change', () => {
-        if (!date.value) {
-            output.value = '';
-        } else if (!time.value) {
-            output.value = date.value + 'T00:00:00' +  tz;
-        } else {
-            output.value = date.value + 'T' + time.value +':00' +  tz;
-        }
-    }));
-});
-    </script>
 
         </main>
     </body>

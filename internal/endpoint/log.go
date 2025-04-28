@@ -16,25 +16,8 @@ import (
 	api "github.com/macrat/ayd/lib-ayd"
 )
 
-func getTimeQuery(queries url.Values, name string, default_ time.Time) (time.Time, error) {
-	q := queries.Get(name)
-	if q == "" {
-		return default_, nil
-	}
-
-	if n, err := strconv.ParseInt(q, 10, 64); err == nil {
-		return time.Unix(n, 0), nil
-	}
-
-	t, err := api.ParseTime(q)
-	if err != nil {
-		return default_, fmt.Errorf("invalid %s format: %q", name, q)
-	}
-	return t, nil
-}
-
 type logOptions struct {
-	Since, Until  time.Time
+	Start, End    time.Time
 	Limit, Offset uint64
 	Targets       []string
 	Query         query.Query
@@ -45,18 +28,6 @@ func newLogOptionsByRequest(s Store, scope string, r *http.Request, defaultPerio
 	var errors []string
 
 	qs := r.URL.Query()
-
-	opts.Until, err = getTimeQuery(qs, "until", time.Now())
-	if err != nil {
-		invalidQueries = append(invalidQueries, "until")
-		errors = append(errors, err.Error())
-	}
-
-	opts.Since, err = getTimeQuery(qs, "since", opts.Until.Add(-defaultPeriod))
-	if err != nil {
-		invalidQueries = append(invalidQueries, "since")
-		errors = append(errors, err.Error())
-	}
 
 	if l := qs.Get("limit"); l != "" {
 		opts.Limit, err = strconv.ParseUint(l, 10, 64)
@@ -76,8 +47,27 @@ func newLogOptionsByRequest(s Store, scope string, r *http.Request, defaultPerio
 
 	opts.Targets = qs["target"]
 
-	if q := query.ParseQuery(qs.Get("query")); len(qs) > 0 {
+	if q := query.ParseQuery(qs.Get("q")); len(qs) > 0 {
 		opts.Query = q
+
+		st, en := opts.Query.TimeRange()
+
+		if st == nil && en != nil {
+			opts.Start = en.Add(-defaultPeriod)
+			opts.End = *en
+		} else if en == nil && st != nil {
+			opts.Start = *st
+			opts.End = time.Now()
+		} else if st != nil && en != nil {
+			opts.Start = *st
+			opts.End = *en
+		} else {
+			opts.End = time.Now()
+			opts.Start = opts.End.Add(-defaultPeriod)
+		}
+	} else {
+		opts.End = time.Now()
+		opts.Start = opts.End.Add(-defaultPeriod)
 	}
 
 	if len(invalidQueries) > 0 {
@@ -208,7 +198,7 @@ func newLogScanner(s Store, scope string, r *http.Request, defaultPeriod time.Du
 }
 
 func newLogScannerByOpts(s Store, scope string, r *http.Request, opts logOptions) (scanner *PagingScanner, statusCode int, err error) {
-	rawScanner, err := s.OpenLog(opts.Since, opts.Until)
+	rawScanner, err := s.OpenLog(opts.Start, opts.End)
 	if err != nil {
 		handleError(s, scope, fmt.Errorf("failed to open log: %w", err))
 		return nil, http.StatusInternalServerError, fmt.Errorf("internal server error")
@@ -388,12 +378,10 @@ func LogHTMLEndpoint(s Store) http.HandlerFunc {
 
 		total := scanner.ScanTotal()
 
-		query := strings.TrimSpace(r.URL.Query().Get("query"))
+		query := strings.TrimSpace(r.URL.Query().Get("q"))
 
 		rawQuery := url.Values{}
-		rawQuery.Set("since", opts.Since.Format(time.RFC3339))
-		rawQuery.Set("until", opts.Until.Format(time.RFC3339))
-		rawQuery.Set("query", query)
+		rawQuery.Set("q", query)
 
 		var prev uint64
 		if opts.Offset > opts.Limit {
@@ -402,31 +390,31 @@ func LogHTMLEndpoint(s Store) http.HandlerFunc {
 
 		w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 		handleError(s, "log.html", tmpl.Execute(newFlushWriter(w), logData{
-			Since:    opts.Since,
-			Until:    opts.Until,
-			Query:    query,
-			RawQuery: rawQuery.Encode(),
-			Records:  rs,
-			Total:    total,
-			From:     opts.Offset + 1,
-			To:       opts.Offset + uint64(len(rs)),
-			Prev:     prev,
-			Next:     opts.Offset + uint64(len(rs)),
-			Limit:    opts.Limit,
+			Query:        query,
+			RawQuery:     rawQuery.Encode(),
+			Records:      rs,
+			Total:        total,
+			From:         opts.Offset + 1,
+			To:           opts.Offset + uint64(len(rs)),
+			Prev:         prev,
+			Next:         opts.Offset + uint64(len(rs)),
+			Limit:        opts.Limit,
+			QueryExample: fmt.Sprintf("time>=%s latency>1s OR status!=HEALTHY", time.Now().Add(-time.Hour).Format("2006-01-02T15:04")),
 		}))
 	}
 }
 
 type logData struct {
-	Since    time.Time
-	Until    time.Time
-	Query    string
-	RawQuery string
-	Records  []api.Record
-	Total    uint64
-	From     uint64
-	To       uint64
-	Prev     uint64
-	Next     uint64
-	Limit    uint64
+	Since        time.Time
+	Until        time.Time
+	Query        string
+	RawQuery     string
+	Records      []api.Record
+	Total        uint64
+	From         uint64
+	To           uint64
+	Prev         uint64
+	Next         uint64
+	Limit        uint64
+	QueryExample string
 }

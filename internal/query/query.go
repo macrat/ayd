@@ -3,6 +3,7 @@ package query
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	api "github.com/macrat/ayd/lib-ayd"
 )
@@ -12,6 +13,16 @@ type Query interface {
 
 	Match(api.Record) bool
 	Optimize() Query
+	TimeRange() (*time.Time, *time.Time)
+}
+
+type queryInverter interface {
+	invert() Query
+}
+
+type TimeRange struct {
+	Start *time.Time
+	End   *time.Time
 }
 
 func ParseQuery(query string) Query {
@@ -133,6 +144,32 @@ func (q *And) Optimize() Query {
 	return &And{Queries: qs, paren: q.paren}
 }
 
+func (q *And) invert() Query {
+	qs := make([]Query, len(q.Queries))
+	for i, q := range q.Queries {
+		qs[i] = &Not{Query: q}
+	}
+	return (&Or{Queries: qs}).Optimize()
+}
+
+func (q *And) TimeRange() (*time.Time, *time.Time) {
+	var start, end *time.Time
+
+	// Get minimum range.
+	// For example: "time>2025-01-01 AND time>2025-06-01" is the same as "time>2025-06-01"
+	for _, query := range q.Queries {
+		s, e := query.TimeRange()
+		if s != nil && (start == nil || s.After(*start)) {
+			start = s
+		}
+		if e != nil && (end == nil || e.Before(*end)) {
+			end = e
+		}
+	}
+
+	return start, end
+}
+
 type Or struct {
 	Queries []Query
 }
@@ -171,6 +208,36 @@ func (q *Or) Optimize() Query {
 	return &Or{Queries: qs}
 }
 
+func (q *Or) invert() Query {
+	qs := make([]Query, len(q.Queries))
+	for i, q := range q.Queries {
+		qs[i] = &Not{Query: q}
+	}
+	return (&And{Queries: qs}).Optimize()
+}
+
+func (q *Or) TimeRange() (*time.Time, *time.Time) {
+	var start, end *time.Time
+
+	// Get maximum range.
+	// For example: "(time>=2025-01-01 time<=2025-12-31) OR (time>=2026-01-01 time<=2026-12-31)"  is the same as "time>=2025-01-01 time<=2026-12-31"
+	for _, query := range q.Queries {
+		s, e := query.TimeRange()
+		if s != nil && (start == nil || s.Before(*start)) {
+			start = s
+		}
+		if e != nil && (end == nil || e.After(*end)) {
+			end = e
+		}
+	}
+
+	if start != nil && end != nil && start.After(*end) {
+		return nil, nil
+	}
+
+	return start, end
+}
+
 type Not struct {
 	Query Query
 }
@@ -185,10 +252,39 @@ func (q *Not) Match(r api.Record) bool {
 
 func (q *Not) Optimize() Query {
 	q2 := q.Query.Optimize()
-	if not, ok := q2.(*Not); ok {
-		return not.Query
+
+	if inverter, ok := q2.(queryInverter); ok {
+		return inverter.invert()
 	}
+
 	return &Not{Query: q2}
+}
+
+func (q *Not) invert() Query {
+	return q.Query
+}
+
+func (q *Not) TimeRange() (*time.Time, *time.Time) {
+	start, end := q.Query.TimeRange()
+
+	if start == nil && end == nil || start != nil && end != nil {
+		return nil, nil
+	}
+
+	// When only have the start time like "not time>=2025-01-01", it means the same as only have the end time like "time<2025-01-01" in the query.
+	if start != nil {
+		e := start.Add(-1)
+		return nil, &e
+	}
+
+	// When only have the end time like "not time<=2025-01-01", it means the same as only have the start time like "time>2025-01-01" in the query.
+	if end != nil {
+		s := end.Add(1)
+		return &s, nil
+	}
+
+	// unreachable
+	return nil, nil
 }
 
 type SimpleQuery struct {
@@ -220,6 +316,14 @@ func (q *SimpleQuery) Match(r api.Record) bool {
 
 func (q *SimpleQuery) Optimize() Query {
 	return q
+}
+
+func (q *SimpleQuery) TimeRange() (*time.Time, *time.Time) {
+	if m, ok := q.Value.(timeValueMatcher); ok {
+		return m.TimeRange()
+	}
+
+	return nil, nil
 }
 
 type FieldQuery struct {
@@ -267,4 +371,16 @@ func (q *FieldQuery) Match(r api.Record) bool {
 
 func (q *FieldQuery) Optimize() Query {
 	return q
+}
+
+func (q *FieldQuery) TimeRange() (*time.Time, *time.Time) {
+	if !q.Key.Match("time") {
+		return nil, nil
+	}
+
+	if m, ok := q.Value.(timeValueMatcher); ok {
+		return m.TimeRange()
+	}
+
+	return nil, nil
 }

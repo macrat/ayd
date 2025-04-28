@@ -620,9 +620,6 @@ Ayd has these pages/endpoints.
 
 The log endpoints accept the following queries for filtering log entries.
 
-- `since` and `until`: filter logs by datetime in either RFC3339 format (e.g. `2001-02-03T16:05:06+09:00`) or UNIX time (e.g. `981183906`).
-  By default, Ayd replies logs from 7 days ago to the current time.
-
 - `limit`: set maximum number of entries in the response.
   You can use `offset` query to fetch more.
 
@@ -634,14 +631,18 @@ The log endpoints accept the following queries for filtering log entries.
 - `target`: filter entries by target URLs.
   You can use multiple `target` queries as "OR" filtering.
 
-- `query`: filter by a space-delimited query.
-  This works as a perfect matching for status, a partial match for target URL and message text.
-  You can also use a syntax for filtering latency like `<10ms` or `>=1s`.
+- `q`: filter by a space-delimited query.
+  This query supports following syntaxes:
 
-examples:
-- <http://localhost:9000/log.csv?since=2000-01-01T00:00:00Z&until=2001-01-01T00:00:00Z>: The logs from 2000-01-01 to 2000-12-31.
-- <http://localhost:9000/log.csv?since=2021-01-01T00:00:00Z&target=ping:localhost>: The logs about `ping:localhost` since 2021-01-01.
-- <http://localhost:9000/log.json?query=-healthy%20ping:>: The logs within recent 7 days that only about unhealthy(`-healthy`) ping(`ping:`) targets.
+  - `a AND b`, `a b`: matches both of **a** and **b**.
+  - `a OR b`: matches either **a** or **b**.
+  - `NOT a`, `!a`, `-a`: not matches to **a**.
+  - `field=a`, `field!=a`, `field>a`, `field>=a`, `field<a`, `field<=a`: **field** matches to **a** in the specified operator.
+
+Query examples:
+- `time>=2000-01-01 time<=2000-12-31`: The logs from 2000-01-01 to 2000-12-31.
+- `time>=2021-01-01 target=ping:host`: The logs about `ping:localhost` since 2021-01-01.
+- `status!=healthy target=ping:*`: The logs within recent 7 days that only about unhealthy ping targets.
 
 
 ### Log file

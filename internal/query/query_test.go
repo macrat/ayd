@@ -5,6 +5,7 @@ import (
 
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	lib "github.com/macrat/ayd/lib-ayd"
 )
 
@@ -35,6 +36,8 @@ func TestParseQuery(t *testing.T) {
 		{"!a -b NOT c", `(AND (NOT ="*a*") (NOT ="*b*") (NOT ="*c*"))`},
 		{"!!a ---b NOT !-a", `(AND ="*a*" (NOT ="*b*") (NOT ="*a*"))`},
 		{"!(!a)", `="*a*"`},
+		{"NOT (a AND b)", `(OR (NOT ="*a*") (NOT ="*b*"))`},
+		{"NOT (a OR b)", `(AND (NOT ="*a*") (NOT ="*b*"))`},
 		{"a b \t", `(AND ="*a*" ="*b*")`},
 		{`"a b" c\ d`, `(AND ="*a b*" ="*c d*")`},
 		{"*a b* *c* d*e *f*g*", `(AND ="*a*" ="*b*" ="*c*" ="*d*e*" ="*f*g*")`},
@@ -435,4 +438,66 @@ func TestQuery_complexQueries(t *testing.T) {
 		{`*error* AND NOT (timeout OR connection)`, R{Message: "timeout error occurred"}, false},
 		{`*error* AND NOT (timeout OR connection)`, R{Message: "connection error occurred"}, false},
 	})
+}
+
+func TestQuery_TimeRange(t *testing.T) {
+	pt := func(s string) *time.Time {
+		r, err := lib.ParseTime(s)
+		if err != nil {
+			t.Fatalf("failed to parse time: %s", err)
+		}
+		return &r
+	}
+
+	tests := []struct {
+		query string
+		start *time.Time
+		end   *time.Time
+	}{
+		{"hello world", nil, nil},
+		{"foo OR bar", nil, nil},
+
+		{"time=2000-01-01", pt("2000-01-01T00:00Z"), pt("2000-01-01T23:59:59.999999999Z")},
+		{"time<2000-01-01", nil, pt("1999-12-31T23:59:59.999999999Z")},
+		{"time<=2000-01-01", nil, pt("2000-01-01T23:59:59.999999999Z")},
+		{"time>2000-01-01", pt("2000-01-02T00:00Z"), nil},
+		{"time>=2000-01-01", pt("2000-01-01T00:00Z"), nil},
+		{"2000-01-01", pt("2000-01-01T00:00Z"), pt("2000-01-01T23:59:59.999999999Z")},
+		{"=2000-01-01", pt("2000-01-01T00:00Z"), pt("2000-01-01T23:59:59.999999999Z")},
+		{"<2000-01-01", nil, pt("1999-12-31T23:59:59.999999999Z")},
+		{"<=2000-01-01", nil, pt("2000-01-01T23:59:59.999999999Z")},
+		{">2000-01-01", pt("2000-01-02T00:00Z"), nil},
+		{">=2000-01-01", pt("2000-01-01T00:00Z"), nil},
+
+		{"time>=2000-01-01 <2001-01-01", pt("2000-01-01T00:00Z"), pt("2000-12-31T23:59:59.999999999Z")},
+		{"time>=2000-01-01 AND >=2001-01-01", pt("2001-01-01T00:00Z"), nil},
+		{"time>=2000-01-01 OR >=2001-01-01", pt("2000-01-01T00:00Z"), nil},
+		{"<2000-01-01 AND time<2001-01-01", nil, pt("1999-12-31T23:59:59.999999999Z")},
+		{"<2000-01-01 OR time<2001-01-01", nil, pt("2000-12-31T23:59:59.999999999Z")},
+		{">2001-01-01 AND <=2000-01-01", pt("2001-01-02T00:00Z"), pt("2000-01-01T23:59:59.999999999Z")},
+		{">2001-01-01 OR <=2000-01-01", nil, nil},
+
+		{"NOT 2000-01-01", nil, nil},
+		{"NOT =2000-01-01", nil, nil},
+		{"NOT <2000-01-01", pt("2000-01-01T00:00Z"), nil},               // which means >=2000-01-01
+		{"NOT <=2000-01-01", pt("2000-01-02T00:00Z"), nil},              // which means >2000-01-01
+		{"NOT >2000-01-01", nil, pt("2000-01-01T23:59:59.999999999Z")},  // which means <=2000-01-01
+		{"NOT >=2000-01-01", nil, pt("1999-12-31T23:59:59.999999999Z")}, // which means <2000-01-01
+		{"NOT (>=2000-01-01 <2001-01-01)", nil, nil},
+		{"NOT (<2000-01-01 OR >=2001-01-01)", pt("2000-01-01T00:00Z"), pt("2000-12-31T23:59:59.999999999Z")}, // which means >=2000-01-01 AND <2001-01-01
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.query, func(t *testing.T) {
+			q := ParseQuery(tt.query)
+			start, end := q.TimeRange()
+
+			if diff := cmp.Diff(tt.start, start); diff != "" {
+				t.Errorf("unexpected start time (-expected, +got)\n%s", diff)
+			}
+			if diff := cmp.Diff(tt.end, end); diff != "" {
+				t.Errorf("unexpected end time (-expected, +got)\n%s", diff)
+			}
+		})
+	}
 }

@@ -296,6 +296,26 @@ func (m timeValueMatcher) Match(value any) bool {
 	return !t.Before(m.Value) && t.Before(m.Value.Add(m.Resolution))
 }
 
+func (m timeValueMatcher) TimeRange() (*time.Time, *time.Time) {
+	switch m.Op {
+	case opEqual, opIncludes:
+		end := m.Value.Add(m.Resolution).Add(-1)
+		return &m.Value, &end
+	case opLessThan:
+		end := m.Value.Add(-1)
+		return nil, &end
+	case opLessEqual:
+		return nil, &m.Value
+	case opGreaterThan:
+		start := m.Value.Add(1)
+		return &start, nil
+	case opGreaterEqual:
+		return &m.Value, nil
+	default:
+		return nil, nil
+	}
+}
+
 type durationValueMatcher struct {
 	Op    operator
 	Value time.Duration

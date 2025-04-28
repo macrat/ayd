@@ -4,7 +4,6 @@ import (
 	"context"
 	"io"
 	"net/http"
-	"os"
 	"regexp"
 	"strings"
 	"testing"
@@ -304,66 +303,38 @@ func TestLogJsonEndpoint(t *testing.T) {
 		},
 		{
 			"fetch-all",
-			"?since=2021-01-01T00:00:00Z&until=2022-01-01T00:00:00Z&target=http://a.example.com",
+			"?q=time%3E%3D2021-01-01+time%3C2022-01-01&target=http://a.example.com",
 			http.StatusOK,
 			3,
 			"",
 		},
 		{
-			"drop-with-timerange-rfc3339",
-			"?since=2021-01-02T15:04:06Z&until=2021-01-02T15:04:08Z",
-			http.StatusOK,
-			3,
-			"",
-		},
-		{
-			"drop-with-timerange-unixtime",
-			"?since=1609599846&until=1609599848",
+			"drop-with-timerange",
+			"?q=time%3E%3D2021-01-02T15:04:06Z+time%3C2021-01-02T15:04:08Z",
 			http.StatusOK,
 			3,
 			"",
 		},
 		{
 			"drop-with-target",
-			"?since=2021-01-01T00:00:00Z&until=2022-01-01T00:00:00Z&target=http://b.example.com",
+			"?q=time%3E%3D2021-01-01+time%3C2022-01-01&target=http://b.example.com",
 			http.StatusOK,
 			2,
 			"",
 		},
 		{
 			"with-limit",
-			"?since=2021-01-01T00:00:00Z&until=2022-01-01T00:00:00Z&limit=3",
+			"?q=time%3E%3D2021-01-01+time%3C2022-01-01&limit=3",
 			http.StatusOK,
 			3,
 			"",
 		},
 		{
 			"with-offset-and-limit",
-			"?since=2021-01-01T00:00:00Z&until=2022-01-01T00:00:00Z&limit=3&offset=5",
+			"?q=time%3E%3D2021-01-01+time%3C2022-01-01&limit=3&offset=5",
 			http.StatusOK,
 			2, // limit is 3 but only 2 records exist.
 			"",
-		},
-		{
-			"invalid-since",
-			"?since=invalid-since&until=2022-01-01T00:00:00Z",
-			http.StatusBadRequest,
-			0,
-			"invalid query format: since",
-		},
-		{
-			"invalid-until",
-			"?since=2021-01-01T00:00:00Z&until=invalid-until",
-			http.StatusBadRequest,
-			0,
-			"invalid query format: until",
-		},
-		{
-			"invalid-since-and-until",
-			"?since=invalid-since&until=invalid-until",
-			http.StatusBadRequest,
-			0,
-			"invalid query format: until, since",
 		},
 		{
 			"invalid-limit",
@@ -439,29 +410,7 @@ func TestLogJsonEndpoint(t *testing.T) {
 	}
 
 	t.Run("snapshot", func(t *testing.T) {
-		resp, err := srv.Client().Get(srv.URL + "/log.json?since=20210102T150406Z&until=20210102T150409Z&limit=2&offset=1")
-		if err != nil {
-			t.Fatalf("failed to get /log.json: %s", err)
-		}
-		defer resp.Body.Close()
-
-		if resp.StatusCode != http.StatusOK {
-			t.Fatalf("unexpected status: %s", resp.Status)
-		}
-
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			t.Fatalf("failed to read body: %s", err)
-		}
-
-		want, err := os.ReadFile("testdata/log.json")
-		if err != nil {
-			t.Fatalf("failed to read snapshot: %s", err)
-		}
-
-		if diff := cmp.Diff(string(want), string(body)); diff != "" {
-			t.Fatalf("unexpected response:\n%s", diff)
-		}
+		AssertEndpoint(t, "/log.json?q=time%3E%3D20210102T150406Z+time%3C20210102T150409Z&limit=2&offset=1", "./testdata/log.json", "[0-9] years? ago")
 	})
 }
 
@@ -480,57 +429,39 @@ func TestLogCSVEndpoint(t *testing.T) {
 		},
 		{
 			"fetch-all",
-			"?since=2021-01-01T00:00:00Z&until=2022-01-01T00:00:00Z&target=http://a.example.com",
+			"?q=time%3E%3D2021-01-01T00:00:00Z+time%3C2022-01-01T00:00:00Z&target=http://a.example.com",
 			http.StatusOK,
 			"time,status,latency,target,message,extra\n(.*\n){3}",
 		},
 		{
 			"drop-with-time-range",
-			"?since=2021-01-02T15:04:06Z&until=2021-01-02T15:04:07Z&target=http://a.example.com",
+			"?q=time%3E%3D2021-01-02T15:04:06Z+time%3C2021-01-02T15:04:07Z&target=http://a.example.com",
 			http.StatusOK,
 			"time,status,latency,target,message,extra\n2021-01-02T15:04:06Z,.*\n",
 		},
 		{
 			"drop-all-with-time-range",
-			"?since=2001-01-01T00:00:00Z&until=2002-01-01T00:00:00Z&target=http://a.example.com",
+			"?q=time%3E%3D2001-01-01T00:00:00Z+time%3C2002-01-01T00:00:00Z&target=http://a.example.com",
 			http.StatusOK,
 			"time,status,latency,target,message,extra\n",
 		},
 		{
 			"drop-with-target",
-			"?since=2021-01-01T00:00:00Z&until=2022-01-01T00:00:00Z&target=http://b.example.com",
+			"?q=time%3E%3D2021-01-01T00:00:00Z+time%3C2022-01-01T00:00:00Z&target=http://b.example.com",
 			http.StatusOK,
 			"time,status,latency,target,message,extra\n(.*\n){2}",
 		},
 		{
 			"drop-all-with-target",
-			"?since=2021-01-01T00:00:00Z&until=2022-01-01T00:00:00Z&target=http://no-such.example.com",
+			"?q=time%3E%3D2021-01-01T00:00:00Z+time%3C2022-01-01T00:00:00Z&target=http://no-such.example.com",
 			http.StatusOK,
 			"time,status,latency,target,message,extra\n",
 		},
 		{
 			"with-offset-and-limit",
-			"?since=2021-01-01T00:00:00Z&until=2022-01-01T00:00:00Z&offset=1&limit=2",
+			"?q=time%3E%3D2021-01-01T00:00:00Z+time%3C2022-01-01T00:00:00Z&offset=1&limit=2",
 			http.StatusOK,
 			"time,status,latency,target,message,extra\n2021-01-02T15:04:05Z,[^\n]*\n2021-01-02T15:04:06Z,[^\n]*\n",
-		},
-		{
-			"invalid-since",
-			"?since=invalid-since&until=2022-01-01T00:00:00Z",
-			http.StatusBadRequest,
-			"invalid query format: since\n",
-		},
-		{
-			"invalid-until",
-			"?since=2021-01-01T00:00:00Z&until=invalid-until",
-			http.StatusBadRequest,
-			"invalid query format: until\n",
-		},
-		{
-			"invalid-since-and-until",
-			"?since=invalid-since&until=invalid-until",
-			http.StatusBadRequest,
-			"invalid query format: until, since\n",
 		},
 	}
 
@@ -597,51 +528,33 @@ func TestLogLTSVEndpoint(t *testing.T) {
 		},
 		{
 			"fetch-all",
-			"?since=2021-01-01T00:00:00Z&until=2022-01-01T00:00:00Z&target=http://a.example.com",
+			"?q=time%3E%3D2021-01-01T00:00:00Z+time%3C2022-01-01T00:00:00Z&target=http://a.example.com",
 			http.StatusOK,
 			"(time:[^\t]*\tstatus:[^\t]{7}\tlatency:[^\t]*\ttarget:[^\t]*\tmessage:[^\t]*\n){3}",
 		},
 		{
 			"drop-with-time-range",
-			"?since=2021-01-02T15:04:06Z&until=2021-01-02T15:04:07Z&target=http://a.example.com",
+			"?q=time%3E%3D2021-01-02T15:04:06Z+time%3C2021-01-02T15:04:07Z&target=http://a.example.com",
 			http.StatusOK,
 			"time:2021-01-02T15:04:06Z\tstatus:[^\t]{7}\tlatency:[^\t]*\ttarget:http://a\\.example\\.com*\tmessage:[^\t]*\n",
 		},
 		{
 			"drop-all-with-time-range",
-			"?since=2001-01-01T00:00:00Z&until=2002-01-01T00:00:00Z&target=http://a.example.com",
+			"?q=time%3E%3D2001-01-01T00:00:00Z+time%3C2002-01-01T00:00:00Z&target=http://a.example.com",
 			http.StatusOK,
 			"",
 		},
 		{
 			"drop-with-target",
-			"?since=2021-01-01T00:00:00Z&until=2022-01-01T00:00:00Z&target=http://b.example.com",
+			"?q=time%3E%3D2021-01-01T00:00:00Z+time%3C2022-01-01T00:00:00Z&target=http://b.example.com",
 			http.StatusOK,
 			"(time:[^\t]*\tstatus:[^\t]{7}\tlatency:[^\t]*\ttarget:http://b\\.example\\.com\tmessage:[^\t]*(\textra:[^\t]*)?\n){2}",
 		},
 		{
 			"drop-all-with-target",
-			"?since=2021-01-01T00:00:00Z&until=2022-01-01T00:00:00Z&target=http://no-such.example.com",
+			"?q=time%3E%3D2021-01-01T00:00:00Z+time%3C2022-01-01T00:00:00Z&target=http://no-such.example.com",
 			http.StatusOK,
 			"",
-		},
-		{
-			"invalid-since",
-			"?since=invalid-since&until=2022-01-01T00:00:00Z",
-			http.StatusBadRequest,
-			"invalid query format: since\n",
-		},
-		{
-			"invalid-until",
-			"?since=2021-01-01T00:00:00Z&until=invalid-until",
-			http.StatusBadRequest,
-			"invalid query format: until\n",
-		},
-		{
-			"invalid-since-and-until",
-			"?since=invalid-since&until=invalid-until",
-			http.StatusBadRequest,
-			"invalid query format: until, since\n",
 		},
 	}
 
@@ -677,5 +590,5 @@ func TestLogLTSVEndpoint(t *testing.T) {
 }
 
 func TestLogHTMLEndpoint(t *testing.T) {
-	AssertEndpoint(t, "/log.html?since=2021-01-01T00%3A00%3A00Z&until=2021-01-03T00%3A00%3A00Z", "./testdata/log.html", "[0-9] years? ago")
+	AssertEndpoint(t, "/log.html?q=time%3E%3D2021-01-01T00%3A00%3A00Z+time%3C2021-01-03T00%3A00%3A00Z", "./testdata/log.html", `[0-9] years? ago|time\&gt;=20\d{2}-\d{2}-\d{2}T\d{2}:\d{2}`)
 }

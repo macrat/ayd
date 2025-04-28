@@ -113,14 +113,7 @@ td.unknown span::after { background-color: rgb(var(--fg)) }
     <article style="text-align: center">
         <form>
             <div>
-                <input id="since-date" type="date" value="{{ .Since.Format "2006-01-02" }}" aria-label="since date" /><input id="since-time" type="time" value="{{ .Since.Format "15:04" }}" aria-label="since time" />
-                -
-                <input id="until-date" type="date" value="{{ .Until.Format "2006-01-02" }}" aria-label="until date" /><input id="until-time" type="time" value="{{ .Until.Format "15:04" }}" aria-label="until time" />
-                <input id="since" type="hidden" name="since" value="{{ .Since | time2str }}" />
-                <input id="until" type="hidden" name="until" value="{{ .Until | time2str }}" />
-            </div>
-            <div>
-                <input type="search" name="query" size="50" value="{{ .Query }}" placeholder="e.g. latency>=1s example.com OR foobar.com" autofocus />
+                <input type="search" name="q" size="50" value="{{ .Query }}" placeholder="e.g. {{ .QueryExample }}" autofocus />
                 <button type="submit">search</button>
             </div>
         </form>
@@ -167,33 +160,6 @@ td.unknown span::after { background-color: rgb(var(--fg)) }
         </div>
         {{ end }}
     </article>
-
-    <script>
-const tzMinutes = -(new Date().getTimezoneOffset());
-const tz = tzMinutes === 0 ? (
-    'Z'
-) : (
-    (tzMinutes > 0 ? '+' : '') + `${Math.floor(tzMinutes/60)}`.padStart(2, '0') + ':' + `${tzMinutes%60}`.padStart(2, '0')
-);
-
-[[
-    document.getElementById('since'),
-    [document.getElementById('since-date'), document.getElementById('since-time')],
-], [
-    document.getElementById('until'),
-    [document.getElementById('until-date'), document.getElementById('until-time')],
-]].forEach(([output, [date, time]]) => {
-    [date, time].forEach((elm) => elm.addEventListener('change', () => {
-        if (!date.value) {
-            output.value = '';
-        } else if (!time.value) {
-            output.value = date.value + 'T00:00:00' +  tz;
-        } else {
-            output.value = date.value + 'T' + time.value +':00' +  tz;
-        }
-    }));
-});
-    </script>
 {{ end }}
 
 {{ define "footer" }}{{ "" }}{{ end }}
