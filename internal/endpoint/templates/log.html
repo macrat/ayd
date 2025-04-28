@@ -120,7 +120,7 @@ td.unknown span::after { background-color: rgb(var(--fg)) }
                 <input id="until" type="hidden" name="until" value="{{ .Until | time2str }}" />
             </div>
             <div>
-                <input type="search" name="query" size="50" value="{{ .Query }}" placeholder="e.g. >=1s example.com" autofocus />
+                <input type="search" name="query" size="50" value="{{ .Query }}" placeholder="e.g. latency>=1s example.com OR foobar.com" autofocus />
                 <button type="submit">search</button>
             </div>
         </form>
