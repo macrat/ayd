@@ -55,6 +55,7 @@ func TestBreakText(t *testing.T) {
 		{"hello_world", 20, []string{"hello_world"}},
 		{"hello_world", 5, []string{"hello", "_worl", "d"}},
 		{"foobar", 3, []string{"foo", "bar"}},
+		{"こんにちは世界", 3, []string{"こんに", "ちは世", "界"}},
 	}
 
 	for _, tt := range tests {
@@ -79,6 +80,8 @@ func TestAlignCenter(t *testing.T) {
 		{"foobar", 10, "  foobar"},
 		{"foo_bar", 10, " foo_bar"},
 		{"foobar", 5, "foobar"},
+		{"こんにちは", 3, "こんにちは"},
+		{"あいう", 8, " あいう"},
 	}
 
 	for _, tt := range tests {
