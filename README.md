@@ -628,9 +628,6 @@ The log endpoints accept the following queries for filtering log entries.
 - `offset`: set the offset number of the first entry in the response.
   This is usually used in conjunction with the `limit` query for paging.
 
-- `target`: filter entries by target URLs.
-  You can use multiple `target` queries as "OR" filtering.
-
 - `q`: filter by a space-delimited query.
   This query supports following syntaxes:
 

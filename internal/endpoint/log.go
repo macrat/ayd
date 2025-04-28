@@ -19,7 +19,6 @@ import (
 type logOptions struct {
 	Start, End    time.Time
 	Limit, Offset uint64
-	Targets       []string
 	Query         query.Query
 }
 
@@ -44,8 +43,6 @@ func newLogOptionsByRequest(s Store, scope string, r *http.Request, defaultPerio
 			errors = append(errors, err.Error())
 		}
 	}
-
-	opts.Targets = qs["target"]
 
 	if q := query.ParseQuery(qs.Get("q")); len(qs) > 0 {
 		opts.Query = q
@@ -121,7 +118,6 @@ func (s *PagingScanner) Close() error {
 
 type FilterScanner struct {
 	Scanner api.LogScanner
-	Targets []string
 	Query   query.Query
 }
 
@@ -129,29 +125,9 @@ func (f FilterScanner) Close() error {
 	return f.Scanner.Close()
 }
 
-func (f FilterScanner) filterByTarget(target string) bool {
-	if len(f.Targets) == 0 {
-		return true
-	}
-	for _, t := range f.Targets {
-		if target == t {
-			return true
-		}
-	}
-	return false
-}
-
-func (f FilterScanner) filterByQuery(r api.Record) bool {
-	if f.Query != nil {
-		return f.Query.Match(r)
-	} else {
-		return true
-	}
-}
-
 func (f FilterScanner) Scan() bool {
 	for f.Scanner.Scan() {
-		if f.filterByTarget(f.Record().Target.String()) && f.filterByQuery(f.Record()) {
+		if f.Query.Match(f.Record()) {
 			return true
 		}
 	}
@@ -206,10 +182,11 @@ func newLogScannerByOpts(s Store, scope string, r *http.Request, opts logOptions
 
 	rawScanner = NewContextScanner(r.Context(), rawScanner)
 
-	rawScanner = FilterScanner{
-		Scanner: rawScanner,
-		Targets: opts.Targets,
-		Query:   opts.Query,
+	if opts.Query != nil {
+		rawScanner = FilterScanner{
+			Scanner: rawScanner,
+			Query:   opts.Query,
+		}
 	}
 
 	scanner = &PagingScanner{

@@ -111,7 +111,7 @@ func TestLogScanner(t *testing.T) {
 			},
 		},
 		{
-			"FilterScanner-target",
+			"FilterScanner",
 			func(since, until time.Time) api.LogScanner {
 				f := io.NopCloser(strings.NewReader(strings.Join([]string{
 					`{"time":"2000-01-01T13:02:03Z","status":"HEALTHY","latency":0.123,"target":"dummy:healthy#1","message":"first"}`,
@@ -123,25 +123,6 @@ func TestLogScanner(t *testing.T) {
 
 				return endpoint.FilterScanner{
 					api.NewLogScannerWithPeriod(f, since, until),
-					[]string{"dummy:healthy#1", "dummy:healthy#2"},
-					nil,
-				}
-			},
-		},
-		{
-			"FilterScanner-query",
-			func(since, until time.Time) api.LogScanner {
-				f := io.NopCloser(strings.NewReader(strings.Join([]string{
-					`{"time":"2000-01-01T13:02:03Z","status":"HEALTHY","latency":0.123,"target":"dummy:healthy#1","message":"first"}`,
-					`{"time":"2000-01-02T13:02:03Z","status":"HEALTHY","latency":0.123,"target":"dummy:healthy#1","message":"second"}`,
-					`{"time":"2000-01-02T13:02:03Z","status":"FAILURE","latency":0.123,"target":"dummy:failure","message":"another"}`,
-					`{"time":"2000-01-03T13:02:03Z","status":"HEALTHY","latency":0.123,"target":"dummy:healthy#2","message":"last"}`,
-					`{"time":"2000-01-04T13:02:03Z","status":"FAILURE","latency":0.123,"target":"dummy:failure","message":"another"}`,
-				}, "\n")))
-
-				return endpoint.FilterScanner{
-					api.NewLogScannerWithPeriod(f, since, until),
-					nil,
 					query.ParseQuery("healthy"),
 				}
 			},
@@ -303,9 +284,9 @@ func TestLogJsonEndpoint(t *testing.T) {
 		},
 		{
 			"fetch-all",
-			"?q=time%3E%3D2021-01-01+time%3C2022-01-01&target=http://a.example.com",
+			"?q=time%3E%3D2021-01-01+time%3C2022-01-01",
 			http.StatusOK,
-			3,
+			7,
 			"",
 		},
 		{
@@ -317,7 +298,7 @@ func TestLogJsonEndpoint(t *testing.T) {
 		},
 		{
 			"drop-with-target",
-			"?q=time%3E%3D2021-01-01+time%3C2022-01-01&target=http://b.example.com",
+			"?q=time%3E%3D2021-01-01+time%3C2022-01-01+target%3Dhttp://b.example.com",
 			http.StatusOK,
 			2,
 			"",
@@ -429,31 +410,31 @@ func TestLogCSVEndpoint(t *testing.T) {
 		},
 		{
 			"fetch-all",
-			"?q=time%3E%3D2021-01-01T00:00:00Z+time%3C2022-01-01T00:00:00Z&target=http://a.example.com",
+			"?q=time%3E%3D2021-01-01T00:00:00Z+time%3C2022-01-01T00:00:00Z",
 			http.StatusOK,
-			"time,status,latency,target,message,extra\n(.*\n){3}",
+			"time,status,latency,target,message,extra\n(.*\n){7}",
 		},
 		{
 			"drop-with-time-range",
-			"?q=time%3E%3D2021-01-02T15:04:06Z+time%3C2021-01-02T15:04:07Z&target=http://a.example.com",
+			"?q=time%3E%3D2021-01-02T15:04:06Z+time%3C2021-01-02T15:04:07Z+target%3Dhttp://a.example.com",
 			http.StatusOK,
 			"time,status,latency,target,message,extra\n2021-01-02T15:04:06Z,.*\n",
 		},
 		{
 			"drop-all-with-time-range",
-			"?q=time%3E%3D2001-01-01T00:00:00Z+time%3C2002-01-01T00:00:00Z&target=http://a.example.com",
+			"?q=time%3E%3D2001-01-01T00:00:00Z+time%3C2002-01-01T00:00:00Z+target%3Dhttp://a.example.com",
 			http.StatusOK,
 			"time,status,latency,target,message,extra\n",
 		},
 		{
 			"drop-with-target",
-			"?q=time%3E%3D2021-01-01T00:00:00Z+time%3C2022-01-01T00:00:00Z&target=http://b.example.com",
+			"?q=time%3E%3D2021-01-01T00:00:00Z+time%3C2022-01-01T00:00:00Z+target%3Dhttp://b.example.com",
 			http.StatusOK,
 			"time,status,latency,target,message,extra\n(.*\n){2}",
 		},
 		{
 			"drop-all-with-target",
-			"?q=time%3E%3D2021-01-01T00:00:00Z+time%3C2022-01-01T00:00:00Z&target=http://no-such.example.com",
+			"?q=time%3E%3D2021-01-01T00:00:00Z+time%3C2022-01-01T00:00:00Z+target%3Dhttp://no-such.example.com",
 			http.StatusOK,
 			"time,status,latency,target,message,extra\n",
 		},
@@ -528,31 +509,31 @@ func TestLogLTSVEndpoint(t *testing.T) {
 		},
 		{
 			"fetch-all",
-			"?q=time%3E%3D2021-01-01T00:00:00Z+time%3C2022-01-01T00:00:00Z&target=http://a.example.com",
+			"?q=time%3E%3D2021-01-01T00:00:00Z+time%3C2022-01-01T00:00:00Z",
 			http.StatusOK,
-			"(time:[^\t]*\tstatus:[^\t]{7}\tlatency:[^\t]*\ttarget:[^\t]*\tmessage:[^\t]*\n){3}",
+			"(time:[^\t]*\tstatus:[^\t]{7}\tlatency:[^\t]*\ttarget:[^\t]*\tmessage:[^\t]*(\t[a-z]+:[^\t]*)*\n){7}",
 		},
 		{
 			"drop-with-time-range",
-			"?q=time%3E%3D2021-01-02T15:04:06Z+time%3C2021-01-02T15:04:07Z&target=http://a.example.com",
+			"?q=time%3E%3D2021-01-02T15:04:06Z+time%3C2021-01-02T15:04:07Z+target%3Dhttp://a.example.com",
 			http.StatusOK,
 			"time:2021-01-02T15:04:06Z\tstatus:[^\t]{7}\tlatency:[^\t]*\ttarget:http://a\\.example\\.com*\tmessage:[^\t]*\n",
 		},
 		{
 			"drop-all-with-time-range",
-			"?q=time%3E%3D2001-01-01T00:00:00Z+time%3C2002-01-01T00:00:00Z&target=http://a.example.com",
+			"?q=time%3E%3D2001-01-01T00:00:00Z+time%3C2002-01-01T00:00:00Z+target%3Dhttp://a.example.com",
 			http.StatusOK,
 			"",
 		},
 		{
 			"drop-with-target",
-			"?q=time%3E%3D2021-01-01T00:00:00Z+time%3C2022-01-01T00:00:00Z&target=http://b.example.com",
+			"?q=time%3E%3D2021-01-01T00:00:00Z+time%3C2022-01-01T00:00:00Z+target%3Dhttp://b.example.com",
 			http.StatusOK,
 			"(time:[^\t]*\tstatus:[^\t]{7}\tlatency:[^\t]*\ttarget:http://b\\.example\\.com\tmessage:[^\t]*(\textra:[^\t]*)?\n){2}",
 		},
 		{
 			"drop-all-with-target",
-			"?q=time%3E%3D2021-01-01T00:00:00Z+time%3C2022-01-01T00:00:00Z&target=http://no-such.example.com",
+			"?q=time%3E%3D2021-01-01T00:00:00Z+time%3C2022-01-01T00:00:00Z+target%3Dhttp://no-such.example.com",
 			http.StatusOK,
 			"",
 		},
