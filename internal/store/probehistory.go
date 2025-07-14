@@ -102,5 +102,8 @@ func (hs probeHistoryMap) Append(source *api.URL, r api.Record) {
 
 // isActive returns if is the specified target active in current execution or not.
 func (hs probeHistoryMap) isActive(target *api.URL) bool {
-	return hs[target.String()].isActive()
+	if ph, ok := hs[target.String()]; ok {
+		return ph.isActive()
+	}
+	return false
 }

@@ -124,6 +124,21 @@ func TestProbeHistoryMap(t *testing.T) {
 	}
 }
 
+func TestProbeHistoryMap_isActive(t *testing.T) {
+	m := make(probeHistoryMap)
+	target := &api.URL{Scheme: "dummy", Fragment: "is-active-test"}
+
+	if m.isActive(target) {
+		t.Fatalf("unexpected active on empty map")
+	}
+
+	m.Append(target, api.Record{Time: time.Now(), Target: target})
+
+	if !m.isActive(target) {
+		t.Fatalf("expected active after append")
+	}
+}
+
 func BenchmarkProbeHistory_sources(b *testing.B) {
 	for _, n := range []int{1, 10, 100, 1000} {
 		b.Run(fmt.Sprint(n), func(b *testing.B) {
