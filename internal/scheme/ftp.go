@@ -82,7 +82,7 @@ func ftpConnectAndLogin(ctx context.Context, u *api.URL) (conn *ftp.ServerConn, 
 	}
 
 	if err := conn.Login(ftpUserInfo(u)); err != nil {
-		conn.Quit()
+		_ = conn.Quit() // ignore error during cleanup
 		return nil, api.StatusFailure, err.Error()
 	}
 
