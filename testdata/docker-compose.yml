@@ -20,7 +20,7 @@ services:
     volumes:
       - storage:/tmp/data
 
-  managger:
+  manager:
     build: ./manager
     ports:
       - '80:8080'
