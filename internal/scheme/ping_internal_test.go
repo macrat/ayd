@@ -212,6 +212,44 @@ func BenchmarkSharedResource_Release(b *testing.B) {
 	}
 }
 
+func TestSimplePinger_Stop_MultipleCallsShouldNotPanic(t *testing.T) {
+	p := &simplePinger{}
+
+	// Start the pinger first
+	err := p.Start()
+	if err != nil {
+		t.Fatalf("Failed to start pinger: %v", err)
+	}
+
+	// First Stop() should work normally
+	p.Stop()
+
+	// Second Stop() should not panic (this is what we're testing)
+	defer func() {
+		if r := recover(); r != nil {
+			t.Fatalf("Second Stop() call caused panic: %v", r)
+		}
+	}()
+
+	p.Stop()
+
+	// Third Stop() should also not panic
+	p.Stop()
+}
+
+func TestSimplePinger_Stop_WithoutStart_ShouldNotPanic(t *testing.T) {
+	p := &simplePinger{}
+
+	// Stop() on uninitialized pinger should not panic
+	defer func() {
+		if r := recover(); r != nil {
+			t.Fatalf("Stop() on uninitialized pinger caused panic: %v", r)
+		}
+	}()
+
+	p.Stop()
+}
+
 func TestPingResultToRecord(t *testing.T) {
 	t.Parallel()
 

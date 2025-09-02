@@ -13,6 +13,7 @@ import (
 	"github.com/goccy/go-json"
 	"github.com/google/uuid"
 	api "github.com/macrat/ayd/lib-ayd"
+	"golang.org/x/text/width"
 )
 
 //go:embed templates/base.html
@@ -44,21 +45,35 @@ var (
 			return rs
 		},
 		"break_text": func(s string, width int) []string {
-			r := []string{}
-			for start := 0; start < len(s); start += width {
-				end := start + width
-				if end >= len(s) {
-					end = len(s)
+			ss := []string{}
+			var buf []rune
+			for i, r := range []rune(s) {
+				if i > 0 && len(buf) >= width {
+					ss = append(ss, string(buf))
+					buf = buf[:0]
 				}
-				r = append(r, s[start:end])
+				buf = append(buf, r)
 			}
-			return r
+			if len(buf) > 0 {
+				ss = append(ss, string(buf))
+			}
+			return ss
 		},
-		"align_center": func(s string, width int) string {
-			if len(s) > width {
+		"align_center": func(s string, width_ int) string {
+			length := 0
+			for _, r := range []rune(s) {
+				switch width.LookupRune(r).Kind() {
+				case width.EastAsianWide, width.EastAsianFullwidth:
+					length += 2
+				default:
+					length += 1
+				}
+			}
+
+			if length > width_ {
 				return s
 			}
-			return strings.Repeat(" ", (width-len(s))/2) + s
+			return strings.Repeat(" ", (width_-length)/2) + s
 		},
 		"pad_records": func(length int, rs []api.Record) []struct{} {
 			if len(rs) >= length {
@@ -191,6 +206,10 @@ var (
 		},
 		"url2uuid": func(u *api.URL) string {
 			return uuid.NewSHA1(uuid.NameSpaceURL, []byte(u.String())).String()
+		},
+		"incident2uuid": func(i api.Incident) string {
+			target := uuid.NewSHA1(uuid.NameSpaceURL, []byte(i.Target.String()))
+			return uuid.NewSHA1(target, []byte(fmt.Sprintf("%s:%s", i.StartsAt.Format(time.RFC3339), i.Message))).String()
 		},
 		"uint2humanize": func(n uint64) string {
 			var ss []string

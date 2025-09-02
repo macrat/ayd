@@ -40,6 +40,16 @@ Options:
   -h, --help    Show this help message and exit.
 `
 
+var (
+	// isTerminal returns whether the given file descriptor is a terminal.
+	// This function can be overridden in tests.
+	isTerminal = isatty.IsTerminal
+
+	// isCygwinTerminal returns whether the given file descriptor is a Cygwin terminal.
+	// This function can be overridden in tests.
+	isCygwinTerminal = isatty.IsCygwinTerminal
+)
+
 func (c ConvCommand) Run(args []string) int {
 	flags := pflag.NewFlagSet("ayd conv", pflag.ContinueOnError)
 
@@ -109,7 +119,7 @@ func (c ConvCommand) Run(args []string) int {
 		}
 		defer f.Close()
 		output = f
-	} else if *toXlsx && isatty.IsTerminal(os.Stdout.Fd()) || isatty.IsCygwinTerminal(os.Stdout.Fd()) {
+	} else if *toXlsx && (isTerminal(os.Stdout.Fd()) || isCygwinTerminal(os.Stdout.Fd())) {
 		fmt.Fprintln(c.ErrStream, "error: can not write xlsx format to stdout. please redirect or use -o option.")
 		return 2
 	}

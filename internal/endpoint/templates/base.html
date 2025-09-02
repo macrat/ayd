@@ -24,7 +24,7 @@
             {{- end }}
         </div>{{ if .Message }}
         <pre class="message">{{ .Message }}</pre>{{ end }}
-        → <a href="/log.html?target={{ .Target }}&since={{ .StartsAt | time2str }}{{ if not .EndsAt.IsZero }}&until={{ .EndsAt | time2str }}{{ end }}">detail</a>
+        → <a href="/log.html?q=target%3d{{ .Target }}+time%3e%3d{{ .StartsAt | time2str }}{{ if not .EndsAt.IsZero }}+time%3c{{ .EndsAt | time2str }}{{ end }}">detail</a>
     </section>
 {{ end -}}
 
@@ -145,6 +145,7 @@ h1 {
     border: 1px solid rgb(var(--fg));
     border-radius: 2px;
     padding: 16px 12px;
+    white-space: pre-wrap;
 }
 .incident .period > span {
     display: inline-block;

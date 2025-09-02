@@ -118,8 +118,10 @@ func (p *simplePinger) Start() error {
 func (p *simplePinger) Stop() {
 	p.v4 = nil
 	p.v6 = nil
-	p.stop()
-	p.stop = nil
+	if p.stop != nil {
+		p.stop()
+		p.stop = nil
+	}
 }
 
 type autoPingerStruct struct {

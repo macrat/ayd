@@ -23,8 +23,11 @@ func init() {
 		"20060102_",
 	}
 	tfs := []string{
+		"15",
+		"15:04",
 		"15:04:05",
 		"15:04:05.999999999",
+		"1504",
 		"150405",
 		"150405.999999999",
 	}
@@ -40,6 +43,18 @@ func init() {
 			}
 		}
 	}
+	timeformats = append(
+		timeformats,
+		time.Layout,
+		time.ANSIC,
+		time.UnixDate,
+		time.RubyDate,
+		time.RFC822,
+		time.RFC822Z,
+		time.RFC850,
+		time.RFC1123,
+		time.RFC1123Z,
+	)
 }
 
 // ParseTime parses time string in Ayd way.

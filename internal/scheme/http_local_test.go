@@ -13,6 +13,6 @@ func TestHTTPScheme_local(t *testing.T) {
 	t.Parallel()
 
 	AssertProbe(t, []ProbeTest{
-		{"http://of-course-no-such-host.local/", api.StatusUnknown, "lookup of-course-no-such-host.local: .+", ""},
+		{"http://of-course-no-such-host/", api.StatusUnknown, "lookup of-course-no-such-host: .+", ""},
 	}, 5)
 }

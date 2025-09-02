@@ -12,31 +12,14 @@ import (
 
 	"github.com/goccy/go-json"
 	"github.com/macrat/ayd/internal/logconv"
+	"github.com/macrat/ayd/internal/query"
 	api "github.com/macrat/ayd/lib-ayd"
 )
 
-func getTimeQuery(queries url.Values, name string, default_ time.Time) (time.Time, error) {
-	q := queries.Get(name)
-	if q == "" {
-		return default_, nil
-	}
-
-	if n, err := strconv.ParseInt(q, 10, 64); err == nil {
-		return time.Unix(n, 0), nil
-	}
-
-	t, err := api.ParseTime(q)
-	if err != nil {
-		return default_, fmt.Errorf("invalid %s format: %q", name, q)
-	}
-	return t, nil
-}
-
 type logOptions struct {
-	Since, Until  time.Time
+	Start, End    time.Time
 	Limit, Offset uint64
-	Targets       []string
-	Query         Query
+	Query         query.Query
 }
 
 func newLogOptionsByRequest(s Store, scope string, r *http.Request, defaultPeriod time.Duration) (opts logOptions, err error) {
@@ -44,18 +27,6 @@ func newLogOptionsByRequest(s Store, scope string, r *http.Request, defaultPerio
 	var errors []string
 
 	qs := r.URL.Query()
-
-	opts.Until, err = getTimeQuery(qs, "until", time.Now())
-	if err != nil {
-		invalidQueries = append(invalidQueries, "until")
-		errors = append(errors, err.Error())
-	}
-
-	opts.Since, err = getTimeQuery(qs, "since", opts.Until.Add(-defaultPeriod))
-	if err != nil {
-		invalidQueries = append(invalidQueries, "since")
-		errors = append(errors, err.Error())
-	}
 
 	if l := qs.Get("limit"); l != "" {
 		opts.Limit, err = strconv.ParseUint(l, 10, 64)
@@ -73,10 +44,27 @@ func newLogOptionsByRequest(s Store, scope string, r *http.Request, defaultPerio
 		}
 	}
 
-	opts.Targets = qs["target"]
-
-	if q := ParseQuery(qs.Get("query")); len(qs) > 0 {
+	if q := query.ParseQuery(qs.Get("q")); len(qs) > 0 {
 		opts.Query = q
+
+		st, en := opts.Query.TimeRange()
+
+		if st == nil && en != nil {
+			opts.Start = en.Add(-defaultPeriod)
+			opts.End = *en
+		} else if en == nil && st != nil {
+			opts.Start = *st
+			opts.End = time.Now()
+		} else if st != nil && en != nil {
+			opts.Start = *st
+			opts.End = *en
+		} else {
+			opts.End = time.Now()
+			opts.Start = opts.End.Add(-defaultPeriod)
+		}
+	} else {
+		opts.End = time.Now()
+		opts.Start = opts.End.Add(-defaultPeriod)
 	}
 
 	if len(invalidQueries) > 0 {
@@ -130,33 +118,16 @@ func (s *PagingScanner) Close() error {
 
 type FilterScanner struct {
 	Scanner api.LogScanner
-	Targets []string
-	Query   Query
+	Query   query.Query
 }
 
 func (f FilterScanner) Close() error {
 	return f.Scanner.Close()
 }
 
-func (f FilterScanner) filterByTarget(target string) bool {
-	if len(f.Targets) == 0 {
-		return true
-	}
-	for _, t := range f.Targets {
-		if target == t {
-			return true
-		}
-	}
-	return false
-}
-
-func (f FilterScanner) filterByQuery(r api.Record) bool {
-	return f.Query.Match(f.Record())
-}
-
 func (f FilterScanner) Scan() bool {
 	for f.Scanner.Scan() {
-		if f.filterByTarget(f.Record().Target.String()) && f.filterByQuery(f.Record()) {
+		if f.Query.Match(f.Record()) {
 			return true
 		}
 	}
@@ -165,91 +136,6 @@ func (f FilterScanner) Scan() bool {
 
 func (f FilterScanner) Record() api.Record {
 	return f.Scanner.Record()
-}
-
-type keyword interface {
-	Match(status string, latency time.Duration, target, message string) bool
-}
-
-type strKeyword string
-
-func (k strKeyword) Match(status string, latency time.Duration, target, message string) bool {
-	q := string(k)
-	return status == q || strings.Contains(target, q) || strings.Contains(message, q)
-}
-
-type strNotKeyword string
-
-func (k strNotKeyword) Match(status string, latency time.Duration, target, message string) bool {
-	return !strKeyword(k).Match(status, latency, target, message)
-}
-
-type durKeyword struct {
-	operator string
-	duration time.Duration
-}
-
-func parseDurKeyword(s string) (result durKeyword, ok bool) {
-	for _, operator := range []string{"<=", "<", ">=", ">", "!=", "="} {
-		if strings.HasPrefix(s, operator) {
-			result.operator = operator
-			var err error
-			result.duration, err = time.ParseDuration(s[len(operator):])
-			return result, err == nil
-		}
-	}
-	return result, false
-}
-
-func (k durKeyword) Match(status string, latency time.Duration, target, message string) bool {
-	switch k.operator {
-	case "<":
-		return latency < k.duration
-	case "<=":
-		return latency <= k.duration
-	case ">":
-		return latency > k.duration
-	case ">=":
-		return latency >= k.duration
-	case "!=":
-		return latency != k.duration
-	case "=":
-		return latency == k.duration
-	default:
-		return false
-	}
-}
-
-type Query []keyword
-
-func ParseQuery(query string) Query {
-	var qs Query
-	for _, q := range strings.Split(strings.ToLower(query), " ") {
-		q = strings.TrimSpace(q)
-		if q != "" {
-			if dur, ok := parseDurKeyword(q); ok {
-				qs = append(qs, dur)
-			} else if len(q) > 2 && q[0] == '-' {
-				qs = append(qs, strNotKeyword(q[1:]))
-			} else {
-				qs = append(qs, strKeyword(q))
-			}
-		}
-	}
-	return qs
-}
-
-func (qs Query) Match(r api.Record) bool {
-	status := strings.ToLower(r.Status.String())
-	target := strings.ToLower(r.Target.String())
-	message := strings.ToLower(r.ReadableMessage())
-
-	for _, q := range qs {
-		if !q.Match(status, r.Latency, target, message) {
-			return false
-		}
-	}
-	return true
 }
 
 type ContextScanner struct {
@@ -288,7 +174,7 @@ func newLogScanner(s Store, scope string, r *http.Request, defaultPeriod time.Du
 }
 
 func newLogScannerByOpts(s Store, scope string, r *http.Request, opts logOptions) (scanner *PagingScanner, statusCode int, err error) {
-	rawScanner, err := s.OpenLog(opts.Since, opts.Until)
+	rawScanner, err := s.OpenLog(opts.Start, opts.End)
 	if err != nil {
 		handleError(s, scope, fmt.Errorf("failed to open log: %w", err))
 		return nil, http.StatusInternalServerError, fmt.Errorf("internal server error")
@@ -296,10 +182,11 @@ func newLogScannerByOpts(s Store, scope string, r *http.Request, opts logOptions
 
 	rawScanner = NewContextScanner(r.Context(), rawScanner)
 
-	rawScanner = FilterScanner{
-		Scanner: rawScanner,
-		Targets: opts.Targets,
-		Query:   opts.Query,
+	if opts.Query != nil {
+		rawScanner = FilterScanner{
+			Scanner: rawScanner,
+			Query:   opts.Query,
+		}
 	}
 
 	scanner = &PagingScanner{
@@ -468,12 +355,10 @@ func LogHTMLEndpoint(s Store) http.HandlerFunc {
 
 		total := scanner.ScanTotal()
 
-		query := strings.TrimSpace(r.URL.Query().Get("query"))
+		query := strings.TrimSpace(r.URL.Query().Get("q"))
 
 		rawQuery := url.Values{}
-		rawQuery.Set("since", opts.Since.Format(time.RFC3339))
-		rawQuery.Set("until", opts.Until.Format(time.RFC3339))
-		rawQuery.Set("query", query)
+		rawQuery.Set("q", query)
 
 		var prev uint64
 		if opts.Offset > opts.Limit {
@@ -482,31 +367,31 @@ func LogHTMLEndpoint(s Store) http.HandlerFunc {
 
 		w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 		handleError(s, "log.html", tmpl.Execute(newFlushWriter(w), logData{
-			Since:    opts.Since,
-			Until:    opts.Until,
-			Query:    query,
-			RawQuery: rawQuery.Encode(),
-			Records:  rs,
-			Total:    total,
-			From:     opts.Offset + 1,
-			To:       opts.Offset + uint64(len(rs)),
-			Prev:     prev,
-			Next:     opts.Offset + uint64(len(rs)),
-			Limit:    opts.Limit,
+			Query:        query,
+			RawQuery:     rawQuery.Encode(),
+			Records:      rs,
+			Total:        total,
+			From:         opts.Offset + 1,
+			To:           opts.Offset + uint64(len(rs)),
+			Prev:         prev,
+			Next:         opts.Offset + uint64(len(rs)),
+			Limit:        opts.Limit,
+			QueryExample: fmt.Sprintf("time>=%s latency>1s OR status!=HEALTHY", time.Now().Add(-time.Hour).Format("2006-01-02T15:04")),
 		}))
 	}
 }
 
 type logData struct {
-	Since    time.Time
-	Until    time.Time
-	Query    string
-	RawQuery string
-	Records  []api.Record
-	Total    uint64
-	From     uint64
-	To       uint64
-	Prev     uint64
-	Next     uint64
-	Limit    uint64
+	Since        time.Time
+	Until        time.Time
+	Query        string
+	RawQuery     string
+	Records      []api.Record
+	Total        uint64
+	From         uint64
+	To           uint64
+	Prev         uint64
+	Next         uint64
+	Limit        uint64
+	QueryExample string
 }

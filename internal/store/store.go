@@ -270,7 +270,8 @@ func (s *Store) setIncidentIfNeed(r api.Record, needCallback bool) {
 		}
 
 		// nothing to do for continue of current incident, or for old resolved incident.
-		if incident.Status == r.Status && incident.Message == r.Message && (incident.EndsAt.IsZero() || incident.EndsAt.After(r.Time)) {
+		if incident.Status == r.Status && isSameIncidentMessage(incident.Message, r.Message) && (incident.EndsAt.IsZero() || incident.EndsAt.After(r.Time)) {
+			incident.Message = r.Message
 			return
 		}
 

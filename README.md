@@ -17,9 +17,11 @@ $ ayd ping:192.168.1.1 https://example.com
 ## Features
 
 - Check service status using:
+  * [ICMP echo (ping)](#ping)
   * [HTTP/HTTPS](#http--https)
   * [FTP/FTPS](#ftp--ftps)
-  * [ICMP echo (ping)](#ping)
+  * [SSH](#ssh)
+  * [SFTP](#sftp)
   * [TCP connect](#tcp)
   * [DNS resolve](#dns)
   * [file/directory existence](#file)
@@ -114,9 +116,11 @@ Ayd supports below URL schemes in default.
 
 | scheme                             |      as Target     |      as Alert      |
 |------------------------------------|:------------------:|:------------------:|
+| [`ping:`](#ping)                   | :heavy_check_mark: | :heavy_minus_sign: |
 | [`http:` / `https:`](#http--https) | :heavy_check_mark: | :heavy_check_mark: |
 | [`ftp:` / `ftps:`](#ftp--ftps)     | :heavy_check_mark: | :heavy_check_mark: |
-| [`ping:`](#ping)                   | :heavy_check_mark: | :heavy_minus_sign: |
+| [`ssh:`](#ssh)                     | :heavy_check_mark: | :heavy_minus_sign: |
+| [`sftp:`](#sftp)                   | :heavy_check_mark: | :heavy_check_mark: |
 | [`tcp:`](#tcp)                     | :heavy_check_mark: | :heavy_minus_sign: |
 | [`dns:`](#dns)                     | :heavy_check_mark: | :heavy_minus_sign: |
 | [`file:`](#file)                   | :heavy_check_mark: | :heavy_check_mark: |
@@ -124,6 +128,26 @@ Ayd supports below URL schemes in default.
 | [`source:`](#source)               | :heavy_check_mark: | :heavy_check_mark: |
 
 You can use extra schemes with [plugin](#plugin) if you need.
+
+#### ping:
+
+Send ICMP echo request (a.k.a. ping command) and check if the target is connected or not.
+
+Ayd sends 3 packets in 1 second and expects all packets to return.
+These parameter can changed by `AYD_PING_PACKETS` and `AYD_PING_PERIOD` environment variable.
+
+You can specify IPv4 or IPv6 with `ping4:` or `ping6:` scheme.
+
+Ping will timeout in 30 seconds after sent all packets and report as failure.
+
+examples:
+- `ping:example.com`
+- `ping:192.168.1.1`
+- `ping:192.168.1.10#my-server`
+
+##### as Alert
+
+ping does not support to used as an alert URL.
 
 #### http: / https:
 
@@ -173,25 +197,43 @@ examples:
 Writes the same format logs as the [normal log file](#log-file), over FTP or FTPS, when the service status changed.
 It is pretty same as [file:](#file) scheme for alert but uses FTP/FTPS.
 
-#### ping:
+#### ssh:
 
-Send ICMP echo request (a.k.a. ping command) and check if the target is connected or not.
+Establish a SSH connection and check if the service is listening or not.
 
-Ayd sends 3 packets in 1 second and expects all packets to return.
-These parameter can changed by `AYD_PING_PACKETS` and `AYD_PING_PERIOD` environment variable.
+This scheme supports these queries:
 
-You can specify IPv4 or IPv6 with `ping4:` or `ping6:` scheme.
+- __identityfile__: Path to private key file like id\_rsa.
+- __fingerprint__: The fingerprint of the target service, starts with `SHA256:` or `MD5:`.
 
-Ping will timeout in 30 seconds after sent all packets and report as failure.
+SSH will timeout in 10 minutes and report as failure.
 
 examples:
-- `ping:example.com`
-- `ping:192.168.1.1`
-- `ping:192.168.1.10#my-server`
+- `ssh://username:plain-password@example.com`
+- `ssh://username@example.com?identityfile=/path/to/id_rsa`
+- `ssh://username:passphrase-for-key@example.com?identityfile=/path/to/id_rsa`
+- `ssh://username@example.com?identityfile=/path/to/id_rsa&fingerprint=SHA256:AAAAAA...`
 
 ##### as Alert
 
-ping does not support to used as an alert URL.
+`ssh:` does not support to be used as an alert URL.
+Please use [`exec+ssh:`](#execssh) for executing a command over SSH.
+
+#### sftp:
+
+Connect to an SFTP server and check whether if the file or directory exists or not. 
+
+This scheme supports the same queries as [ssh:](#ssh) scheme.
+
+SFTP will timeout in 10 minutes and report as failure.
+examples:
+- `sftp://foo:bar@example.com/`
+- `sftp://foo@example.com/path/to/directory?identityfile=/path/to/id_rsa`
+
+##### as Alert
+
+Writes the same format logs as the [normal log file](#log-file), over SFTP, when the service status changed.
+It is pretty same as [file:](#file) scheme for alert but uses SFTP.
 
 #### tcp:
 
@@ -332,6 +374,18 @@ If there are multiple keys with the same name in the output, only the last one w
 If you use `exec:` as an alert URL, Ayd sets some environment variables about the incident.
 The name of variable and meaning is the same as the queries of [HTTP scheme as alert](#http--https).
 
+##### exec+ssh:
+
+The `exec+ssh:` scheme is a variant of `exec:`.
+This scheme executes a command through a SSH connection, and check the exit code.
+Please see also [`exec:`](#exec) and [`ssh:`](#ssh).
+
+__IMPORTANT:__ Please allow to use environment variables by SSH server's setting. If you are using OpenSSH, please write like `AllowEnv ayd_*` in to `/etc/ssh/sshd_config`.
+
+examples:
+- `exec+ssh://user:password@example.com/usr/bin/test.sh?env_value=variable`
+- `exec+ssh://user@example.com/usr/bin/test.sh?identityfile=/path/to/id_ed25519#first-argument`
+
 #### source:
 
 This is a special scheme for loading targets from a file, a remote host, or a command.
@@ -374,7 +428,7 @@ For example, Ayd will execute everything even if HTTP server responses `exec:rm#
 examples:
 - `source+https://example.com/targets.txt`
 
-##### source+ftp: / source+ftps:
+##### source+ftp: / source+ftps: / source+sftp:
 
 `source+ftp:` and `source+ftps:` is variants of `source:` that very similar to `source+http:`.
 These download source file via FTP/FTPS and load it.
@@ -384,7 +438,8 @@ Please don't use it if you can't completely trust the source file in the FTP ser
 For example, Ayd will execute everything even if the FTP server responses `exec:rm#/your/important/directory`
 
 examples:
-- `source+ftps://example.com/targets.txt`
+- `source+ftps://user:password@example.com/targets.txt`
+- `source+sftp://user@example.com/targets.txt?identityfile=/path/to/id_rsa`
 
 ##### source+exec:
 
@@ -394,6 +449,18 @@ It is execute script as the same way as [`exec:`](#exec) and load the output as 
 examples:
 - `source+exec:./make-targets-list.exe`
 - `source+exec:/usr/local/bin/targets.sh`
+
+##### source+ssh:
+
+`source+ssh:` is a variant of `source:` like `source+exec:` but to execute command on remote host.
+It is execute script as the same way as [`exec+ssh:`](#exec) and load the output as a source file.
+
+__NOTE:__
+It's highly recommended to specify server's fingerprint for security reason.
+
+examples:
+- `source+ssh://name:pass@target/usr/bin/make-targets-list.exe?fingerprint=SHA256:AAAA...`
+- `source+ssh://name@target/usr/bin/make-targets-list.exe?identityfile=/path/to/key&fingerprint=SHA256:AAAA...`
 
 ##### as Alert
 
@@ -510,8 +577,19 @@ The above command means checking `your-service.example.com` every 5 minutes from
  │ │ │ ┌──── month (1 - 12)
  │ │ │ │ ┌─── [optional] day of the week (0 - 6 (sunday - saturday))
  │ │ │ │ │
-'* * * * *'
+'* * * * ?'
 ```
+
+There are some special values for ease to specify.
+
+| special spec             | standard spec | description                                   |
+|--------------------------|---------------|-----------------------------------------------|
+| `@yearly` or `@annually` | `0 0 1 1 ?`   | Check once a year at 1st January.             |
+| `@monthly`               | `0 0 1 * ?`   | Check once a month at the first day of month. |
+| `@daily`                 | `0 0 * * ?`   | Check once a day at midnight.                 |
+| `@hourly`                | `0 * * * ?`   | Check once an hour.                           |
+| `@reboot`                | -             | Check once when Ayd started.                  |
+| `@after 5m`              | -             | Check once after 5 minutes after Ayd started. |
 
 
 ### Status pages and endpoints
@@ -542,9 +620,6 @@ Ayd has these pages/endpoints.
 
 The log endpoints accept the following queries for filtering log entries.
 
-- `since` and `until`: filter logs by datetime in either RFC3339 format (e.g. `2001-02-03T16:05:06+09:00`) or UNIX time (e.g. `981183906`).
-  By default, Ayd replies logs from 7 days ago to the current time.
-
 - `limit`: set maximum number of entries in the response.
   You can use `offset` query to fetch more.
 
@@ -553,17 +628,18 @@ The log endpoints accept the following queries for filtering log entries.
 - `offset`: set the offset number of the first entry in the response.
   This is usually used in conjunction with the `limit` query for paging.
 
-- `target`: filter entries by target URLs.
-  You can use multiple `target` queries as "OR" filtering.
+- `q`: filter by a space-delimited query.
+  This query supports following syntaxes:
 
-- `query`: filter by a space-delimited query.
-  This works as a perfect matching for status, a partial match for target URL and message text.
-  You can also use a syntax for filtering latency like `<10ms` or `>=1s`.
+  - `a AND b`, `a b`: matches both of **a** and **b**.
+  - `a OR b`: matches either **a** or **b**.
+  - `NOT a`, `!a`, `-a`: not matches to **a**.
+  - `field=a`, `field!=a`, `field>a`, `field>=a`, `field<a`, `field<=a`: **field** matches to **a** in the specified operator.
 
-examples:
-- <http://localhost:9000/log.csv?since=2000-01-01T00:00:00Z&until=2001-01-01T00:00:00Z>: The logs from 2000-01-01 to 2000-12-31.
-- <http://localhost:9000/log.csv?since=2021-01-01T00:00:00Z&target=ping:localhost>: The logs about `ping:localhost` since 2021-01-01.
-- <http://localhost:9000/log.json?query=-healthy%20ping:>: The logs within recent 7 days that only about unhealthy(`-healthy`) ping(`ping:`) targets.
+Query examples:
+- `time>=2000-01-01 time<=2000-12-31`: The logs from 2000-01-01 to 2000-12-31.
+- `time>=2021-01-01 target=ping:host`: The logs about `ping:localhost` since 2021-01-01.
+- `status!=healthy target=ping:*`: The logs within recent 7 days that only about unhealthy ping targets.
 
 
 ### Log file

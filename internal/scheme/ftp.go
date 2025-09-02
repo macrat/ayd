@@ -15,8 +15,8 @@ import (
 )
 
 var (
-	ErrMissingUsername = errors.New("username is required if set password")
-	ErrMissingPassword = errors.New("password is required if set username")
+	ErrMissingFTPUsername = errors.New("username is required if set password")
+	ErrMissingFTPPassword = errors.New("password is required if set username")
 )
 
 // ftpOptions makes ftp.DialOptions for the ftp library.
@@ -82,7 +82,7 @@ func ftpConnectAndLogin(ctx context.Context, u *api.URL) (conn *ftp.ServerConn, 
 	}
 
 	if err := conn.Login(ftpUserInfo(u)); err != nil {
-		conn.Quit()
+		_ = conn.Quit() // ignore error during cleanup
 		return nil, api.StatusFailure, err.Error()
 	}
 
@@ -111,10 +111,10 @@ func NewFTPScheme(u *api.URL) (FTPScheme, error) {
 
 	if u.User != nil {
 		if u.User.Username() == "" {
-			return FTPScheme{}, ErrMissingUsername
+			return FTPScheme{}, ErrMissingFTPUsername
 		}
 		if _, ok := u.User.Password(); !ok {
-			return FTPScheme{}, ErrMissingPassword
+			return FTPScheme{}, ErrMissingFTPPassword
 		}
 	}
 

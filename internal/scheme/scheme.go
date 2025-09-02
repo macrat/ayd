@@ -11,3 +11,8 @@ func SplitScheme(scheme string) (subScheme string, separator rune, variant strin
 	}
 	return scheme, 0, ""
 }
+
+type Scheme interface {
+	Prober
+	Alerter
+}
