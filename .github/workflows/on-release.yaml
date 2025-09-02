@@ -1,0 +1,15 @@
+name: Release
+
+on:
+  tag:
+    - 'v*'
+
+jobs:
+  test:
+    uses: ./.github/workflows/test.yaml
+    secrets: inherit
+
+  release:
+    needs: test
+    uses: ./.github/workflows/release.yaml
+    secrets: inherit
