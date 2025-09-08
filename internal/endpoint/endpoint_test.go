@@ -89,7 +89,7 @@ func AssertEndpoint(t *testing.T, endpoint, expectFile, maskPattern string) {
 	}
 
 	if diff := cmp.Diff(readTestFile(t, expectFile), result); diff != "" {
-		t.Errorf(diff)
+		t.Errorf("%s", diff)
 
 		os.MkdirAll("./testdata/actual", 0755)
 		f, err := os.Create(filepath.Join("./testdata/actual", filepath.Base(expectFile)))

@@ -50,7 +50,7 @@ func TestPluginCandidates(t *testing.T) {
 		t.Run(tt.Input, func(t *testing.T) {
 			output := pluginCandidates(tt.Input, "probe")
 			if diff := cmp.Diff(output, tt.Output); diff != "" {
-				t.Errorf(diff)
+				t.Errorf("%s", diff)
 			}
 		})
 	}
