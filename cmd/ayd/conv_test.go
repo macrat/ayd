@@ -160,7 +160,7 @@ func TestConvCommand_Run(t *testing.T) {
 			t.Fatalf("failed to read output file: %s", err)
 		}
 		if diff := cmp.Diff(testLogCSV, string(output)); diff != "" {
-			t.Errorf(diff)
+			t.Errorf("%s", diff)
 		}
 	})
 }
