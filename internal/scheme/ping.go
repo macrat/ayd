@@ -222,7 +222,7 @@ func NewPingProbe(u *api.URL) (PingProbe, error) {
 	}
 
 	if err := autoPinger.Test(); err != nil {
-		return PingProbe{}, ayderr.New(ErrFailedToPreparePing, err, "%s", ErrFailedToPreparePing.Error())
+		return PingProbe{}, ayderr.New(ErrFailedToPreparePing, err)
 	}
 
 	if u.Opaque != "" {
