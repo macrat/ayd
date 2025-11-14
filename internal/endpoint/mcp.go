@@ -259,7 +259,12 @@ func MCPHandler(s Store) http.HandlerFunc {
 
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "list_targets",
+		Title:       "List targets",
 		Description: "List monitored target URLs.",
+		Annotations: &mcp.ToolAnnotations{
+			IdempotentHint: true,
+			ReadOnlyHint:   true,
+		},
 	}, func(ctx context.Context, req *mcp.CallToolRequest, input MCPTargetsInput) (*mcp.CallToolResult, MCPTargetsOutput, error) {
 		output := FetchTargets(ctx, s, input)
 		return nil, output, nil
@@ -267,7 +272,12 @@ func MCPHandler(s Store) http.HandlerFunc {
 
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "query_status",
+		Title:       "Query status",
 		Description: "Fetch current status using jq query from Ayd server.",
+		Annotations: &mcp.ToolAnnotations{
+			IdempotentHint: true,
+			ReadOnlyHint:   true,
+		},
 	}, func(ctx context.Context, req *mcp.CallToolRequest, input MCPStatusInput) (*mcp.CallToolResult, MCPStatusOutput, error) {
 		output := FetchStatusByJq(ctx, s, input)
 		return nil, output, nil
@@ -275,7 +285,12 @@ func MCPHandler(s Store) http.HandlerFunc {
 
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "query_logs",
+		Title:       "Query logs",
 		Description: "Fetch health check logs using jq query from Ayd server.",
+		Annotations: &mcp.ToolAnnotations{
+			IdempotentHint: true,
+			ReadOnlyHint:   true,
+		},
 	}, func(ctx context.Context, req *mcp.CallToolRequest, input MCPLogsInput) (*mcp.CallToolResult, MCPLogsOutput, error) {
 		output := FetchLogsByJq(ctx, s, input)
 		return nil, output, nil
