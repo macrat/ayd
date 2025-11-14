@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/macrat/ayd/internal/endpoint"
+	"github.com/macrat/ayd/internal/meta"
 	"github.com/macrat/ayd/internal/store"
 	api "github.com/macrat/ayd/lib-ayd"
 	"github.com/robfig/cron/v3"
@@ -40,7 +41,7 @@ func (cmd *AydCommand) reportStartServer(s *store.Store, protocol, listen string
 		Extra: map[string]interface{}{
 			"url":     fmt.Sprintf("%s://%s", protocol, listen),
 			"targets": tasks,
-			"version": fmt.Sprintf("%s (%s)", version, commit),
+			"version": fmt.Sprintf("%s (%s)", meta.Version, meta.Commit),
 		},
 	})
 }
@@ -54,7 +55,7 @@ func (cmd *AydCommand) reportStopServer(s *store.Store, protocol, listen string)
 		Message: "stop Ayd server",
 		Extra: map[string]interface{}{
 			"url":     fmt.Sprintf("%s://%s", protocol, listen),
-			"version": fmt.Sprintf("%s (%s)", version, commit),
+			"version": fmt.Sprintf("%s (%s)", meta.Version, meta.Commit),
 			"since":   cmd.StartedAt.Format(time.RFC3339),
 		},
 	})

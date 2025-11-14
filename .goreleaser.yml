@@ -17,8 +17,8 @@ builds:
       - -trimpath
     ldflags:
       - '-s -w'
-      - '-X main.version={{ .Version }}'
-      - '-X main.commit={{ .ShortCommit }}'
+      - '-X github.com/macrat/ayd/internal/meta.Version={{ .Version }}'
+      - '-X github.com/macrat/ayd/internal/meta.Commit={{ .ShortCommit }}'
     hooks:
       post: 'upx-ucl --lzma {{ .Path }}'
   - id: without-upx
@@ -32,8 +32,8 @@ builds:
       - -trimpath
     ldflags:
       - '-s -w'
-      - '-X main.version={{ .Version }}'
-      - '-X main.commit={{ .ShortCommit }}'
+      - '-X github.com/macrat/ayd/internal/meta.Version={{ .Version }}'
+      - '-X github.com/macrat/ayd/internal/meta.Commit={{ .ShortCommit }}'
 
 archives:
   - formats: [tar.gz]

@@ -1,16 +1,17 @@
 package endpoint
 
 import (
-	"fmt"
-	"time"
-	"net/http"
 	"context"
+	"fmt"
 	"maps"
+	"net/http"
 	"strings"
+	"time"
 
+	"github.com/itchyny/gojq"
+	"github.com/macrat/ayd/internal/meta"
 	api "github.com/macrat/ayd/lib-ayd"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	"github.com/itchyny/gojq"
 )
 
 func recordToMap(rec api.Record) map[string]any {
@@ -29,13 +30,13 @@ func recordToMap(rec api.Record) map[string]any {
 
 func incidentToMap(inc api.Incident) map[string]any {
 	return map[string]any{
-		"target":    inc.Target.String(),
-		"status":    inc.Status.String(),
-		"message":   inc.Message,
-		"starts_at": inc.StartsAt.Format(time.RFC3339),
+		"target":         inc.Target.String(),
+		"status":         inc.Status.String(),
+		"message":        inc.Message,
+		"starts_at":      inc.StartsAt.Format(time.RFC3339),
 		"starts_at_unix": inc.StartsAt.Unix(),
-		"ends_at":   inc.EndsAt.Format(time.RFC3339),
-		"ends_at_unix": inc.EndsAt.Unix(),
+		"ends_at":        inc.EndsAt.Format(time.RFC3339),
+		"ends_at_unix":   inc.EndsAt.Unix(),
 	}
 }
 
@@ -73,18 +74,18 @@ type MCPStatusInput struct {
 }
 
 type MCPStatusOutput struct {
-	Result []any `json:"result" jsonschema:"The result of the status query."`
+	Result []any  `json:"result" jsonschema:"The result of the status query."`
 	Error  string `json:"error,omitempty" jsonschema:"Error message if the query failed."`
 }
 
 func FetchStatusByJq(ctx context.Context, s Store, input MCPStatusInput) (output MCPStatusOutput) {
-	output.Result = []any{}  // 空の配列で初期化（nilではなく）
+	output.Result = []any{} // 空の配列で初期化（nilではなく）
 
 	defer func() {
 		if r := recover(); r != nil {
 			s.ReportInternalError("mcp/query_status", fmt.Sprintf("panic occurred: %v", r))
 			output = MCPStatusOutput{
-				Result: []any{},  // エラー時も空の配列を返す
+				Result: []any{}, // エラー時も空の配列を返す
 				Error:  "internal server error",
 			}
 		}
@@ -111,10 +112,10 @@ func FetchStatusByJq(ctx context.Context, s Store, input MCPStatusInput) (output
 	obj["probe_history"] = map[string]any{}
 	for k, v := range report.ProbeHistory {
 		h := map[string]any{
-			"target":    v.Target.String(),
-			"status":    v.Status.String(),
-			"updated":   v.Updated.Format(time.RFC3339),
-			"records":   make([]any, len(v.Records)),
+			"target":  v.Target.String(),
+			"status":  v.Status.String(),
+			"updated": v.Updated.Format(time.RFC3339),
+			"records": make([]any, len(v.Records)),
 		}
 		for i, r := range v.Records {
 			h["records"].([]any)[i] = recordToMap(r)
@@ -163,7 +164,7 @@ type MCPLogsInput struct {
 }
 
 type MCPLogsOutput struct {
-	Result []any `json:"result" jsonschema:"The result of the log query."`
+	Result []any  `json:"result" jsonschema:"The result of the log query."`
 	Error  string `json:"error,omitempty" jsonschema:"Error message if the query failed."`
 }
 
@@ -171,13 +172,13 @@ func FetchLogsByJq(ctx context.Context, s Store, input MCPLogsInput) (output MCP
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
-	output.Result = []any{}  // 空の配列で初期化（nilではなく）
+	output.Result = []any{} // 空の配列で初期化（nilではなく）
 
 	defer func() {
 		if r := recover(); r != nil {
 			s.ReportInternalError("mcp/query_logs", fmt.Sprintf("panic occurred: %v", r))
 			output = MCPLogsOutput{
-				Result: []any{},  // エラー時も空の配列を返す
+				Result: []any{}, // エラー時も空の配列を返す
 				Error:  "internal server error",
 			}
 		}
@@ -252,12 +253,12 @@ func FetchLogsByJq(ctx context.Context, s Store, input MCPLogsInput) (output MCP
 
 func MCPHandler(s Store) http.HandlerFunc {
 	server := mcp.NewServer(&mcp.Implementation{
-		Name: "Ayd",
-		Version: "0.1.0",  // TODO: set real version
+		Name:    "Ayd",
+		Version: meta.Version,
 	}, nil)
 
 	mcp.AddTool(server, &mcp.Tool{
-		Name: "list_targets",
+		Name:        "list_targets",
 		Description: "List monitored target URLs.",
 	}, func(ctx context.Context, req *mcp.CallToolRequest, input MCPTargetsInput) (*mcp.CallToolResult, MCPTargetsOutput, error) {
 		output := FetchTargets(ctx, s, input)
@@ -265,7 +266,7 @@ func MCPHandler(s Store) http.HandlerFunc {
 	})
 
 	mcp.AddTool(server, &mcp.Tool{
-		Name: "query_status",
+		Name:        "query_status",
 		Description: "Fetch current status using jq query from Ayd server.",
 	}, func(ctx context.Context, req *mcp.CallToolRequest, input MCPStatusInput) (*mcp.CallToolResult, MCPStatusOutput, error) {
 		output := FetchStatusByJq(ctx, s, input)
@@ -273,7 +274,7 @@ func MCPHandler(s Store) http.HandlerFunc {
 	})
 
 	mcp.AddTool(server, &mcp.Tool{
-		Name: "query_logs",
+		Name:        "query_logs",
 		Description: "Fetch health check logs using jq query from Ayd server.",
 	}, func(ctx context.Context, req *mcp.CallToolRequest, input MCPLogsInput) (*mcp.CallToolResult, MCPLogsOutput, error) {
 		output := FetchLogsByJq(ctx, s, input)

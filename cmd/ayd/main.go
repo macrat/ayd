@@ -9,19 +9,15 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/macrat/ayd/internal/meta"
 	"github.com/macrat/ayd/internal/scheme"
 	"github.com/macrat/ayd/internal/store"
 	api "github.com/macrat/ayd/lib-ayd"
 	"github.com/spf13/pflag"
 )
 
-var (
-	version = "HEAD"
-	commit  = "UNKNOWN"
-)
-
 func init() {
-	scheme.HTTPUserAgent = fmt.Sprintf("ayd/%s health check", version)
+	scheme.HTTPUserAgent = fmt.Sprintf("ayd/%s health check", meta.Version)
 }
 
 type AydCommand struct {
@@ -53,7 +49,7 @@ var helpText string
 func (cmd *AydCommand) PrintUsage(detail bool) {
 	tmpl := template.Must(template.New("help.txt").Parse(helpText))
 	tmpl.Execute(cmd.ErrStream, map[string]interface{}{
-		"Version":         version,
+		"Version":         meta.Version,
 		"HTTPRedirectMax": scheme.HTTP_REDIRECT_MAX,
 		"Short":           !detail,
 	})
@@ -119,7 +115,7 @@ func (cmd *AydCommand) ParseArgs(args []string) (exitCode int) {
 }
 
 func (cmd *AydCommand) PrintVersion() {
-	fmt.Fprintf(cmd.OutStream, "Ayd version %s (%s)\n", version, commit)
+	fmt.Fprintf(cmd.OutStream, "Ayd version %s (%s)\n", meta.Version, meta.Commit)
 }
 
 func (cmd *AydCommand) Run(args []string) (exitCode int) {
