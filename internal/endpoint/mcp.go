@@ -69,50 +69,84 @@ func FetchTargets(ctx context.Context, s Store, input MCPTargetsInput) (output M
 	return output
 }
 
-type MCPStatusInput struct {
-	Query string `json:"query,omitempty" jsonschema:"A query string to filter status, in jq syntax."`
-}
-
-type MCPStatusOutput struct {
-	Result []any  `json:"result" jsonschema:"The result of the status query."`
+type MCPOutput struct {
+	Result any    `json:"result" jsonschema:"The result of the query."`
 	Error  string `json:"error,omitempty" jsonschema:"Error message if the query failed."`
 }
 
-func FetchStatusByJq(ctx context.Context, s Store, input MCPStatusInput) (output MCPStatusOutput) {
-	output.Result = []any{} // 空の配列で初期化（nilではなく）
+type JQQuery struct {
+	Query *gojq.Query
+}
 
+func ParseJQ(query string) (JQQuery, error) {
+	if query == "" {
+		query = "."
+	}
+
+	q, err := gojq.Parse(query)
+	if err != nil {
+		return JQQuery{}, err
+	}
+
+	return JQQuery{Query: q}, nil
+}
+
+func (q JQQuery) Run(ctx context.Context, v any) MCPOutput {
+	var outputs []any
+
+	iter := q.Query.RunWithContext(ctx, v)
+	for {
+		v, ok := iter.Next()
+		if !ok {
+			break
+		}
+		if err, ok := v.(error); ok {
+			return MCPOutput{
+				Error: err.Error(),
+			}
+		}
+		outputs = append(outputs, v)
+	}
+
+	if len(outputs) == 1 {
+		return MCPOutput{
+			Result: outputs[0],
+		}
+	} else {
+		return MCPOutput{
+			Result: outputs,
+		}
+	}
+}
+
+type MCPStatusInput struct {
+	Query string `json:"query,omitempty" jsonschema:"A query string to filter status, in jq syntax. Query receives an object like '{\"probe_history\": {\"{target_url}\": {\"status\": \"{status}\", \"updated\": \"{datetime}\", \"records\": [...]}}, \"current_incidents\": [{...}, ...], \"incident_history\": [{...}, ...]}'."`
+}
+
+func FetchStatusByJq(ctx context.Context, s Store, input MCPStatusInput) (output MCPOutput) {
 	defer func() {
 		if r := recover(); r != nil {
 			s.ReportInternalError("mcp/query_status", fmt.Sprintf("panic occurred: %v", r))
-			output = MCPStatusOutput{
-				Result: []any{}, // エラー時も空の配列を返す
-				Error:  "internal server error",
+			output = MCPOutput{
+				Error: "internal server error",
 			}
 		}
 	}()
 
-	if input.Query == "" {
-		input.Query = "."
-	}
-
-	query, err := gojq.Parse(input.Query)
+	query, err := ParseJQ(input.Query)
 	if err != nil {
-		return MCPStatusOutput{
-			Result: []any{},
-			Error:  fmt.Sprintf("failed to parse query: %v", err),
+		return MCPOutput{
+			Error: fmt.Sprintf("failed to parse query: %v", err),
 		}
 	}
 
 	report := s.MakeReport(40)
 
-	obj := map[string]any{
-		"reported_at": report.ReportedAt.Format(time.RFC3339),
-	}
+	obj := map[string]any{}
 
 	obj["probe_history"] = map[string]any{}
 	for k, v := range report.ProbeHistory {
 		h := map[string]any{
-			"target":  v.Target.String(),
 			"status":  v.Status.String(),
 			"updated": v.Updated.Format(time.RFC3339),
 			"records": make([]any, len(v.Records)),
@@ -133,91 +167,54 @@ func FetchStatusByJq(ctx context.Context, s Store, input MCPStatusInput) (output
 		obj["incident_history"].([]any)[i] = incidentToMap(v)
 	}
 
-	iter := query.RunWithContext(ctx, obj)
-	for {
-		v, ok := iter.Next()
-		if !ok {
-			break
-		}
-		if err, ok := v.(error); ok {
-			return MCPStatusOutput{
-				Result: []any{},
-				Error:  err.Error(),
-			}
-		}
-		output.Result = append(output.Result, v)
-	}
-
-	if len(output.Result) == 1 {
-		if arr, ok := output.Result[0].([]any); ok && arr != nil {
-			output.Result = arr
-		}
-	}
-
-	return output
+	return query.Run(ctx, obj)
 }
 
 type MCPLogsInput struct {
 	Since string `json:"since" jsonschema:"The start time for fetching logs, in RFC3339 format."`
 	Until string `json:"until" jsonschema:"The end time for fetching logs, in RFC3339 format."`
-	Query string `json:"query,omitempty" jsonschema:"A query string to filter logs, in jq syntax."`
+	Query string `json:"query,omitempty" jsonschema:"A query string to filter logs, in jq syntax. Query receives an array of status objects. Please try '.[0]' to understand the structure if needed."`
 }
 
-type MCPLogsOutput struct {
-	Result []any  `json:"result" jsonschema:"The result of the log query."`
-	Error  string `json:"error,omitempty" jsonschema:"Error message if the query failed."`
-}
-
-func FetchLogsByJq(ctx context.Context, s Store, input MCPLogsInput) (output MCPLogsOutput) {
+func FetchLogsByJq(ctx context.Context, s Store, input MCPLogsInput) (output MCPOutput) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
-
-	output.Result = []any{} // 空の配列で初期化（nilではなく）
 
 	defer func() {
 		if r := recover(); r != nil {
 			s.ReportInternalError("mcp/query_logs", fmt.Sprintf("panic occurred: %v", r))
-			output = MCPLogsOutput{
-				Result: []any{}, // エラー時も空の配列を返す
-				Error:  "internal server error",
+			output = MCPOutput{
+				Error: "internal server error",
 			}
 		}
 	}()
 
 	since, err := api.ParseTime(input.Since)
 	if err != nil {
-		return MCPLogsOutput{
-			Result: []any{},
-			Error:  fmt.Sprintf("invalid since time: %v", err),
+		return MCPOutput{
+			Error: fmt.Sprintf("invalid since time: %v", err),
 		}
 	}
 	until, err := api.ParseTime(input.Until)
 	if err != nil {
-		return MCPLogsOutput{
-			Result: []any{},
-			Error:  fmt.Sprintf("invalid until time: %v", err),
+		return MCPOutput{
+			Error: fmt.Sprintf("invalid until time: %v", err),
 		}
 	}
 
 	logs, err := s.OpenLog(since, until)
 	if err != nil {
 		s.ReportInternalError("mcp", fmt.Sprintf("failed to open logs: %v", err))
-		return MCPLogsOutput{
-			Result: []any{},
-			Error:  "internal server error",
+		return MCPOutput{
+			Error: "internal server error",
 		}
 	}
 	defer logs.Close()
 
-	if input.Query == "" {
-		input.Query = "."
-	}
-
-	query, err := gojq.Parse(input.Query)
+	query, err := ParseJQ(input.Query)
 	if err != nil {
-		return MCPLogsOutput{
-			Result: []any{},
-			Error:  fmt.Sprintf("failed to parse query: %v", err),
+		return MCPOutput{
+			Error: fmt.Sprintf("failed to parse query: %v", err),
 		}
 	}
 
@@ -227,28 +224,7 @@ func FetchLogsByJq(ctx context.Context, s Store, input MCPLogsInput) (output MCP
 		records = append(records, recordToMap(rec))
 	}
 
-	iter := query.RunWithContext(ctx, records)
-	for {
-		v, ok := iter.Next()
-		if !ok {
-			break
-		}
-		if err, ok := v.(error); ok {
-			return MCPLogsOutput{
-				Result: []any{},
-				Error:  err.Error(),
-			}
-		}
-		output.Result = append(output.Result, v)
-	}
-
-	if len(output.Result) == 1 {
-		if arr, ok := output.Result[0].([]any); ok && arr != nil {
-			output.Result = arr
-		}
-	}
-
-	return output
+	return query.Run(ctx, records)
 }
 
 func MCPHandler(s Store) http.HandlerFunc {
@@ -278,7 +254,7 @@ func MCPHandler(s Store) http.HandlerFunc {
 			IdempotentHint: true,
 			ReadOnlyHint:   true,
 		},
-	}, func(ctx context.Context, req *mcp.CallToolRequest, input MCPStatusInput) (*mcp.CallToolResult, MCPStatusOutput, error) {
+	}, func(ctx context.Context, req *mcp.CallToolRequest, input MCPStatusInput) (*mcp.CallToolResult, MCPOutput, error) {
 		output := FetchStatusByJq(ctx, s, input)
 		return nil, output, nil
 	})
@@ -291,7 +267,7 @@ func MCPHandler(s Store) http.HandlerFunc {
 			IdempotentHint: true,
 			ReadOnlyHint:   true,
 		},
-	}, func(ctx context.Context, req *mcp.CallToolRequest, input MCPLogsInput) (*mcp.CallToolResult, MCPLogsOutput, error) {
+	}, func(ctx context.Context, req *mcp.CallToolRequest, input MCPLogsInput) (*mcp.CallToolResult, MCPOutput, error) {
 		output := FetchLogsByJq(ctx, s, input)
 		return nil, output, nil
 	})
