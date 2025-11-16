@@ -2,9 +2,11 @@ package endpoint
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"maps"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -20,7 +22,7 @@ func recordToMap(rec api.Record) map[string]any {
 		"time_unix":  rec.Time.Unix(),
 		"status":     rec.Status.String(),
 		"latency":    rec.Latency.String(),
-		"latency_ms": rec.Latency.Milliseconds(),
+		"latency_ms": float64(rec.Latency.Nanoseconds()) / 1000000.0,
 		"target":     rec.Target.String(),
 		"message":    rec.Message,
 	}
@@ -41,7 +43,7 @@ func incidentToMap(inc api.Incident) map[string]any {
 }
 
 type MCPTargetsInput struct {
-	Keywords []string `json:"keywords,omitempty" jsonschema:"A list of keywords to filter targets."`
+	Keywords []string `json:"keywords,omitempty" jsonschema:"A list of keywords to filter targets. It works as AND condition."`
 }
 
 type MCPTargetsOutput struct {
@@ -74,8 +76,54 @@ type MCPOutput struct {
 	Error  string `json:"error,omitempty" jsonschema:"Error message if the query failed."`
 }
 
+func jqParseURL(x any, _ []any) any {
+	str, ok := x.(string)
+	if !ok {
+		return errors.New("argument must be a string")
+	}
+	u, err := url.Parse(str)
+	if err != nil {
+		return fmt.Errorf("failed to parse URL: %v", err)
+	}
+
+	username := ""
+	if u.User != nil {
+		username = u.User.String()
+	}
+
+	queries := map[string][]any{}
+	for key, vals := range u.Query() {
+		queries[key] = make([]any, len(vals))
+		for i, v := range vals {
+			queries[key][i] = v
+		}
+	}
+
+	if u.Opaque != "" && u.Host == "" {
+		switch u.Scheme {
+		case "ping":
+			u.Host = u.Opaque
+			u.Opaque = ""
+		case "dns", "dns4", "dns6", "file", "exec", "mailto", "source":
+			u.Path = u.Opaque
+			u.Opaque = ""
+		}
+	}
+
+	return map[string]any{
+		"scheme":   u.Scheme,
+		"username": username,
+		"hostname": u.Hostname(),
+		"port":     u.Port(),
+		"path":     u.Path,
+		"queries":  queries,
+		"fragment": u.Fragment,
+		"opaque":   u.Opaque,
+	}
+}
+
 type JQQuery struct {
-	Query *gojq.Query
+	Code *gojq.Code
 }
 
 func ParseJQ(query string) (JQQuery, error) {
@@ -88,13 +136,21 @@ func ParseJQ(query string) (JQQuery, error) {
 		return JQQuery{}, err
 	}
 
-	return JQQuery{Query: q}, nil
+	c, err := gojq.Compile(
+		q,
+		gojq.WithFunction("parse_url", 0, 0, jqParseURL),
+	)
+	if err != nil {
+		return JQQuery{}, err
+	}
+
+	return JQQuery{Code: c}, nil
 }
 
 func (q JQQuery) Run(ctx context.Context, v any) MCPOutput {
 	var outputs []any
 
-	iter := q.Query.RunWithContext(ctx, v)
+	iter := q.Code.RunWithContext(ctx, v)
 	for {
 		v, ok := iter.Next()
 		if !ok {
@@ -120,7 +176,7 @@ func (q JQQuery) Run(ctx context.Context, v any) MCPOutput {
 }
 
 type MCPStatusInput struct {
-	Query string `json:"query,omitempty" jsonschema:"A query string to filter status, in jq syntax. Query receives an object like '{\"probe_history\": {\"{target_url}\": {\"status\": \"{status}\", \"updated\": \"{datetime}\", \"records\": [...]}}, \"current_incidents\": [{...}, ...], \"incident_history\": [{...}, ...]}'."`
+	Query string `json:"query,omitempty" jsonschema:"A query string to filter status, in jq syntax. Query receives an object like '{\"probe_history\": {\"{target_url}\": {\"status\": \"{status}\", \"updated\": \"{datetime}\", \"records\": [...]}}, \"current_incidents\": [{...}, ...], \"incident_history\": [{...}, ...]}'. You can use 'parse_url' filter to parse target URLs."`
 }
 
 func FetchStatusByJq(ctx context.Context, s Store, input MCPStatusInput) (output MCPOutput) {
@@ -173,7 +229,7 @@ func FetchStatusByJq(ctx context.Context, s Store, input MCPStatusInput) (output
 type MCPLogsInput struct {
 	Since string `json:"since" jsonschema:"The start time for fetching logs, in RFC3339 format."`
 	Until string `json:"until" jsonschema:"The end time for fetching logs, in RFC3339 format."`
-	Query string `json:"query,omitempty" jsonschema:"A query string to filter logs, in jq syntax. Query receives an array of status objects. Please try '.[0]' to understand the structure if needed."`
+	Query string `json:"query,omitempty" jsonschema:"A query string to filter logs, in jq syntax. Query receives an array of status objects. Please try '.[0]' to understand the structure if needed. You can use 'parse_url' filter to parse target URLs."`
 }
 
 func FetchLogsByJq(ctx context.Context, s Store, input MCPLogsInput) (output MCPOutput) {
@@ -236,7 +292,7 @@ func MCPHandler(s Store) http.HandlerFunc {
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "list_targets",
 		Title:       "List targets",
-		Description: "List monitored target URLs.",
+		Description: "List currently monitored target URLs.",
 		Annotations: &mcp.ToolAnnotations{
 			IdempotentHint: true,
 			ReadOnlyHint:   true,
@@ -249,7 +305,7 @@ func MCPHandler(s Store) http.HandlerFunc {
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "query_status",
 		Title:       "Query status",
-		Description: "Fetch current status using jq query from Ayd server.",
+		Description: "Fetch current status summary using jq query from Ayd server.",
 		Annotations: &mcp.ToolAnnotations{
 			IdempotentHint: true,
 			ReadOnlyHint:   true,
@@ -274,7 +330,10 @@ func MCPHandler(s Store) http.HandlerFunc {
 
 	handler := mcp.NewStreamableHTTPHandler(func(req *http.Request) *mcp.Server {
 		return server
-	}, nil)
+	}, &mcp.StreamableHTTPOptions{
+		Stateless:    true,
+		JSONResponse: true,
+	})
 
 	return handler.ServeHTTP
 }
