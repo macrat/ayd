@@ -137,8 +137,11 @@ func (cmd *AydCommand) RunServer(ctx context.Context, s *store.Store) (exitCode 
 			wg.Done()
 		}()
 
-		if err := srv.Shutdown(context.Background()); err != nil {
-			s.ReportInternalError("endpoint", err.Error())
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		if err := srv.Shutdown(ctx); err != nil {
+			s.ReportInternalError("endpoint", fmt.Sprintf("failed to graceful shutdown: %s", err.Error()))
 		}
 		wg.Done()
 	}()
