@@ -24,15 +24,16 @@ type AydCommand struct {
 	OutStream io.Writer
 	ErrStream io.Writer
 
-	ListenPort  int
-	StorePath   string
-	OneshotMode bool
-	AlertURLs   []string
-	UserInfo    string
-	CertPath    string
-	KeyPath     string
-	ShowVersion bool
-	ShowHelp    bool
+	ListenPort   int
+	StorePath    string
+	InstanceName string
+	OneshotMode  bool
+	AlertURLs    []string
+	UserInfo     string
+	CertPath     string
+	KeyPath      string
+	ShowVersion  bool
+	ShowHelp     bool
 
 	Tasks     []Task
 	StartedAt time.Time
@@ -60,6 +61,7 @@ func (cmd *AydCommand) ParseArgs(args []string) (exitCode int) {
 
 	flags.IntVarP(&cmd.ListenPort, "port", "p", 9000, "HTTP listen port")
 	flags.StringVarP(&cmd.StorePath, "log-file", "f", "ayd_%Y%m%d.log", "Path to log file")
+	flags.StringVarP(&cmd.InstanceName, "name", "n", "", "Instance name")
 	flags.BoolVarP(&cmd.OneshotMode, "oneshot", "1", false, "Check status only once and exit")
 	flags.StringArrayVarP(&cmd.AlertURLs, "alert", "a", nil, "The alert URLs")
 	flags.StringVarP(&cmd.UserInfo, "user", "u", "", "Username and password for HTTP endpoint")
@@ -98,6 +100,9 @@ func (cmd *AydCommand) ParseArgs(args []string) (exitCode int) {
 	if cmd.StorePath == "-" {
 		cmd.StorePath = ""
 	}
+
+	// Set the instance name globally
+	meta.InstanceName = cmd.InstanceName
 
 	var err error
 	cmd.Tasks, err = ParseArgs(flags.Args())
