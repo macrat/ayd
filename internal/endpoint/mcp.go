@@ -43,7 +43,7 @@ func incidentToMap(inc api.Incident) map[string]any {
 }
 
 type MCPTargetsInput struct {
-	Keywords []string `json:"keywords,omitempty" jsonschema:"A list of keywords to filter targets. It works as AND condition."`
+	Keywords []string `json:"keywords,omitempty" jsonschema:"A list of keywords to filter targets. They work as an AND condition."`
 }
 
 type MCPTargetsOutput struct {
