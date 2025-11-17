@@ -4,16 +4,17 @@ import (
 	"context"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/macrat/ayd/internal/endpoint"
 	"github.com/macrat/ayd/internal/testutil"
 )
 
 func TestFetchLogsByJq(t *testing.T) {
 	tests := []struct {
-		Name         string
-		Input        endpoint.MCPLogsInput
-		ExpectError  string
-		CheckResults func(t *testing.T, results []any)
+		Name        string
+		Input       endpoint.MCPLogsInput
+		ExpectError string
+		WantResult  any
 	}{
 		{
 			Name: "empty_query_defaults_to_dot",
@@ -22,10 +23,14 @@ func TestFetchLogsByJq(t *testing.T) {
 				Until: "2021-01-02T15:04:10Z",
 				Query: "",
 			},
-			CheckResults: func(t *testing.T, results []any) {
-				if len(results) != 7 {
-					t.Errorf("expected 7 results, got %d", len(results))
-				}
+			WantResult: []any{
+				map[string]any{"time": "2021-01-02T15:04:05Z", "time_unix": int(1609599845), "status": "HEALTHY", "latency": "123.456ms", "latency_ms": 123.456, "target": "http://a.example.com", "message": "hello world"},
+				map[string]any{"time": "2021-01-02T15:04:05Z", "time_unix": int(1609599845), "status": "FAILURE", "latency": "12.345ms", "latency_ms": 12.345, "target": "http://b.example.com", "message": "this is failure"},
+				map[string]any{"time": "2021-01-02T15:04:06Z", "time_unix": int(1609599846), "status": "HEALTHY", "latency": "234.567ms", "latency_ms": 234.567, "target": "http://a.example.com", "message": "hello world!"},
+				map[string]any{"time": "2021-01-02T15:04:06Z", "time_unix": int(1609599846), "status": "HEALTHY", "latency": "54.321ms", "latency_ms": 54.321, "target": "http://b.example.com", "message": "this is healthy", "extra": 1.234},
+				map[string]any{"time": "2021-01-02T15:04:07Z", "time_unix": int(1609599847), "status": "HEALTHY", "latency": "345.678ms", "latency_ms": 345.678, "target": "http://a.example.com", "message": "hello world!!"},
+				map[string]any{"time": "2021-01-02T15:04:08Z", "time_unix": int(1609599848), "status": "ABORTED", "latency": "1.234ms", "latency_ms": 1.234, "target": "http://c.example.com", "message": "this is aborted", "hello": "world"},
+				map[string]any{"time": "2021-01-02T15:04:09Z", "time_unix": int(1609599849), "status": "UNKNOWN", "latency": "2.345ms", "latency_ms": 2.345, "target": "http://c.example.com", "message": "this is unknown", "hoge": "fuga", "extra": []any{float64(1), float64(2), float64(3)}},
 			},
 		},
 		{
@@ -35,26 +40,14 @@ func TestFetchLogsByJq(t *testing.T) {
 				Until: "2021-01-02T15:04:10Z",
 				Query: ".",
 			},
-			CheckResults: func(t *testing.T, results []any) {
-				if len(results) != 7 {
-					t.Errorf("expected 7 results, got %d", len(results))
-				}
-				// Check first record structure
-				if len(results) > 0 {
-					rec, ok := results[0].(map[string]any)
-					if !ok {
-						t.Fatal("expected map[string]any")
-					}
-					if rec["target"] != "http://a.example.com" {
-						t.Errorf("unexpected target: %v", rec["target"])
-					}
-					if rec["status"] != "HEALTHY" {
-						t.Errorf("unexpected status: %v", rec["status"])
-					}
-					if rec["message"] != "hello world" {
-						t.Errorf("unexpected message: %v", rec["message"])
-					}
-				}
+			WantResult: []any{
+				map[string]any{"time": "2021-01-02T15:04:05Z", "time_unix": int(1609599845), "status": "HEALTHY", "latency": "123.456ms", "latency_ms": 123.456, "target": "http://a.example.com", "message": "hello world"},
+				map[string]any{"time": "2021-01-02T15:04:05Z", "time_unix": int(1609599845), "status": "FAILURE", "latency": "12.345ms", "latency_ms": 12.345, "target": "http://b.example.com", "message": "this is failure"},
+				map[string]any{"time": "2021-01-02T15:04:06Z", "time_unix": int(1609599846), "status": "HEALTHY", "latency": "234.567ms", "latency_ms": 234.567, "target": "http://a.example.com", "message": "hello world!"},
+				map[string]any{"time": "2021-01-02T15:04:06Z", "time_unix": int(1609599846), "status": "HEALTHY", "latency": "54.321ms", "latency_ms": 54.321, "target": "http://b.example.com", "message": "this is healthy", "extra": 1.234},
+				map[string]any{"time": "2021-01-02T15:04:07Z", "time_unix": int(1609599847), "status": "HEALTHY", "latency": "345.678ms", "latency_ms": 345.678, "target": "http://a.example.com", "message": "hello world!!"},
+				map[string]any{"time": "2021-01-02T15:04:08Z", "time_unix": int(1609599848), "status": "ABORTED", "latency": "1.234ms", "latency_ms": 1.234, "target": "http://c.example.com", "message": "this is aborted", "hello": "world"},
+				map[string]any{"time": "2021-01-02T15:04:09Z", "time_unix": int(1609599849), "status": "UNKNOWN", "latency": "2.345ms", "latency_ms": 2.345, "target": "http://c.example.com", "message": "this is unknown", "hoge": "fuga", "extra": []any{float64(1), float64(2), float64(3)}},
 			},
 		},
 		{
@@ -64,24 +57,8 @@ func TestFetchLogsByJq(t *testing.T) {
 				Until: "2021-01-02T15:04:10Z",
 				Query: "length",
 			},
-			CheckResults: func(t *testing.T, results []any) {
-				if len(results) != 1 {
-					t.Fatalf("expected 1 result, got %d", len(results))
-				}
-				// gojq can return int or float64 for numbers
-				var count int
-				switch v := results[0].(type) {
-				case int:
-					count = v
-				case float64:
-					count = int(v)
-				default:
-					t.Fatalf("expected number type, got %T", results[0])
-				}
-				if count != 7 {
-					t.Errorf("expected count 7, got %v", count)
-				}
-			},
+			// length query returns a single number (not an array)
+			WantResult: 7,
 		},
 		{
 			Name: "filter_by_status_healthy",
@@ -90,20 +67,11 @@ func TestFetchLogsByJq(t *testing.T) {
 				Until: "2021-01-02T15:04:10Z",
 				Query: `.[] | select(.status == "HEALTHY")`,
 			},
-			CheckResults: func(t *testing.T, results []any) {
-				if len(results) != 4 {
-					t.Errorf("expected 4 HEALTHY results, got %d", len(results))
-				}
-				for i, r := range results {
-					rec, ok := r.(map[string]any)
-					if !ok {
-						t.Errorf("result[%d]: expected map[string]any", i)
-						continue
-					}
-					if rec["status"] != "HEALTHY" {
-						t.Errorf("result[%d]: expected status HEALTHY, got %v", i, rec["status"])
-					}
-				}
+			WantResult: []any{
+				map[string]any{"time": "2021-01-02T15:04:05Z", "time_unix": int(1609599845), "status": "HEALTHY", "latency": "123.456ms", "latency_ms": 123.456, "target": "http://a.example.com", "message": "hello world"},
+				map[string]any{"time": "2021-01-02T15:04:06Z", "time_unix": int(1609599846), "status": "HEALTHY", "latency": "234.567ms", "latency_ms": 234.567, "target": "http://a.example.com", "message": "hello world!"},
+				map[string]any{"time": "2021-01-02T15:04:06Z", "time_unix": int(1609599846), "status": "HEALTHY", "latency": "54.321ms", "latency_ms": 54.321, "target": "http://b.example.com", "message": "this is healthy", "extra": 1.234},
+				map[string]any{"time": "2021-01-02T15:04:07Z", "time_unix": int(1609599847), "status": "HEALTHY", "latency": "345.678ms", "latency_ms": 345.678, "target": "http://a.example.com", "message": "hello world!!"},
 			},
 		},
 		{
@@ -113,10 +81,9 @@ func TestFetchLogsByJq(t *testing.T) {
 				Until: "2021-01-02T15:04:10Z",
 				Query: `.[] | select(.target == "http://c.example.com")`,
 			},
-			CheckResults: func(t *testing.T, results []any) {
-				if len(results) != 2 {
-					t.Errorf("expected 2 results for http://c.example.com, got %d", len(results))
-				}
+			WantResult: []any{
+				map[string]any{"time": "2021-01-02T15:04:08Z", "time_unix": int(1609599848), "status": "ABORTED", "latency": "1.234ms", "latency_ms": 1.234, "target": "http://c.example.com", "message": "this is aborted", "hello": "world"},
+				map[string]any{"time": "2021-01-02T15:04:09Z", "time_unix": int(1609599849), "status": "UNKNOWN", "latency": "2.345ms", "latency_ms": 2.345, "target": "http://c.example.com", "message": "this is unknown", "hoge": "fuga", "extra": []any{float64(1), float64(2), float64(3)}},
 			},
 		},
 		{
@@ -126,29 +93,14 @@ func TestFetchLogsByJq(t *testing.T) {
 				Until: "2021-01-02T15:04:10Z",
 				Query: `.[] | {target, status, latency_ms}`,
 			},
-			CheckResults: func(t *testing.T, results []any) {
-				if len(results) != 7 {
-					t.Errorf("expected 7 results, got %d", len(results))
-				}
-				if len(results) > 0 {
-					rec, ok := results[0].(map[string]any)
-					if !ok {
-						t.Fatal("expected map[string]any")
-					}
-					// Check only mapped fields exist
-					if _, ok := rec["target"]; !ok {
-						t.Error("expected 'target' field")
-					}
-					if _, ok := rec["status"]; !ok {
-						t.Error("expected 'status' field")
-					}
-					if _, ok := rec["latency_ms"]; !ok {
-						t.Error("expected 'latency_ms' field")
-					}
-					if _, ok := rec["message"]; ok {
-						t.Error("unexpected 'message' field (should be filtered out)")
-					}
-				}
+			WantResult: []any{
+				map[string]any{"target": "http://a.example.com", "status": "HEALTHY", "latency_ms": 123.456},
+				map[string]any{"target": "http://b.example.com", "status": "FAILURE", "latency_ms": 12.345},
+				map[string]any{"target": "http://a.example.com", "status": "HEALTHY", "latency_ms": 234.567},
+				map[string]any{"target": "http://b.example.com", "status": "HEALTHY", "latency_ms": 54.321},
+				map[string]any{"target": "http://a.example.com", "status": "HEALTHY", "latency_ms": 345.678},
+				map[string]any{"target": "http://c.example.com", "status": "ABORTED", "latency_ms": 1.234},
+				map[string]any{"target": "http://c.example.com", "status": "UNKNOWN", "latency_ms": 2.345},
 			},
 		},
 		{
@@ -158,11 +110,8 @@ func TestFetchLogsByJq(t *testing.T) {
 				Until: "2021-01-02T15:04:10Z",
 				Query: `.[] | select(.status == "NONEXISTENT")`,
 			},
-			CheckResults: func(t *testing.T, results []any) {
-				if len(results) != 0 {
-					t.Errorf("expected 0 results, got %d", len(results))
-				}
-			},
+			// No matches returns nil (empty slice is never appended to)
+			WantResult: nil,
 		},
 		{
 			Name: "empty_result_when_no_logs_in_range",
@@ -171,11 +120,8 @@ func TestFetchLogsByJq(t *testing.T) {
 				Until: "2020-01-02T00:00:00Z",
 				Query: ".",
 			},
-			CheckResults: func(t *testing.T, results []any) {
-				if len(results) != 0 {
-					t.Errorf("expected 0 results for empty time range, got %d", len(results))
-				}
-			},
+			// Empty time range returns empty array (single result with 0 elements)
+			WantResult: []any{},
 		},
 		{
 			Name: "time_range_filtering",
@@ -184,11 +130,36 @@ func TestFetchLogsByJq(t *testing.T) {
 				Until: "2021-01-02T15:04:08Z",
 				Query: ".",
 			},
-			CheckResults: func(t *testing.T, results []any) {
-				// Should get records at 15:04:06 and 15:04:07 (2 + 1 = 3 records)
-				if len(results) != 3 {
-					t.Errorf("expected 3 results, got %d", len(results))
-				}
+			// Should get records at 15:04:06 and 15:04:07 (2 + 1 = 3 records)
+			WantResult: []any{
+				map[string]any{
+					"time":       "2021-01-02T15:04:06Z",
+					"time_unix":  int(1609599846),
+					"status":     "HEALTHY",
+					"latency":    "234.567ms",
+					"latency_ms": 234.567,
+					"target":     "http://a.example.com",
+					"message":    "hello world!",
+				},
+				map[string]any{
+					"time":       "2021-01-02T15:04:06Z",
+					"time_unix":  int(1609599846),
+					"status":     "HEALTHY",
+					"latency":    "54.321ms",
+					"latency_ms": 54.321,
+					"target":     "http://b.example.com",
+					"message":    "this is healthy",
+					"extra":      1.234,
+				},
+				map[string]any{
+					"time":       "2021-01-02T15:04:07Z",
+					"time_unix":  int(1609599847),
+					"status":     "HEALTHY",
+					"latency":    "345.678ms",
+					"latency_ms": 345.678,
+					"target":     "http://a.example.com",
+					"message":    "hello world!!",
+				},
 			},
 		},
 		{
@@ -243,10 +214,7 @@ func TestFetchLogsByJq(t *testing.T) {
 				} else if !containsString(output.Error, tt.ExpectError) {
 					t.Errorf("expected error containing %q, got %q", tt.ExpectError, output.Error)
 				}
-				// Result should always be non-nil array even on error
-				if output.Result == nil {
-					t.Error("Result should be non-nil array even on error")
-				}
+				// On error, Result may be nil
 			} else {
 				if output.Error != "" {
 					t.Errorf("unexpected error: %s", output.Error)
@@ -254,8 +222,10 @@ func TestFetchLogsByJq(t *testing.T) {
 				if output.Result == nil {
 					t.Fatal("Result should not be nil")
 				}
-				if tt.CheckResults != nil {
-					tt.CheckResults(t, output.Result)
+				if tt.WantResult != nil {
+					if diff := cmp.Diff(tt.WantResult, output.Result); diff != "" {
+						t.Errorf("Result mismatch (-want +got):\n%s", diff)
+					}
 				}
 			}
 		})
@@ -264,36 +234,26 @@ func TestFetchLogsByJq(t *testing.T) {
 
 func TestFetchStatusByJq(t *testing.T) {
 	tests := []struct {
-		Name         string
-		Input        endpoint.MCPStatusInput
-		ExpectError  string
-		CheckResults func(t *testing.T, results []any)
+		Name        string
+		Input       endpoint.MCPStatusInput
+		ExpectError string
+		WantResult  any
 	}{
 		{
 			Name: "empty_query_defaults_to_dot",
 			Input: endpoint.MCPStatusInput{
 				Query: "",
 			},
-			CheckResults: func(t *testing.T, results []any) {
-				if len(results) != 1 {
-					t.Fatalf("expected 1 result, got %d", len(results))
-				}
-				obj, ok := results[0].(map[string]any)
-				if !ok {
-					t.Fatal("expected map[string]any")
-				}
-				if _, ok := obj["probe_history"]; !ok {
-					t.Error("expected 'probe_history' field")
-				}
-				if _, ok := obj["current_incidents"]; !ok {
-					t.Error("expected 'current_incidents' field")
-				}
-				if _, ok := obj["incident_history"]; !ok {
-					t.Error("expected 'incident_history' field")
-				}
-				if _, ok := obj["reported_at"]; !ok {
-					t.Error("expected 'reported_at' field")
-				}
+			WantResult: map[string]any{
+				"current_incidents": []any{},
+				"incident_history":  []any{},
+				"probe_history": map[string]any{
+					"dummy:#no-record-yet": map[string]any{
+						"records": []any{},
+						"status":  "UNKNOWN",
+						"updated": "0001-01-01T00:00:00Z",
+					},
+				},
 			},
 		},
 		{
@@ -301,10 +261,16 @@ func TestFetchStatusByJq(t *testing.T) {
 			Input: endpoint.MCPStatusInput{
 				Query: ".",
 			},
-			CheckResults: func(t *testing.T, results []any) {
-				if len(results) != 1 {
-					t.Fatalf("expected 1 result, got %d", len(results))
-				}
+			WantResult: map[string]any{
+				"current_incidents": []any{},
+				"incident_history":  []any{},
+				"probe_history": map[string]any{
+					"dummy:#no-record-yet": map[string]any{
+						"records": []any{},
+						"status":  "UNKNOWN",
+						"updated": "0001-01-01T00:00:00Z",
+					},
+				},
 			},
 		},
 		{
@@ -312,53 +278,22 @@ func TestFetchStatusByJq(t *testing.T) {
 			Input: endpoint.MCPStatusInput{
 				Query: ".probe_history | keys",
 			},
-			CheckResults: func(t *testing.T, results []any) {
-				// keys returns array, which gets flattened by our logic
-				// The flattening happens when result has exactly 1 element and it's a []any
-				if len(results) < 1 {
-					t.Errorf("expected at least 1 probe target key, got %d", len(results))
-				}
-				// Each result should be a string (the key name)
-				for i, r := range results {
-					if _, ok := r.(string); !ok {
-						t.Errorf("result[%d]: expected string, got %T", i, r)
-						break
-					}
-				}
-			},
+			WantResult: []any{"dummy:#no-record-yet"},
 		},
 		{
 			Name: "get_current_incidents",
 			Input: endpoint.MCPStatusInput{
 				Query: ".current_incidents",
 			},
-			CheckResults: func(t *testing.T, results []any) {
-				// Results should be an array (may be empty)
-				if results == nil {
-					t.Fatal("results should not be nil")
-				}
-			},
+			WantResult: []any{},
 		},
 		{
 			Name: "map_probe_history",
 			Input: endpoint.MCPStatusInput{
 				Query: `.probe_history | to_entries | map({target: .key, status: .value.status})`,
 			},
-			CheckResults: func(t *testing.T, results []any) {
-				if len(results) == 0 {
-					t.Fatal("expected at least one probe")
-				}
-				// Check structure of first result
-				probe, ok := results[0].(map[string]any)
-				if !ok {
-					t.Fatalf("expected map[string]any, got %T", results[0])
-				}
-				if _, ok := probe["target"]; !ok {
-					t.Error("expected 'target' field")
-				}
-				if _, ok := probe["status"]; !ok {
-					t.Error("expected 'status' field")
-				}
+			WantResult: []any{
+				map[string]any{"target": "dummy:#no-record-yet", "status": "UNKNOWN"},
 			},
 		},
 		{
@@ -366,12 +301,7 @@ func TestFetchStatusByJq(t *testing.T) {
 			Input: endpoint.MCPStatusInput{
 				Query: `.probe_history | to_entries | map(select(.value.status == "HEALTHY")) | map(.key)`,
 			},
-			CheckResults: func(t *testing.T, results []any) {
-				// Should return array of target names with HEALTHY status
-				if results == nil {
-					t.Fatal("results should not be nil")
-				}
-			},
+			WantResult: []any{},
 		},
 		{
 			Name: "invalid_jq_query",
@@ -403,10 +333,7 @@ func TestFetchStatusByJq(t *testing.T) {
 				} else if !containsString(output.Error, tt.ExpectError) {
 					t.Errorf("expected error containing %q, got %q", tt.ExpectError, output.Error)
 				}
-				// Result should always be non-nil array even on error
-				if output.Result == nil {
-					t.Error("Result should be non-nil array even on error")
-				}
+				// On error, Result may be nil
 			} else {
 				if output.Error != "" {
 					t.Errorf("unexpected error: %s", output.Error)
@@ -414,8 +341,10 @@ func TestFetchStatusByJq(t *testing.T) {
 				if output.Result == nil {
 					t.Fatal("Result should not be nil")
 				}
-				if tt.CheckResults != nil {
-					tt.CheckResults(t, output.Result)
+				if tt.WantResult != nil {
+					if diff := cmp.Diff(tt.WantResult, output.Result); diff != "" {
+						t.Errorf("Result mismatch (-want +got):\n%s", diff)
+					}
 				}
 			}
 		})
@@ -428,6 +357,7 @@ func TestRecordToMapFields(t *testing.T) {
 	s := testutil.NewStoreWithLog(t)
 	ctx := context.Background()
 
+	// Test 1: Verify basic record structure with .[0]
 	output := endpoint.FetchLogsByJq(ctx, s, endpoint.MCPLogsInput{
 		Since: "2021-01-02T15:04:05Z",
 		Until: "2021-01-02T15:04:06Z",
@@ -438,54 +368,44 @@ func TestRecordToMapFields(t *testing.T) {
 		t.Fatalf("unexpected error: %s", output.Error)
 	}
 
-	if len(output.Result) != 1 {
-		t.Fatalf("expected 1 result, got %d", len(output.Result))
+	wantRecord := map[string]any{
+		"time":       "2021-01-02T15:04:05Z",
+		"time_unix":  int(1609599845),
+		"status":     "HEALTHY",
+		"latency":    "123.456ms",
+		"latency_ms": 123.456,
+		"target":     "http://a.example.com",
+		"message":    "hello world",
 	}
 
-	rec, ok := output.Result[0].(map[string]any)
-	if !ok {
-		t.Fatalf("expected map[string]any, got %T", output.Result[0])
+	if diff := cmp.Diff(wantRecord, output.Result); diff != "" {
+		t.Errorf("Record structure mismatch (-want +got):\n%s", diff)
 	}
 
-	// Verify all expected fields are present
-	expectedFields := []string{"time", "time_unix", "status", "latency", "latency_ms", "target", "message"}
-	for _, field := range expectedFields {
-		if _, ok := rec[field]; !ok {
-			t.Errorf("missing expected field: %s", field)
-		}
-	}
-
-	// Verify time format
-	if timeStr, ok := rec["time"].(string); !ok {
-		t.Error("time field should be string")
-	} else if len(timeStr) == 0 {
-		t.Error("time field should not be empty")
-	}
-
-	// Verify time_unix is a number (can be int or float64)
-	switch rec["time_unix"].(type) {
-	case int, int64, float64:
-		// OK
-	default:
-		t.Errorf("time_unix field should be number, got %T", rec["time_unix"])
-	}
-
-	// Verify extra fields are copied
+	// Test 2: Verify that extra fields are copied
 	output2 := endpoint.FetchLogsByJq(ctx, s, endpoint.MCPLogsInput{
 		Since: "2021-01-02T15:04:06Z",
 		Until: "2021-01-02T15:04:07Z",
 		Query: `.[] | select(.target == "http://b.example.com")`,
 	})
 
-	if len(output2.Result) > 0 {
-		rec2, ok := output2.Result[0].(map[string]any)
-		if !ok {
-			t.Fatal("expected map[string]any")
-		}
-		// This record has "extra" field in test data
-		if _, ok := rec2["extra"]; !ok {
-			t.Error("extra fields from Record.Extra should be copied to output")
-		}
+	if output2.Error != "" {
+		t.Fatalf("unexpected error: %s", output2.Error)
+	}
+
+	wantRecordWithExtra := map[string]any{
+		"time":       "2021-01-02T15:04:06Z",
+		"time_unix":  int(1609599846),
+		"status":     "HEALTHY",
+		"latency":    "54.321ms",
+		"latency_ms": 54.321,
+		"target":     "http://b.example.com",
+		"message":    "this is healthy",
+		"extra":      1.234,
+	}
+
+	if diff := cmp.Diff(wantRecordWithExtra, output2.Result); diff != "" {
+		t.Errorf("Record with extra fields mismatch (-want +got):\n%s", diff)
 	}
 }
 
