@@ -216,6 +216,15 @@ func TestMCPHandler_ListTargets(t *testing.T) {
 				},
 			},
 		},
+		{
+			Name: "no_match",
+			Args: endpoint.MCPTargetsInput{
+				Keywords: []string{"nonexistent"},
+			},
+			Expect: endpoint.MCPTargetsOutput{
+				Targets: []string{},
+			},
+		},
 	}
 
 	RunMCPTest(t, "list_targets", tests)
@@ -365,6 +374,15 @@ func TestMCPHandler_QueryStatus(t *testing.T) {
 					"hello world!",
 					"hello world!!",
 				},
+			},
+		},
+		{
+			Name: "with_no_result_query",
+			Args: endpoint.MCPStatusInput{
+				Query: `.probe_history[] | select(.status == "nonexistent")`,
+			},
+			Expect: endpoint.MCPOutput{
+				Result: nil,
 			},
 		},
 		{
@@ -547,6 +565,17 @@ func TestMCPHandler_QueryLogs(t *testing.T) {
 						"count":  2.0,
 					},
 				},
+			},
+		},
+		{
+			Name: "with_no_result_query",
+			Args: endpoint.MCPLogsInput{
+				Since: "2000-01-01T00:00:00Z",
+				Until: "2100-01-01T00:00:00Z",
+				Query: `.[] | select(.target == "dummy:nonexistent")`,
+			},
+			Expect: endpoint.MCPOutput{
+				Result: nil,
 			},
 		},
 		{
