@@ -31,15 +31,23 @@ func recordToMap(rec api.Record) map[string]any {
 }
 
 func incidentToMap(inc api.Incident) map[string]any {
-	return map[string]any{
+	r := map[string]any{
 		"target":         inc.Target.String(),
 		"status":         inc.Status.String(),
 		"message":        inc.Message,
 		"starts_at":      inc.StartsAt.Format(time.RFC3339),
 		"starts_at_unix": inc.StartsAt.Unix(),
-		"ends_at":        inc.EndsAt.Format(time.RFC3339),
-		"ends_at_unix":   inc.EndsAt.Unix(),
 	}
+
+	if inc.EndsAt.IsZero() {
+		r["ends_at"] = nil
+		r["ends_at_unix"] = nil
+	} else {
+		r["ends_at"] = inc.EndsAt.Format(time.RFC3339)
+		r["ends_at_unix"] = inc.EndsAt.Unix()
+	}
+
+	return r
 }
 
 type MCPTargetsInput struct {
@@ -79,16 +87,16 @@ type MCPOutput struct {
 func jqParseURL(x any, _ []any) any {
 	str, ok := x.(string)
 	if !ok {
-		return errors.New("argument must be a string")
+		return fmt.Errorf("parse_url/0: expected a string but got %T (%v)", x, x)
 	}
 	u, err := url.Parse(str)
 	if err != nil {
-		return fmt.Errorf("failed to parse URL: %v", err)
+		return fmt.Errorf("parse_url/0: failed to parse URL: %v", err)
 	}
 
 	username := ""
 	if u.User != nil {
-		username = u.User.String()
+		username = u.User.Username()
 	}
 
 	queries := map[string][]any{}
@@ -202,9 +210,15 @@ func FetchStatusByJq(ctx context.Context, s Store, input MCPStatusInput) (output
 
 	obj["probe_history"] = map[string]any{}
 	for k, v := range report.ProbeHistory {
+		var updated *string
+		if !v.Updated.IsZero() {
+			u := v.Updated.Format(time.RFC3339)
+			updated = &u
+		}
+
 		h := map[string]any{
 			"status":  v.Status.String(),
-			"updated": v.Updated.Format(time.RFC3339),
+			"updated": updated,
 			"records": make([]any, len(v.Records)),
 		}
 		for i, r := range v.Records {
@@ -245,22 +259,40 @@ func FetchLogsByJq(ctx context.Context, s Store, input MCPLogsInput) (output MCP
 		}
 	}()
 
+	if input.Since == "" || input.Until == "" {
+		return MCPOutput{
+			Error: "since and until parameters are required",
+		}
+	}
+
 	since, err := api.ParseTime(input.Since)
 	if err != nil {
-		return MCPOutput{
-			Error: fmt.Sprintf("invalid since time: %v", err),
+		if errors.Is(err, api.ErrInvalidTime) {
+			return MCPOutput{
+				Error: fmt.Sprintf("since time must be in RFC3339 format but got %q", input.Since),
+			}
+		} else {
+			return MCPOutput{
+				Error: fmt.Sprintf("invalid since time: %v", err),
+			}
 		}
 	}
 	until, err := api.ParseTime(input.Until)
 	if err != nil {
-		return MCPOutput{
-			Error: fmt.Sprintf("invalid until time: %v", err),
+		if errors.Is(err, api.ErrInvalidTime) {
+			return MCPOutput{
+				Error: fmt.Sprintf("until time must be in RFC3339 format but got %q", input.Until),
+			}
+		} else {
+			return MCPOutput{
+				Error: fmt.Sprintf("invalid until time: %v", err),
+			}
 		}
 	}
 
 	logs, err := s.OpenLog(since, until)
 	if err != nil {
-		s.ReportInternalError("mcp", fmt.Sprintf("failed to open logs: %v", err))
+		s.ReportInternalError("mcp/query_logs", fmt.Sprintf("failed to open logs: %v", err))
 		return MCPOutput{
 			Error: "internal server error",
 		}
