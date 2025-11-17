@@ -58,7 +58,7 @@ type MCPTargetsOutput struct {
 	Targets []string `json:"targets" jsonschema:"A list of target URLs that include the keywords."`
 }
 
-func FetchTargets(ctx context.Context, s Store, input MCPTargetsInput) (output MCPTargetsOutput) {
+func FetchTargets(s Store, input MCPTargetsInput) (output MCPTargetsOutput) {
 	targets := s.Targets()
 
 	filtered := make([]string, 0, len(targets))
@@ -330,7 +330,7 @@ func MCPHandler(s Store) http.HandlerFunc {
 			ReadOnlyHint:   true,
 		},
 	}, func(ctx context.Context, req *mcp.CallToolRequest, input MCPTargetsInput) (*mcp.CallToolResult, MCPTargetsOutput, error) {
-		output := FetchTargets(ctx, s, input)
+		output := FetchTargets(s, input)
 		return nil, output, nil
 	})
 
