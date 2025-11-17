@@ -47,7 +47,7 @@ type MCPTargetsInput struct {
 }
 
 type MCPTargetsOutput struct {
-	Targets []string `json:"targets" jsonschema:"A list of target URLs includes the keywords."`
+	Targets []string `json:"targets" jsonschema:"A list of target URLs that include the keywords."`
 }
 
 func FetchTargets(ctx context.Context, s Store, input MCPTargetsInput) (output MCPTargetsOutput) {
