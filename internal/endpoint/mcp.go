@@ -316,9 +316,18 @@ func FetchLogsByJq(ctx context.Context, s Store, input MCPLogsInput) (output MCP
 }
 
 func MCPHandler(s Store) http.HandlerFunc {
+	implName := "Ayd - alive monitoring"
+	implTitle := "Ayd"
+
+	if meta.InstanceName != "" {
+		implName = fmt.Sprintf("Ayd - alive monitoring - %s", meta.InstanceName)
+		implTitle = fmt.Sprintf("Ayd - %s", meta.InstanceName)
+	}
+
 	server := mcp.NewServer(&mcp.Implementation{
-		Name:    "Ayd",
+		Name:    implName,
 		Version: meta.Version,
+		Title:   implTitle,
 	}, nil)
 
 	mcp.AddTool(server, &mcp.Tool{
