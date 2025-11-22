@@ -7,6 +7,9 @@ import (
 )
 
 type Store interface {
+	// Name returns the Ayd instance name.
+	Name() string
+
 	// Targets returns target URLs include inactive target.
 	Targets() []string
 

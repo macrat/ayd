@@ -33,31 +33,39 @@ func (cmd *AydCommand) reportStartServer(s *store.Store, protocol, listen string
 	cmd.StartedAt = time.Now()
 
 	u := &api.URL{Scheme: "ayd", Opaque: "server"}
+	extra := map[string]interface{}{
+		"url":     fmt.Sprintf("%s://%s", protocol, listen),
+		"targets": tasks,
+		"version": fmt.Sprintf("%s (%s)", meta.Version, meta.Commit),
+	}
+	if s.Name() != "" {
+		extra["instance_name"] = s.Name()
+	}
 	s.Report(u, api.Record{
 		Time:    cmd.StartedAt,
 		Status:  api.StatusHealthy,
 		Target:  u,
 		Message: "start Ayd server",
-		Extra: map[string]interface{}{
-			"url":     fmt.Sprintf("%s://%s", protocol, listen),
-			"targets": tasks,
-			"version": fmt.Sprintf("%s (%s)", meta.Version, meta.Commit),
-		},
+		Extra:   extra,
 	})
 }
 
 func (cmd *AydCommand) reportStopServer(s *store.Store, protocol, listen string) {
 	u := &api.URL{Scheme: "ayd", Opaque: "server"}
+	extra := map[string]interface{}{
+		"url":     fmt.Sprintf("%s://%s", protocol, listen),
+		"version": fmt.Sprintf("%s (%s)", meta.Version, meta.Commit),
+		"since":   cmd.StartedAt.Format(time.RFC3339),
+	}
+	if s.Name() != "" {
+		extra["instance_name"] = s.Name()
+	}
 	s.Report(u, api.Record{
 		Time:    time.Now(),
 		Status:  api.StatusHealthy,
 		Target:  u,
 		Message: "stop Ayd server",
-		Extra: map[string]interface{}{
-			"url":     fmt.Sprintf("%s://%s", protocol, listen),
-			"version": fmt.Sprintf("%s (%s)", meta.Version, meta.Commit),
-			"since":   cmd.StartedAt.Format(time.RFC3339),
-		},
+		Extra:   extra,
 	})
 }
 

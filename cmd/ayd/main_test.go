@@ -117,6 +117,24 @@ func TestAydCommand_ParseArgs(t *testing.T) {
 			Pattern:  "invalid argument:\n  ::invalid URL: Not valid as schedule or target URL.\n\nPlease see `ayd -h` for more information\\.\n",
 			ExitCode: 2,
 		},
+		{
+			Args:     []string{"ayd", "dummy:"},
+			ExitCode: 0,
+			Extra: func(t *testing.T, cmd main.AydCommand) {
+				if cmd.InstanceName != "" {
+					t.Errorf("expected InstanceName is empty in default but got %q", cmd.InstanceName)
+				}
+			},
+		},
+		{
+			Args:     []string{"ayd", "-n", "Test Instance", "dummy:"},
+			ExitCode: 0,
+			Extra: func(t *testing.T, cmd main.AydCommand) {
+				if cmd.InstanceName != "Test Instance" {
+					t.Errorf("expected InstanceName is %q but got %q", "Test Instance", cmd.InstanceName)
+				}
+			},
+		},
 	}
 
 	for _, tt := range tests {

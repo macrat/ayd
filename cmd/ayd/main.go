@@ -16,23 +16,20 @@ import (
 	"github.com/spf13/pflag"
 )
 
-func init() {
-	scheme.HTTPUserAgent = fmt.Sprintf("ayd/%s health check", meta.Version)
-}
-
 type AydCommand struct {
 	OutStream io.Writer
 	ErrStream io.Writer
 
-	ListenPort  int
-	StorePath   string
-	OneshotMode bool
-	AlertURLs   []string
-	UserInfo    string
-	CertPath    string
-	KeyPath     string
-	ShowVersion bool
-	ShowHelp    bool
+	ListenPort   int
+	StorePath    string
+	InstanceName string
+	OneshotMode  bool
+	AlertURLs    []string
+	UserInfo     string
+	CertPath     string
+	KeyPath      string
+	ShowVersion  bool
+	ShowHelp     bool
 
 	Tasks     []Task
 	StartedAt time.Time
@@ -60,6 +57,7 @@ func (cmd *AydCommand) ParseArgs(args []string) (exitCode int) {
 
 	flags.IntVarP(&cmd.ListenPort, "port", "p", 9000, "HTTP listen port")
 	flags.StringVarP(&cmd.StorePath, "log-file", "f", "ayd_%Y%m%d.log", "Path to log file")
+	flags.StringVarP(&cmd.InstanceName, "name", "n", "", "Instance name")
 	flags.BoolVarP(&cmd.OneshotMode, "oneshot", "1", false, "Check status only once and exit")
 	flags.StringArrayVarP(&cmd.AlertURLs, "alert", "a", nil, "The alert URLs")
 	flags.StringVarP(&cmd.UserInfo, "user", "u", "", "Username and password for HTTP endpoint")
@@ -133,7 +131,7 @@ func (cmd *AydCommand) Run(args []string) (exitCode int) {
 		return 0
 	}
 
-	s, err := store.New(cmd.StorePath, cmd.OutStream)
+	s, err := store.New(cmd.InstanceName, cmd.StorePath, cmd.OutStream)
 	if err != nil {
 		fmt.Fprintf(cmd.ErrStream, "error: failed to open log file: %s\n", err)
 		return 1

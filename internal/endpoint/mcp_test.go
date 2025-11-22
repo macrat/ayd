@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -50,7 +51,7 @@ func TestJQQuery(t *testing.T) {
 				"hostname": "example.com",
 				"port":     "",
 				"path":     "/path",
-				"queries":  map[string][]any{"query": []any{"value"}},
+				"queries":  map[string][]any{"query": {"value"}},
 				"fragment": "fragment",
 				"opaque":   "",
 			},
@@ -623,4 +624,64 @@ func TestMCPHandler_QueryLogs(t *testing.T) {
 	}
 
 	RunMCPTest(t, "query_logs", tests)
+}
+
+func TestMCP_connection(t *testing.T) {
+	tests := []struct {
+		Name             string
+		WithInstanceName bool
+	}{
+		{"without_instance_name", false},
+		{"with_instance_name", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.Name, func(t *testing.T) {
+			var opts []testutil.StoreOption
+			if tt.WithInstanceName {
+				opts = append(opts, testutil.WithInstanceName("test-instance"))
+			}
+
+			srv := testutil.StartTestServer(t, opts...)
+			t.Cleanup(func() {
+				srv.Close()
+			})
+
+			client := mcp.NewClient(&mcp.Implementation{
+				Name:    "test-client",
+				Version: "none",
+			}, nil)
+			sess, err := client.Connect(t.Context(), &mcp.StreamableClientTransport{
+				Endpoint: srv.URL + "/mcp",
+			}, nil)
+			if err != nil {
+				t.Fatalf("failed to connect to MCP server: %v", err)
+			}
+			defer sess.Close()
+
+			initResult := sess.InitializeResult()
+			if initResult.ServerInfo.Name != "ayd" {
+				t.Errorf("unexpected server name: %q", initResult.ServerInfo.Name)
+			}
+			if tt.WithInstanceName {
+				if initResult.ServerInfo.Title != "Ayd (test-instance)" {
+					t.Errorf("unexpected server title: %q", initResult.ServerInfo.Title)
+				}
+				if !strings.Contains(initResult.Instructions, "test-instance") {
+					t.Errorf("instructions does not contain instance name: %q", initResult.Instructions)
+				}
+			} else {
+				if initResult.ServerInfo.Title != "Ayd" {
+					t.Errorf("unexpected server title: %q", initResult.ServerInfo.Title)
+				}
+				if strings.Contains(initResult.Instructions, "instance") {
+					t.Errorf("instructions contains instance name: %q", initResult.Instructions)
+				}
+			}
+
+			if err := sess.Ping(t.Context(), nil); err != nil {
+				t.Fatalf("failed to ping MCP server: %v", err)
+			}
+		})
+	}
 }
