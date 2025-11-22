@@ -40,6 +40,10 @@ func TestJQQuery(t *testing.T) {
 			Expect: []any{1, 2},
 		},
 		{
+			Query:  `.nonexistent`,
+			Expect: nil,
+		},
+		{
 			Query: `0 / 0`,
 			Error: `cannot divide number (0) by: number (0)`,
 		},
@@ -90,16 +94,42 @@ func TestJQQuery(t *testing.T) {
 			Query: `123 | parse_url`,
 			Error: `parse_url/0: expected a string but got int (123)`,
 		},
+		{
+			Query:  `halt`,
+			Expect: []any(nil),
+		},
+		{
+			Query: `halt_error`,
+			Expect: map[string]any{
+				"status":    "halt_error",
+				"exit_code": 5,
+				"value":     input,
+			},
+		},
+		{
+			Query: `123 | halt_error(4)`,
+			Expect: map[string]any{
+				"status":    "halt_error",
+				"exit_code": 4,
+				"value":     123,
+			},
+		},
+		{
+			Query: `error("hello")`,
+			Error: `error: hello`,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.Query, func(t *testing.T) {
+			s := testutil.NewStore(t)
+
 			jq, err := endpoint.ParseJQ(tt.Query)
 			if err != nil {
 				t.Fatalf("failed to parse JQ query: %v", err)
 			}
 
-			output := jq.Run(context.Background(), input)
+			output := jq.Run(context.Background(), s, "mcp/test", input)
 
 			if output.Error != tt.Error {
 				if tt.Error == "" {

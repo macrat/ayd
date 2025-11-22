@@ -2,7 +2,6 @@ package endpoint
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"maps"
 	"net/http"
@@ -155,16 +154,36 @@ func ParseJQ(query string) (JQQuery, error) {
 	return JQQuery{Code: c}, nil
 }
 
-func (q JQQuery) Run(ctx context.Context, v any) MCPOutput {
+func (q JQQuery) Run(ctx context.Context, s Store, logScope string, input any) (output MCPOutput) {
+	defer func() {
+		if r := recover(); r != nil {
+			s.ReportInternalError(logScope, fmt.Sprintf("panic occurred: %v", r))
+			output = MCPOutput{
+				Error: "internal server error",
+			}
+		}
+	}()
+
 	var outputs []any
 
-	iter := q.Code.RunWithContext(ctx, v)
+	iter := q.Code.RunWithContext(ctx, input)
 	for {
 		v, ok := iter.Next()
 		if !ok {
 			break
 		}
-		if err, ok := v.(error); ok {
+		if halt, ok := v.(*gojq.HaltError); ok {
+			if halt.ExitCode() == 0 {
+				break
+			}
+			v := map[string]any{
+				"status":    "halt_error",
+				"exit_code": halt.ExitCode(),
+				"value":     halt.Value(),
+			}
+			outputs = append(outputs, v)
+			break
+		} else if err, ok := v.(error); ok {
 			return MCPOutput{
 				Error: err.Error(),
 			}
@@ -187,16 +206,7 @@ type MCPStatusInput struct {
 	Query string `json:"query,omitempty" jsonschema:"A query string to filter status, in jq syntax. Query receives an object like '{\"probe_history\": {\"{target_url}\": {\"status\": \"{status}\", \"updated\": \"{datetime}\", \"records\": [...]}}, \"current_incidents\": [{...}, ...], \"incident_history\": [{...}, ...]}'. You can use 'parse_url' filter to parse target URLs."`
 }
 
-func FetchStatusByJq(ctx context.Context, s Store, input MCPStatusInput) (output MCPOutput) {
-	defer func() {
-		if r := recover(); r != nil {
-			s.ReportInternalError("mcp/query_status", fmt.Sprintf("panic occurred: %v", r))
-			output = MCPOutput{
-				Error: "internal server error",
-			}
-		}
-	}()
-
+func FetchStatusByJq(ctx context.Context, s Store, input MCPStatusInput) MCPOutput {
 	query, err := ParseJQ(input.Query)
 	if err != nil {
 		return MCPOutput{
@@ -237,7 +247,7 @@ func FetchStatusByJq(ctx context.Context, s Store, input MCPStatusInput) (output
 		obj["incident_history"].([]any)[i] = incidentToMap(v)
 	}
 
-	return query.Run(ctx, obj)
+	return query.Run(ctx, s, "mcp/query_status", obj)
 }
 
 type MCPLogsInput struct {
@@ -246,18 +256,9 @@ type MCPLogsInput struct {
 	Query string `json:"query,omitempty" jsonschema:"A query string to filter logs, in jq syntax. Query receives an array of status objects. Please try '.[0]' to understand the structure if needed. You can use 'parse_url' filter to parse target URLs."`
 }
 
-func FetchLogsByJq(ctx context.Context, s Store, input MCPLogsInput) (output MCPOutput) {
+func FetchLogsByJq(ctx context.Context, s Store, input MCPLogsInput) MCPOutput {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
-
-	defer func() {
-		if r := recover(); r != nil {
-			s.ReportInternalError("mcp/query_logs", fmt.Sprintf("panic occurred: %v", r))
-			output = MCPOutput{
-				Error: "internal server error",
-			}
-		}
-	}()
 
 	if input.Since == "" || input.Until == "" {
 		return MCPOutput{
@@ -267,26 +268,14 @@ func FetchLogsByJq(ctx context.Context, s Store, input MCPLogsInput) (output MCP
 
 	since, err := api.ParseTime(input.Since)
 	if err != nil {
-		if errors.Is(err, api.ErrInvalidTime) {
-			return MCPOutput{
-				Error: fmt.Sprintf("since time must be in RFC3339 format but got %q", input.Since),
-			}
-		} else {
-			return MCPOutput{
-				Error: fmt.Sprintf("invalid since time: %v", err),
-			}
+		return MCPOutput{
+			Error: fmt.Sprintf("since time must be in RFC3339 format but got %q", input.Since),
 		}
 	}
 	until, err := api.ParseTime(input.Until)
 	if err != nil {
-		if errors.Is(err, api.ErrInvalidTime) {
-			return MCPOutput{
-				Error: fmt.Sprintf("until time must be in RFC3339 format but got %q", input.Until),
-			}
-		} else {
-			return MCPOutput{
-				Error: fmt.Sprintf("invalid until time: %v", err),
-			}
+		return MCPOutput{
+			Error: fmt.Sprintf("until time must be in RFC3339 format but got %q", input.Until),
 		}
 	}
 
@@ -312,10 +301,10 @@ func FetchLogsByJq(ctx context.Context, s Store, input MCPLogsInput) (output MCP
 		records = append(records, recordToMap(rec))
 	}
 
-	return query.Run(ctx, records)
+	return query.Run(ctx, s, "mcp/query_logs", records)
 }
 
-func MCPHandler(s Store) http.HandlerFunc {
+func MCPServer(s Store) *mcp.Server {
 	impl := &mcp.Implementation{
 		Name:    "ayd",
 		Version: meta.Version,
@@ -372,6 +361,12 @@ func MCPHandler(s Store) http.HandlerFunc {
 		return nil, output, nil
 	})
 
+	return server
+}
+
+func MCPHandler(s Store) http.Handler {
+	server := MCPServer(s)
+
 	handler := mcp.NewStreamableHTTPHandler(func(req *http.Request) *mcp.Server {
 		return server
 	}, &mcp.StreamableHTTPOptions{
@@ -379,5 +374,5 @@ func MCPHandler(s Store) http.HandlerFunc {
 		JSONResponse: true,
 	})
 
-	return handler.ServeHTTP
+	return handler
 }
