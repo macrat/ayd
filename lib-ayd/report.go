@@ -10,6 +10,9 @@ import (
 //
 // Deprecated: this struct planed be removed in future version.
 type Report struct {
+	// InstanceName is the name of Ayd instance.
+	InstanceName string
+
 	// ProbeHistory is the map of ProbeHistory.
 	// The key is target URL string, and the value is struct ProbeHistory.
 	ProbeHistory map[string]ProbeHistory

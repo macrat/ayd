@@ -14,7 +14,7 @@ import (
 func NewStoreWithConsole(t testing.TB, w io.Writer) *store.Store {
 	t.Helper()
 
-	s, err := store.New(filepath.Join(t.TempDir(), "ayd.log"), w)
+	s, err := store.New("", filepath.Join(t.TempDir(), "ayd.log"), w)
 	if err != nil {
 		t.Fatalf("failed to create store: %s", err)
 	}
@@ -35,7 +35,7 @@ func NewStoreWithLog(t testing.TB) *store.Store {
 		t.Fatalf("failed to prepare test log file: %s", err)
 	}
 
-	s, err := store.New(fpath, io.Discard)
+	s, err := store.New("", fpath, io.Discard)
 	if err != nil {
 		t.Fatalf("failed to create store: %s", err)
 	}

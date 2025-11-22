@@ -326,9 +326,9 @@ func MCPHandler(s Store) http.HandlerFunc {
 		Instructions: "Ayd is a simple alive monitoring tool. The logs and status can be large, so it is recommended to extract necessary information using jq queries instead of fetching all data at once.",
 	}
 
-	if meta.InstanceName != "" {
-		impl.Title = fmt.Sprintf("Ayd (%s)", meta.InstanceName)
-		opts.Instructions = fmt.Sprintf(`%s This Ayd instance's name is %q.`, opts.Instructions, meta.InstanceName)
+	if s.Name() != "" {
+		impl.Title = fmt.Sprintf("Ayd (%s)", s.Name())
+		opts.Instructions = fmt.Sprintf(`%s This Ayd instance's name is %q.`, opts.Instructions, s.Name())
 	}
 
 	server := mcp.NewServer(impl, opts)

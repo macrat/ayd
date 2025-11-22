@@ -30,7 +30,7 @@
 
 <html lang=en>
     <head>
-        <title>{{ if instance_name }}{{ instance_name }} - {{ else }}Ayd {{ end }}{{ block "title" . }}{{ end }}</title>
+        <title>{{ if .InstanceName }}{{ .InstanceName }} - {{ else }}Ayd {{ end }}{{ block "title" . }}{{ end }}</title>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width,initial-scale=1" />
 <style>
@@ -188,7 +188,7 @@ footer span {
 
         <header>
             <nav>
-                <a class="logo" href="/status.html">{{ if instance_name }}{{ instance_name }}{{ else }}Ayd{{ end }}</a>
+                <a class="logo" href="/status.html">{{ if .InstanceName }}{{ .InstanceName }}{{ else }}Ayd{{ end }}</a>
                 <ul class="site-menu">
                     <li>
                         <a href="/status.html" type="text/html">Status</a>

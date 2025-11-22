@@ -63,7 +63,7 @@ func TestStore_errorLogging(t *testing.T) {
 	f.Close()
 
 	buf := NewBuffer()
-	s, err := store.New(f.Name(), buf)
+	s, err := store.New("", f.Name(), buf)
 	if err != nil {
 		t.Errorf("failed to open store %s (with permission 600): %s", f.Name(), err)
 	}
@@ -121,7 +121,7 @@ func TestStore_errorLogging(t *testing.T) {
 func TestStore_Restore(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "%H.log")
 
-	s1, err := store.New(path, io.Discard)
+	s1, err := store.New("", path, io.Discard)
 	if err != nil {
 		t.Fatalf("failed to create store: %s", err)
 	}
@@ -164,7 +164,7 @@ func TestStore_Restore(t *testing.T) {
 
 	time.Sleep(100 * time.Millisecond) // wait for write
 
-	s2, err := store.New(path, io.Discard)
+	s2, err := store.New("", path, io.Discard)
 	if err != nil {
 		t.Fatalf("failed to create store: %s", err)
 	}
@@ -239,7 +239,7 @@ func TestStore_Restore(t *testing.T) {
 }
 
 func TestStore_Restore_removePassword(t *testing.T) {
-	s, err := store.New("./testdata/with-password.log", io.Discard)
+	s, err := store.New("", "./testdata/with-password.log", io.Discard)
 	if err != nil {
 		t.Fatalf("failed to create store: %s", err)
 	}
@@ -264,7 +264,7 @@ func TestStore_Restore_removePassword(t *testing.T) {
 }
 
 func TestStore_Restore_disableLog(t *testing.T) {
-	s, err := store.New("", io.Discard)
+	s, err := store.New("", "", io.Discard)
 	if err != nil {
 		t.Fatalf("failed to create store: %s", err)
 	}
@@ -288,7 +288,7 @@ func TestStore_Restore_permission(t *testing.T) {
 	defer os.Remove(f.Name())
 	defer f.Close()
 
-	s, err := store.New(f.Name(), io.Discard)
+	s, err := store.New("", f.Name(), io.Discard)
 	if err != nil {
 		t.Fatalf("failed to create store: %s", err)
 	}
@@ -323,7 +323,7 @@ func TestStore_Restore_limitBorder(t *testing.T) {
 
 	f.Sync()
 
-	s, err := store.New(f.Name(), io.Discard)
+	s, err := store.New("", f.Name(), io.Discard)
 	if err != nil {
 		t.Fatalf("failed to create store: %s", err)
 	}
@@ -360,7 +360,7 @@ func TestStore_Restore_fileRemoved(t *testing.T) {
 	defer os.Remove(f.Name())
 	defer f.Close()
 
-	s, err := store.New(f.Name(), io.Discard)
+	s, err := store.New("", f.Name(), io.Discard)
 	if err != nil {
 		t.Fatalf("failed to create store: %s", err)
 	}
@@ -726,7 +726,7 @@ func TestStore_incident_len_limit(t *testing.T) {
 func TestStore_Path_empty(t *testing.T) {
 	t.Parallel()
 
-	s1, err := store.New("", io.Discard)
+	s1, err := store.New("", "", io.Discard)
 	if err != nil {
 		t.Fatalf("failed to create store")
 	}
@@ -743,7 +743,7 @@ func TestStore_Path_empty(t *testing.T) {
 
 	time.Sleep(10 * time.Millisecond) // waiting for writer
 
-	s2, err := store.New("", io.Discard)
+	s2, err := store.New("", "", io.Discard)
 	if err != nil {
 		t.Fatalf("failed to create store")
 	}
@@ -759,7 +759,7 @@ func TestStore_ReportInternalError(t *testing.T) {
 
 	buf := &bytes.Buffer{}
 
-	s, err := store.New("", buf)
+	s, err := store.New("", "", buf)
 	if err != nil {
 		t.Fatalf("failed to create store")
 	}
@@ -782,7 +782,7 @@ func TestStore_ReportInternalError(t *testing.T) {
 func TestStore_logRotate(t *testing.T) {
 	dir := t.TempDir()
 
-	s, err := store.New(filepath.Join(dir, "dt=%Y%m%d/%H.log"), io.Discard)
+	s, err := store.New("", filepath.Join(dir, "dt=%Y%m%d/%H.log"), io.Discard)
 	if err != nil {
 		t.Fatalf("failed to create store: %s", err)
 	}
@@ -914,6 +914,30 @@ func TestStore_MakeReport(t *testing.T) {
 
 	addLog("1", api.StatusHealthy)
 	assert(3, 0, 1)
+}
+
+func TestStore_Name(t *testing.T) {
+	withoutName, err := store.New("", filepath.Join(t.TempDir(), "ayd.log"), io.Discard)
+	if err != nil {
+		t.Fatalf("failed to create store: %s", err)
+	}
+	if withoutName.Name() != "" {
+		t.Errorf("unexpected name for store without name: %q", withoutName.Name())
+	}
+	if n := withoutName.MakeReport(10).InstanceName; n != "" {
+		t.Errorf("unexpected name in report for store without name: %q", n)
+	}
+
+	withName, err := store.New("test", filepath.Join(t.TempDir(), "ayd.log"), io.Discard)
+	if err != nil {
+		t.Fatalf("failed to create store: %s", err)
+	}
+	if withName.Name() != "test" {
+		t.Errorf("unexpected name for store with name: %q", withName.Name())
+	}
+	if n := withName.MakeReport(10).InstanceName; n != "test" {
+		t.Errorf("unexpected name in report for store with name: %q", n)
+	}
 }
 
 func BenchmarkStore_Append(b *testing.B) {

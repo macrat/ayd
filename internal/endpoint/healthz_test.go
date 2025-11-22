@@ -40,6 +40,10 @@ type DummyErrorsGetter struct {
 	messages []string
 }
 
+func (d DummyErrorsGetter) Name() string {
+	return "dummy"
+}
+
 func (d DummyErrorsGetter) Path() string {
 	return ""
 }

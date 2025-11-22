@@ -82,7 +82,7 @@ func TestLogScanner(t *testing.T) {
 		{
 			"LogGenerator",
 			func(since, until time.Time) api.LogScanner {
-				s, err := store.New("", io.Discard)
+				s, err := store.New("", "", io.Discard)
 				if err != nil {
 					t.Fatalf("failed to create store: %s", err)
 				}

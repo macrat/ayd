@@ -12,7 +12,6 @@ import (
 	"github.com/dustin/go-humanize"
 	"github.com/goccy/go-json"
 	"github.com/google/uuid"
-	"github.com/macrat/ayd/internal/meta"
 	api "github.com/macrat/ayd/lib-ayd"
 	"golang.org/x/text/width"
 )
@@ -30,9 +29,6 @@ func loadHTMLTemplate(s string) *template.Template {
 
 var (
 	templateFuncs = map[string]interface{}{
-		"instance_name": func() string {
-			return meta.InstanceName
-		},
 		"sort_history": func(hm map[string]api.ProbeHistory) []api.ProbeHistory {
 			hs := make([]api.ProbeHistory, 0, len(hm))
 			for _, h := range hm {

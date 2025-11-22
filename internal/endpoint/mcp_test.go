@@ -50,7 +50,7 @@ func TestJQQuery(t *testing.T) {
 				"hostname": "example.com",
 				"port":     "",
 				"path":     "/path",
-				"queries":  map[string][]any{"query": []any{"value"}},
+				"queries":  map[string][]any{"query": {"value"}},
 				"fragment": "fragment",
 				"opaque":   "",
 			},

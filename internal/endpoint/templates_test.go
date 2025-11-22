@@ -6,33 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/macrat/ayd/internal/meta"
 	api "github.com/macrat/ayd/lib-ayd"
 )
-
-func TestInstanceName(t *testing.T) {
-	f := templateFuncs["instance_name"].(func() string)
-
-	// Save original value and restore after test
-	original := meta.InstanceName
-	defer func() { meta.InstanceName = original }()
-
-	t.Run("empty", func(t *testing.T) {
-		meta.InstanceName = ""
-		result := f()
-		if result != "" {
-			t.Errorf("expected empty string but got %q", result)
-		}
-	})
-
-	t.Run("with_name", func(t *testing.T) {
-		meta.InstanceName = "Test Instance"
-		result := f()
-		if result != "Test Instance" {
-			t.Errorf("expected %q but got %q", "Test Instance", result)
-		}
-	})
-}
 
 func TestInvertIncidents(t *testing.T) {
 	f := templateFuncs["invert_incidents"].(func([]api.Incident) []api.Incident)

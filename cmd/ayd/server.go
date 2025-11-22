@@ -38,8 +38,8 @@ func (cmd *AydCommand) reportStartServer(s *store.Store, protocol, listen string
 		"targets": tasks,
 		"version": fmt.Sprintf("%s (%s)", meta.Version, meta.Commit),
 	}
-	if meta.InstanceName != "" {
-		extra["instance_name"] = meta.InstanceName
+	if s.Name() != "" {
+		extra["instance_name"] = s.Name()
 	}
 	s.Report(u, api.Record{
 		Time:    cmd.StartedAt,
@@ -57,8 +57,8 @@ func (cmd *AydCommand) reportStopServer(s *store.Store, protocol, listen string)
 		"version": fmt.Sprintf("%s (%s)", meta.Version, meta.Commit),
 		"since":   cmd.StartedAt.Format(time.RFC3339),
 	}
-	if meta.InstanceName != "" {
-		extra["instance_name"] = meta.InstanceName
+	if s.Name() != "" {
+		extra["instance_name"] = s.Name()
 	}
 	s.Report(u, api.Record{
 		Time:    time.Now(),

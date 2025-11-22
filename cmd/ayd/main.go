@@ -101,9 +101,6 @@ func (cmd *AydCommand) ParseArgs(args []string) (exitCode int) {
 		cmd.StorePath = ""
 	}
 
-	// Set the instance name globally
-	meta.InstanceName = cmd.InstanceName
-
 	var err error
 	cmd.Tasks, err = ParseArgs(flags.Args())
 	if err != nil {
@@ -138,7 +135,7 @@ func (cmd *AydCommand) Run(args []string) (exitCode int) {
 		return 0
 	}
 
-	s, err := store.New(cmd.StorePath, cmd.OutStream)
+	s, err := store.New(cmd.InstanceName, cmd.StorePath, cmd.OutStream)
 	if err != nil {
 		fmt.Fprintf(cmd.ErrStream, "error: failed to open log file: %s\n", err)
 		return 1

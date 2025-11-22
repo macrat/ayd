@@ -28,6 +28,7 @@ type RecordHandler func(api.Record)
 
 // Store is the log handler of Ayd, and it also the database of Ayd.
 type Store struct {
+	name string
 	path PathPattern
 
 	Console io.Writer
@@ -47,10 +48,11 @@ type Store struct {
 	healthy       bool
 }
 
-func New(path string, console io.Writer) (*Store, error) {
+func New(name, path string, console io.Writer) (*Store, error) {
 	ch := make(chan api.Record, 32)
 
 	store := &Store{
+		name:             name,
 		path:             ParsePathPattern(path),
 		Console:          console,
 		probeHistory:     make(probeHistoryMap),
@@ -63,6 +65,11 @@ func New(path string, console io.Writer) (*Store, error) {
 	go store.writer(ch, store.writerStopped)
 
 	return store, nil
+}
+
+// Name returns the Ayd instance name set by command line option.
+func (s *Store) Name() string {
+	return s.name
 }
 
 // Path returns pathes to log files.
@@ -497,6 +504,7 @@ func (s *Store) MakeReport(probeHistoryLength int) api.Report {
 	ih := s.incidentHistoryWithoutLock()
 
 	report := api.Report{
+		InstanceName:     s.name,
 		ProbeHistory:     make(map[string]api.ProbeHistory),
 		CurrentIncidents: make([]api.Incident, len(ci)),
 		IncidentHistory:  make([]api.Incident, len(ih)),

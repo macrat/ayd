@@ -118,20 +118,20 @@ func TestAydCommand_ParseArgs(t *testing.T) {
 			ExitCode: 2,
 		},
 		{
+			Args:     []string{"ayd", "dummy:"},
+			ExitCode: 0,
+			Extra: func(t *testing.T, cmd main.AydCommand) {
+				if cmd.InstanceName != "" {
+					t.Errorf("expected InstanceName is empty in default but got %q", cmd.InstanceName)
+				}
+			},
+		},
+		{
 			Args:     []string{"ayd", "-n", "Test Instance", "dummy:"},
 			ExitCode: 0,
 			Extra: func(t *testing.T, cmd main.AydCommand) {
 				if cmd.InstanceName != "Test Instance" {
 					t.Errorf("expected InstanceName is %q but got %q", "Test Instance", cmd.InstanceName)
-				}
-			},
-		},
-		{
-			Args:     []string{"ayd", "--name", "My Server", "dummy:"},
-			ExitCode: 0,
-			Extra: func(t *testing.T, cmd main.AydCommand) {
-				if cmd.InstanceName != "My Server" {
-					t.Errorf("expected InstanceName is %q but got %q", "My Server", cmd.InstanceName)
 				}
 			},
 		},

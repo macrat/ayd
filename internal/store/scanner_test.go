@@ -13,7 +13,7 @@ import (
 )
 
 func TestStore_OpenLog(t *testing.T) {
-	inMemory, err := store.New("", io.Discard)
+	inMemory, err := store.New("", "", io.Discard)
 	if err != nil {
 		t.Fatalf("failed to create in-memory store: %s", err)
 	}
@@ -100,7 +100,7 @@ func TestStore_OpenLog(t *testing.T) {
 func TestStore_OpenLog_logRemoved(t *testing.T) {
 	p := filepath.Join(t.TempDir(), "ayd.log")
 
-	s, err := store.New(p, io.Discard)
+	s, err := store.New("", p, io.Discard)
 	if err != nil {
 		t.Fatalf("failed to make store: %s", err)
 	}
