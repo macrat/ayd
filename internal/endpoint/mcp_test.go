@@ -961,6 +961,7 @@ func BenchmarkMCPHandler_QueryLogs_smallLogs(b *testing.B) {
 			Arguments: endpoint.MCPLogsInput{
 				Since: "2000-01-01T00:00:00Z",
 				Until: "2100-01-01T00:00:00Z",
+				Search: `status=HEALTHY`,
 				JQ:    `group_by(.target)[] | {target: .[0].target, count: length}`,
 			},
 		})
@@ -970,7 +971,7 @@ func BenchmarkMCPHandler_QueryLogs_smallLogs(b *testing.B) {
 	}
 }
 
-func BenchmarkMCPHandler_QueryLogs_largeLogs_withSearch(b *testing.B) {
+func BenchmarkMCPHandler_QueryLogs_largeLogs(b *testing.B) {
 	s := testutil.NewStore(b)
 
 	var probers []scheme.Prober
@@ -978,7 +979,7 @@ func BenchmarkMCPHandler_QueryLogs_largeLogs_withSearch(b *testing.B) {
 		probers = append(probers, testutil.NewProber(b, fmt.Sprintf("dummy://random?latency=0ms#%d", i)))
 	}
 
-	for range 100_000 {
+	for range 10_000 {
 		for _, p := range probers {
 			p.Probe(context.Background(), s)
 		}
@@ -994,37 +995,6 @@ func BenchmarkMCPHandler_QueryLogs_largeLogs_withSearch(b *testing.B) {
 				Until:  "2100-01-01T00:00:00Z",
 				Search: `status=HEALTHY`,
 				JQ:     `group_by(.target)[] | {target: .[0].target, count: length}`,
-			},
-		})
-		if err != nil {
-			b.Fatalf("failed to call tool query_logs: %v", err)
-		}
-	}
-}
-
-func BenchmarkMCPHandler_QueryLogs_largeLogs_withoutSearch(b *testing.B) {
-	s := testutil.NewStore(b)
-
-	var probers []scheme.Prober
-	for i := range 10 {
-		probers = append(probers, testutil.NewProber(b, fmt.Sprintf("dummy://random?latency=0ms#%d", i)))
-	}
-
-	for range 100_000 {
-		for _, p := range probers {
-			p.Probe(context.Background(), s)
-		}
-	}
-
-	sess := NewTestMCPServer(b, s)
-
-	for b.Loop() {
-		_, err := sess.CallTool(b.Context(), &mcp.CallToolParams{
-			Name: "query_logs",
-			Arguments: endpoint.MCPLogsInput{
-				Since: "2000-01-01T00:00:00Z",
-				Until: "2100-01-01T00:00:00Z",
-				JQ:    `[.[] | select(.status == "HEALTHY")] | group_by(.target)[] | {target: .[0].target, count: length}`,
 			},
 		})
 		if err != nil {
