@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/macrat/ayd/internal/endpoint"
+	"github.com/macrat/ayd/internal/scheme"
 	"github.com/macrat/ayd/internal/testutil"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
@@ -713,5 +714,48 @@ func TestMCP_connection(t *testing.T) {
 				t.Fatalf("failed to ping MCP server: %v", err)
 			}
 		})
+	}
+}
+
+func BenchmarkMCPHandler_QueryLogs(b *testing.B) {
+	s := testutil.NewStore(b)
+
+	var probers []scheme.Prober
+	for i := range 10 {
+		probers = append(probers, testutil.NewProber(b, fmt.Sprintf("dummy://random?latency=0ms#%d", i)))
+	}
+
+	for range 100_000 {
+		for _, p := range probers {
+			p.Probe(context.Background(), s)
+		}
+	}
+
+	srvPort, cliPort := mcp.NewInMemoryTransports()
+
+	srv := endpoint.MCPServer(s)
+	srv.Connect(b.Context(), srvPort, nil)
+
+	cli := mcp.NewClient(&mcp.Implementation{
+		Name:    "benchmark-client",
+		Version: "none",
+	}, nil)
+	sess, err := cli.Connect(b.Context(), cliPort, nil)
+	if err != nil {
+		b.Fatalf("failed to connect to MCP server: %v", err)
+	}
+
+	for b.Loop() {
+		_, err := sess.CallTool(b.Context(), &mcp.CallToolParams{
+			Name: "query_logs",
+			Arguments: endpoint.MCPLogsInput{
+				Since: "2000-01-01T00:00:00Z",
+				Until: "2100-01-01T00:00:00Z",
+				Query: `[.[] | select(.status == "HEALTHY")] | group_by(.target) | map({target: .[0].target, count: length})`,
+			},
+		})
+		if err != nil {
+			b.Fatalf("failed to call tool query_logs: %v", err)
+		}
 	}
 }
