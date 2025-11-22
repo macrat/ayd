@@ -109,7 +109,7 @@ func jqParseURL(x any, _ []any) any {
 
 	if u.Opaque != "" && u.Host == "" {
 		switch u.Scheme {
-		case "ping":
+		case "ping", "ping4", "ping6":
 			u.Host = u.Opaque
 			u.Opaque = ""
 		case "dns", "dns4", "dns6", "file", "exec", "mailto", "source":
@@ -323,12 +323,12 @@ func MCPHandler(s Store) http.HandlerFunc {
 	}
 
 	opts := &mcp.ServerOptions{
-		Instructions: "Ayd is a simple alive monitoring tool. You can analyze targets status using flexible jq queries.",
+		Instructions: "Ayd is a simple alive monitoring tool. The logs and status can be large, so it is recommended to extract necessary information using jq queries instead of fetching all data at once.",
 	}
 
 	if meta.InstanceName != "" {
 		impl.Title = fmt.Sprintf("Ayd (%s)", meta.InstanceName)
-		opts.Instructions = fmt.Sprintf("Ayd is a simple alive monitoring tool. You can analyze targets status using flexible jq queries. The instance name of this server is \"%s\".", meta.InstanceName)
+		opts.Instructions = fmt.Sprintf(`%s This Ayd instance's name is %q.`, opts.Instructions, meta.InstanceName)
 	}
 
 	server := mcp.NewServer(impl, opts)
