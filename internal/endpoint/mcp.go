@@ -6,7 +6,6 @@ import (
 	"maps"
 	"net/http"
 	"net/url"
-	"strings"
 	"time"
 
 	"github.com/itchyny/gojq"
@@ -47,35 +46,6 @@ func incidentToMap(inc api.Incident) map[string]any {
 	}
 
 	return r
-}
-
-type MCPTargetsInput struct {
-	Keywords []string `json:"keywords,omitempty" jsonschema:"A list of keywords to filter targets. They work as an AND condition."`
-}
-
-type MCPTargetsOutput struct {
-	Targets []string `json:"targets" jsonschema:"A list of target URLs that include the keywords."`
-}
-
-func FetchTargets(s Store, input MCPTargetsInput) (output MCPTargetsOutput) {
-	targets := s.Targets()
-
-	filtered := make([]string, 0, len(targets))
-	for _, t := range targets {
-		matched := true
-		for _, kw := range input.Keywords {
-			if !strings.Contains(t, kw) {
-				matched = false
-				break
-			}
-		}
-		if matched {
-			filtered = append(filtered, t)
-		}
-	}
-
-	output.Targets = filtered
-	return output
 }
 
 type MCPOutput struct {
@@ -203,7 +173,7 @@ func (q JQQuery) Run(ctx context.Context, s Store, logScope string, input any) (
 }
 
 type MCPStatusInput struct {
-	Query string `json:"query,omitempty" jsonschema:"A query string to filter status, in jq syntax. Query receives an object like '{\"probe_history\": {\"{target_url}\": {\"status\": \"{status}\", \"updated\": \"{datetime}\", \"records\": [...]}}, \"current_incidents\": [{...}, ...], \"incident_history\": [{...}, ...]}'. You can use 'parse_url' filter to parse target URLs."`
+	Query string `json:"query,omitempty" jsonschema:"A query string to filter status, in jq syntax. Query receives an object like '{\"probe_history\": {\"{target_url}\": {\"status\": \"{status}\", \"updated\": \"{datetime}\", \"records\": [...]}}, \"current_incidents\": [{...}, ...], \"incident_history\": [{...}, ...]}'. You can use 'parse_url' filter to parse target URLs. For example, '.probe_history | to_entries[] | {target: .key, status: .value.status}' to get the current status of all targets."`
 }
 
 func FetchStatusByJq(ctx context.Context, s Store, input MCPStatusInput) MCPOutput {
@@ -253,7 +223,7 @@ func FetchStatusByJq(ctx context.Context, s Store, input MCPStatusInput) MCPOutp
 type MCPLogsInput struct {
 	Since string `json:"since" jsonschema:"The start time for fetching logs, in RFC3339 format."`
 	Until string `json:"until" jsonschema:"The end time for fetching logs, in RFC3339 format."`
-	Query string `json:"query,omitempty" jsonschema:"A query string to filter logs, in jq syntax. Query receives an array of status objects. Please try '.[0]' to understand the structure if needed. You can use 'parse_url' filter to parse target URLs."`
+	Query string `json:"query,omitempty" jsonschema:"A query string to filter logs, in jq syntax. Query receives an array of status objects. You can use 'parse_url' filter to parse target URLs. For example, 'map(select(.status != \"HEALTHY\")) | group_by(.target)[] | {target: .[0].target, count: length, max_latency: (map(.latency_ms) | max)}' to get unhealthy logs grouped by target with maximum latency.'"`
 }
 
 func FetchLogsByJq(ctx context.Context, s Store, input MCPLogsInput) MCPOutput {
@@ -323,19 +293,6 @@ func MCPServer(s Store) *mcp.Server {
 	server := mcp.NewServer(impl, opts)
 
 	mcp.AddTool(server, &mcp.Tool{
-		Name:        "list_targets",
-		Title:       "List targets",
-		Description: "List currently monitored target URLs.",
-		Annotations: &mcp.ToolAnnotations{
-			IdempotentHint: true,
-			ReadOnlyHint:   true,
-		},
-	}, func(ctx context.Context, req *mcp.CallToolRequest, input MCPTargetsInput) (*mcp.CallToolResult, MCPTargetsOutput, error) {
-		output := FetchTargets(s, input)
-		return nil, output, nil
-	})
-
-	mcp.AddTool(server, &mcp.Tool{
 		Name:        "query_status",
 		Title:       "Query status",
 		Description: "Fetch current status summary using jq query from Ayd server.",
@@ -351,7 +308,7 @@ func MCPServer(s Store) *mcp.Server {
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "query_logs",
 		Title:       "Query logs",
-		Description: "Fetch health check logs using jq query from Ayd server.",
+		Description: "Fetch health check logs using jq query from Ayd server. The logs may include extra information than query_status tool.",
 		Annotations: &mcp.ToolAnnotations{
 			IdempotentHint: true,
 			ReadOnlyHint:   true,

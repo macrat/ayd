@@ -199,69 +199,6 @@ func RunMCPTest[I, O any](t *testing.T, tool string, tests []MCPTest[I, O]) {
 	}
 }
 
-func TestMCPHandler_ListTargets(t *testing.T) {
-	tests := []MCPTest[endpoint.MCPTargetsInput, endpoint.MCPTargetsOutput]{
-		{
-			Name: "no_filter",
-			Args: endpoint.MCPTargetsInput{},
-			Expect: endpoint.MCPTargetsOutput{
-				Targets: []string{
-					"dummy:#no-record-yet",
-					"http://a.example.com",
-					"http://b.example.com",
-					"http://c.example.com",
-				},
-			},
-		},
-		{
-			Name: "single_keyword_1",
-			Args: endpoint.MCPTargetsInput{
-				Keywords: []string{"a."},
-			},
-			Expect: endpoint.MCPTargetsOutput{
-				Targets: []string{
-					"http://a.example.com",
-				},
-			},
-		},
-		{
-			Name: "single_keyword_2",
-			Args: endpoint.MCPTargetsInput{
-				Keywords: []string{"example"},
-			},
-			Expect: endpoint.MCPTargetsOutput{
-				Targets: []string{
-					"http://a.example.com",
-					"http://b.example.com",
-					"http://c.example.com",
-				},
-			},
-		},
-		{
-			Name: "multiple_keywords",
-			Args: endpoint.MCPTargetsInput{
-				Keywords: []string{"b", "c"},
-			},
-			Expect: endpoint.MCPTargetsOutput{
-				Targets: []string{
-					"http://b.example.com",
-				},
-			},
-		},
-		{
-			Name: "no_match",
-			Args: endpoint.MCPTargetsInput{
-				Keywords: []string{"nonexistent"},
-			},
-			Expect: endpoint.MCPTargetsOutput{
-				Targets: []string{},
-			},
-		},
-	}
-
-	RunMCPTest(t, "list_targets", tests)
-}
-
 func TestMCPHandler_QueryStatus(t *testing.T) {
 	tests := []MCPTest[endpoint.MCPStatusInput, endpoint.MCPOutput]{
 		{
@@ -717,7 +654,59 @@ func TestMCP_connection(t *testing.T) {
 	}
 }
 
-func BenchmarkMCPHandler_QueryLogs(b *testing.B) {
+func NewTestMCPServer(tb testing.TB, s endpoint.Store) *mcp.ClientSession {
+	srvPort, cliPort := mcp.NewInMemoryTransports()
+
+	srv := endpoint.MCPServer(s)
+	srv.Connect(tb.Context(), srvPort, nil)
+
+	cli := mcp.NewClient(&mcp.Implementation{
+		Name:    "benchmark-client",
+		Version: "none",
+	}, nil)
+	sess, err := cli.Connect(tb.Context(), cliPort, nil)
+	if err != nil {
+		tb.Fatalf("failed to connect to MCP server: %v", err)
+	}
+
+	return sess
+}
+
+func BenchmarkMCPHandler_QueryStatus(b *testing.B) {
+	sess := NewTestMCPServer(b, testutil.NewStore(b))
+
+	for b.Loop() {
+		_, err := sess.CallTool(b.Context(), &mcp.CallToolParams{
+			Name: "query_status",
+			Arguments: endpoint.MCPStatusInput{
+				Query: `.probe_history | to_entries[] | {target: .key, status: .value.status}`,
+			},
+		})
+		if err != nil {
+			b.Fatalf("failed to call tool query_status: %v", err)
+		}
+	}
+}
+
+func BenchmarkMCPHandler_QueryLogs_smallLogs(b *testing.B) {
+	sess := NewTestMCPServer(b, testutil.NewStore(b))
+
+	for b.Loop() {
+		_, err := sess.CallTool(b.Context(), &mcp.CallToolParams{
+			Name: "query_logs",
+			Arguments: endpoint.MCPLogsInput{
+				Since: "2000-01-01T00:00:00Z",
+				Until: "2100-01-01T00:00:00Z",
+				Query: `group_by(.target)[] | {target: .[0].target, count: length}`,
+			},
+		})
+		if err != nil {
+			b.Fatalf("failed to call tool query_logs: %v", err)
+		}
+	}
+}
+
+func BenchmarkMCPHandler_QueryLogs_largeLogs(b *testing.B) {
 	s := testutil.NewStore(b)
 
 	var probers []scheme.Prober
@@ -731,19 +720,7 @@ func BenchmarkMCPHandler_QueryLogs(b *testing.B) {
 		}
 	}
 
-	srvPort, cliPort := mcp.NewInMemoryTransports()
-
-	srv := endpoint.MCPServer(s)
-	srv.Connect(b.Context(), srvPort, nil)
-
-	cli := mcp.NewClient(&mcp.Implementation{
-		Name:    "benchmark-client",
-		Version: "none",
-	}, nil)
-	sess, err := cli.Connect(b.Context(), cliPort, nil)
-	if err != nil {
-		b.Fatalf("failed to connect to MCP server: %v", err)
-	}
+	sess := NewTestMCPServer(b, s)
 
 	for b.Loop() {
 		_, err := sess.CallTool(b.Context(), &mcp.CallToolParams{
@@ -751,7 +728,7 @@ func BenchmarkMCPHandler_QueryLogs(b *testing.B) {
 			Arguments: endpoint.MCPLogsInput{
 				Since: "2000-01-01T00:00:00Z",
 				Until: "2100-01-01T00:00:00Z",
-				Query: `[.[] | select(.status == "HEALTHY")] | group_by(.target) | map({target: .[0].target, count: length})`,
+				Query: `[.[] | select(.status == "HEALTHY")] | group_by(.target)[] | {target: .[0].target, count: length}`,
 			},
 		})
 		if err != nil {
