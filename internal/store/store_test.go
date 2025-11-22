@@ -866,7 +866,7 @@ func TestStore_logRotate(t *testing.T) {
 }
 
 func TestStore_MakeReport(t *testing.T) {
-	s := testutil.NewStoreWithLog(t)
+	s := testutil.NewStore(t, testutil.WithLog())
 	defer s.Close()
 
 	assert := func(targetCount, currentIncidentCount, incidentHistoryCount int) {

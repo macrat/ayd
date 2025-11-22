@@ -16,10 +16,6 @@ import (
 	"github.com/spf13/pflag"
 )
 
-func init() {
-	scheme.HTTPUserAgent = fmt.Sprintf("ayd/%s health check", meta.Version)
-}
-
 type AydCommand struct {
 	OutStream io.Writer
 	ErrStream io.Writer

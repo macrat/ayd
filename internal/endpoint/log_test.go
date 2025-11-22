@@ -157,7 +157,7 @@ func TestLogScanner(t *testing.T) {
 }
 
 func TestPagingScanner(t *testing.T) {
-	s := testutil.NewStoreWithLog(t)
+	s := testutil.NewStore(t, testutil.WithLog())
 
 	messages := []string{
 		"hello world",
@@ -218,7 +218,7 @@ func TestPagingScanner(t *testing.T) {
 }
 
 func TestContextScanner_scanAll(t *testing.T) {
-	s := testutil.NewStoreWithLog(t)
+	s := testutil.NewStore(t, testutil.WithLog())
 
 	r, err := s.OpenLog(time.Unix(0, 0), time.Date(2100, 1, 1, 0, 0, 0, 0, time.UTC))
 	if err != nil {
@@ -243,7 +243,7 @@ func TestContextScanner_scanAll(t *testing.T) {
 }
 
 func TestContextScanner_cancel(t *testing.T) {
-	s := testutil.NewStoreWithLog(t)
+	s := testutil.NewStore(t, testutil.WithLog())
 
 	r, err := s.OpenLog(time.Unix(0, 0), time.Date(2100, 1, 1, 0, 0, 0, 0, time.UTC))
 	if err != nil {

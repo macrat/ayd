@@ -61,7 +61,7 @@ func TestRunServer_tls(t *testing.T) {
 	log, stdout := io.Pipe()
 	defer log.Close()
 	defer stdout.Close()
-	s := testutil.NewStoreWithConsole(t, stdout)
+	s := testutil.NewStore(t, testutil.WithConsole(stdout))
 	defer s.Close()
 
 	cert := testutil.NewCertificate(t)
@@ -129,7 +129,7 @@ func TestRunServer_tls_error(t *testing.T) {
 			cmd.CertPath = tt.Cert
 			cmd.KeyPath = tt.Key
 
-			s := testutil.NewStoreWithConsole(t, output)
+			s := testutil.NewStore(t, testutil.WithConsole(output))
 
 			ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 			defer cancel()

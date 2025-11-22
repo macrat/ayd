@@ -11,7 +11,7 @@ import (
 )
 
 func TestToXlsx(t *testing.T) {
-	s := testutil.NewStoreWithLog(t)
+	s := testutil.NewStore(t, testutil.WithLog())
 
 	r, err := s.OpenLog(time.Unix(0, 0), time.Date(9999, 0, 0, 0, 0, 0, 0, time.UTC))
 	if err != nil {

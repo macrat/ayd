@@ -18,7 +18,7 @@ func TestStore_OpenLog(t *testing.T) {
 		t.Fatalf("failed to create in-memory store: %s", err)
 	}
 	defer inMemory.Close()
-	inStorage := testutil.NewStoreWithLog(t)
+	inStorage := testutil.NewStore(t, testutil.WithLog())
 	defer inStorage.Close()
 
 	stores := []struct {
