@@ -69,3 +69,36 @@ func TestParseTime_invalid(t *testing.T) {
 		}
 	}
 }
+
+func BenchmarkParseTime_RFC3339(b *testing.B) {
+	input := "2000-01-02T00:03:04Z"
+
+	for b.Loop() {
+		_, err := ayd.ParseTime(input)
+		if err != nil {
+			b.Fatalf("failed to parse %q: %s", input, err)
+		}
+	}
+}
+
+func BenchmarkParseTime_OtherFormats(b *testing.B) {
+	input := "20000102_000304.897010+0900"
+
+	for b.Loop() {
+		_, err := ayd.ParseTime(input)
+		if err != nil {
+			b.Fatalf("failed to parse %q: %s", input, err)
+		}
+	}
+}
+
+func BenchmarkParseTime_Invalid(b *testing.B) {
+	input := "2000/01/02 00:03:04"
+
+	for b.Loop() {
+		_, err := ayd.ParseTime(input)
+		if !errors.Is(err, ayd.ErrInvalidTime) {
+			b.Fatalf("unexpected error from %q: %s", input, err)
+		}
+	}
+}
