@@ -52,6 +52,14 @@ func (d DummyErrorsGetter) ProbeHistory() []api.ProbeHistory {
 	return nil
 }
 
+func (d DummyErrorsGetter) CurrentIncidents() []*api.Incident {
+	return []*api.Incident{}
+}
+
+func (d DummyErrorsGetter) IncidentHistory() []*api.Incident {
+	return []*api.Incident{}
+}
+
 func (d DummyErrorsGetter) Targets() []string {
 	return nil
 }

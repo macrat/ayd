@@ -16,6 +16,12 @@ type Store interface {
 	// ProbeHistory returns a slice of ProbeHistory.
 	ProbeHistory() []api.ProbeHistory
 
+	// CurrentIncidents returns a slice of current incidents.
+	CurrentIncidents() []*api.Incident
+
+	// IncidentHistory returns a slice of past incidents.
+	IncidentHistory() []*api.Incident
+
 	// MakeReport creates ayd.Report for exporting for endpoint.
 	MakeReport(probeHistoryLength int) api.Report
 

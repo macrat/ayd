@@ -2,14 +2,17 @@ package endpoint
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"maps"
 	"net/http"
 	"net/url"
+	"sort"
 	"time"
 
 	"github.com/itchyny/gojq"
 	"github.com/macrat/ayd/internal/meta"
+	"github.com/macrat/ayd/internal/query"
 	api "github.com/macrat/ayd/lib-ayd"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
@@ -28,7 +31,7 @@ func recordToMap(rec api.Record) map[string]any {
 	return x
 }
 
-func incidentToMap(inc api.Incident) map[string]any {
+func incidentToMap(inc *api.Incident) map[string]any {
 	r := map[string]any{
 		"target":         inc.Target.String(),
 		"status":         inc.Status.String(),
@@ -49,8 +52,7 @@ func incidentToMap(inc api.Incident) map[string]any {
 }
 
 type MCPOutput struct {
-	Result any    `json:"result" jsonschema:"The result of the query."`
-	Error  string `json:"error,omitempty" jsonschema:"Error message if the query failed."`
+	Result any `json:"result" jsonschema:"The result of the query."`
 }
 
 func jqParseURL(x any, _ []any) any {
@@ -124,16 +126,7 @@ func ParseJQ(query string) (JQQuery, error) {
 	return JQQuery{Code: c}, nil
 }
 
-func (q JQQuery) Run(ctx context.Context, s Store, logScope string, input any) (output MCPOutput) {
-	defer func() {
-		if r := recover(); r != nil {
-			s.ReportInternalError(logScope, fmt.Sprintf("panic occurred: %v", r))
-			output = MCPOutput{
-				Error: "internal server error",
-			}
-		}
-	}()
-
+func (q JQQuery) Run(ctx context.Context, s Store, logScope string, input any) (MCPOutput, error) {
 	var outputs []any
 
 	iter := q.Code.RunWithContext(ctx, input)
@@ -154,9 +147,7 @@ func (q JQQuery) Run(ctx context.Context, s Store, logScope string, input any) (
 			outputs = append(outputs, v)
 			break
 		} else if err, ok := v.(error); ok {
-			return MCPOutput{
-				Error: err.Error(),
-			}
+			return MCPOutput{}, err
 		}
 		outputs = append(outputs, v)
 	}
@@ -164,105 +155,142 @@ func (q JQQuery) Run(ctx context.Context, s Store, logScope string, input any) (
 	if len(outputs) == 1 {
 		return MCPOutput{
 			Result: outputs[0],
-		}
+		}, nil
 	} else {
 		return MCPOutput{
 			Result: outputs,
-		}
+		}, nil
 	}
 }
 
 type MCPStatusInput struct {
-	Query string `json:"query,omitempty" jsonschema:"A query string to filter status, in jq syntax. Query receives an object like '{\"probe_history\": {\"{target_url}\": {\"status\": \"{status}\", \"updated\": \"{datetime}\", \"records\": [...]}}, \"current_incidents\": [{...}, ...], \"incident_history\": [{...}, ...]}'. You can use 'parse_url' filter to parse target URLs. For example, '.probe_history | to_entries[] | {target: .key, status: .value.status}' to get the current status of all targets."`
+	JQ string `json:"jq,omitempty" jsonschema:"A jq query string to filter and/or aggregate status. Query receives an array. Each object is like '{\"target\": \"{url}\", \"status\": \"...\", \"latest_log\": {\"time\": \"{RFC 3339}\", \"status\": \"...\", \"latency\": ..., \"message\": \"...\", ...}}'. You can use 'parse_url' filter to parse target URLs. For example, '.[] | {target: .target, status: .status, message: .latest_log.message}' to get the current status of all targets."`
 }
 
-func FetchStatusByJq(ctx context.Context, s Store, input MCPStatusInput) MCPOutput {
-	query, err := ParseJQ(input.Query)
+func FetchStatusByJq(ctx context.Context, s Store, input MCPStatusInput) (MCPOutput, error) {
+	query, err := ParseJQ(input.JQ)
 	if err != nil {
-		return MCPOutput{
-			Error: fmt.Sprintf("failed to parse query: %v", err),
+		return MCPOutput{}, fmt.Errorf("failed to parse jq query: %w", err)
+	}
+
+	history := s.ProbeHistory()
+
+	targets := make([]any, 0, len(history))
+
+	for _, r := range history {
+		var latest map[string]any
+		if len(r.Records) > 0 {
+			latest = recordToMap(r.Records[len(r.Records)-1])
+			delete(latest, "target")
+		}
+
+		targets = append(targets, map[string]any{
+			"target":     r.Target.String(),
+			"status":     r.Status.String(),
+			"latest_log": latest,
+		})
+	}
+	sort.Slice(targets, func(i, j int) bool {
+		return targets[i].(map[string]any)["target"].(string) < targets[j].(map[string]any)["target"].(string)
+	})
+
+	return query.Run(ctx, s, "mcp/query_status", targets)
+}
+
+type MCPIncidentsInput struct {
+	IncludeOngoing  *bool  `json:"include_ongoing,omitempty" jsonschema:"Whether to include ongoing incidents in the result. If omitted, ongoing incidents are included."`
+	IncludeResolved bool   `json:"include_resolved,omitempty" jsonschema:"Whether to include resolved incidents in the result. If omitted, resolved incidents are not included."`
+	JQ              string `json:"jq,omitempty" jsonschema:"A jq query string to filter and/or aggregate incidents. Query receives an array. Each object is like '{\"target\": \"{url}\", \"status\": \"...\", \"message\": \"...\", \"starts_at\": \"{RFC 3339}\", \"ends_at\": \"{RFC 3339 or null}\"}'. You can use 'parse_url' filter to parse target URLs. For example, 'map(.target | startswith(\"http\"))[] | {target: .target, status: .status, starts_at: .starts_at, resolved: (.ends_at != null)}' to get incidents of HTTP/HTTPS targets."`
+}
+
+func FetchIncidentsByJq(ctx context.Context, s Store, input MCPIncidentsInput) (MCPOutput, error) {
+	query, err := ParseJQ(input.JQ)
+	if err != nil {
+		return MCPOutput{}, fmt.Errorf("failed to parse jq query: %w", err)
+	}
+
+	current := s.CurrentIncidents()
+	history := s.IncidentHistory()
+
+	count := 0
+	if input.IncludeResolved {
+		count += len(history)
+	}
+	if input.IncludeOngoing == nil || *input.IncludeOngoing {
+		count += len(current)
+	}
+
+	incidents := make([]any, 0, count)
+
+	if input.IncludeResolved {
+		for _, v := range history {
+			incidents = append(incidents, incidentToMap(v))
 		}
 	}
 
-	report := s.MakeReport(40)
-
-	obj := map[string]any{}
-
-	obj["probe_history"] = map[string]any{}
-	for k, v := range report.ProbeHistory {
-		var updated *string
-		if !v.Updated.IsZero() {
-			u := v.Updated.Format(time.RFC3339)
-			updated = &u
+	if input.IncludeOngoing == nil || *input.IncludeOngoing {
+		for _, v := range current {
+			incidents = append(incidents, incidentToMap(v))
 		}
-
-		h := map[string]any{
-			"status":  v.Status.String(),
-			"updated": updated,
-			"records": make([]any, len(v.Records)),
-		}
-		for i, r := range v.Records {
-			h["records"].([]any)[i] = recordToMap(r)
-		}
-		obj["probe_history"].(map[string]any)[k] = h
 	}
 
-	obj["current_incidents"] = make([]any, len(report.CurrentIncidents))
-	for i, v := range report.CurrentIncidents {
-		obj["current_incidents"].([]any)[i] = incidentToMap(v)
-	}
+	sort.Slice(incidents, func(i, j int) bool {
+		return incidents[i].(map[string]any)["starts_at_unix"].(int64) < incidents[j].(map[string]any)["starts_at_unix"].(int64)
+	})
 
-	obj["incident_history"] = make([]any, len(report.IncidentHistory))
-	for i, v := range report.IncidentHistory {
-		obj["incident_history"].([]any)[i] = incidentToMap(v)
-	}
-
-	return query.Run(ctx, s, "mcp/query_status", obj)
+	return query.Run(ctx, s, "mcp/query_incidents", incidents)
 }
 
 type MCPLogsInput struct {
-	Since string `json:"since" jsonschema:"The start time for fetching logs, in RFC3339 format."`
-	Until string `json:"until" jsonschema:"The end time for fetching logs, in RFC3339 format."`
-	Query string `json:"query,omitempty" jsonschema:"A query string to filter logs, in jq syntax. Query receives an array of status objects. You can use 'parse_url' filter to parse target URLs. For example, 'map(select(.status != \"HEALTHY\")) | group_by(.target)[] | {target: .[0].target, count: length, max_latency: (map(.latency_ms) | max)}' to get unhealthy logs grouped by target with maximum latency.'"`
+	Since  string `json:"since" jsonschema:"The start time for fetching logs, in RFC3339 format."`
+	Until  string `json:"until" jsonschema:"The end time for fetching logs, in RFC3339 format."`
+	Search string `json:"search,omitempty" jsonschema:"A search query to filter logs. For example, 'status!=HEALTHY', or 'status=FAILURE AND (latency<100ms OR target=http://example.com*)'. It is recommended to use this parameter to reduce the number of logs before applying jq query. If omitted, no filtering is applied."`
+	JQ     string `json:"jq,omitempty" jsonschema:"A jq query string to filter logs. Query receives an array of status objects. Each objects has at least 'time', 'target', 'status', and 'latency'. You can use 'parse_url' filter to parse target URLs. For example, 'map(select(.status != \"HEALTHY\")) | group_by(.target)[] | {target: .[0].target, count: length, max_latency: (map(.latency_ms) | max)}' to get unhealthy logs grouped by target with maximum latency.'"`
 }
 
-func FetchLogsByJq(ctx context.Context, s Store, input MCPLogsInput) MCPOutput {
+func FetchLogsByJq(ctx context.Context, s Store, input MCPLogsInput) (MCPOutput, error) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
 	if input.Since == "" || input.Until == "" {
-		return MCPOutput{
-			Error: "since and until parameters are required",
-		}
+		return MCPOutput{}, errors.New("since and until parameters are required")
 	}
 
 	since, err := api.ParseTime(input.Since)
 	if err != nil {
-		return MCPOutput{
-			Error: fmt.Sprintf("since time must be in RFC3339 format but got %q", input.Since),
-		}
+		return MCPOutput{}, fmt.Errorf("since time must be in RFC3339 format but got %q", input.Since)
 	}
 	until, err := api.ParseTime(input.Until)
 	if err != nil {
-		return MCPOutput{
-			Error: fmt.Sprintf("until time must be in RFC3339 format but got %q", input.Until),
-		}
+		return MCPOutput{}, fmt.Errorf("until time must be in RFC3339 format but got %q", input.Until)
 	}
 
 	logs, err := s.OpenLog(since, until)
 	if err != nil {
 		s.ReportInternalError("mcp/query_logs", fmt.Sprintf("failed to open logs: %v", err))
-		return MCPOutput{
-			Error: "internal server error",
-		}
+		return MCPOutput{}, errors.New("internal server error")
 	}
 	defer logs.Close()
 
-	query, err := ParseJQ(input.Query)
-	if err != nil {
-		return MCPOutput{
-			Error: fmt.Sprintf("failed to parse query: %v", err),
+	if input.Search != "" {
+		q := query.ParseQuery(input.Search)
+		st, en := q.TimeRange()
+
+		if st != nil && st.After(since) {
+			since = *st
 		}
+		if en != nil && en.Before(until) {
+			until = *en
+		}
+		logs = FilterScanner{
+			Scanner: logs,
+			Query:   q,
+		}
+	}
+
+	jq, err := ParseJQ(input.JQ)
+	if err != nil {
+		return MCPOutput{}, fmt.Errorf("failed to parse jq query: %w", err)
 	}
 
 	records := []any{}
@@ -271,7 +299,7 @@ func FetchLogsByJq(ctx context.Context, s Store, input MCPLogsInput) MCPOutput {
 		records = append(records, recordToMap(rec))
 	}
 
-	return query.Run(ctx, s, "mcp/query_logs", records)
+	return jq.Run(ctx, s, "mcp/query_logs", records)
 }
 
 func MCPServer(s Store) *mcp.Server {
@@ -282,7 +310,7 @@ func MCPServer(s Store) *mcp.Server {
 	}
 
 	opts := &mcp.ServerOptions{
-		Instructions: "Ayd is a simple alive monitoring tool. The logs and status can be large, so it is recommended to extract necessary information using jq queries instead of fetching all data at once.",
+		Instructions: "Ayd is a simple alive monitoring tool. The logs and status can be large, so it is recommended to extract necessary information using search and jq queries instead of fetching all data at once.",
 	}
 
 	if s.Name() != "" {
@@ -295,27 +323,40 @@ func MCPServer(s Store) *mcp.Server {
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "query_status",
 		Title:       "Query status",
-		Description: "Fetch current status summary using jq query from Ayd server.",
+		Description: "Fetch latest status of each targets from Ayd server.",
 		Annotations: &mcp.ToolAnnotations{
 			IdempotentHint: true,
 			ReadOnlyHint:   true,
 		},
 	}, func(ctx context.Context, req *mcp.CallToolRequest, input MCPStatusInput) (*mcp.CallToolResult, MCPOutput, error) {
-		output := FetchStatusByJq(ctx, s, input)
-		return nil, output, nil
+		output, err := FetchStatusByJq(ctx, s, input)
+		return nil, output, err
+	})
+
+	mcp.AddTool(server, &mcp.Tool{
+		Name:        "query_incidents",
+		Title:       "Query incidents",
+		Description: "Fetch current and past incidents from Ayd server. The result is limited by number. Please use query_logs tool to analyze long-term history.",
+		Annotations: &mcp.ToolAnnotations{
+			IdempotentHint: true,
+			ReadOnlyHint:   true,
+		},
+	}, func(ctx context.Context, req *mcp.CallToolRequest, input MCPIncidentsInput) (*mcp.CallToolResult, MCPOutput, error) {
+		output, err := FetchIncidentsByJq(ctx, s, input)
+		return nil, output, err
 	})
 
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "query_logs",
 		Title:       "Query logs",
-		Description: "Fetch health check logs using jq query from Ayd server. The logs may include extra information than query_status tool.",
+		Description: "Fetch health check logs from Ayd server. The result can be very large. Please use time range and aggregation in jq query to reduce the result size.",
 		Annotations: &mcp.ToolAnnotations{
 			IdempotentHint: true,
 			ReadOnlyHint:   true,
 		},
 	}, func(ctx context.Context, req *mcp.CallToolRequest, input MCPLogsInput) (*mcp.CallToolResult, MCPOutput, error) {
-		output := FetchLogsByJq(ctx, s, input)
-		return nil, output, nil
+		output, err := FetchLogsByJq(ctx, s, input)
+		return nil, output, err
 	})
 
 	return server
