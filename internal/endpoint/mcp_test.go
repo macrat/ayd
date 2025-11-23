@@ -959,10 +959,10 @@ func BenchmarkMCPHandler_QueryLogs_smallLogs(b *testing.B) {
 		_, err := sess.CallTool(b.Context(), &mcp.CallToolParams{
 			Name: "query_logs",
 			Arguments: endpoint.MCPLogsInput{
-				Since: "2000-01-01T00:00:00Z",
-				Until: "2100-01-01T00:00:00Z",
+				Since:  "2000-01-01T00:00:00Z",
+				Until:  "2100-01-01T00:00:00Z",
 				Search: `status=HEALTHY`,
-				JQ:    `group_by(.target)[] | {target: .[0].target, count: length}`,
+				JQ:     `group_by(.target)[] | {target: .[0].target, count: length}`,
 			},
 		})
 		if err != nil {
