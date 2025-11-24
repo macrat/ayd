@@ -110,7 +110,38 @@ func (s *Store) handleError(err error, exportableErrorMessage string) {
 func (s *Store) writer(ch <-chan api.Record, stopped chan struct{}) {
 	var reader strings.Reader
 
-	for r := range ch {
+	var err error
+
+	var f *os.File
+	var fpath string
+	var closeTimer <-chan time.Time
+
+	closeFile := func() {
+		err = f.Close()
+		s.handleError(err, "failed to close log file")
+		f = nil
+		closeTimer = nil
+	}
+
+	for {
+		var r api.Record
+		var ok bool
+		select {
+		case r, ok = <-ch:
+			if !ok {
+				if f != nil {
+					closeFile()
+				}
+				close(stopped)
+				return
+			}
+		case <-closeTimer:
+			if f != nil {
+				closeFile()
+			}
+			continue
+		}
+
 		msg := r.String() + "\n"
 
 		reader.Reset(msg)
@@ -124,25 +155,31 @@ func (s *Store) writer(ch <-chan api.Record, stopped chan struct{}) {
 
 		p := s.path.Build(r.Time)
 
-		if err := os.MkdirAll(filepath.Dir(p), 0755); err != nil {
-			s.handleError(err, "failed to create log directory")
+		if fpath != p && f != nil {
+			closeFile()
 		}
 
-		f, err := os.OpenFile(p, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
-		if err != nil {
-			s.handleError(err, "failed to open log file")
-			continue
+		if f == nil {
+			fpath = p
+			if err := os.MkdirAll(filepath.Dir(fpath), 0755); err != nil {
+				s.handleError(err, "failed to create log directory")
+			}
+
+			f, err = os.OpenFile(fpath, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
+			if err != nil {
+				s.handleError(err, "failed to open log file")
+				continue
+			}
+
+			// Ayd uses log file handler for 100 milliseconds.
+			// It is long enough to write logs from probes they run at the same time, yet short enough to avoid causing trouble when log rotation or file deletion happened.
+			closeTimer = time.After(100 * time.Millisecond)
 		}
 
 		reader.Seek(0, io.SeekStart)
 		_, err = reader.WriteTo(f)
 		s.handleError(err, "failed to write log file")
-
-		err = f.Close()
-		s.handleError(err, "failed to close log file")
 	}
-
-	close(stopped)
 }
 
 func (s *Store) Close() error {
