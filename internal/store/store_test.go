@@ -77,7 +77,8 @@ func TestStore_errorLogging(t *testing.T) {
 		Message: "hello world",
 	})
 
-	time.Sleep(10 * time.Millisecond)
+	// Wait for expiration of file pointer cache.
+	time.Sleep(110 * time.Millisecond)
 
 	if buf.Line(0) != `{"time":"2001-02-03T16:05:06Z", "status":"HEALTHY", "latency":42.000, "target":"dummy:#logging-test", "message":"hello world"}` {
 		t.Errorf("unexpected log (line 0):\n%s", buf)
@@ -97,7 +98,8 @@ func TestStore_errorLogging(t *testing.T) {
 		Message: "foo bar",
 	})
 
-	time.Sleep(10 * time.Millisecond)
+	// Wait for expiration of file pointer cache.
+	time.Sleep(110 * time.Millisecond)
 
 	if buf.Line(-2) != `{"time":"2001-02-03T16:05:07Z", "status":"HEALTHY", "latency":42.000, "target":"dummy:#logging-test", "message":"foo bar"}` {
 		t.Errorf("unexpected log (line -2):\n%s", buf)
