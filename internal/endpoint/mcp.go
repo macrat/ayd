@@ -14,11 +14,8 @@ import (
 // MCPOutput is an alias for mcp.Output for backward compatibility.
 type MCPOutput = mcputil.Output
 
-// JQQuery is an alias for mcp.JQQuery for backward compatibility.
-type JQQuery = mcputil.JQQuery
-
 // ParseJQ parses a jq query string.
-func ParseJQ(q string) (JQQuery, error) {
+func ParseJQ(q string) (mcputil.JQQuery, error) {
 	return mcputil.ParseJQ(q)
 }
 

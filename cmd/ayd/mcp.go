@@ -1,11 +1,11 @@
 package main
 
 import (
-	"bufio"
 	"context"
 	"fmt"
 	"io"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -23,13 +23,11 @@ import (
 
 // MCPCommand represents the MCP subcommand.
 type MCPCommand struct {
-	InStream  io.Reader
 	OutStream io.Writer
 	ErrStream io.Writer
 }
 
 var defaultMCPCommand = &MCPCommand{
-	InStream:  os.Stdin,
 	OutStream: os.Stdout,
 	ErrStream: os.Stderr,
 }
@@ -316,7 +314,7 @@ func matchKeywords(targets []string, keywords []string) bool {
 	for _, keyword := range keywords {
 		found := false
 		for _, target := range targets {
-			if containsKeyword(target, keyword) {
+			if strings.Contains(target, keyword) {
 				found = true
 				break
 			}
@@ -326,23 +324,4 @@ func matchKeywords(targets []string, keywords []string) bool {
 		}
 	}
 	return true
-}
-
-func containsKeyword(s, keyword string) bool {
-	for i := 0; i <= len(s)-len(keyword); i++ {
-		if s[i:i+len(keyword)] == keyword {
-			return true
-		}
-	}
-	return false
-}
-
-// stdinScanner reads lines from stdin.
-type stdinScanner struct {
-	reader *bufio.Reader
-}
-
-func (s *stdinScanner) Scan() bool {
-	_, err := s.reader.ReadString('\n')
-	return err == nil
 }

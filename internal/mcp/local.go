@@ -3,7 +3,6 @@ package mcp
 import (
 	"context"
 	"fmt"
-	"strings"
 	"sync"
 	"sync/atomic"
 
@@ -204,25 +203,4 @@ func AddLocalTools(server *mcp.Server, prober Prober, scheduler Scheduler) {
 		output, err := StopMonitoringFunc(scheduler, input)
 		return nil, output, err
 	})
-}
-
-// matchKeywords checks if all keywords are present in any of the targets.
-func matchKeywords(targets []string, keywords []string) bool {
-	if len(keywords) == 0 {
-		return true
-	}
-
-	for _, keyword := range keywords {
-		found := false
-		for _, target := range targets {
-			if strings.Contains(target, keyword) {
-				found = true
-				break
-			}
-		}
-		if !found {
-			return false
-		}
-	}
-	return true
 }
