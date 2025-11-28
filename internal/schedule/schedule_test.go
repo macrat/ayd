@@ -1,15 +1,14 @@
-package main_test
+package schedule_test
 
 import (
 	"math"
 	"testing"
 	"time"
 
-	"github.com/macrat/ayd/cmd/ayd"
 	"github.com/macrat/ayd/internal/schedule"
 )
 
-func TestParseCronSchedule(t *testing.T) {
+func TestParseCron(t *testing.T) {
 	tests := []struct {
 		Name   string
 		Input  string
@@ -30,7 +29,7 @@ func TestParseCronSchedule(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			s, err := main.ParseCronSchedule(tt.Input)
+			s, err := schedule.ParseCron(tt.Input)
 			if err != nil && err.Error() != tt.Error {
 				t.Fatalf("unexpected error: expected %#v but got %#v", tt.Error, err.Error())
 			}
@@ -45,7 +44,32 @@ func TestParseCronSchedule(t *testing.T) {
 	}
 }
 
-func TestAfterSchedule(t *testing.T) {
+func TestParseInterval(t *testing.T) {
+	tests := []struct {
+		Name   string
+		Input  string
+		Output string
+		Error  bool
+	}{
+		{"valid", "5m", "5m0s", false},
+		{"hour", "1h", "1h0m0s", false},
+		{"invalid", "invalid", "", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.Name, func(t *testing.T) {
+			s, err := schedule.ParseInterval(tt.Input)
+			if (err != nil) != tt.Error {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if err == nil && s.String() != tt.Output {
+				t.Errorf("expected %#v but got %#v", tt.Output, s.String())
+			}
+		})
+	}
+}
+
+func TestParseAfter(t *testing.T) {
 	type TimePair struct {
 		Input time.Time
 		Next  time.Time
@@ -94,7 +118,7 @@ func TestAfterSchedule(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.Input, func(t *testing.T) {
-			s, err := main.ParseAfterSchedule(tt.Input)
+			s, err := schedule.ParseAfter(tt.Input)
 			if err != nil {
 				t.Fatalf("failed to parse schedule: %s", err)
 			}
@@ -114,5 +138,52 @@ func TestAfterSchedule(t *testing.T) {
 				t.Errorf("unexpected NeedKickWhenStart value: expected %v but got %v", tt.KickWhenStart, s.NeedKickWhenStart())
 			}
 		})
+	}
+}
+
+func TestParse(t *testing.T) {
+	tests := []struct {
+		Name   string
+		Input  string
+		Output string
+		Error  bool
+	}{
+		{"interval", "5m", "5m0s", false},
+		{"cron", "0 0 * * ?", "0 0 * * ?", false},
+		{"daily", "@daily", "0 0 * * ?", false},
+		{"reboot", "@reboot", "@reboot", false},
+		{"invalid", "invalid", "", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.Name, func(t *testing.T) {
+			s, err := schedule.Parse(tt.Input)
+			if (err != nil) != tt.Error {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if err == nil && s.String() != tt.Output {
+				t.Errorf("expected %#v but got %#v", tt.Output, s.String())
+			}
+		})
+	}
+}
+
+func TestIntervalSchedule_NeedKickWhenStart(t *testing.T) {
+	s, _ := schedule.ParseInterval("5m")
+	if !s.NeedKickWhenStart() {
+		t.Error("IntervalSchedule should need kick when start")
+	}
+}
+
+func TestCronSchedule_NeedKickWhenStart(t *testing.T) {
+	s, _ := schedule.ParseCron("0 0 * * ?")
+	if s.NeedKickWhenStart() {
+		t.Error("CronSchedule should not need kick when start")
+	}
+}
+
+func TestDefaultSchedule(t *testing.T) {
+	if schedule.DefaultSchedule.String() != "5m0s" {
+		t.Errorf("unexpected default schedule: %s", schedule.DefaultSchedule.String())
 	}
 }
