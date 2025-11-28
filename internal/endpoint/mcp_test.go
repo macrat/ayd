@@ -123,14 +123,12 @@ func TestJQQuery(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.Query, func(t *testing.T) {
-			s := testutil.NewStore(t)
-
 			jq, err := endpoint.ParseJQ(tt.Query)
 			if err != nil {
 				t.Fatalf("failed to parse JQ query: %v", err)
 			}
 
-			output, err := jq.Run(context.Background(), s, "mcp/test", input)
+			output, err := jq.Run(context.Background(), input)
 			errStr := ""
 			if err != nil {
 				errStr = err.Error()
