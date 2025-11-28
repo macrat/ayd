@@ -176,6 +176,8 @@ func main() {
 			os.Exit(defaultAydCommand.Run(os.Args))
 		case "conv", "convert":
 			os.Exit(defaultConvCommand.Run(os.Args))
+		case "mcp":
+			os.Exit(defaultMCPCommand.Run(os.Args))
 		}
 	}
 
