@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/macrat/ayd/internal/endpoint"
+	mcputil "github.com/macrat/ayd/internal/mcp"
 	"github.com/macrat/ayd/internal/scheme"
 	"github.com/macrat/ayd/internal/testutil"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -123,7 +124,7 @@ func TestJQQuery(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.Query, func(t *testing.T) {
-			jq, err := endpoint.ParseJQ(tt.Query)
+			jq, err := mcputil.ParseJQ(tt.Query)
 			if err != nil {
 				t.Fatalf("failed to parse JQ query: %v", err)
 			}
@@ -152,7 +153,7 @@ func TestJQQuery(t *testing.T) {
 type MCPTest[I any] struct {
 	Name   string
 	Args   I
-	Expect endpoint.MCPOutput
+	Expect mcputil.Output
 	Error  string
 }
 
@@ -189,7 +190,7 @@ func RunMCPTest[I any](t *testing.T, tool string, tests []MCPTest[I]) {
 			}
 
 			if tt.Error == "" {
-				var resultData endpoint.MCPOutput
+				var resultData mcputil.Output
 				if text, ok := result.Content[0].(*mcp.TextContent); !ok {
 					t.Fatalf("expected TextContent, got %#v", result.Content[0])
 				} else if err := json.Unmarshal([]byte(text.Text), &resultData); err != nil {
@@ -219,11 +220,11 @@ func RunMCPTest[I any](t *testing.T, tool string, tests []MCPTest[I]) {
 }
 
 func TestMCPHandler_QueryStatus(t *testing.T) {
-	tests := []MCPTest[endpoint.MCPStatusInput]{
+	tests := []MCPTest[mcputil.StatusInput]{
 		{
 			Name: "without_query",
-			Args: endpoint.MCPStatusInput{},
-			Expect: endpoint.MCPOutput{
+			Args: mcputil.StatusInput{},
+			Expect: mcputil.Output{
 				Result: []any{
 					map[string]any{
 						"target":     "dummy:#no-record-yet",
@@ -274,19 +275,19 @@ func TestMCPHandler_QueryStatus(t *testing.T) {
 		},
 		{
 			Name: "with_single_result_query",
-			Args: endpoint.MCPStatusInput{
+			Args: mcputil.StatusInput{
 				JQ: `.[] | select(.target == "http://a.example.com") | .latest_log.message`,
 			},
-			Expect: endpoint.MCPOutput{
+			Expect: mcputil.Output{
 				Result: "hello world!!",
 			},
 		},
 		{
 			Name: "with_multiple_result_query",
-			Args: endpoint.MCPStatusInput{
+			Args: mcputil.StatusInput{
 				JQ: `.[] | {target: .target, latency: .latest_log.latency_ms}`,
 			},
-			Expect: endpoint.MCPOutput{
+			Expect: mcputil.Output{
 				Result: []any{
 					map[string]any{
 						"target":  "dummy:#no-record-yet",
@@ -309,40 +310,40 @@ func TestMCPHandler_QueryStatus(t *testing.T) {
 		},
 		{
 			Name: "with_no_result_query",
-			Args: endpoint.MCPStatusInput{
+			Args: mcputil.StatusInput{
 				JQ: `.[] | select(.status == "nonexistent")`,
 			},
-			Expect: endpoint.MCPOutput{
+			Expect: mcputil.Output{
 				Result: nil,
 			},
 		},
 		{
 			Name: "unclosed_bracket",
-			Args: endpoint.MCPStatusInput{
+			Args: mcputil.StatusInput{
 				JQ: `(.[0]`,
 			},
 			Error: `failed to parse jq query: unexpected EOF`,
 		},
 		{
 			Name: "iterate_null",
-			Args: endpoint.MCPStatusInput{
+			Args: mcputil.StatusInput{
 				JQ: `.[0].nonexistent[]`,
 			},
 			Error: `cannot iterate over: null`,
 		},
 		{
 			Name: "unknown_function",
-			Args: endpoint.MCPStatusInput{
+			Args: mcputil.StatusInput{
 				JQ: `.[0] | unknown_function`,
 			},
 			Error: `failed to parse jq query: function not defined: unknown_function/0`,
 		},
 		{
 			Name: "example_query",
-			Args: endpoint.MCPStatusInput{
+			Args: mcputil.StatusInput{
 				JQ: `.[] | {target: .target, status: .status, message: .latest_log.message}`,
 			},
-			Expect: endpoint.MCPOutput{
+			Expect: mcputil.Output{
 				Result: []any{
 					map[string]any{
 						"target":  "dummy:#no-record-yet",
@@ -376,11 +377,11 @@ func TestMCPHandler_QueryIncidents(t *testing.T) {
 	True := true
 	False := false
 
-	tests := []MCPTest[endpoint.MCPIncidentsInput]{
+	tests := []MCPTest[mcputil.IncidentsInput]{
 		{
 			Name: "without_parameters",
-			Args: endpoint.MCPIncidentsInput{},
-			Expect: endpoint.MCPOutput{
+			Args: mcputil.IncidentsInput{},
+			Expect: mcputil.Output{
 				Result: []any{
 					map[string]any{
 						"target":         "http://c.example.com",
@@ -396,11 +397,11 @@ func TestMCPHandler_QueryIncidents(t *testing.T) {
 		},
 		{
 			Name: "only_ongoing",
-			Args: endpoint.MCPIncidentsInput{
+			Args: mcputil.IncidentsInput{
 				IncludeOngoing:  &True,
 				IncludeResolved: false,
 			},
-			Expect: endpoint.MCPOutput{
+			Expect: mcputil.Output{
 				Result: []any{
 					map[string]any{
 						"target":         "http://c.example.com",
@@ -416,11 +417,11 @@ func TestMCPHandler_QueryIncidents(t *testing.T) {
 		},
 		{
 			Name: "only_resolved_with_false",
-			Args: endpoint.MCPIncidentsInput{
+			Args: mcputil.IncidentsInput{
 				IncludeOngoing:  &False,
 				IncludeResolved: true,
 			},
-			Expect: endpoint.MCPOutput{
+			Expect: mcputil.Output{
 				Result: []any{
 					map[string]any{
 						"target":         "http://b.example.com",
@@ -436,11 +437,11 @@ func TestMCPHandler_QueryIncidents(t *testing.T) {
 		},
 		{
 			Name: "without_query",
-			Args: endpoint.MCPIncidentsInput{
+			Args: mcputil.IncidentsInput{
 				IncludeOngoing:  &True,
 				IncludeResolved: true,
 			},
-			Expect: endpoint.MCPOutput{
+			Expect: mcputil.Output{
 				Result: []any{
 					map[string]any{
 						"target":         "http://b.example.com",
@@ -465,23 +466,23 @@ func TestMCPHandler_QueryIncidents(t *testing.T) {
 		},
 		{
 			Name: "with_single_result_query",
-			Args: endpoint.MCPIncidentsInput{
+			Args: mcputil.IncidentsInput{
 				IncludeOngoing:  &True,
 				IncludeResolved: true,
 				JQ:              `.[] | select(.target == "http://b.example.com") | .message`,
 			},
-			Expect: endpoint.MCPOutput{
+			Expect: mcputil.Output{
 				Result: "this is failure",
 			},
 		},
 		{
 			Name: "with_multiple_result_query",
-			Args: endpoint.MCPIncidentsInput{
+			Args: mcputil.IncidentsInput{
 				IncludeOngoing:  &True,
 				IncludeResolved: true,
 				JQ:              `.[] | {target: .target, resolved: (.ends_at != null)}`,
 			},
-			Expect: endpoint.MCPOutput{
+			Expect: mcputil.Output{
 				Result: []any{
 					map[string]any{
 						"target":   "http://b.example.com",
@@ -496,42 +497,42 @@ func TestMCPHandler_QueryIncidents(t *testing.T) {
 		},
 		{
 			Name: "with_no_result_query",
-			Args: endpoint.MCPIncidentsInput{
+			Args: mcputil.IncidentsInput{
 				JQ: `.[] | select(.status == "nonexistent")`,
 			},
-			Expect: endpoint.MCPOutput{
+			Expect: mcputil.Output{
 				Result: nil,
 			},
 		},
 		{
 			Name: "unclosed_bracket",
-			Args: endpoint.MCPIncidentsInput{
+			Args: mcputil.IncidentsInput{
 				JQ: `(.[0]`,
 			},
 			Error: `failed to parse jq query: unexpected EOF`,
 		},
 		{
 			Name: "iterate_null",
-			Args: endpoint.MCPIncidentsInput{
+			Args: mcputil.IncidentsInput{
 				JQ: `.[0].nonexistent[]`,
 			},
 			Error: `cannot iterate over: null`,
 		},
 		{
 			Name: "unknown_function",
-			Args: endpoint.MCPIncidentsInput{
+			Args: mcputil.IncidentsInput{
 				JQ: `.[0] | unknown_function`,
 			},
 			Error: `failed to parse jq query: function not defined: unknown_function/0`,
 		},
 		{
 			Name: "example_query",
-			Args: endpoint.MCPIncidentsInput{
+			Args: mcputil.IncidentsInput{
 				IncludeOngoing:  &True,
 				IncludeResolved: true,
 				JQ:              `.[] | {target: .target, status: .status, message: .message, starts_at: .starts_at, resolved: (.ends_at != null)}`,
 			},
-			Expect: endpoint.MCPOutput{
+			Expect: mcputil.Output{
 				Result: []any{
 					map[string]any{
 						"target":    "http://b.example.com",
@@ -556,33 +557,33 @@ func TestMCPHandler_QueryIncidents(t *testing.T) {
 }
 
 func TestMCPHandler_QueryLogs(t *testing.T) {
-	tests := []MCPTest[endpoint.MCPLogsInput]{
+	tests := []MCPTest[mcputil.LogsInput]{
 		{
 			Name:  "without_params",
-			Args:  endpoint.MCPLogsInput{},
+			Args:  mcputil.LogsInput{},
 			Error: "since and until parameters are required",
 		},
 		{
 			Name: "without_since",
-			Args: endpoint.MCPLogsInput{
+			Args: mcputil.LogsInput{
 				Until: "2021-01-02T15:04:10Z",
 			},
 			Error: "since and until parameters are required",
 		},
 		{
 			Name: "without_until",
-			Args: endpoint.MCPLogsInput{
+			Args: mcputil.LogsInput{
 				Since: "2021-01-02T15:04:00Z",
 			},
 			Error: "since and until parameters are required",
 		},
 		{
 			Name: "without_query",
-			Args: endpoint.MCPLogsInput{
+			Args: mcputil.LogsInput{
 				Since: "2000-01-01T00:00:00Z",
 				Until: "2100-01-01T00:00:00Z",
 			},
-			Expect: endpoint.MCPOutput{
+			Expect: mcputil.Output{
 				Result: []any{
 					map[string]any{
 						"latency":    "123.456ms",
@@ -656,12 +657,12 @@ func TestMCPHandler_QueryLogs(t *testing.T) {
 		},
 		{
 			Name: "with_single_object_result_query",
-			Args: endpoint.MCPLogsInput{
+			Args: mcputil.LogsInput{
 				Since: "2000-01-01T00:00:00Z",
 				Until: "2100-01-01T00:00:00Z",
 				JQ:    `.[0]`,
 			},
-			Expect: endpoint.MCPOutput{
+			Expect: mcputil.Output{
 				Result: map[string]any{
 					"latency":    "123.456ms",
 					"latency_ms": 123.456,
@@ -675,23 +676,23 @@ func TestMCPHandler_QueryLogs(t *testing.T) {
 		},
 		{
 			Name: "with_single_value_result_query",
-			Args: endpoint.MCPLogsInput{
+			Args: mcputil.LogsInput{
 				Since: "2000-01-01T00:00:00Z",
 				Until: "2100-01-01T00:00:00Z",
 				JQ:    `.[0].message`,
 			},
-			Expect: endpoint.MCPOutput{
+			Expect: mcputil.Output{
 				Result: "hello world",
 			},
 		},
 		{
 			Name: "with_multiple_result_query",
-			Args: endpoint.MCPLogsInput{
+			Args: mcputil.LogsInput{
 				Since: "2000-01-01T00:00:00Z",
 				Until: "2100-01-01T00:00:00Z",
 				JQ:    `group_by(.target) | map({target: .[0].target, count: length})`,
 			},
-			Expect: endpoint.MCPOutput{
+			Expect: mcputil.Output{
 				Result: []any{
 					map[string]any{
 						"target": "http://a.example.com",
@@ -710,23 +711,23 @@ func TestMCPHandler_QueryLogs(t *testing.T) {
 		},
 		{
 			Name: "with_no_result_query",
-			Args: endpoint.MCPLogsInput{
+			Args: mcputil.LogsInput{
 				Since: "2000-01-01T00:00:00Z",
 				Until: "2100-01-01T00:00:00Z",
 				JQ:    `.[] | select(.target == "dummy:nonexistent")`,
 			},
-			Expect: endpoint.MCPOutput{
+			Expect: mcputil.Output{
 				Result: nil,
 			},
 		},
 		{
 			Name: "with_search",
-			Args: endpoint.MCPLogsInput{
+			Args: mcputil.LogsInput{
 				Since:  "2000-01-01T00:00:00Z",
 				Until:  "2100-01-01T00:00:00Z",
 				Search: `message=hello\ world*`,
 			},
-			Expect: endpoint.MCPOutput{
+			Expect: mcputil.Output{
 				Result: []any{
 					map[string]any{
 						"latency":    "123.456ms",
@@ -760,12 +761,12 @@ func TestMCPHandler_QueryLogs(t *testing.T) {
 		},
 		{
 			Name: "with_search_and_time_query",
-			Args: endpoint.MCPLogsInput{
+			Args: mcputil.LogsInput{
 				Since:  "2000-01-01T00:00:00Z",
 				Until:  "2100-01-01T00:00:00Z",
 				Search: `message=hello\ world* time=2021-01-02T15:04:06Z`,
 			},
-			Expect: endpoint.MCPOutput{
+			Expect: mcputil.Output{
 				Result: []any{
 					map[string]any{
 						"latency":    "234.567ms",
@@ -781,7 +782,7 @@ func TestMCPHandler_QueryLogs(t *testing.T) {
 		},
 		{
 			Name: "invalid_since",
-			Args: endpoint.MCPLogsInput{
+			Args: mcputil.LogsInput{
 				Since: "invalid-time-format",
 				Until: "2021-01-02T15:04:10Z",
 			},
@@ -789,7 +790,7 @@ func TestMCPHandler_QueryLogs(t *testing.T) {
 		},
 		{
 			Name: "invalid_until",
-			Args: endpoint.MCPLogsInput{
+			Args: mcputil.LogsInput{
 				Since: "2021-01-02T15:04:00Z",
 				Until: "invalid-time-format",
 			},
@@ -797,7 +798,7 @@ func TestMCPHandler_QueryLogs(t *testing.T) {
 		},
 		{
 			Name: "invalid_query",
-			Args: endpoint.MCPLogsInput{
+			Args: mcputil.LogsInput{
 				Since: "2000-01-01T00:00:00Z",
 				Until: "2100-01-01T00:00:00Z",
 				JQ:    `.[`,
@@ -806,7 +807,7 @@ func TestMCPHandler_QueryLogs(t *testing.T) {
 		},
 		{
 			Name: "unknown_function",
-			Args: endpoint.MCPLogsInput{
+			Args: mcputil.LogsInput{
 				Since: "2000-01-01T00:00:00Z",
 				Until: "2100-01-01T00:00:00Z",
 				JQ:    `unknown_function(123)`,
@@ -815,12 +816,12 @@ func TestMCPHandler_QueryLogs(t *testing.T) {
 		},
 		{
 			Name: "example_query",
-			Args: endpoint.MCPLogsInput{
+			Args: mcputil.LogsInput{
 				Since: "2000-01-01T00:00:00Z",
 				Until: "2100-01-01T00:00:00Z",
 				JQ:    `map(select(.status != "HEALTHY")) | group_by(.target)[] | {target: .[0].target, count: length, max_latency: (map(.latency_ms) | max)}`,
 			},
-			Expect: endpoint.MCPOutput{
+			Expect: mcputil.Output{
 				Result: []any{
 					map[string]any{
 						"target":      "http://b.example.com",
@@ -924,7 +925,7 @@ func BenchmarkMCPHandler_QueryStatus(b *testing.B) {
 	for b.Loop() {
 		_, err := sess.CallTool(b.Context(), &mcp.CallToolParams{
 			Name: "query_status",
-			Arguments: endpoint.MCPStatusInput{
+			Arguments: mcputil.StatusInput{
 				JQ: `.[] | {target: .target, status: .status, message: .latest_log.message}`,
 			},
 		})
@@ -940,7 +941,7 @@ func BenchmarkMCPHandler_QueryIncidents(b *testing.B) {
 	for b.Loop() {
 		_, err := sess.CallTool(b.Context(), &mcp.CallToolParams{
 			Name: "query_incidents",
-			Arguments: endpoint.MCPStatusInput{
+			Arguments: mcputil.StatusInput{
 				JQ: `.[] | {target: .target, status: .status, message: .message, starts_at: .starts_at, resolved: (.ends_at != null)}`,
 			},
 		})
@@ -956,7 +957,7 @@ func BenchmarkMCPHandler_QueryLogs_smallLogs(b *testing.B) {
 	for b.Loop() {
 		_, err := sess.CallTool(b.Context(), &mcp.CallToolParams{
 			Name: "query_logs",
-			Arguments: endpoint.MCPLogsInput{
+			Arguments: mcputil.LogsInput{
 				Since:  "2000-01-01T00:00:00Z",
 				Until:  "2100-01-01T00:00:00Z",
 				Search: `status=HEALTHY`,
@@ -988,7 +989,7 @@ func BenchmarkMCPHandler_QueryLogs_largeLogs(b *testing.B) {
 	for b.Loop() {
 		_, err := sess.CallTool(b.Context(), &mcp.CallToolParams{
 			Name: "query_logs",
-			Arguments: endpoint.MCPLogsInput{
+			Arguments: mcputil.LogsInput{
 				Since:  "2000-01-01T00:00:00Z",
 				Until:  "2100-01-01T00:00:00Z",
 				Search: `status=HEALTHY`,

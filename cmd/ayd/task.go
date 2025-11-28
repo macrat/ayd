@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/macrat/ayd/internal/ayderr"
+	"github.com/macrat/ayd/internal/schedule"
 	"github.com/macrat/ayd/internal/scheme"
 	"github.com/macrat/ayd/internal/store"
 	api "github.com/macrat/ayd/lib-ayd"
@@ -18,7 +19,7 @@ var (
 )
 
 type Task struct {
-	Schedule Schedule
+	Schedule schedule.Schedule
 	Prober   scheme.Prober
 }
 
@@ -56,11 +57,11 @@ func ParseArgs(args []string) ([]Task, error) {
 	var tasks []Task
 	errors := &ayderr.ListBuilder{What: ErrInvalidArgument}
 
-	schedule := DEFAULT_SCHEDULE
+	sched := schedule.DefaultSchedule
 
 	for _, a := range args {
-		if s, err := ParseSchedule(a); err == nil {
-			schedule = s
+		if s, err := schedule.Parse(a); err == nil {
+			sched = s
 			continue
 		}
 
@@ -80,7 +81,7 @@ func ParseArgs(args []string) ([]Task, error) {
 		}
 
 		tasks = append(tasks, Task{
-			Schedule: schedule,
+			Schedule: sched,
 			Prober:   p,
 		})
 	}
