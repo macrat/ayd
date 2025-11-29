@@ -21,13 +21,13 @@ func newFlushWriter(w http.ResponseWriter) io.Writer {
 	if !ok {
 		return w
 	}
-	return flushWriter{
+	return &flushWriter{
 		w: w,
 		f: f,
 	}
 }
 
-func (w flushWriter) Write(b []byte) (int, error) {
+func (w *flushWriter) Write(b []byte) (int, error) {
 	n, err := w.w.Write(b)
 
 	w.count += n
