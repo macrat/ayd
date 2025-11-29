@@ -173,6 +173,47 @@ func TestScheduler_ListMonitoring(t *testing.T) {
 	})
 }
 
+func TestScheduler_StartMonitoring_KickStart(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	reporter := &mockReporter{}
+	scheduler := NewScheduler(ctx, reporter)
+	defer scheduler.Stop()
+
+	t.Run("interval_schedule_kicks_immediately", func(t *testing.T) {
+		reporter.records = nil // reset
+
+		_, err := scheduler.StartMonitoring("5m", []string{"dummy:healthy"})
+		if err != nil {
+			t.Fatalf("failed to start monitoring: %v", err)
+		}
+
+		// Wait for kick-start to complete (it runs in a goroutine)
+		time.Sleep(100 * time.Millisecond)
+
+		if len(reporter.records) == 0 {
+			t.Error("expected immediate probe for interval schedule (kick-start)")
+		}
+	})
+
+	t.Run("cron_schedule_no_immediate_kick", func(t *testing.T) {
+		reporter.records = nil // reset
+
+		_, err := scheduler.StartMonitoring("0 0 * * ?", []string{"dummy:healthy"})
+		if err != nil {
+			t.Fatalf("failed to start monitoring: %v", err)
+		}
+
+		// Give it a moment to ensure no kick happened
+		time.Sleep(100 * time.Millisecond)
+
+		if len(reporter.records) != 0 {
+			t.Error("expected no immediate probe for cron schedule")
+		}
+	})
+}
+
 func TestMatchKeywords(t *testing.T) {
 	tests := []struct {
 		name     string

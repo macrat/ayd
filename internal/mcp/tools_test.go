@@ -640,3 +640,127 @@ func TestOutput_Structure(t *testing.T) {
 		t.Errorf("unexpected key value (-want +got):\n%s", diff)
 	}
 }
+
+func TestFetchLogsByJQ_WithSearch(t *testing.T) {
+	target, _ := api.ParseURL("https://example.com")
+
+	store := &mockStore{
+		name: "test",
+		logs: []api.Record{
+			{
+				Time:    time.Date(2021, 1, 2, 3, 4, 5, 0, time.UTC),
+				Status:  api.StatusHealthy,
+				Target:  target,
+				Latency: 100 * time.Millisecond,
+				Message: "ok",
+			},
+			{
+				Time:    time.Date(2021, 1, 2, 3, 4, 6, 0, time.UTC),
+				Status:  api.StatusFailure,
+				Target:  target,
+				Latency: 200 * time.Millisecond,
+				Message: "error",
+			},
+			{
+				Time:    time.Date(2021, 1, 2, 3, 4, 7, 0, time.UTC),
+				Status:  api.StatusHealthy,
+				Target:  target,
+				Latency: 50 * time.Millisecond,
+				Message: "recovered",
+			},
+		},
+	}
+
+	t.Run("filter_by_status", func(t *testing.T) {
+		output, err := mcp.FetchLogsByJQ(context.Background(), store, mcp.LogsInput{
+			Since:  "2021-01-01T00:00:00Z",
+			Until:  "2021-01-03T00:00:00Z",
+			Search: "status=HEALTHY",
+		})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		results, ok := output.Result.([]any)
+		if !ok {
+			t.Fatalf("expected []any, got %T", output.Result)
+		}
+		if len(results) != 2 {
+			t.Errorf("expected 2 HEALTHY logs, got %d", len(results))
+		}
+		for _, r := range results {
+			rec := r.(map[string]any)
+			if rec["status"] != "HEALTHY" {
+				t.Errorf("expected HEALTHY status, got %v", rec["status"])
+			}
+		}
+	})
+
+	t.Run("filter_by_status_failure", func(t *testing.T) {
+		output, err := mcp.FetchLogsByJQ(context.Background(), store, mcp.LogsInput{
+			Since:  "2021-01-01T00:00:00Z",
+			Until:  "2021-01-03T00:00:00Z",
+			Search: "status=FAILURE",
+		})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		results, ok := output.Result.([]any)
+		if !ok {
+			// Single result may be unwrapped
+			if m, ok := output.Result.(map[string]any); ok {
+				if m["status"] != "FAILURE" {
+					t.Errorf("expected FAILURE status, got %v", m["status"])
+				}
+				return
+			}
+			t.Fatalf("expected []any or map[string]any, got %T", output.Result)
+		}
+		if len(results) != 1 {
+			t.Errorf("expected 1 FAILURE log, got %d", len(results))
+		}
+	})
+
+	t.Run("search_with_jq", func(t *testing.T) {
+		output, err := mcp.FetchLogsByJQ(context.Background(), store, mcp.LogsInput{
+			Since:  "2021-01-01T00:00:00Z",
+			Until:  "2021-01-03T00:00:00Z",
+			Search: "status=HEALTHY",
+			JQ:     `map(.message)`,
+		})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		results, ok := output.Result.([]any)
+		if !ok {
+			t.Fatalf("expected []any, got %T", output.Result)
+		}
+		if len(results) != 2 {
+			t.Errorf("expected 2 messages, got %d", len(results))
+		}
+	})
+
+	t.Run("filter_no_match", func(t *testing.T) {
+		output, err := mcp.FetchLogsByJQ(context.Background(), store, mcp.LogsInput{
+			Since:  "2021-01-01T00:00:00Z",
+			Until:  "2021-01-03T00:00:00Z",
+			Search: "status=UNKNOWN",
+		})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		results, ok := output.Result.([]any)
+		if !ok {
+			if output.Result != nil {
+				t.Fatalf("expected []any or nil, got %T", output.Result)
+			}
+			return
+		}
+		if len(results) != 0 {
+			t.Errorf("expected 0 logs, got %d", len(results))
+		}
+	})
+}
