@@ -77,7 +77,7 @@ func IncidentsJSONEndpoint(s Store) http.HandlerFunc {
 
 		enc := json.NewEncoder(newFlushWriter(w))
 
-		handleError(s, "log.json", enc.EncodeContext(r.Context(), newIncidentsInfo(s)))
+		handleError(s, "incidents.json", enc.EncodeContext(r.Context(), newIncidentsInfo(s)))
 	}
 }
 
