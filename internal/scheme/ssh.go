@@ -40,7 +40,7 @@ func newSSHConfig(u *api.URL) (sshConfig, error) {
 		c.Host += ":22"
 	}
 
-	if u.User == nil {
+	if u.User == nil || u.User.Username() == "" {
 		return c, ErrMissingSSHUsername
 	}
 	c.User = u.User.Username()

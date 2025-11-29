@@ -87,6 +87,7 @@ func TestTargetURLNormalize(t *testing.T) {
 		{"ssh://foo@example.com", api.URL{}, scheme.ErrMissingSSHIdentifier},
 		{"ssh:", api.URL{}, scheme.ErrMissingHost},
 		{"ssh://example.com", api.URL{}, scheme.ErrMissingSSHUsername},
+		{"ssh://:@example.com", api.URL{}, scheme.ErrMissingSSHUsername},
 
 		{"sftp://foo:bar@example.com", api.URL{Scheme: "sftp", Host: "example.com"}, nil},
 		{"sftp://foo:bar@example.com/path/to/file", api.URL{Scheme: "sftp", Host: "example.com", Path: "/path/to/file"}, nil},
@@ -95,6 +96,7 @@ func TestTargetURLNormalize(t *testing.T) {
 		{"sftp-abc://foo:bar@example.com", api.URL{}, scheme.ErrUnsupportedScheme},
 		{"sftp:", api.URL{}, scheme.ErrMissingHost},
 		{"sftp://example.com", api.URL{}, scheme.ErrMissingSSHUsername},
+		{"sftp://:@example.com", api.URL{}, scheme.ErrMissingSSHUsername},
 
 		{"dns:example.com", api.URL{Scheme: "dns", Opaque: "example.com"}, nil},
 		{"dns:///example.com", api.URL{Scheme: "dns", Opaque: "example.com"}, nil},
@@ -129,6 +131,7 @@ func TestTargetURLNormalize(t *testing.T) {
 		{"exec+ssh://root:abc@example.com/bin/cat?fingerprint=SHA256:abc+def", api.URL{Scheme: "exec+ssh", Host: "example.com", Path: "/bin/cat", RawQuery: "fingerprint=SHA256%3Aabc%2Bdef"}, nil},
 		{"exec+ssh:///bin/cat", api.URL{}, scheme.ErrMissingHost},
 		{"exec+ssh://example.com/bin/cat", api.URL{}, scheme.ErrMissingSSHUsername},
+		{"exec+ssh://:@example.com/bin/cat", api.URL{}, scheme.ErrMissingSSHUsername},
 		{"exec+ssh://root@example.com/bin/cat", api.URL{}, scheme.ErrMissingSSHIdentifier},
 
 		{"file:testdata/test.bat", api.URL{Scheme: "file", Opaque: "testdata/test.bat"}, nil},
@@ -165,6 +168,7 @@ func TestTargetURLNormalize(t *testing.T) {
 		{"source+exec:./testdata/listing-script", api.URL{Scheme: "source+exec", Opaque: "./testdata/listing-script"}, nil},
 
 		{"source+ssh://example.com", api.URL{}, scheme.ErrMissingSSHUsername},
+		{"source+ssh://:@example.com", api.URL{}, scheme.ErrMissingSSHUsername},
 		{"source+ssh://foo@example.com", api.URL{}, scheme.ErrMissingSSHIdentifier},
 		{"source+ssh://foo:bar@example.com", api.URL{}, scheme.ErrMissingCommand},
 	}
