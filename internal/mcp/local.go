@@ -18,21 +18,6 @@ type MonitoringEntry struct {
 	Targets  []string `json:"targets"`
 }
 
-// Scheduler is an interface for managing monitoring schedules.
-type Scheduler interface {
-	// StartMonitoring starts monitoring with the given schedule and targets.
-	// It returns the ID of the new monitoring entry.
-	StartMonitoring(schedule string, targets []string) (string, error)
-
-	// StopMonitoring stops the monitoring with the given IDs.
-	// It returns the list of successfully stopped IDs and any errors.
-	StopMonitoring(ids []string) ([]string, []string)
-
-	// ListMonitoring returns all monitoring entries.
-	// If keywords are provided, only entries matching ALL keywords are returned.
-	ListMonitoring(keywords []string) []MonitoringEntry
-}
-
 // CheckTargetInput is the input for check_target tool.
 type CheckTargetInput struct {
 	Targets []string `json:"targets" jsonschema:"URLs to check. Each URL will be probed once."`
@@ -149,7 +134,7 @@ func CheckTarget(ctx context.Context, input CheckTargetInput) (CheckTargetOutput
 }
 
 // StartMonitoringFunc starts monitoring with the given schedule and targets.
-func StartMonitoringFunc(scheduler Scheduler, input StartMonitoringInput) (StartMonitoringOutput, error) {
+func StartMonitoringFunc(scheduler *Scheduler, input StartMonitoringInput) (StartMonitoringOutput, error) {
 	if input.Schedule == "" {
 		return StartMonitoringOutput{}, fmt.Errorf("schedule is required")
 	}
@@ -166,13 +151,13 @@ func StartMonitoringFunc(scheduler Scheduler, input StartMonitoringInput) (Start
 }
 
 // ListMonitoringFunc returns all monitoring entries that match the keywords.
-func ListMonitoringFunc(scheduler Scheduler, input ListMonitoringInput) (ListMonitoringOutput, error) {
+func ListMonitoringFunc(scheduler *Scheduler, input ListMonitoringInput) (ListMonitoringOutput, error) {
 	entries := scheduler.ListMonitoring(input.Keywords)
 	return ListMonitoringOutput{Entries: entries}, nil
 }
 
 // StopMonitoringFunc stops the monitoring entries with the given IDs.
-func StopMonitoringFunc(scheduler Scheduler, input StopMonitoringInput) (StopMonitoringOutput, error) {
+func StopMonitoringFunc(scheduler *Scheduler, input StopMonitoringInput) (StopMonitoringOutput, error) {
 	if len(input.IDs) == 0 {
 		return StopMonitoringOutput{}, fmt.Errorf("at least one ID is required")
 	}
@@ -183,7 +168,7 @@ func StopMonitoringFunc(scheduler Scheduler, input StopMonitoringInput) (StopMon
 
 // AddLocalTools adds the local-only tools to the MCP server.
 // These tools are: check_target, start_monitoring, list_monitoring, stop_monitoring.
-func AddLocalTools(server *mcp.Server, scheduler Scheduler) {
+func AddLocalTools(server *mcp.Server, scheduler *Scheduler) {
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "check_target",
 		Title:       "Check target",

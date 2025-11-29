@@ -22,7 +22,7 @@ func (r *mockReporter) DeactivateTarget(source *api.URL, targets ...*api.URL) {
 	// No-op for testing
 }
 
-func TestDefaultScheduler_StartMonitoring(t *testing.T) {
+func TestScheduler_StartMonitoring(t *testing.T) {
 	// Set up mock time for schedule tests
 	origTime := schedule.CurrentTime
 	schedule.CurrentTime = func() time.Time {
@@ -34,7 +34,7 @@ func TestDefaultScheduler_StartMonitoring(t *testing.T) {
 	defer cancel()
 
 	reporter := &mockReporter{}
-	scheduler := NewDefaultScheduler(ctx, reporter)
+	scheduler := NewScheduler(ctx, reporter)
 	defer scheduler.Stop()
 
 	t.Run("valid_interval_schedule", func(t *testing.T) {
@@ -90,12 +90,12 @@ func TestDefaultScheduler_StartMonitoring(t *testing.T) {
 	})
 }
 
-func TestDefaultScheduler_StopMonitoring(t *testing.T) {
+func TestScheduler_StopMonitoring(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	reporter := &mockReporter{}
-	scheduler := NewDefaultScheduler(ctx, reporter)
+	scheduler := NewScheduler(ctx, reporter)
 	defer scheduler.Stop()
 
 	// Start a monitoring entry
@@ -133,12 +133,12 @@ func TestDefaultScheduler_StopMonitoring(t *testing.T) {
 	})
 }
 
-func TestDefaultScheduler_ListMonitoring(t *testing.T) {
+func TestScheduler_ListMonitoring(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	reporter := &mockReporter{}
-	scheduler := NewDefaultScheduler(ctx, reporter)
+	scheduler := NewScheduler(ctx, reporter)
 	defer scheduler.Stop()
 
 	// Start multiple monitoring entries

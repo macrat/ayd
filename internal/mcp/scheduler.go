@@ -12,8 +12,8 @@ import (
 	"github.com/robfig/cron/v3"
 )
 
-// DefaultScheduler implements Scheduler interface for local MCP.
-type DefaultScheduler struct {
+// Scheduler manages monitoring schedules for local MCP.
+type Scheduler struct {
 	ctx      context.Context
 	cron     *cron.Cron
 	reporter scheme.Reporter
@@ -27,9 +27,9 @@ type schedulerEntry struct {
 	targets  []string
 }
 
-// NewDefaultScheduler creates a new DefaultScheduler.
-func NewDefaultScheduler(ctx context.Context, reporter scheme.Reporter) *DefaultScheduler {
-	scheduler := &DefaultScheduler{
+// NewScheduler creates a new Scheduler.
+func NewScheduler(ctx context.Context, reporter scheme.Reporter) *Scheduler {
+	scheduler := &Scheduler{
 		ctx:      ctx,
 		cron:     cron.New(),
 		reporter: reporter,
@@ -40,12 +40,12 @@ func NewDefaultScheduler(ctx context.Context, reporter scheme.Reporter) *Default
 }
 
 // Stop stops the scheduler.
-func (s *DefaultScheduler) Stop() {
+func (s *Scheduler) Stop() {
 	s.cron.Stop()
 }
 
 // StartMonitoring starts monitoring with the given schedule and targets.
-func (s *DefaultScheduler) StartMonitoring(scheduleSpec string, targets []string) (string, error) {
+func (s *Scheduler) StartMonitoring(scheduleSpec string, targets []string) (string, error) {
 	sched, err := schedule.Parse(scheduleSpec)
 	if err != nil {
 		return "", fmt.Errorf("invalid schedule: %w", err)
@@ -90,7 +90,7 @@ func (s *DefaultScheduler) StartMonitoring(scheduleSpec string, targets []string
 }
 
 // StopMonitoring stops the monitoring with the given IDs.
-func (s *DefaultScheduler) StopMonitoring(ids []string) ([]string, []string) {
+func (s *Scheduler) StopMonitoring(ids []string) ([]string, []string) {
 	var stopped, errors []string
 
 	s.mu.Lock()
@@ -110,7 +110,7 @@ func (s *DefaultScheduler) StopMonitoring(ids []string) ([]string, []string) {
 }
 
 // ListMonitoring returns all monitoring entries.
-func (s *DefaultScheduler) ListMonitoring(keywords []string) []MonitoringEntry {
+func (s *Scheduler) ListMonitoring(keywords []string) []MonitoringEntry {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 

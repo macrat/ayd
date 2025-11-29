@@ -65,7 +65,7 @@ func (cmd *MCPCommand) Run(args []string) int {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	scheduler := mcputil.NewDefaultScheduler(ctx, s)
+	scheduler := mcputil.NewScheduler(ctx, s)
 	defer scheduler.Stop()
 
 	server := mcputil.NewLocalServer(*instanceName, s, nil, scheduler)

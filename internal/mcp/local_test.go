@@ -2,92 +2,23 @@ package mcp_test
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/macrat/ayd/internal/mcp"
+	api "github.com/macrat/ayd/lib-ayd"
 )
 
-// mockScheduler is a mock implementation of mcp.Scheduler for testing.
-type mockScheduler struct {
-	entries []mcp.MonitoringEntry
-	nextID  int
+// mockReporter implements scheme.Reporter for testing.
+type mockReporter struct {
+	records []api.Record
 }
 
-func (s *mockScheduler) StartMonitoring(schedule string, targets []string) (string, error) {
-	if schedule == "invalid" {
-		return "", fmt.Errorf("invalid schedule")
-	}
-	s.nextID++
-	id := fmt.Sprintf("monitor-%d", s.nextID)
-	s.entries = append(s.entries, mcp.MonitoringEntry{
-		ID:       id,
-		Schedule: schedule,
-		Targets:  targets,
-	})
-	return id, nil
+func (r *mockReporter) Report(source *api.URL, rec api.Record) {
+	r.records = append(r.records, rec)
 }
 
-func (s *mockScheduler) StopMonitoring(ids []string) ([]string, []string) {
-	var stopped, errors []string
-	for _, id := range ids {
-		found := false
-		for i, entry := range s.entries {
-			if entry.ID == id {
-				s.entries = append(s.entries[:i], s.entries[i+1:]...)
-				stopped = append(stopped, id)
-				found = true
-				break
-			}
-		}
-		if !found {
-			errors = append(errors, fmt.Sprintf("%s: not found", id))
-		}
-	}
-	return stopped, errors
-}
-
-func (s *mockScheduler) ListMonitoring(keywords []string) []mcp.MonitoringEntry {
-	if len(keywords) == 0 {
-		return s.entries
-	}
-
-	var filtered []mcp.MonitoringEntry
-	for _, entry := range s.entries {
-		match := true
-		for _, keyword := range keywords {
-			found := false
-			for _, target := range entry.Targets {
-				if containsKeyword(target, keyword) {
-					found = true
-					break
-				}
-			}
-			if !found {
-				match = false
-				break
-			}
-		}
-		if match {
-			filtered = append(filtered, entry)
-		}
-	}
-	return filtered
-}
-
-func containsKeyword(s, keyword string) bool {
-	return len(keyword) == 0 || (len(s) >= len(keyword) && findSubstring(s, keyword))
-}
-
-func findSubstring(s, sub string) bool {
-	for i := 0; i <= len(s)-len(sub); i++ {
-		if s[i:i+len(sub)] == sub {
-			return true
-		}
-	}
-	return false
-}
+func (r *mockReporter) DeactivateTarget(source *api.URL, targets ...*api.URL) {}
 
 func TestCheckTarget(t *testing.T) {
 	t.Run("single_target", func(t *testing.T) {
@@ -118,7 +49,6 @@ func TestCheckTarget(t *testing.T) {
 			t.Errorf("expected 2 results, got %d", len(output.Results))
 		}
 
-		// Check that we have both healthy and failure results
 		var hasHealthy, hasFailure bool
 		for _, result := range output.Results {
 			if result["status"] == "HEALTHY" {
@@ -163,12 +93,17 @@ func TestCheckTarget(t *testing.T) {
 }
 
 func TestStartMonitoring(t *testing.T) {
-	scheduler := &mockScheduler{}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	reporter := &mockReporter{}
+	scheduler := mcp.NewScheduler(ctx, reporter)
+	defer scheduler.Stop()
 
 	t.Run("success", func(t *testing.T) {
 		output, err := mcp.StartMonitoringFunc(scheduler, mcp.StartMonitoringInput{
 			Schedule: "5m",
-			Targets:  []string{"https://example.com"},
+			Targets:  []string{"dummy:healthy"},
 		})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -180,7 +115,7 @@ func TestStartMonitoring(t *testing.T) {
 
 	t.Run("no_schedule", func(t *testing.T) {
 		_, err := mcp.StartMonitoringFunc(scheduler, mcp.StartMonitoringInput{
-			Targets: []string{"https://example.com"},
+			Targets: []string{"dummy:healthy"},
 		})
 		if err == nil {
 			t.Error("expected error for empty schedule")
@@ -200,20 +135,40 @@ func TestStartMonitoring(t *testing.T) {
 	t.Run("invalid_schedule", func(t *testing.T) {
 		_, err := mcp.StartMonitoringFunc(scheduler, mcp.StartMonitoringInput{
 			Schedule: "invalid",
-			Targets:  []string{"https://example.com"},
+			Targets:  []string{"dummy:healthy"},
 		})
 		if err == nil {
 			t.Error("expected error for invalid schedule")
 		}
 	})
+
+	t.Run("invalid_target", func(t *testing.T) {
+		_, err := mcp.StartMonitoringFunc(scheduler, mcp.StartMonitoringInput{
+			Schedule: "5m",
+			Targets:  []string{"invalid-scheme://example.com"},
+		})
+		if err == nil {
+			t.Error("expected error for invalid target")
+		}
+	})
 }
 
 func TestListMonitoring(t *testing.T) {
-	scheduler := &mockScheduler{
-		entries: []mcp.MonitoringEntry{
-			{ID: "1", Schedule: "5m", Targets: []string{"https://example.com"}},
-			{ID: "2", Schedule: "1h", Targets: []string{"https://example.org", "https://example.net"}},
-		},
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	reporter := &mockReporter{}
+	scheduler := mcp.NewScheduler(ctx, reporter)
+	defer scheduler.Stop()
+
+	// Start some monitoring entries
+	_, err := scheduler.StartMonitoring("5m", []string{"dummy:healthy"})
+	if err != nil {
+		t.Fatalf("failed to start monitoring: %v", err)
+	}
+	_, err = scheduler.StartMonitoring("1h", []string{"https://example.org", "https://example.net"})
+	if err != nil {
+		t.Fatalf("failed to start monitoring: %v", err)
 	}
 
 	t.Run("all", func(t *testing.T) {
@@ -236,29 +191,43 @@ func TestListMonitoring(t *testing.T) {
 		if len(output.Entries) != 1 {
 			t.Errorf("expected 1 entry, got %d", len(output.Entries))
 		}
-		if output.Entries[0].ID != "2" {
-			t.Errorf("expected ID 2, got %s", output.Entries[0].ID)
+	})
+
+	t.Run("filter_no_match", func(t *testing.T) {
+		output, err := mcp.ListMonitoringFunc(scheduler, mcp.ListMonitoringInput{
+			Keywords: []string{"notfound"},
+		})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(output.Entries) != 0 {
+			t.Errorf("expected 0 entries, got %d", len(output.Entries))
 		}
 	})
 }
 
 func TestStopMonitoring(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
-		scheduler := &mockScheduler{
-			entries: []mcp.MonitoringEntry{
-				{ID: "1", Schedule: "5m", Targets: []string{"https://example.com"}},
-				{ID: "2", Schedule: "1h", Targets: []string{"https://example.org"}},
-			},
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
+		reporter := &mockReporter{}
+		scheduler := mcp.NewScheduler(ctx, reporter)
+		defer scheduler.Stop()
+
+		id, err := scheduler.StartMonitoring("5m", []string{"dummy:healthy"})
+		if err != nil {
+			t.Fatalf("failed to start monitoring: %v", err)
 		}
 
 		output, err := mcp.StopMonitoringFunc(scheduler, mcp.StopMonitoringInput{
-			IDs: []string{"1"},
+			IDs: []string{id},
 		})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 
-		if diff := cmp.Diff([]string{"1"}, output.Stopped); diff != "" {
+		if diff := cmp.Diff([]string{id}, output.Stopped); diff != "" {
 			t.Errorf("stopped mismatch (-want +got):\n%s", diff)
 		}
 		if len(output.Errors) != 0 {
@@ -267,11 +236,12 @@ func TestStopMonitoring(t *testing.T) {
 	})
 
 	t.Run("not_found", func(t *testing.T) {
-		scheduler := &mockScheduler{
-			entries: []mcp.MonitoringEntry{
-				{ID: "1", Schedule: "5m", Targets: []string{"https://example.com"}},
-			},
-		}
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
+		reporter := &mockReporter{}
+		scheduler := mcp.NewScheduler(ctx, reporter)
+		defer scheduler.Stop()
 
 		output, err := mcp.StopMonitoringFunc(scheduler, mcp.StopMonitoringInput{
 			IDs: []string{"nonexistent"},
@@ -289,7 +259,12 @@ func TestStopMonitoring(t *testing.T) {
 	})
 
 	t.Run("no_ids", func(t *testing.T) {
-		scheduler := &mockScheduler{}
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
+		reporter := &mockReporter{}
+		scheduler := mcp.NewScheduler(ctx, reporter)
+		defer scheduler.Stop()
 
 		_, err := mcp.StopMonitoringFunc(scheduler, mcp.StopMonitoringInput{
 			IDs: []string{},
