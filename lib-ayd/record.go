@@ -197,19 +197,23 @@ func (r Record) MarshalJSON() ([]byte, error) {
 		target = r.Target.String()
 	}
 
+	enc := json.NewEncoder(head)
+
 	_, err := fmt.Fprintf(
 		head,
-		`{"time":"%s", "status":"%s", "latency":%.3f, "target":%q`,
+		`{"time":"%s", "status":"%s", "latency":%.3f, "target":`,
 		r.Time.Format(time.RFC3339),
 		r.Status,
 		float64(r.Latency.Microseconds())/1000,
-		target,
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	enc := json.NewEncoder(head)
+	if err = enc.Encode(target); err != nil {
+		return nil, err
+	}
+	head.Truncate(head.Len() - 1) // drop newline
 
 	if r.Message != "" {
 		if _, err = head.Write([]byte(`, "message":`)); err != nil {

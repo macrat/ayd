@@ -196,7 +196,13 @@ func parseRFC3339(s string, defaultTimezone *time.Location) (time.Time, time.Dur
 		return time.Time{}, 0, false
 	}
 
-	return time.Date(year, time.Month(month), day, hour, minute, second, nsec, tz), resolution, true
+	dt := time.Date(year, time.Month(month), day, hour, minute, second, nsec, tz)
+
+	if dt.Year() < 0 || dt.Year() > 9999 {
+		return time.Time{}, 0, false
+	}
+
+	return dt, resolution, true
 }
 
 // ParseTimeWithResolution parses time string in Ayd way and returns time and its resolution.
