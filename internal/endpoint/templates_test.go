@@ -2,10 +2,12 @@ package endpoint
 
 import (
 	"fmt"
+	"math"
 	"reflect"
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	api "github.com/macrat/ayd/lib-ayd"
 )
 
@@ -289,6 +291,47 @@ func TestUint2Humanize(t *testing.T) {
 	for _, tt := range tests {
 		if s := f(tt.Input); s != tt.Output {
 			t.Errorf("%d => %s", tt.Input, s)
+		}
+	}
+}
+
+func TestExtra2JSONs(t *testing.T) {
+	f := templateFuncs["extra2jsons"].(func(map[string]any) []extraPair)
+
+	tests := []struct {
+		Input  map[string]any
+		Output []extraPair
+	}{
+		{
+			nil,
+			nil,
+		},
+		{
+			map[string]any{},
+			nil,
+		},
+		{
+			map[string]any{
+				"0foo": "bar",
+				"1baz": 123,
+			},
+			[]extraPair{
+				{"0foo", `"bar"`, false},
+				{"1baz", "123", true},
+			},
+		},
+		{
+			map[string]any{
+				"nan": math.NaN(),
+			},
+			[]extraPair{},
+		},
+	}
+
+	for i, tt := range tests {
+		s := f(tt.Input)
+		if diff := cmp.Diff(tt.Output, s); diff != "" {
+			t.Errorf("%d: unexpected result (-expect +result):\n%s", i, diff)
 		}
 	}
 }
