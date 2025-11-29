@@ -176,6 +176,9 @@ var (
 					maxLatency = l
 				}
 			}
+			if maxLatency == 0 {
+				return ""
+			}
 
 			offset := 20 - len(rs)
 
