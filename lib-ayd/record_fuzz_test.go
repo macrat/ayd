@@ -32,13 +32,12 @@ func MaskInvalidCharFromAny(x any) any {
 		return x
 	case map[string]any:
 		for k, v := range x {
-			x[k] = MaskInvalidCharFromAny(v)
+			v = MaskInvalidCharFromAny(v)
+			x[k] = v
 			if !utf8.ValidString(k) {
 				newk := MaskInvalidCharFromString(k)
-				if newk != k {
-					x[newk] = x[k]
-					delete(x, k)
-				}
+				delete(x, k)
+				x[newk] = v
 			}
 		}
 		return x
@@ -85,6 +84,7 @@ func FuzzParseRecord(f *testing.F) {
 		r2.Time = r.Time.Round(time.Second)
 
 		r.Target.Opaque = MaskInvalidCharFromString(r.Target.Opaque)
+		r.Target.RawQuery = MaskInvalidCharFromString(r.Target.RawQuery)
 		r.Target.Fragment = MaskInvalidCharFromString(r.Target.Fragment)
 		r.Message = MaskInvalidCharFromString(r.Message)
 		r.Extra = MaskInvalidCharFromAny(r.Extra).(map[string]any)
