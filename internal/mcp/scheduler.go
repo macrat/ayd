@@ -114,7 +114,8 @@ func (s *Scheduler) ListMonitoring(keywords []string) []MonitoringEntry {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	var entries []MonitoringEntry
+	// Initialize as empty slice (not nil) to ensure JSON serialization produces [] instead of null
+	entries := []MonitoringEntry{}
 
 	for id, entry := range s.entries {
 		if matchKeywords(entry.targets, keywords) {

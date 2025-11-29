@@ -173,6 +173,63 @@ func TestScheduler_ListMonitoring(t *testing.T) {
 	})
 }
 
+func TestScheduler_ListMonitoring_EmptyReturnsNonNilSlice(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	reporter := &mockReporter{}
+	scheduler := NewScheduler(ctx, reporter)
+	defer scheduler.Stop()
+
+	// Test with no entries at all
+	t.Run("empty_scheduler_returns_non_nil_slice", func(t *testing.T) {
+		entries := scheduler.ListMonitoring(nil)
+		if entries == nil {
+			t.Error("ListMonitoring should return non-nil empty slice, got nil")
+		}
+		if len(entries) != 0 {
+			t.Errorf("expected 0 entries, got %d", len(entries))
+		}
+	})
+
+	// Test with entries but no match
+	t.Run("no_match_returns_non_nil_slice", func(t *testing.T) {
+		_, err := scheduler.StartMonitoring("5m", []string{"dummy:healthy"})
+		if err != nil {
+			t.Fatalf("failed to start monitoring: %v", err)
+		}
+
+		entries := scheduler.ListMonitoring([]string{"nonexistent-keyword"})
+		if entries == nil {
+			t.Error("ListMonitoring with no matches should return non-nil empty slice, got nil")
+		}
+		if len(entries) != 0 {
+			t.Errorf("expected 0 entries, got %d", len(entries))
+		}
+	})
+}
+
+func TestListMonitoringOutput_JSONSerialization(t *testing.T) {
+	// This test verifies that ListMonitoringOutput serializes correctly to JSON
+	// when the entries slice is empty (should be [] not null)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	reporter := &mockReporter{}
+	scheduler := NewScheduler(ctx, reporter)
+	defer scheduler.Stop()
+
+	output, err := ListMonitoringFunc(scheduler, ListMonitoringInput{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Verify that Entries is not nil (which would serialize to null)
+	if output.Entries == nil {
+		t.Error("ListMonitoringOutput.Entries should be non-nil empty slice, got nil (would serialize to null in JSON)")
+	}
+}
+
 func TestScheduler_StartMonitoring_KickStart(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
