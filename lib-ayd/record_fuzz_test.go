@@ -4,10 +4,48 @@ import (
 	"net/url"
 	"testing"
 	"time"
+	"unicode/utf8"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/macrat/ayd/lib-ayd"
+	"golang.org/x/text/encoding/unicode"
 )
+
+func MaskInvalidCharFromString(s string) string {
+	if utf8.ValidString(s) {
+		return s
+	} else {
+		encoder := unicode.UTF8.NewEncoder()
+		s, _ := encoder.String(s)
+		return s
+	}
+}
+
+func MaskInvalidCharFromAny(x any) any {
+	switch x := x.(type) {
+	case string:
+		return MaskInvalidCharFromString(x)
+	case []any:
+		for i, e := range x {
+			x[i] = MaskInvalidCharFromAny(e)
+		}
+		return x
+	case map[string]any:
+		for k, v := range x {
+			x[k] = MaskInvalidCharFromAny(v)
+			if !utf8.ValidString(k) {
+				newk := MaskInvalidCharFromString(k)
+				if newk != k {
+					x[newk] = x[k]
+					delete(x, k)
+				}
+			}
+		}
+		return x
+	default:
+		return x
+	}
+}
 
 func FuzzParseRecord(f *testing.F) {
 	f.Add(`{"time":"2021-01-02T15:04:05+09:00", "status":"HEALTHY", "latency":123.456, "target":"ping:example.com", "message":"hello world"}`)
@@ -45,6 +83,11 @@ func FuzzParseRecord(f *testing.F) {
 		r2.Latency = r.Latency.Round(time.Microsecond)
 		r.Time = r.Time.Round(time.Second)
 		r2.Time = r.Time.Round(time.Second)
+
+		r.Target.Opaque = MaskInvalidCharFromString(r.Target.Opaque)
+		r.Target.Fragment = MaskInvalidCharFromString(r.Target.Fragment)
+		r.Message = MaskInvalidCharFromString(r.Message)
+		r.Extra = MaskInvalidCharFromAny(r.Extra).(map[string]any)
 
 		if diff := cmp.Diff(r, r2, cmp.Comparer(compareUserinfo)); diff != "" {
 			t.Logf("input: %s", data)
