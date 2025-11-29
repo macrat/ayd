@@ -8,6 +8,33 @@ import (
 	"github.com/macrat/ayd/cmd/ayd"
 )
 
+func TestParseIntervalSchedule(t *testing.T) {
+	tests := []struct {
+		Name   string
+		Input  string
+		Output time.Duration
+		Error  string
+	}{
+		{"valid", "10s", 10 * time.Second, ""},
+		{"invalid", "abc", 0, "time: invalid duration \"abc\""},
+		{"zero", "0h", 0, "interval duration: \"0h\""},
+		{"negative", "-5m", 0, "interval duration: \"-5m\""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.Name, func(t *testing.T) {
+			schedule, err := main.ParseIntervalSchedule(tt.Input)
+			if err != nil && err.Error() != tt.Error {
+				t.Fatalf("unexpected error: expected %#v but got %#v", tt.Error, err.Error())
+			}
+
+			if schedule.Interval != tt.Output {
+				t.Errorf("expected %#v but got %#v", tt.Output, schedule.Interval)
+			}
+		})
+	}
+}
+
 func TestParseCronSchedule(t *testing.T) {
 	tests := []struct {
 		Name   string
