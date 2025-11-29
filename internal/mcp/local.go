@@ -4,8 +4,9 @@ import (
 	"context"
 	"fmt"
 	"sync"
-	"sync/atomic"
+	"time"
 
+	"github.com/macrat/ayd/internal/scheme"
 	api "github.com/macrat/ayd/lib-ayd"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
@@ -30,12 +31,6 @@ type Scheduler interface {
 	// ListMonitoring returns all monitoring entries.
 	// If keywords are provided, only entries matching ALL keywords are returned.
 	ListMonitoring(keywords []string) []MonitoringEntry
-}
-
-// Prober is an interface for checking targets.
-type Prober interface {
-	// Probe executes a probe on the given target URL and returns the result.
-	Probe(ctx context.Context, targetURL string) api.Record
 }
 
 // CheckTargetInput is the input for check_target tool.
@@ -80,8 +75,49 @@ type StopMonitoringOutput struct {
 	Errors  []string `json:"errors,omitempty" jsonschema:"IDs that could not be stopped with error messages."`
 }
 
+// singleRecordReporter captures a single Record from a probe.
+type singleRecordReporter struct {
+	record *api.Record
+}
+
+func (r *singleRecordReporter) Report(source *api.URL, rec api.Record) {
+	if r.record == nil {
+		r.record = &rec
+	}
+}
+
+func (r *singleRecordReporter) DeactivateTarget(source *api.URL, targets ...*api.URL) {}
+
+// probeTarget probes a single target and returns the result.
+func probeTarget(ctx context.Context, targetURL string) api.Record {
+	prober, err := scheme.NewProber(targetURL)
+	if err != nil {
+		target, _ := api.ParseURL(targetURL)
+		return api.Record{
+			Time:    time.Now(),
+			Status:  api.StatusUnknown,
+			Target:  target,
+			Message: fmt.Sprintf("failed to create prober: %s", err),
+		}
+	}
+
+	reporter := &singleRecordReporter{}
+	prober.Probe(ctx, reporter)
+
+	if reporter.record != nil {
+		return *reporter.record
+	}
+
+	return api.Record{
+		Time:    time.Now(),
+		Status:  api.StatusUnknown,
+		Target:  prober.Target(),
+		Message: "no result",
+	}
+}
+
 // CheckTarget probes the given targets and returns the results.
-func CheckTarget(ctx context.Context, prober Prober, input CheckTargetInput) (CheckTargetOutput, error) {
+func CheckTarget(ctx context.Context, input CheckTargetInput) (CheckTargetOutput, error) {
 	if len(input.Targets) == 0 {
 		return CheckTargetOutput{}, fmt.Errorf("at least one target URL is required")
 	}
@@ -90,13 +126,12 @@ func CheckTarget(ctx context.Context, prober Prober, input CheckTargetInput) (Ch
 
 	var wg sync.WaitGroup
 	resultChan := make(chan map[string]any, len(input.Targets))
-	var errCount atomic.Int32
 
 	for _, target := range input.Targets {
 		wg.Add(1)
 		go func(t string) {
 			defer wg.Done()
-			rec := prober.Probe(ctx, t)
+			rec := probeTarget(ctx, t)
 			resultChan <- RecordToMap(rec)
 		}(target)
 	}
@@ -108,9 +143,6 @@ func CheckTarget(ctx context.Context, prober Prober, input CheckTargetInput) (Ch
 
 	for result := range resultChan {
 		results = append(results, result)
-		if result["status"] != "HEALTHY" {
-			errCount.Add(1)
-		}
 	}
 
 	return CheckTargetOutput{Results: results}, nil
@@ -151,7 +183,7 @@ func StopMonitoringFunc(scheduler Scheduler, input StopMonitoringInput) (StopMon
 
 // AddLocalTools adds the local-only tools to the MCP server.
 // These tools are: check_target, start_monitoring, list_monitoring, stop_monitoring.
-func AddLocalTools(server *mcp.Server, prober Prober, scheduler Scheduler) {
+func AddLocalTools(server *mcp.Server, scheduler Scheduler) {
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "check_target",
 		Title:       "Check target",
@@ -161,7 +193,7 @@ func AddLocalTools(server *mcp.Server, prober Prober, scheduler Scheduler) {
 			ReadOnlyHint:   false,
 		},
 	}, func(ctx context.Context, req *mcp.CallToolRequest, input CheckTargetInput) (*mcp.CallToolResult, CheckTargetOutput, error) {
-		output, err := CheckTarget(ctx, prober, input)
+		output, err := CheckTarget(ctx, input)
 		return nil, output, err
 	})
 

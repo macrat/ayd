@@ -5,9 +5,8 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-// NewServer creates a new MCP server with the given configuration.
-// If includeLocalTools is true, adds local-only tools (check_target, start_monitoring, etc.).
-func NewServer(instanceName string, store Store, filter LogFilterFunc, includeLocalTools bool, prober Prober, scheduler Scheduler) *mcp.Server {
+// newServer creates a new MCP server with the given configuration.
+func newServer(instanceName string, store Store, filter LogFilterFunc, includeLocalTools bool, scheduler Scheduler) *mcp.Server {
 	title := "Ayd"
 	instructions := "Ayd is a simple alive monitoring tool. The logs and status can be large, so it is recommended to extract necessary information using search and jq queries instead of fetching all data at once."
 
@@ -37,8 +36,8 @@ func NewServer(instanceName string, store Store, filter LogFilterFunc, includeLo
 	AddReadOnlyTools(server, store, filter)
 
 	// Add local-only tools if requested
-	if includeLocalTools && prober != nil && scheduler != nil {
-		AddLocalTools(server, prober, scheduler)
+	if includeLocalTools && scheduler != nil {
+		AddLocalTools(server, scheduler)
 	}
 
 	return server
@@ -46,10 +45,10 @@ func NewServer(instanceName string, store Store, filter LogFilterFunc, includeLo
 
 // NewRemoteServer creates an MCP server for remote access (read-only tools only).
 func NewRemoteServer(instanceName string, store Store, filter LogFilterFunc) *mcp.Server {
-	return NewServer(instanceName, store, filter, false, nil, nil)
+	return newServer(instanceName, store, filter, false, nil)
 }
 
 // NewLocalServer creates an MCP server for local access (includes local-only tools).
-func NewLocalServer(instanceName string, store Store, filter LogFilterFunc, prober Prober, scheduler Scheduler) *mcp.Server {
-	return NewServer(instanceName, store, filter, true, prober, scheduler)
+func NewLocalServer(instanceName string, store Store, filter LogFilterFunc, scheduler Scheduler) *mcp.Server {
+	return newServer(instanceName, store, filter, true, scheduler)
 }

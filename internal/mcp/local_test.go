@@ -4,31 +4,10 @@ import (
 	"context"
 	"fmt"
 	"testing"
-	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/macrat/ayd/internal/mcp"
-	api "github.com/macrat/ayd/lib-ayd"
 )
-
-// mockProber is a mock implementation of mcp.Prober for testing.
-type mockProber struct {
-	results map[string]api.Record
-}
-
-func (p *mockProber) Probe(ctx context.Context, targetURL string) api.Record {
-	if rec, ok := p.results[targetURL]; ok {
-		return rec
-	}
-	target, _ := api.ParseURL(targetURL)
-	return api.Record{
-		Time:    time.Date(2021, 1, 2, 3, 4, 5, 0, time.UTC),
-		Status:  api.StatusHealthy,
-		Latency: 100 * time.Millisecond,
-		Target:  target,
-		Message: "mock healthy",
-	}
-}
 
 // mockScheduler is a mock implementation of mcp.Scheduler for testing.
 type mockScheduler struct {
@@ -111,31 +90,9 @@ func findSubstring(s, sub string) bool {
 }
 
 func TestCheckTarget(t *testing.T) {
-	target1, _ := api.ParseURL("https://example.com")
-	target2, _ := api.ParseURL("https://example.org")
-
-	prober := &mockProber{
-		results: map[string]api.Record{
-			"https://example.com": {
-				Time:    time.Date(2021, 1, 2, 3, 4, 5, 0, time.UTC),
-				Status:  api.StatusHealthy,
-				Latency: 50 * time.Millisecond,
-				Target:  target1,
-				Message: "healthy",
-			},
-			"https://example.org": {
-				Time:    time.Date(2021, 1, 2, 3, 4, 6, 0, time.UTC),
-				Status:  api.StatusFailure,
-				Latency: 100 * time.Millisecond,
-				Target:  target2,
-				Message: "connection refused",
-			},
-		},
-	}
-
 	t.Run("single_target", func(t *testing.T) {
-		output, err := mcp.CheckTarget(context.Background(), prober, mcp.CheckTargetInput{
-			Targets: []string{"https://example.com"},
+		output, err := mcp.CheckTarget(context.Background(), mcp.CheckTargetInput{
+			Targets: []string{"dummy:healthy"},
 		})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -150,8 +107,8 @@ func TestCheckTarget(t *testing.T) {
 	})
 
 	t.Run("multiple_targets", func(t *testing.T) {
-		output, err := mcp.CheckTarget(context.Background(), prober, mcp.CheckTargetInput{
-			Targets: []string{"https://example.com", "https://example.org"},
+		output, err := mcp.CheckTarget(context.Background(), mcp.CheckTargetInput{
+			Targets: []string{"dummy:healthy", "dummy:failure"},
 		})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -160,14 +117,47 @@ func TestCheckTarget(t *testing.T) {
 		if len(output.Results) != 2 {
 			t.Errorf("expected 2 results, got %d", len(output.Results))
 		}
+
+		// Check that we have both healthy and failure results
+		var hasHealthy, hasFailure bool
+		for _, result := range output.Results {
+			if result["status"] == "HEALTHY" {
+				hasHealthy = true
+			}
+			if result["status"] == "FAILURE" {
+				hasFailure = true
+			}
+		}
+		if !hasHealthy {
+			t.Error("expected a HEALTHY result")
+		}
+		if !hasFailure {
+			t.Error("expected a FAILURE result")
+		}
 	})
 
 	t.Run("no_targets", func(t *testing.T) {
-		_, err := mcp.CheckTarget(context.Background(), prober, mcp.CheckTargetInput{
+		_, err := mcp.CheckTarget(context.Background(), mcp.CheckTargetInput{
 			Targets: []string{},
 		})
 		if err == nil {
 			t.Error("expected error for empty targets")
+		}
+	})
+
+	t.Run("invalid_target", func(t *testing.T) {
+		output, err := mcp.CheckTarget(context.Background(), mcp.CheckTargetInput{
+			Targets: []string{"invalid-scheme://example.com"},
+		})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		if len(output.Results) != 1 {
+			t.Errorf("expected 1 result, got %d", len(output.Results))
+		}
+		if output.Results[0]["status"] != "UNKNOWN" {
+			t.Errorf("expected UNKNOWN status for invalid target, got %v", output.Results[0]["status"])
 		}
 	})
 }

@@ -65,14 +65,11 @@ func (cmd *MCPCommand) Run(args []string) int {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	prober := mcputil.NewDefaultProber()
 	scheduler := mcputil.NewDefaultScheduler(ctx, s)
 	defer scheduler.Stop()
 
-	// Use store.Store directly as it implements mcputil.Store
-	server := mcputil.NewLocalServer(*instanceName, s, nil, prober, scheduler)
+	server := mcputil.NewLocalServer(*instanceName, s, nil, scheduler)
 
-	// Use stdio transport for MCP
 	if err := server.Run(ctx, &mcp.StdioTransport{}); err != nil {
 		fmt.Fprintf(cmd.ErrStream, "error: MCP server error: %s\n", err)
 		return 1
