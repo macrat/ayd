@@ -168,8 +168,7 @@ type timeValueMatcher struct {
 }
 
 func parseTimeValueMatcher(op operator, value string) (timeValueMatcher, error) {
-	x := strings.ToUpper(strings.TrimSpace(value))
-	t, resolution, err := api.ParseTimeWithResolution(x, time.Local)
+	t, resolution, err := api.ParseTimeWithResolution(value, time.Local)
 	if err == nil {
 		if op == opGreaterThan || op == opLessEqual {
 			t = t.Add(resolution).Add(-1)
@@ -177,7 +176,7 @@ func parseTimeValueMatcher(op operator, value string) (timeValueMatcher, error) 
 		return timeValueMatcher{Op: op, Value: t, Resolution: resolution, Str: value}, nil
 	}
 
-	t, err = time.ParseInLocation("2006-01-02", x, time.Local)
+	t, err = time.ParseInLocation("2006-01-02", value, time.Local)
 	if err == nil {
 		if op == opGreaterThan || op == opLessEqual {
 			t = t.Add(24 * time.Hour).Add(-1)
@@ -196,7 +195,7 @@ func parseTimeValueMatcher(op operator, value string) (timeValueMatcher, error) 
 		{"15:04", time.Minute},
 	}
 	for _, f := range extraformats {
-		t, err := time.ParseInLocation(f.Layout, x, time.Local)
+		t, err := time.ParseInLocation(f.Layout, value, time.Local)
 		if err == nil {
 			if op == opGreaterThan || op == opLessEqual {
 				t = t.Add(f.Resolution).Add(-1)
