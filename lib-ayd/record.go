@@ -6,9 +6,11 @@ import (
 	"sort"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/goccy/go-json"
 	"github.com/macrat/ayd/internal/ayderr"
+	"golang.org/x/text/encoding/unicode"
 )
 
 func isReservedKey(key string) bool {
@@ -26,8 +28,16 @@ type Record struct {
 }
 
 // ParseRecord is parse string as a Record row in the log
+//
+// This function is safe for invalid UTF-8 string, and convert it to valid UTF-8 string.
 func ParseRecord(s string) (Record, error) {
 	var r Record
+
+	if !utf8.ValidString(s) {
+		encoder := unicode.UTF8.NewEncoder()
+		s, _ = encoder.String(s)
+	}
+
 	return r, r.UnmarshalJSON([]byte(s))
 }
 
