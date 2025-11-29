@@ -265,15 +265,9 @@ func FetchLogsByJq(ctx context.Context, s Store, input MCPLogsInput) (MCPOutput,
 		return MCPOutput{}, fmt.Errorf("until time must be in RFC3339 format but got %q", input.Until)
 	}
 
-	logs, err := s.OpenLog(since, until)
-	if err != nil {
-		s.ReportInternalError("mcp/query_logs", fmt.Sprintf("failed to open logs: %v", err))
-		return MCPOutput{}, errors.New("internal server error")
-	}
-	defer logs.Close()
-
+	var q query.Query
 	if input.Search != "" {
-		q := query.ParseQuery(input.Search)
+		q = query.ParseQuery(input.Search)
 		st, en := q.TimeRange()
 
 		if st != nil && st.After(since) {
@@ -282,6 +276,16 @@ func FetchLogsByJq(ctx context.Context, s Store, input MCPLogsInput) (MCPOutput,
 		if en != nil && en.Before(until) {
 			until = *en
 		}
+	}
+
+	logs, err := s.OpenLog(since, until)
+	if err != nil {
+		s.ReportInternalError("mcp/query_logs", fmt.Sprintf("failed to open logs: %v", err))
+		return MCPOutput{}, errors.New("internal server error")
+	}
+	defer logs.Close()
+
+	if q != nil {
 		logs = FilterScanner{
 			Scanner: logs,
 			Query:   q,
