@@ -176,34 +176,33 @@ func parseTimeValueMatcher(op operator, value string) (timeValueMatcher, error) 
 		return timeValueMatcher{Op: op, Value: t, Resolution: resolution, Str: value}, nil
 	}
 
-	t, err = time.ParseInLocation("2006-01-02", value, time.Local)
-	if err == nil {
-		if op == opGreaterThan || op == opLessEqual {
-			t = t.Add(24 * time.Hour).Add(-1)
-		}
-		return timeValueMatcher{Op: op, Value: t, Resolution: 24 * time.Hour, Str: value}, nil
-	}
-
-	type Timeformat struct {
-		Layout     string
-		Resolution time.Duration
-	}
-
-	extraformats := []Timeformat{
-		{"15:04:05.999999999", time.Nanosecond},
-		{"15:04:05", time.Second},
-		{"15:04", time.Minute},
-	}
-	for _, f := range extraformats {
-		t, err := time.ParseInLocation(f.Layout, value, time.Local)
-		if err == nil {
+	if len(value) == len("2006-01-02") {
+		if t, err := time.ParseInLocation("2006-01-02", value, time.Local); err == nil {
 			if op == opGreaterThan || op == opLessEqual {
-				t = t.Add(f.Resolution).Add(-1)
+				t = t.Add(24 * time.Hour).Add(-1)
 			}
-			year, month, day := time.Now().Date()
-			t = t.AddDate(year, int(month)-1, day-1)
-			return timeValueMatcher{Op: op, Value: t, Resolution: f.Resolution, Str: value}, nil
+			return timeValueMatcher{Op: op, Value: t, Resolution: 24 * time.Hour, Str: value}, nil
 		}
+	}
+
+	layout := "15:04:05.999999999"
+	res := time.Nanosecond
+
+	if len(value) == len("15:04") {
+		layout = "15:04"
+		res = time.Minute
+	} else if len(value) == len("15:04:05") {
+		layout = "15:04:05"
+		res = time.Second
+	}
+
+	if t, err = time.ParseInLocation(layout, value, time.Local); err == nil {
+		if op == opGreaterThan || op == opLessEqual {
+			t = t.Add(res).Add(-1)
+		}
+		year, month, day := time.Now().Date()
+		t = t.AddDate(year, int(month)-1, day-1)
+		return timeValueMatcher{Op: op, Value: t, Resolution: res, Str: value}, nil
 	}
 
 	return timeValueMatcher{}, errIncorrectValueType
