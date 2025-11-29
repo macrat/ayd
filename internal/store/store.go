@@ -2,6 +2,7 @@ package store
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io"
 	"net/url"
@@ -426,8 +427,10 @@ func (s *Store) Restore() error {
 }
 
 func (s *Store) restoreOneFile(path string, maxSize int64) (int64, error) {
-	f, err := os.OpenFile(path, os.O_RDONLY|os.O_CREATE, 0644)
-	if err != nil {
+	f, err := os.OpenFile(path, os.O_RDONLY, 0644)
+	if errors.Is(err, os.ErrNotExist) {
+		return 0, nil
+	} else if err != nil {
 		return 0, err
 	}
 	defer f.Close()
