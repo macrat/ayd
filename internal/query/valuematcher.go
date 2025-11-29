@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	api "github.com/macrat/ayd/lib-ayd"
 )
 
 var (
@@ -165,79 +167,30 @@ type timeValueMatcher struct {
 	Str        string
 }
 
-type timeformat struct {
-	Layout     string
-	Resolution time.Duration
-}
-
-var timeformats = []timeformat{}
-
-func init() {
-	dfs := []string{
-		"2006-01-02T",
-		"2006-01-02_",
-		"2006-01-02 ",
-		"20060102 ",
-		"20060102T",
-		"20060102_",
-	}
-	tfs := []timeformat{
-		{"15", time.Hour},
-		{"15:04", time.Minute},
-		{"15:04:05", time.Second},
-		{"15:04:05.999999999", time.Nanosecond},
-		{"1504", time.Minute},
-		{"150405", time.Second},
-		{"150405.999999999", time.Nanosecond},
-	}
-	zfs := []string{
-		"Z07:00",
-		"Z0700",
-		"Z07",
-	}
-	for _, df := range dfs {
-		for _, tf := range tfs {
-			for _, zf := range zfs {
-				timeformats = append(timeformats, timeformat{
-					Layout:     df + tf.Layout + zf,
-					Resolution: tf.Resolution,
-				}, timeformat{
-					Layout:     df + tf.Layout,
-					Resolution: tf.Resolution,
-				})
-			}
-		}
-	}
-	timeformats = append(
-		timeformats,
-		timeformat{"2006-01-02", 24 * time.Hour},
-		timeformat{"2006/01/02", 24 * time.Hour},
-		timeformat{"2006/1/2", 24 * time.Hour},
-		timeformat{time.Layout, time.Second},
-		timeformat{time.ANSIC, time.Second},
-		timeformat{time.UnixDate, time.Second},
-		timeformat{time.RubyDate, time.Second},
-		timeformat{time.RFC822, time.Second},
-		timeformat{time.RFC822Z, time.Second},
-		timeformat{time.RFC850, time.Second},
-		timeformat{time.RFC1123, time.Second},
-		timeformat{time.RFC1123Z, time.Second},
-	)
-}
-
 func parseTimeValueMatcher(op operator, value string) (timeValueMatcher, error) {
 	x := strings.ToUpper(strings.TrimSpace(value))
-	for _, f := range timeformats {
-		t, err := time.ParseInLocation(f.Layout, x, time.Local)
-		if err == nil {
-			if op == opGreaterThan || op == opLessEqual {
-				t = t.Add(f.Resolution).Add(-1)
-			}
-			return timeValueMatcher{Op: op, Value: t, Resolution: f.Resolution, Str: value}, nil
+	t, resolution, err := api.ParseTimeWithResolution(x, time.Local)
+	if err == nil {
+		if op == opGreaterThan || op == opLessEqual {
+			t = t.Add(resolution).Add(-1)
 		}
+		return timeValueMatcher{Op: op, Value: t, Resolution: resolution, Str: value}, nil
 	}
 
-	extraformats := []timeformat{
+	t, err = time.ParseInLocation("2006-01-02", x, time.Local)
+	if err == nil {
+		if op == opGreaterThan || op == opLessEqual {
+			t = t.Add(24 * time.Hour).Add(-1)
+		}
+		return timeValueMatcher{Op: op, Value: t, Resolution: 24 * time.Hour, Str: value}, nil
+	}
+
+	type Timeformat struct {
+		Layout     string
+		Resolution time.Duration
+	}
+
+	extraformats := []Timeformat{
 		{"15:04:05.999999999", time.Nanosecond},
 		{"15:04:05", time.Second},
 		{"15:04", time.Minute},

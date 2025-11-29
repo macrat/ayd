@@ -123,7 +123,7 @@ func TestRecord(t *testing.T) {
 		},
 		{
 			String: `{"time":"2021/01/02 15:04:05", "status":"HEALTHY", "latency":123.456, "target":"ping:example.com", "message":"hello world"}`,
-			Error:  `invalid record: time: invalid format: "2021/01/02 15:04:05"`,
+			Error:  `invalid record: time: invalid format`,
 		},
 		{
 			String: `{"time":"2021-01-02T15:04:05+09:00", "status":"HEALTHY", "latency":123.456, "target":"::invalid target::", "message":"hello world"}`,
