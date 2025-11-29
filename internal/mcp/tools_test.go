@@ -295,7 +295,7 @@ func TestFetchLogsByJQ(t *testing.T) {
 		output, err := mcp.FetchLogsByJQ(context.Background(), store, mcp.LogsInput{
 			Since: "2021-01-01T00:00:00Z",
 			Until: "2021-01-03T00:00:00Z",
-		}, nil)
+		})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -314,7 +314,7 @@ func TestFetchLogsByJQ(t *testing.T) {
 			Since: "2021-01-01T00:00:00Z",
 			Until: "2021-01-03T00:00:00Z",
 			JQ:    `.[] | select(.status == "HEALTHY")`,
-		}, nil)
+		})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -331,7 +331,7 @@ func TestFetchLogsByJQ(t *testing.T) {
 	t.Run("missing_since", func(t *testing.T) {
 		_, err := mcp.FetchLogsByJQ(context.Background(), store, mcp.LogsInput{
 			Until: "2021-01-03T00:00:00Z",
-		}, nil)
+		})
 		if err == nil {
 			t.Error("expected error for missing since")
 		}
@@ -340,7 +340,7 @@ func TestFetchLogsByJQ(t *testing.T) {
 	t.Run("missing_until", func(t *testing.T) {
 		_, err := mcp.FetchLogsByJQ(context.Background(), store, mcp.LogsInput{
 			Since: "2021-01-01T00:00:00Z",
-		}, nil)
+		})
 		if err == nil {
 			t.Error("expected error for missing until")
 		}
@@ -350,7 +350,7 @@ func TestFetchLogsByJQ(t *testing.T) {
 		_, err := mcp.FetchLogsByJQ(context.Background(), store, mcp.LogsInput{
 			Since: "invalid",
 			Until: "2021-01-03T00:00:00Z",
-		}, nil)
+		})
 		if err == nil {
 			t.Error("expected error for invalid since format")
 		}
@@ -360,7 +360,7 @@ func TestFetchLogsByJQ(t *testing.T) {
 		_, err := mcp.FetchLogsByJQ(context.Background(), store, mcp.LogsInput{
 			Since: "2021-01-01T00:00:00Z",
 			Until: "invalid",
-		}, nil)
+		})
 		if err == nil {
 			t.Error("expected error for invalid until format")
 		}
@@ -371,7 +371,7 @@ func TestFetchLogsByJQ(t *testing.T) {
 			Since: "2021-01-01T00:00:00Z",
 			Until: "2021-01-03T00:00:00Z",
 			JQ:    "invalid{{",
-		}, nil)
+		})
 		if err == nil {
 			t.Error("expected error for invalid jq query")
 		}
@@ -384,7 +384,7 @@ func TestFetchLogsByJQ(t *testing.T) {
 		_, err := mcp.FetchLogsByJQ(context.Background(), errorStore, mcp.LogsInput{
 			Since: "2021-01-01T00:00:00Z",
 			Until: "2021-01-03T00:00:00Z",
-		}, nil)
+		})
 		if err == nil {
 			t.Error("expected error for log open failure")
 		}
@@ -492,7 +492,7 @@ func TestFetchLogsByJQ_EmptyLogs(t *testing.T) {
 	output, err := mcp.FetchLogsByJQ(context.Background(), store, mcp.LogsInput{
 		Since: "2021-01-01T00:00:00Z",
 		Until: "2021-01-03T00:00:00Z",
-	}, nil)
+	})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

@@ -68,7 +68,7 @@ func (cmd *MCPCommand) Run(args []string) int {
 	scheduler := mcputil.NewScheduler(ctx, s)
 	defer scheduler.Stop()
 
-	server := mcputil.NewLocalServer(*instanceName, s, nil, scheduler)
+	server := mcputil.NewLocalServer(*instanceName, s, scheduler)
 
 	if err := server.Run(ctx, &mcp.StdioTransport{}); err != nil {
 		fmt.Fprintf(cmd.ErrStream, "error: MCP server error: %s\n", err)

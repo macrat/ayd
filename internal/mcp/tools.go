@@ -7,6 +7,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/macrat/ayd/internal/query"
 	api "github.com/macrat/ayd/lib-ayd"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
@@ -18,7 +19,7 @@ type StatusInput struct {
 
 // FetchStatusByJQ fetches status from store and applies jq query.
 func FetchStatusByJQ(ctx context.Context, s Store, input StatusInput) (Output, error) {
-	query, err := ParseJQ(input.JQ)
+	jq, err := ParseJQ(input.JQ)
 	if err != nil {
 		return Output{}, fmt.Errorf("failed to parse jq query: %w", err)
 	}
@@ -44,7 +45,7 @@ func FetchStatusByJQ(ctx context.Context, s Store, input StatusInput) (Output, e
 		return targets[i].(map[string]any)["target"].(string) < targets[j].(map[string]any)["target"].(string)
 	})
 
-	return query.Run(ctx, targets)
+	return jq.Run(ctx, targets)
 }
 
 // IncidentsInput is the input for query_incidents tool.
@@ -56,7 +57,7 @@ type IncidentsInput struct {
 
 // FetchIncidentsByJQ fetches incidents from store and applies jq query.
 func FetchIncidentsByJQ(ctx context.Context, s Store, input IncidentsInput) (Output, error) {
-	query, err := ParseJQ(input.JQ)
+	jq, err := ParseJQ(input.JQ)
 	if err != nil {
 		return Output{}, fmt.Errorf("failed to parse jq query: %w", err)
 	}
@@ -90,7 +91,7 @@ func FetchIncidentsByJQ(ctx context.Context, s Store, input IncidentsInput) (Out
 		return incidents[i].(map[string]any)["starts_at_unix"].(int64) < incidents[j].(map[string]any)["starts_at_unix"].(int64)
 	})
 
-	return query.Run(ctx, incidents)
+	return jq.Run(ctx, incidents)
 }
 
 // LogsInput is the input for query_logs tool.
@@ -101,12 +102,8 @@ type LogsInput struct {
 	JQ     string `json:"jq,omitempty" jsonschema:"A jq query string to filter logs. Query receives an array of status objects. Each objects has at least 'time', 'target', 'status', and 'latency'. You can use 'parse_url' filter to parse target URLs. For example, 'map(select(.status != \"HEALTHY\")) | group_by(.target)[] | {target: .[0].target, count: length, max_latency: (map(.latency_ms) | max)}' to get unhealthy logs grouped by target with maximum latency.'"`
 }
 
-// LogFilterFunc is a function to filter log scanner with search query.
-type LogFilterFunc func(scanner api.LogScanner, search string) (api.LogScanner, time.Time, time.Time)
-
 // FetchLogsByJQ fetches logs from store and applies jq query.
-// The filter parameter is optional and can be used to filter logs by search query.
-func FetchLogsByJQ(ctx context.Context, s Store, input LogsInput, filter LogFilterFunc) (Output, error) {
+func FetchLogsByJQ(ctx context.Context, s Store, input LogsInput) (Output, error) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
@@ -130,14 +127,15 @@ func FetchLogsByJQ(ctx context.Context, s Store, input LogsInput, filter LogFilt
 	}
 	defer logs.Close()
 
-	if input.Search != "" && filter != nil {
-		var newSince, newUntil time.Time
-		logs, newSince, newUntil = filter(logs, input.Search)
-		if newSince.After(since) {
-			since = newSince
+	var scanner api.LogScanner = logs
+	if input.Search != "" {
+		var newSince, newUntil *time.Time
+		scanner, newSince, newUntil = query.Filter(logs, input.Search)
+		if newSince != nil && newSince.After(since) {
+			since = *newSince
 		}
-		if !newUntil.IsZero() && newUntil.Before(until) {
-			until = newUntil
+		if newUntil != nil && newUntil.Before(until) {
+			until = *newUntil
 		}
 	}
 
@@ -147,8 +145,8 @@ func FetchLogsByJQ(ctx context.Context, s Store, input LogsInput, filter LogFilt
 	}
 
 	records := []any{}
-	for logs.Scan() {
-		rec := logs.Record()
+	for scanner.Scan() {
+		rec := scanner.Record()
 		records = append(records, RecordToMap(rec))
 	}
 
@@ -157,7 +155,7 @@ func FetchLogsByJQ(ctx context.Context, s Store, input LogsInput, filter LogFilt
 
 // AddReadOnlyTools adds the read-only query tools to the MCP server.
 // These tools are: query_status, query_incidents, query_logs.
-func AddReadOnlyTools(server *mcp.Server, s Store, filter LogFilterFunc) {
+func AddReadOnlyTools(server *mcp.Server, s Store) {
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "query_status",
 		Title:       "Query status",
@@ -193,7 +191,7 @@ func AddReadOnlyTools(server *mcp.Server, s Store, filter LogFilterFunc) {
 			ReadOnlyHint:   true,
 		},
 	}, func(ctx context.Context, req *mcp.CallToolRequest, input LogsInput) (*mcp.CallToolResult, Output, error) {
-		output, err := FetchLogsByJQ(ctx, s, input, filter)
+		output, err := FetchLogsByJQ(ctx, s, input)
 		return nil, output, err
 	})
 }

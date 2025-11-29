@@ -6,7 +6,7 @@ import (
 )
 
 // newServer creates a new MCP server with the given configuration.
-func newServer(instanceName string, store Store, filter LogFilterFunc, includeLocalTools bool, scheduler *Scheduler) *mcp.Server {
+func newServer(instanceName string, store Store, includeLocalTools bool, scheduler *Scheduler) *mcp.Server {
 	title := "Ayd"
 	instructions := "Ayd is a simple alive monitoring tool. The logs and status can be large, so it is recommended to extract necessary information using search and jq queries instead of fetching all data at once."
 
@@ -33,7 +33,7 @@ func newServer(instanceName string, store Store, filter LogFilterFunc, includeLo
 	server := mcp.NewServer(impl, opts)
 
 	// Add read-only tools (query_status, query_incidents, query_logs)
-	AddReadOnlyTools(server, store, filter)
+	AddReadOnlyTools(server, store)
 
 	// Add local-only tools if requested
 	if includeLocalTools && scheduler != nil {
@@ -44,11 +44,11 @@ func newServer(instanceName string, store Store, filter LogFilterFunc, includeLo
 }
 
 // NewRemoteServer creates an MCP server for remote access (read-only tools only).
-func NewRemoteServer(instanceName string, store Store, filter LogFilterFunc) *mcp.Server {
-	return newServer(instanceName, store, filter, false, nil)
+func NewRemoteServer(instanceName string, store Store) *mcp.Server {
+	return newServer(instanceName, store, false, nil)
 }
 
 // NewLocalServer creates an MCP server for local access (includes local-only tools).
-func NewLocalServer(instanceName string, store Store, filter LogFilterFunc, scheduler *Scheduler) *mcp.Server {
-	return newServer(instanceName, store, filter, true, scheduler)
+func NewLocalServer(instanceName string, store Store, scheduler *Scheduler) *mcp.Server {
+	return newServer(instanceName, store, true, scheduler)
 }
