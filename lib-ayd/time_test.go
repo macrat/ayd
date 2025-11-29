@@ -201,3 +201,22 @@ func BenchmarkParseTime_Invalid(b *testing.B) {
 		}
 	}
 }
+
+func FuzzParseTime(f *testing.F) {
+	f.Add("2000-01-02T00:03:04Z")
+	f.Add("2000-01-02T15:04:05+09:00")
+	f.Add("2000-01-02 03:45:06+01:23")
+	f.Add("2000-01-02_03:45:06-0200")
+	f.Add("2000102 030405Z")
+	f.Add("Mon Jan 02 15:04:05 MST 2006")
+	f.Add("Mon, 02 Jan 2006 15:04:05 -0700")
+	f.Add("Monday, 02-Jan-06 15:04:05 MST")
+	f.Add("02 Jan 06 15:04 MST")
+
+	f.Fuzz(func(t *testing.T, input string) {
+		_, err := ayd.ParseTime(input)
+		if err != nil && !errors.Is(err, ayd.ErrInvalidTime) {
+			t.Errorf("unexpected error for input %q: %s", input, err)
+		}
+	})
+}
