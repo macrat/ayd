@@ -59,7 +59,6 @@ func TestParseTime_valid(t *testing.T) {
 		"Mon Jan 02 08:33:04 +0830 2000",
 		"Mon Jan 01 23:03:04 -0100 2000",
 		"Monday, 02-Jan-00 00:03:04 UTC",
-		"Monday, 02-Jan-00 00:03:04 UTC",
 		"Mon, 02 Jan 2000 00:03:04 UTC",
 		"Mon, 02 Jan 2000 00:03:04 +0000",
 		"Mon, 02 Jan 2000 00:03:04 -0000",
