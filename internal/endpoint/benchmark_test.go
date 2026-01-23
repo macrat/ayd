@@ -37,7 +37,7 @@ func Benchmark_endpoints(b *testing.B) {
 
 	for _, tt := range benchmarks {
 		b.Run(tt.Path, func(b *testing.B) {
-			s := testutil.NewStoreWithLog(b)
+			s := testutil.NewStore(b, testutil.WithLog())
 			defer s.Close()
 
 			h := tt.Endpoint(s)

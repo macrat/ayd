@@ -69,8 +69,10 @@ func (t *tokenizer) check(s string) bool {
 	if len(t.remain) < len(s)+1 {
 		return false
 	}
-	if strings.ToLower(t.remain[:len(s)]) != s {
-		return false
+	for i := range s {
+		if toLowerByte(t.remain[i]) != s[i] {
+			return false
+		}
 	}
 	return t.remain[len(s)] == ' ' || t.remain[len(s)] == '(' || t.remain[len(s)] == ')'
 }
@@ -135,7 +137,7 @@ type keywordToken struct {
 }
 
 func (t *tokenizer) scanKeyword() {
-	var tokens []keywordToken
+	tokens := make([]keywordToken, 0, 8)
 
 	var buf strings.Builder
 	var strings []*string

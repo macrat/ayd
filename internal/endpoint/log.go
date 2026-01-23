@@ -367,6 +367,7 @@ func LogHTMLEndpoint(s Store) http.HandlerFunc {
 
 		w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 		handleError(s, "log.html", tmpl.Execute(newFlushWriter(w), logData{
+			InstanceName: s.Name(),
 			Query:        query,
 			RawQuery:     rawQuery.Encode(),
 			Records:      rs,
@@ -382,6 +383,7 @@ func LogHTMLEndpoint(s Store) http.HandlerFunc {
 }
 
 type logData struct {
+	InstanceName string
 	Since        time.Time
 	Until        time.Time
 	Query        string

@@ -29,6 +29,8 @@ $ ayd ping:192.168.1.1 https://example.com
 
 - The [status page](#status-pages-and-endpoints) for using by browsers, consoles, or other programs.
 
+- Built-in remote MCP server for AI tools like Claude or ChatGPT to analyze the status and logs.
+
 - Send an alert if an incident occurs or is resolved.
 
 ### Good at
@@ -611,6 +613,7 @@ Ayd has these pages/endpoints.
 | [/log.json](http://localhost:9000/log.json)          | Raw log file in JSON format.                                         |
 | [/targets.txt](http://localhost:9000/targets.txt)    | The list of target URLs, separated by \\n.                           |
 | [/targets.json](http://localhost:9000/targets.json)  | The list of target URLs in JSON format.                              |
+| [/mcp](http://localhost:9000/mcp)                    | Remote [MCP](https://modelcontextprotocol.io/docs/getting-started/intro) server endpoint.|
 | [/metrics](http://localhost:9000/metrics)            | Minimal status page for use by [Prometheus](https://prometheus.io/). |
 | [/healthz](http://localhost:9000/healthz)            | Health status page for checking status of Ayd itself.                |
 
@@ -639,6 +642,13 @@ Query examples:
 - `time>=2000-01-01 time<=2000-12-31`: The logs from 2000-01-01 to 2000-12-31.
 - `time>=2021-01-01 target=ping:host`: The logs about `ping:localhost` since 2021-01-01.
 - `status!=healthy target=ping:*`: The logs within recent 7 days that only about unhealthy ping targets.
+
+
+#### MCP server
+
+Ayd supports [MCP (Model Context Protocol)](https://modelcontextprotocol.io/docs/getting-started/intro) for AI tools like Claude or ChatGPT to analyze the status and logs.
+
+To use MCP server, simply run Ayd as usual and add `http://localhost:9000/mcp` as a remote MCP server URL to your AI tool.
 
 
 ### Log file

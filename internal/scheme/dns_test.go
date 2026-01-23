@@ -28,8 +28,8 @@ func TestDNSScheme_Probe(t *testing.T) {
 		{"dns:google.com?type=MX", api.StatusHealthy, succeed + `mx: \["[a-z0-9.]+"(,"[a-z0-9.]+")*\]`, ""},
 		{"dns://8.8.8.8:53/google.com?type=MX", api.StatusHealthy, succeed + `mx: \["[a-z0-9.]+"(,"[a-z0-9.]+")*\]`, ""},
 
-		{"dns:example.com?type=NS", api.StatusHealthy, succeed + `ns: \["[a-z]\.iana-servers\.net\."(,"[a-z]\.iana-servers\.net\.")*\]`, ""},
-		{"dns://8.8.4.4/example.com?type=NS", api.StatusHealthy, succeed + `ns: \["[a-z]\.iana-servers\.net\."(,"[a-z]\.iana-servers\.net\.")*\]`, ""},
+		{"dns:example.com?type=NS", api.StatusHealthy, succeed + `ns: \["(elliott|hera)\.ns\.cloudflare\.com\.","(elliott|hera)\.ns\.cloudflare\.com\."\]`, ""},
+		{"dns://8.8.4.4/example.com?type=NS", api.StatusHealthy, succeed + `ns: \["(elliott|hera)\.ns\.cloudflare\.com\.","(elliott|hera)\.ns\.cloudflare\.com\."\]`, ""},
 
 		{"dns:example.com?type=TXT", api.StatusHealthy, succeed + `txt: \[("v=spf1 -all","[_0-9a-z]{32}"|"[_0-9a-z]{32}","v=spf1 -all")\]`, ""},
 		{"dns://1.1.1.1/example.com?type=TXT", api.StatusHealthy, succeed + `txt: \[("v=spf1 -all","[_0-9a-z]{32}"|"[_0-9a-z]{32}","v=spf1 -all")\]`, ""},

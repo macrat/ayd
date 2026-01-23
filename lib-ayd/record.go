@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/goccy/go-json"
 	"github.com/macrat/ayd/internal/ayderr"
@@ -27,8 +28,16 @@ type Record struct {
 }
 
 // ParseRecord is parse string as a Record row in the log
+//
+// This function is safe for invalid UTF-8 string, and convert it to valid UTF-8 string.
 func ParseRecord(s string) (Record, error) {
 	var r Record
+
+	if !utf8.ValidString(s) {
+		encoder := unicode.UTF8.NewEncoder()
+		s, _ = encoder.String(s)
+	}
+
 	return r, r.UnmarshalJSON([]byte(s))
 }
 
@@ -110,11 +119,6 @@ func (r Record) ReadableMessage() string {
 // UnmarshalJSON implements the json.Unmarshaler interface.
 func (r *Record) UnmarshalJSON(data []byte) (err error) {
 	*r = Record{}
-
-	data, err = unicode.UTF8.NewDecoder().Bytes(data)
-	if err != nil {
-		return ayderr.New(ErrInvalidRecord, err, "invalid record")
-	}
 
 	var raw map[string]interface{}
 	if err = json.Unmarshal(data, &raw); err != nil {
@@ -203,19 +207,23 @@ func (r Record) MarshalJSON() ([]byte, error) {
 		target = r.Target.String()
 	}
 
+	enc := json.NewEncoder(head)
+
 	_, err := fmt.Fprintf(
 		head,
-		`{"time":"%s", "status":"%s", "latency":%.3f, "target":%q`,
+		`{"time":"%s", "status":"%s", "latency":%.3f, "target":`,
 		r.Time.Format(time.RFC3339),
 		r.Status,
 		float64(r.Latency.Microseconds())/1000,
-		target,
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	enc := json.NewEncoder(head)
+	if err = enc.Encode(target); err != nil {
+		return nil, err
+	}
+	head.Truncate(head.Len() - 1) // drop newline
 
 	if r.Message != "" {
 		if _, err = head.Write([]byte(`, "message":`)); err != nil {

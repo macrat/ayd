@@ -42,5 +42,5 @@ func ToCSV(w io.Writer, s api.LogScanner) error {
 
 	c.Flush()
 
-	return nil
+	return c.Error()
 }

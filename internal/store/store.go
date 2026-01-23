@@ -2,6 +2,7 @@ package store
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io"
 	"net/url"
@@ -28,6 +29,7 @@ type RecordHandler func(api.Record)
 
 // Store is the log handler of Ayd, and it also the database of Ayd.
 type Store struct {
+	name string
 	path PathPattern
 
 	Console io.Writer
@@ -47,10 +49,11 @@ type Store struct {
 	healthy       bool
 }
 
-func New(path string, console io.Writer) (*Store, error) {
+func New(name, path string, console io.Writer) (*Store, error) {
 	ch := make(chan api.Record, 32)
 
 	store := &Store{
+		name:             name,
 		path:             ParsePathPattern(path),
 		Console:          console,
 		probeHistory:     make(probeHistoryMap),
@@ -63,6 +66,11 @@ func New(path string, console io.Writer) (*Store, error) {
 	go store.writer(ch, store.writerStopped)
 
 	return store, nil
+}
+
+// Name returns the Ayd instance name set by command line option.
+func (s *Store) Name() string {
+	return s.name
 }
 
 // Path returns pathes to log files.
@@ -103,7 +111,38 @@ func (s *Store) handleError(err error, exportableErrorMessage string) {
 func (s *Store) writer(ch <-chan api.Record, stopped chan struct{}) {
 	var reader strings.Reader
 
-	for r := range ch {
+	var err error
+
+	var f *os.File
+	var fpath string
+	var closeTimer <-chan time.Time
+
+	closeFile := func() {
+		err = f.Close()
+		s.handleError(err, "failed to close log file")
+		f = nil
+		closeTimer = nil
+	}
+
+	for {
+		var r api.Record
+		var ok bool
+		select {
+		case r, ok = <-ch:
+			if !ok {
+				if f != nil {
+					closeFile()
+				}
+				close(stopped)
+				return
+			}
+		case <-closeTimer:
+			if f != nil {
+				closeFile()
+			}
+			continue
+		}
+
 		msg := r.String() + "\n"
 
 		reader.Reset(msg)
@@ -117,25 +156,31 @@ func (s *Store) writer(ch <-chan api.Record, stopped chan struct{}) {
 
 		p := s.path.Build(r.Time)
 
-		if err := os.MkdirAll(filepath.Dir(p), 0755); err != nil {
-			s.handleError(err, "failed to create log directory")
+		if fpath != p && f != nil {
+			closeFile()
 		}
 
-		f, err := os.OpenFile(p, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
-		if err != nil {
-			s.handleError(err, "failed to open log file")
-			continue
+		if f == nil {
+			fpath = p
+			if err := os.MkdirAll(filepath.Dir(fpath), 0755); err != nil {
+				s.handleError(err, "failed to create log directory")
+			}
+
+			f, err = os.OpenFile(fpath, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
+			if err != nil {
+				s.handleError(err, "failed to open log file")
+				continue
+			}
+
+			// Ayd uses log file handler for 100 milliseconds.
+			// It is long enough to write logs from probes they run at the same time, yet short enough to avoid causing trouble when log rotation or file deletion happened.
+			closeTimer = time.After(100 * time.Millisecond)
 		}
 
 		reader.Seek(0, io.SeekStart)
 		_, err = reader.WriteTo(f)
 		s.handleError(err, "failed to write log file")
-
-		err = f.Close()
-		s.handleError(err, "failed to close log file")
 	}
-
-	close(stopped)
 }
 
 func (s *Store) Close() error {
@@ -382,8 +427,10 @@ func (s *Store) Restore() error {
 }
 
 func (s *Store) restoreOneFile(path string, maxSize int64) (int64, error) {
-	f, err := os.OpenFile(path, os.O_RDONLY|os.O_CREATE, 0644)
-	if err != nil {
+	f, err := os.OpenFile(path, os.O_RDONLY, 0644)
+	if errors.Is(err, os.ErrNotExist) {
+		return 0, nil
+	} else if err != nil {
 		return 0, err
 	}
 	defer f.Close()
@@ -497,6 +544,7 @@ func (s *Store) MakeReport(probeHistoryLength int) api.Report {
 	ih := s.incidentHistoryWithoutLock()
 
 	report := api.Report{
+		InstanceName:     s.name,
 		ProbeHistory:     make(map[string]api.ProbeHistory),
 		CurrentIncidents: make([]api.Incident, len(ci)),
 		IncidentHistory:  make([]api.Incident, len(ih)),

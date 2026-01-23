@@ -2,10 +2,12 @@ package endpoint
 
 import (
 	"fmt"
+	"math"
 	"reflect"
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	api "github.com/macrat/ayd/lib-ayd"
 )
 
@@ -248,6 +250,11 @@ func TestLatencyGraph(t *testing.T) {
 			},
 			"M0,1 0,0.8888888888888888 0.5,0.8888888888888888 1.5,0.7777777777777778 2.5,0.6666666666666666 3.5,0.5555555555555556 4.5,0.4444444444444444 5.5,0.33333333333333326 6.5,0.2222222222222222 7.5,0.11111111111111105 8.5,0 9.5,1 10.5,0.8888888888888888 11.5,0.7777777777777778 12.5,0.6666666666666666 13.5,0.5555555555555556 14.5,0.4444444444444444 15.5,0.33333333333333326 16.5,0.2222222222222222 17.5,0.11111111111111105 18.5,0 19.5,1 h0.5V1",
 		},
+		{
+			"with-zero",
+			[]int{0, 0, 0},
+			"",
+		},
 	}
 
 	for _, tt := range tests {
@@ -289,6 +296,47 @@ func TestUint2Humanize(t *testing.T) {
 	for _, tt := range tests {
 		if s := f(tt.Input); s != tt.Output {
 			t.Errorf("%d => %s", tt.Input, s)
+		}
+	}
+}
+
+func TestExtra2JSONs(t *testing.T) {
+	f := templateFuncs["extra2jsons"].(func(map[string]any) []extraPair)
+
+	tests := []struct {
+		Input  map[string]any
+		Output []extraPair
+	}{
+		{
+			nil,
+			nil,
+		},
+		{
+			map[string]any{},
+			nil,
+		},
+		{
+			map[string]any{
+				"0foo": "bar",
+				"1baz": 123,
+			},
+			[]extraPair{
+				{"0foo", `"bar"`, false},
+				{"1baz", "123", true},
+			},
+		},
+		{
+			map[string]any{
+				"nan": math.NaN(),
+			},
+			[]extraPair{},
+		},
+	}
+
+	for i, tt := range tests {
+		s := f(tt.Input)
+		if diff := cmp.Diff(tt.Output, s); diff != "" {
+			t.Errorf("%d: unexpected result (-expect +result):\n%s", i, diff)
 		}
 	}
 }

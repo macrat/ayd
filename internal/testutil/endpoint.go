@@ -8,10 +8,10 @@ import (
 	api "github.com/macrat/ayd/lib-ayd"
 )
 
-func StartTestServer(t testing.TB) *httptest.Server {
+func StartTestServer(t testing.TB, opts ...StoreOption) *httptest.Server {
 	t.Helper()
 
-	s := NewStoreWithLog(t)
+	s := NewStore(t, append(opts, WithLog())...)
 	t.Cleanup(func() {
 		s.Close()
 	})

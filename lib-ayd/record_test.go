@@ -123,7 +123,7 @@ func TestRecord(t *testing.T) {
 		},
 		{
 			String: `{"time":"2021/01/02 15:04:05", "status":"HEALTHY", "latency":123.456, "target":"ping:example.com", "message":"hello world"}`,
-			Error:  `invalid record: time: invalid format: "2021/01/02 15:04:05"`,
+			Error:  `invalid record: time: invalid format`,
 		},
 		{
 			String: `{"time":"2021-01-02T15:04:05+09:00", "status":"HEALTHY", "latency":123.456, "target":"::invalid target::", "message":"hello world"}`,
@@ -219,6 +219,15 @@ func TestRecord(t *testing.T) {
 				Latency: 0,
 				Target:  &ayd.URL{Scheme: "dummy", Opaque: "future"},
 				Message: "",
+			},
+		},
+		{
+			String: `{"time":"2025-01-02T15:04:05+09:00","status":"UNKNOWN","latency":0.000,"target":"dummy:#あいう\u0001\u0001\u0003"}`,
+			Encode: `{"time":"2025-01-02T15:04:05+09:00", "status":"UNKNOWN", "latency":0.000, "target":"dummy:#あいう%01%01%03"}`,
+			Record: ayd.Record{
+				Time:   time.Date(2025, 01, 02, 15, 4, 5, 0, tokyo),
+				Status: ayd.StatusUnknown,
+				Target: &ayd.URL{Scheme: "dummy", Fragment: "あいう\x01\x01\x03"},
 			},
 		},
 	}

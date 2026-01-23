@@ -501,3 +501,36 @@ func TestQuery_TimeRange(t *testing.T) {
 		})
 	}
 }
+
+func BenchmarkQuery_ParseQuery(b *testing.B) {
+	inputs := []string{
+		"a b c d e f g h i j k l m n o p q r s t u v w x y z",
+		"status=HEALTHY latency<100ms target=*example.com* message=*success*",
+		"(foo OR bar) AND (baz OR qux) AND NOT timeout AND NOT connection",
+		`"exact match phrase" AND field1=value1 OR field2>=200 AND NOT field3<100`,
+		"((a AND b) OR (c AND d)) AND ((e OR f) AND NOT (g OR h))",
+	}
+
+	for b.Loop() {
+		for _, input := range inputs {
+			ParseQuery(input)
+		}
+	}
+}
+
+func BenchmarkQuery_Match(b *testing.B) {
+	query := ParseQuery("HEALTHY latency<100ms target=https://example.com/api *success*")
+
+	record := lib.Record{
+		Time:    time.Now(),
+		Status:  lib.StatusHealthy,
+		Latency: time.Millisecond * 50,
+		Target:  &lib.URL{Scheme: "https", Host: "example.com", Path: "/api"},
+		Message: "Operation completed successfully",
+		Extra:   map[string]any{"field1": "value1", "field2": 250},
+	}
+
+	for b.Loop() {
+		query.Match(record)
+	}
+}

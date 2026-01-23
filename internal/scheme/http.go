@@ -12,12 +12,17 @@ import (
 	"time"
 
 	"github.com/goccy/go-json"
+	"github.com/macrat/ayd/internal/meta"
 	api "github.com/macrat/ayd/lib-ayd"
 )
 
 var (
 	HTTPUserAgent = "ayd health check"
 )
+
+func init() {
+	HTTPUserAgent = fmt.Sprintf("ayd/%s health check", meta.Version)
+}
 
 const (
 	HTTP_REDIRECT_MAX = 10

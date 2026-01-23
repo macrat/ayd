@@ -13,7 +13,7 @@ import (
 )
 
 func FuzzLogJsonEndpoint(f *testing.F) {
-	s := testutil.NewStoreWithLog(f)
+	s := testutil.NewStore(f, testutil.WithLog())
 	defer s.Close()
 	handler := endpoint.LogJsonEndpoint(s)
 

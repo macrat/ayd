@@ -43,7 +43,14 @@ func (r *fileScanner) Close() error {
 
 func (r *fileScanner) Scan() bool {
 	for {
-		b, err := r.reader.ReadBytes('\n')
+		b, err := r.reader.ReadSlice('\n')
+		if errors.Is(err, bufio.ErrBufferFull) {
+			rest, err := r.reader.ReadBytes('\n')
+			if err != nil {
+				return false
+			}
+			b = append(b, rest...)
+		}
 		if err != nil {
 			return false
 		}

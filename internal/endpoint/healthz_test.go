@@ -40,12 +40,24 @@ type DummyErrorsGetter struct {
 	messages []string
 }
 
+func (d DummyErrorsGetter) Name() string {
+	return "dummy"
+}
+
 func (d DummyErrorsGetter) Path() string {
 	return ""
 }
 
 func (d DummyErrorsGetter) ProbeHistory() []api.ProbeHistory {
 	return nil
+}
+
+func (d DummyErrorsGetter) CurrentIncidents() []*api.Incident {
+	return []*api.Incident{}
+}
+
+func (d DummyErrorsGetter) IncidentHistory() []*api.Incident {
+	return []*api.Incident{}
 }
 
 func (d DummyErrorsGetter) Targets() []string {

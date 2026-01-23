@@ -18,6 +18,7 @@ Options:
                           Ayd won't create log file if set "-" or empty.
                           You can use time spec %Y, %y, %m, %d, %H, %M, in the file name.
                           (default "ayd_%Y%m%d.log")
+  -n, --name=NAME         Instance name. This will be shown in page titles and logs.
   -p, --port=PORT         Listen port of status page. (default 9000)
   -u, --user=USER[:PASS]  Username and password for HTTP basic auth.
   -c, --ssl-cert=FILE     Path to certificate file for HTTPS. Please set also -k.

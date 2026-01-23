@@ -35,7 +35,7 @@ RUN for x in $PLUGINS; do \
 
 COPY . /usr/src/ayd/
 RUN cd /usr/src/ayd/cmd/ayd && \
-    CGO_ENABLED=0 go build --trimpath -ldflags="-s -w -X 'main.version=$VERSION' -X 'main.commit=$COMMIT'" -buildvcs=false -o /output/ayd
+    CGO_ENABLED=0 go build --trimpath -ldflags="-s -w -X 'github.com/macrat/ayd/internal/meta.Version=$VERSION' -X 'github.com/macrat/ayd/internal/meta.Commit=$COMMIT'" -buildvcs=false -o /output/ayd
 
 RUN upx-ucl --lzma /output/*
 

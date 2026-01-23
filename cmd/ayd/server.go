@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/macrat/ayd/internal/endpoint"
+	"github.com/macrat/ayd/internal/meta"
 	"github.com/macrat/ayd/internal/store"
 	api "github.com/macrat/ayd/lib-ayd"
 	"github.com/robfig/cron/v3"
@@ -32,31 +33,39 @@ func (cmd *AydCommand) reportStartServer(s *store.Store, protocol, listen string
 	cmd.StartedAt = time.Now()
 
 	u := &api.URL{Scheme: "ayd", Opaque: "server"}
+	extra := map[string]interface{}{
+		"url":     fmt.Sprintf("%s://%s", protocol, listen),
+		"targets": tasks,
+		"version": fmt.Sprintf("%s (%s)", meta.Version, meta.Commit),
+	}
+	if s.Name() != "" {
+		extra["instance_name"] = s.Name()
+	}
 	s.Report(u, api.Record{
 		Time:    cmd.StartedAt,
 		Status:  api.StatusHealthy,
 		Target:  u,
 		Message: "start Ayd server",
-		Extra: map[string]interface{}{
-			"url":     fmt.Sprintf("%s://%s", protocol, listen),
-			"targets": tasks,
-			"version": fmt.Sprintf("%s (%s)", version, commit),
-		},
+		Extra:   extra,
 	})
 }
 
 func (cmd *AydCommand) reportStopServer(s *store.Store, protocol, listen string) {
 	u := &api.URL{Scheme: "ayd", Opaque: "server"}
+	extra := map[string]interface{}{
+		"url":     fmt.Sprintf("%s://%s", protocol, listen),
+		"version": fmt.Sprintf("%s (%s)", meta.Version, meta.Commit),
+		"since":   cmd.StartedAt.Format(time.RFC3339),
+	}
+	if s.Name() != "" {
+		extra["instance_name"] = s.Name()
+	}
 	s.Report(u, api.Record{
 		Time:    time.Now(),
 		Status:  api.StatusHealthy,
 		Target:  u,
 		Message: "stop Ayd server",
-		Extra: map[string]interface{}{
-			"url":     fmt.Sprintf("%s://%s", protocol, listen),
-			"version": fmt.Sprintf("%s (%s)", version, commit),
-			"since":   cmd.StartedAt.Format(time.RFC3339),
-		},
+		Extra:   extra,
 	})
 }
 
@@ -136,8 +145,11 @@ func (cmd *AydCommand) RunServer(ctx context.Context, s *store.Store) (exitCode 
 			wg.Done()
 		}()
 
-		if err := srv.Shutdown(context.Background()); err != nil {
-			s.ReportInternalError("endpoint", err.Error())
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		if err := srv.Shutdown(ctx); err != nil {
+			s.ReportInternalError("endpoint", fmt.Sprintf("failed to gracefully shutdown: %s", err.Error()))
 		}
 		wg.Done()
 	}()

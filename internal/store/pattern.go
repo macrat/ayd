@@ -431,7 +431,7 @@ func (p timePattern) Less(x timePattern) bool {
 		return p.Day < x.Day
 	}
 	if p.Hour != x.Hour {
-		return p.Hour < p.Hour
+		return p.Hour < x.Hour
 	}
 	return p.Minute < x.Minute
 }

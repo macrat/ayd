@@ -40,6 +40,8 @@ type IntervalSchedule struct {
 func ParseIntervalSchedule(spec string) (IntervalSchedule, error) {
 	if d, err := time.ParseDuration(spec); err != nil {
 		return IntervalSchedule{}, err
+	} else if d <= 0 {
+		return IntervalSchedule{}, fmt.Errorf("interval duration: %q", spec)
 	} else {
 		return IntervalSchedule{d}, nil
 	}

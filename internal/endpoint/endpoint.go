@@ -74,6 +74,8 @@ func New(s Store) http.Handler {
 	m.Handle("/targets.txt", LinkHeader{TargetsTextEndpoint(s), targetsLink})
 	m.Handle("/targets.json", LinkHeader{TargetsJSONEndpoint(s), targetsLink})
 
+	m.Handle("/mcp", MCPHandler(s))
+
 	m.HandleFunc("/metrics", MetricsEndpoint(s))
 	m.HandleFunc("/healthz", HealthzEndpoint(s))
 

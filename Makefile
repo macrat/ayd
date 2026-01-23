@@ -4,7 +4,7 @@ COMMIT = $(shell git rev-parse --short $(shell git describe))
 
 
 ayd: ${SOURCES}
-	CGO_ENABLED=0 go build -ldflags="-s -w -X main.version=${VERSION} -X main.commit=${COMMIT}" -trimpath -o ayd ./cmd/ayd
+	CGO_ENABLED=0 go build -ldflags="-s -w -X github.com/macrat/ayd/internal/meta.Version=${VERSION} -X github.com/macrat/ayd/internal/meta.Commit=${COMMIT}" -trimpath -o ayd ./cmd/ayd
 
 
 .PHONY: test containertest cover fmt resources clean install

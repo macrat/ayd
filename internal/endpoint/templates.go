@@ -176,6 +176,9 @@ var (
 					maxLatency = l
 				}
 			}
+			if maxLatency == 0 {
+				return ""
+			}
 
 			offset := 20 - len(rs)
 
@@ -248,7 +251,9 @@ var (
 			sort.Slice(xs, func(i, j int) bool {
 				return xs[i].Key < xs[j].Key
 			})
-			xs[len(xs)-1].IsLast = true
+			if len(xs) > 0 {
+				xs[len(xs)-1].IsLast = true
+			}
 			return xs
 		},
 	}
