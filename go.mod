@@ -21,7 +21,7 @@ require (
 	github.com/xuri/excelize/v2 v2.10.0
 	goftp.io/server v0.4.1
 	golang.org/x/crypto v0.47.0
-	golang.org/x/sys v0.40.0
+	golang.org/x/sys v0.41.0
 	golang.org/x/text v0.33.0
 )
 
