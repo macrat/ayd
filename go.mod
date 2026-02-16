@@ -14,15 +14,15 @@ require (
 	github.com/jlaffaye/ftp v0.2.0
 	github.com/macrat/go-parallel-pinger v1.1.6
 	github.com/mattn/go-isatty v0.0.20
-	github.com/modelcontextprotocol/go-sdk v1.2.0
+	github.com/modelcontextprotocol/go-sdk v1.3.0
 	github.com/pkg/sftp v1.13.10
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/spf13/pflag v1.0.10
 	github.com/xuri/excelize/v2 v2.10.0
 	goftp.io/server v0.4.1
-	golang.org/x/crypto v0.47.0
-	golang.org/x/sys v0.40.0
-	golang.org/x/text v0.33.0
+	golang.org/x/crypto v0.48.0
+	golang.org/x/sys v0.41.0
+	golang.org/x/text v0.34.0
 )
 
 require (
