@@ -8,7 +8,7 @@ jobs:
     name: Linux
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Test
         run: go test -coverprofile=cov -covermode=atomic -tags=githubci ./...
       - uses: codecov/codecov-action@v5
@@ -23,7 +23,7 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version: 1.25.x
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Test
         run: go test -race -coverprofile=cov -covermode=atomic -tags=githubci ./...
       - uses: codecov/codecov-action@v5
@@ -38,7 +38,7 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version: 1.25.x
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Test
         run: go test -coverprofile=cov -covermode=atomic -tags=githubci ./...
       - uses: codecov/codecov-action@v5
